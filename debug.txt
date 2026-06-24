@@ -1,0 +1,243 @@
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000275 ms
+MapDrawer::DrawBackground: 0.00239833 ms
+MapDrawer::DrawTotal: 0.0383567 ms
+MapDrawer::DrawMap: 0.00232833 ms
+MapDrawer::DrawTooltips: 0.00387667 ms
+ImGui::RenderDrawData: 0.13761 ms
+SwapBuffers: 0.019075 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.00103833 ms
+MapDrawer::DrawBackground: 0.001865 ms
+MapDrawer::DrawTotal: 0.03256 ms
+MapDrawer::DrawMap: 0.00213333 ms
+MapDrawer::DrawTooltips: 0.00279333 ms
+ImGui::RenderDrawData: 0.100035 ms
+SwapBuffers: 0.01877 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000303333 ms
+MapDrawer::DrawBackground: 0.00231833 ms
+MapDrawer::DrawTotal: 0.0398117 ms
+MapDrawer::DrawMap: 0.00262167 ms
+MapDrawer::DrawTooltips: 0.00253167 ms
+ImGui::RenderDrawData: 0.1234 ms
+SwapBuffers: 0.0226267 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000288333 ms
+MapDrawer::DrawBackground: 0.002075 ms
+MapDrawer::DrawTotal: 0.0390083 ms
+MapDrawer::DrawMap: 0.00240667 ms
+MapDrawer::DrawTooltips: 0.00218667 ms
+ImGui::RenderDrawData: 0.123218 ms
+SwapBuffers: 0.02641 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000278333 ms
+MapDrawer::DrawBackground: 0.00195 ms
+MapDrawer::DrawTotal: 0.0313483 ms
+MapDrawer::DrawMap: 0.00221167 ms
+MapDrawer::DrawTooltips: 0.002235 ms
+ImGui::RenderDrawData: 0.11161 ms
+SwapBuffers: 0.0189383 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000256667 ms
+MapDrawer::DrawBackground: 0.00197167 ms
+MapDrawer::DrawTotal: 0.0302767 ms
+MapDrawer::DrawMap: 0.00198167 ms
+MapDrawer::DrawTooltips: 0.00265333 ms
+ImGui::RenderDrawData: 0.106718 ms
+SwapBuffers: 0.0185183 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.00028 ms
+MapDrawer::DrawBackground: 0.00200167 ms
+MapDrawer::DrawTotal: 0.0360717 ms
+MapDrawer::DrawMap: 0.00228167 ms
+MapDrawer::DrawTooltips: 0.00353833 ms
+ImGui::RenderDrawData: 0.11033 ms
+SwapBuffers: 0.0213217 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000233333 ms
+MapDrawer::DrawBackground: 0.001645 ms
+MapDrawer::DrawTotal: 0.0280383 ms
+MapDrawer::DrawMap: 0.0021 ms
+MapDrawer::DrawTooltips: 0.00191667 ms
+ImGui::RenderDrawData: 0.095345 ms
+SwapBuffers: 0.01669 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000158333 ms
+MapDrawer::DrawBackground: 0.000825 ms
+MapDrawer::DrawTotal: 0.0188167 ms
+MapDrawer::DrawMap: 0.00145 ms
+MapDrawer::DrawTooltips: 0.00112333 ms
+ImGui::RenderDrawData: 0.0765983 ms
+SwapBuffers: 0.0178267 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000225 ms
+MapDrawer::DrawBackground: 0.00146667 ms
+MapDrawer::DrawTotal: 0.02771 ms
+MapDrawer::DrawMap: 0.001815 ms
+MapDrawer::DrawTooltips: 0.00176667 ms
+ImGui::RenderDrawData: 0.09238 ms
+SwapBuffers: 0.0165 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000268333 ms
+MapDrawer::DrawBackground: 0.00202167 ms
+MapDrawer::DrawTotal: 0.04711 ms
+MapDrawer::DrawMap: 0.00240333 ms
+MapDrawer::DrawTooltips: 0.00288167 ms
+ImGui::RenderDrawData: 0.112942 ms
+SwapBuffers: 0.016705 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000308333 ms
+MapDrawer::DrawBackground: 0.00239833 ms
+MapDrawer::DrawTotal: 0.0427067 ms
+MapDrawer::DrawMap: 0.002515 ms
+MapDrawer::DrawTooltips: 0.00256667 ms
+ImGui::RenderDrawData: 0.12475 ms
+SwapBuffers: 0.0179567 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000286667 ms
+MapDrawer::DrawBackground: 0.00230833 ms
+MapDrawer::DrawTotal: 0.0379633 ms
+MapDrawer::DrawMap: 0.00237167 ms
+MapDrawer::DrawTooltips: 0.00323167 ms
+ImGui::RenderDrawData: 0.118463 ms
+SwapBuffers: 0.0160717 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000185 ms
+MapDrawer::DrawBackground: 0.00126833 ms
+MapDrawer::DrawTotal: 0.0217333 ms
+MapDrawer::DrawMap: 0.00162833 ms
+MapDrawer::DrawTooltips: 0.00144833 ms
+ImGui::RenderDrawData: 0.082955 ms
+SwapBuffers: 0.016455 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.00017 ms
+MapDrawer::DrawBackground: 0.000663333 ms
+MapDrawer::DrawTotal: 0.01607 ms
+MapDrawer::DrawMap: 0.00129667 ms
+MapDrawer::DrawTooltips: 0.00092 ms
+ImGui::RenderDrawData: 0.0680833 ms
+SwapBuffers: 0.0148567 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000256667 ms
+MapDrawer::DrawBackground: 0.001835 ms
+MapDrawer::DrawTotal: 0.0307033 ms
+MapDrawer::DrawMap: 0.00222333 ms
+MapDrawer::DrawTooltips: 0.00218667 ms
+ImGui::RenderDrawData: 0.108777 ms
+SwapBuffers: 0.01938 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000288333 ms
+MapDrawer::DrawBackground: 0.001925 ms
+MapDrawer::DrawTotal: 0.0323883 ms
+MapDrawer::DrawMap: 0.00230167 ms
+MapDrawer::DrawTooltips: 0.00218 ms
+ImGui::RenderDrawData: 0.111815 ms
+SwapBuffers: 0.0197767 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000251667 ms
+MapDrawer::DrawBackground: 0.00182833 ms
+MapDrawer::DrawTotal: 0.02842 ms
+MapDrawer::DrawMap: 0.00195667 ms
+MapDrawer::DrawTooltips: 0.00191833 ms
+ImGui::RenderDrawData: 0.11659 ms
+SwapBuffers: 0.0162333 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000301667 ms
+MapDrawer::DrawBackground: 0.00226 ms
+MapDrawer::DrawTotal: 0.0320817 ms
+MapDrawer::DrawMap: 0.00198 ms
+MapDrawer::DrawTooltips: 0.00221333 ms
+ImGui::RenderDrawData: 0.113257 ms
+SwapBuffers: 0.0185983 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000261667 ms
+MapDrawer::DrawBackground: 0.002665 ms
+MapDrawer::DrawTotal: 0.040045 ms
+MapDrawer::DrawMap: 0.00200833 ms
+MapDrawer::DrawTooltips: 0.00229667 ms
+ImGui::RenderDrawData: 0.117673 ms
+SwapBuffers: 0.0199683 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000281667 ms
+MapDrawer::DrawBackground: 0.002495 ms
+MapDrawer::DrawTotal: 0.03729 ms
+MapDrawer::DrawMap: 0.00217667 ms
+MapDrawer::DrawTooltips: 0.00320167 ms
+ImGui::RenderDrawData: 0.131208 ms
+SwapBuffers: 0.0216017 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000256667 ms
+MapDrawer::DrawBackground: 0.00211167 ms
+MapDrawer::DrawTotal: 0.0345467 ms
+MapDrawer::DrawMap: 0.00204 ms
+MapDrawer::DrawTooltips: 0.002205 ms
+ImGui::RenderDrawData: 0.108857 ms
+SwapBuffers: 0.0176617 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000226667 ms
+MapDrawer::DrawBackground: 0.00202 ms
+MapDrawer::DrawTotal: 0.032415 ms
+MapDrawer::DrawMap: 0.00186833 ms
+MapDrawer::DrawTooltips: 0.00339333 ms
+ImGui::RenderDrawData: 0.10919 ms
+SwapBuffers: 0.0187567 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000273333 ms
+MapDrawer::DrawBackground: 0.00202333 ms
+MapDrawer::DrawTotal: 0.0357333 ms
+MapDrawer::DrawMap: 0.00206167 ms
+MapDrawer::DrawTooltips: 0.00239167 ms
+ImGui::RenderDrawData: 0.112415 ms
+SwapBuffers: 0.0189867 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000316667 ms
+MapDrawer::DrawBackground: 0.00240333 ms
+MapDrawer::DrawTotal: 0.0385117 ms
+MapDrawer::DrawMap: 0.00233667 ms
+MapDrawer::DrawTooltips: 0.00264833 ms
+ImGui::RenderDrawData: 0.133832 ms
+SwapBuffers: 0.019765 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000298333 ms
+MapDrawer::DrawBackground: 0.00221 ms
+MapDrawer::DrawTotal: 0.0347967 ms
+MapDrawer::DrawMap: 0.00209 ms
+MapDrawer::DrawTooltips: 0.00244833 ms
+ImGui::RenderDrawData: 0.121043 ms
+SwapBuffers: 0.023015 ms
+--------------------------------------------------
+=== Performance Report (avg over 60 frames) ===
+MapDrawer::DrawHigherFloors: 0.000441667 ms
+MapDrawer::DrawBackground: 0.002405 ms
+MapDrawer::DrawTotal: 0.04258 ms
+MapDrawer::DrawMap: 0.002555 ms
+MapDrawer::DrawTooltips: 0.00258 ms
+ImGui::RenderDrawData: 0.131265 ms
+SwapBuffers: 0.0198433 ms
+--------------------------------------------------

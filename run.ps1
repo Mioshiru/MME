@@ -1,0 +1,1 @@
+$c = Get-Content -Path source/gui.cpp -Raw; $c = $c.Replace('MinSize(tools_panel->GetBestSize())', 'MinSize(42, 42)'); $c = $c.Replace('MinSize(size_panel->GetBestSize())', 'MinSize(42, 42)'); $c = $c.Replace('MinSize(palette->GetBestSize())', 'MinSize(42, 42)'); Set-Content -Path source/gui.cpp -Value $c

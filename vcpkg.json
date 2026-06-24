@@ -1,0 +1,33 @@
+{
+  "name": "rme",
+  "version-string": "3.8.0",
+  "dependencies": [
+    "boost-system",
+    "boost-thread",
+    "boost-asio",
+    "boost-variant",
+    "boost-spirit",
+    "libarchive",
+    "lua",
+    "sol2",
+    "cpr",
+    "nlohmann-json",
+    "nanosvg",
+    "wxwidgets",
+    "freeglut",
+    "zlib",
+    "opengl",
+    "glm",
+    "entt",
+    "vulkan",
+    "bgfx",
+    {
+      "name": "imgui",
+      "features": [
+        "opengl3-binding",
+        "win32-binding"
+      ]
+    }
+  ],
+  "builtin-baseline": "f9ffbaa46ad8e284b2b74919f7e0ba259564d424"
+}
