@@ -1,12 +1,12 @@
 # Mios Map Editor (MME)
-*Ein moderner, kollaborativer und shader-gestützter Map-Editor für OpenTibia (OTBM).*
-MME ist ein ambitionierter Fork des legendären Remere's Map Editor (RME), der speziell für moderne Ansprüche und verbesserte Workflows entwickelt wurde. Anstatt nur den alten Code zu verwalten, modernisiert MME die Engine im Kern und führt zukunftsweisende Features für Map-Designer ein.
+*A modern, collaborative, and shader-powered map editor for OpenTibia (OTBM).*
+MME is an ambitious fork of the legendary Remere's Map Editor (RME), designed for modern development workflows. Instead of just maintaining legacy code, MME modernizes the core engine and introduces cutting-edge features for map designers.
 ### 🌟 Key Features
-*   **👥 Live-Kollaboration (Multiplayer-Mapping):** Arbeite dank integrierter Client/Server-Architektur in Echtzeit mit anderen Mappern gleichzeitig an derselben Map.
-*   **🎨 Next-Gen Rendering & Shader:** Optische Aufwertung durch moderne Grafik-Pipelines. MME unterstützt Deferred Rendering, Global Illumination (GI) Raytracing, CRT-Retro-Filter und Weichzeichnungseffekte (Blur) direkt im Editor.
-*   **⚡ Modernste C++ Architektur:**
-    *   **EnTT (Entity Component System):** Extrem schnelle Speicher- und Entityverwaltung für flüssiges Mapping auch auf gigantischen Maps.
-    *   **Dear ImGui Integration:** Flexibles, modernes UI-Docking-System für eine aufgeräumte, anpassbare Arbeitsumgebung.
-    *   **Vector Graphics (NanoVG/NanoSVG):** Skalierbare, gestochen scharfe Vektor-Benutzeroberflächen.
-*   **🎲 Prozedurale Generierung:** Nutze integrierte Rauschfunktionen (*FastNoiseLite*) zur schnellen Erzeugung von organischen Landschaften und Höhlen.
-*   **📦 Einfaches Bauen via VCPKG:** Vollständige Integration von Microsofts Paketmanager für unkomplizierte Builds auf Windows, Linux und macOS.
+*   **👥 Real-Time Collaboration (Multiplayer Mapping):** Map together with your team in real time! MME features a built-in client/server architecture that allows multiple mappers to edit the same map simultaneously.
+*   **🎨 Next-Gen Rendering & Shaders:** Experience mapping like never before with deferred rendering, Global Illumination (GI) raytracing, CRT retro-filters, and blur effects running directly inside the editor.
+*   **⚡ Modern C++ Architecture:**
+    *   **EnTT (Entity Component System):** High-performance state and entity management keeping the editor fluid and responsive even on giant maps.
+    *   **Dear ImGui Integration:** Flexible, modern docking-based UI layout for a clean, customizable workspace.
+    *   **Vector Graphics (NanoVG/NanoSVG):** Crisp, scalable vector-based user interfaces.
+*   **🎲 Procedural Generation:** Leverage built-in noise generation algorithms (*FastNoiseLite*) to generate organic terrains and caves programmatically.
+*   **📦 Seamless Building with VCPKG:** Full package manager integration for hassle-free compilation on Windows, Linux, and macOS.
