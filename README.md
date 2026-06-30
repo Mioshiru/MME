@@ -1,59 +1,12 @@
-What is this?
-=============
-
-This is a map editor for game servers that derivied from [OpenTibia](https://github.com/opentibia/server) server project.
-
-It is a fork of a [Map Editor](https://github.com/hampusborgos/rme) created by [Remere](https://github.com/hampusborgos).
-
-You can find an engine compatible with OTBM format at [OTAcademy](https://github.com/OTAcademy), [OTLand](https://github.com/OTLand), [OpenTibiaBR](https://github.com/OpenTibiaBR) or other OT communities.
-
-Visit [OTAcademy discord](http://discord.gg/OTAcademy) if you are looking for support or updates.
-
-I want to contribute
-====================
-
-Contributions are very welcome, if you would like to make any changes, fork this project or request commit access.
-
-Please, if you would like to contribute anything, documentation, extensions or code speak up!
-
-
-Bugs
-======
-
-Have you found a bug? Please create an issue in our [bug tracker](https://github.com/OTAcademy/rme/issues)
-
-Other Applications
-==========
-
-* To host your MMORPG game server, you can use [The Forgotten Server Plus](https://github.com/Zbizu/forgottenserver).
-* To play your MMORPG game, you can use [OTClient 1.0](https://github.com/Mehah/otclient)
-* To map your MMORPG game, you can use this map editor.
-
-Download
-========
-
-You can find official releases at this repository [releases page](https://github.com/OTAcademy/RME/releases).
-
-Compiling using automatic libs installation with vcpkg manifest
-=========
-required only vcpkg setup: [https://github.com/microsoft/vcpkg](https://github.com/microsoft/vcpkg)
-
-Compiling using manual libs installation
-=========
-required vcpkg setup: [https://github.com/microsoft/vcpkg](https://github.com/microsoft/vcpkg)
-
-Required libraries:
-* wxWidgets >= 3.0
-* Boost >= 1.55.0
-
-### VCPKG libraries:
-* 32-bit : `vcpkg install wxwidgets freeglut asio nlohmann-json fmt libarchive boost-spirit`
-* 64-bit : `vcpkg install --triplet x64-windows wxwidgets freeglut asio nlohmann-json fmt libarchive boost-spirit`
-
-[Compile on Windows](https://github.com/hjnilsson/rme/wiki/Compiling-on-Windows)
-
-[Compile on Ubuntu](https://github.com/hjnilsson/rme/wiki/Compiling-on-Ubuntu)
-
-[Compile on Arch Linux](https://github.com/hjnilsson/rme/wiki/Compiling-on-Arch-Linux)
-
-[Compile on macOS](https://github.com/hjnilsson/rme/wiki/Compiling-on-macOS)
+# Mios Map Editor (MME)
+*Ein moderner, kollaborativer und shader-gestützter Map-Editor für OpenTibia (OTBM).*
+MME ist ein ambitionierter Fork des legendären Remere's Map Editor (RME), der speziell für moderne Ansprüche und verbesserte Workflows entwickelt wurde. Anstatt nur den alten Code zu verwalten, modernisiert MME die Engine im Kern und führt zukunftsweisende Features für Map-Designer ein.
+### 🌟 Key Features
+*   **👥 Live-Kollaboration (Multiplayer-Mapping):** Arbeite dank integrierter Client/Server-Architektur in Echtzeit mit anderen Mappern gleichzeitig an derselben Map.
+*   **🎨 Next-Gen Rendering & Shader:** Optische Aufwertung durch moderne Grafik-Pipelines. MME unterstützt Deferred Rendering, Global Illumination (GI) Raytracing, CRT-Retro-Filter und Weichzeichnungseffekte (Blur) direkt im Editor.
+*   **⚡ Modernste C++ Architektur:**
+    *   **EnTT (Entity Component System):** Extrem schnelle Speicher- und Entityverwaltung für flüssiges Mapping auch auf gigantischen Maps.
+    *   **Dear ImGui Integration:** Flexibles, modernes UI-Docking-System für eine aufgeräumte, anpassbare Arbeitsumgebung.
+    *   **Vector Graphics (NanoVG/NanoSVG):** Skalierbare, gestochen scharfe Vektor-Benutzeroberflächen.
+*   **🎲 Prozedurale Generierung:** Nutze integrierte Rauschfunktionen (*FastNoiseLite*) zur schnellen Erzeugung von organischen Landschaften und Höhlen.
+*   **📦 Einfaches Bauen via VCPKG:** Vollständige Integration von Microsofts Paketmanager für unkomplizierte Builds auf Windows, Linux und macOS.
