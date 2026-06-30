@@ -1,5 +1,6 @@
 #include "main.h"
 #include "brush.h"
+#include "item.h"
 #include "materials.h"
 #include "tileset.h"
 

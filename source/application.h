@@ -27,6 +27,18 @@
 #include "map_display.h"
 #include "welcome_dialog.h"
 
+#include <string>
+#include <vector>
+
+extern std::vector<std::string> g_active_actions_stack;
+void PushActiveAction(const std::string& action);
+void PopActiveAction();
+
+struct ScopedAction {
+	ScopedAction(const std::string& action) { PushActiveAction(action); }
+	~ScopedAction() { PopActiveAction(); }
+};
+
 class Item;
 class Creature;
 

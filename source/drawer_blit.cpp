@@ -1,5 +1,6 @@
 #include "main.h"
 #include "map_drawer.h"
+#include "renderer.h"
 #include "graphics.h"
 #include "gui.h"
 #include "tile.h"

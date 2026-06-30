@@ -69,11 +69,10 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 	book->SetBackgroundColour(bg);
 	book->SetForegroundColour(fg);
 
-	book->AddPage(CreateGeneralPage(), "Application", !clientVersionSelected);
+	book->AddPage(CreateGeneralPage(), "General", !clientVersionSelected);
 	book->AddPage(CreateEditorPage(), "Editing");
-	book->AddPage(CreateGraphicsPage(), "Rendering");
+	book->AddPage(CreatePerformancePage(), "Performance");
 	book->AddPage(CreateUIPage(), "Interface");
-	book->AddPage(CreateClientPage(), "Assets", clientVersionSelected);
 
 	book->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, [this](wxAuiNotebookEvent& event) {
 		this->Layout();
@@ -88,9 +87,16 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 	subsizer->Add(newd wxButton(this, wxID_APPLY, "Apply"), wxSizerFlags(1).Center());
 	sizer->Add(subsizer, 0, wxCENTER | wxLEFT | wxBOTTOM | wxRIGHT, 10);
 
+	auto* preferences_window_layout_s = sizer; // Reference
 	SetMinSize(wxSize(500, 520));
 	SetSizerAndFit(sizer);
 	RME::UI::StyleManager::ApplyThemeRecursively(this, theme);
+	
+	// Layout updates
+	if (default_version_choice) {
+		UpdateScanStatus();
+	}
+	
 	Centre(wxBOTH);
 }
 
@@ -130,6 +136,102 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	sizer->Add(enable_tileset_editing_chkbox, 0, wxLEFT | wxTOP, 5);
 
 	sizer->AddSpacer(10);
+
+	// Implement Assets settings directly here inside General Page!
+	wxStaticBoxSizer* asset_box = newd wxStaticBoxSizer(wxVERTICAL, general_page, "Asset & Client configuration");
+	
+	ClientVersion::saveVersions();
+	ClientVersionList versions = ClientVersion::getAllVisible();
+	std::sort(versions.begin(), versions.end(), [](const ClientVersion* a, const ClientVersion* b) {
+		return a->getID() < b->getID();
+	});
+
+	auto* asset_row_sizer = newd wxFlexGridSizer(2, 5, 5);
+	asset_row_sizer->AddGrowableCol(1);
+
+	// Client version selection
+	default_version_choice = newd wxChoice(general_page, wxID_ANY);
+	asset_row_sizer->Add(newd wxStaticText(general_page, wxID_ANY, "Client version:"), 0, wxALIGN_CENTER_VERTICAL);
+	asset_row_sizer->Add(default_version_choice, 1, wxEXPAND);
+
+	// Check file signatures
+	check_sigs_chkbox = newd wxCheckBox(general_page, wxID_ANY, "Check file signatures");
+	check_sigs_chkbox->SetValue(g_settings.getBoolean(Config::CHECK_SIGNATURES));
+	check_sigs_chkbox->SetToolTip("When this option is not checked, the editor will load any OTB/DAT/SPR combination without complaints. This may cause graphics bugs.");
+	asset_row_sizer->Add(check_sigs_chkbox, 0, wxTOP, 5);
+	asset_row_sizer->AddSpacer(0);
+
+	// Scan status
+	asset_row_sizer->Add(newd wxStaticText(general_page, wxID_ANY, "Scan status:"), 0, wxALIGN_CENTER_VERTICAL | wxTOP, 5);
+	scan_status_txt = newd wxStaticText(general_page, wxID_ANY, "Scan: Pending...");
+	asset_row_sizer->Add(scan_status_txt, 1, wxEXPAND | wxTOP | wxALIGN_CENTER_VERTICAL, 5);
+
+	// Navigation Button to open files folder
+	open_folder_btn = newd wxButton(general_page, wxID_ANY, "Open Directory");
+	open_folder_btn->SetToolTip("Open the local client data folder and the asset download webpage in your browser.");
+	asset_row_sizer->AddSpacer(0);
+	asset_row_sizer->Add(open_folder_btn, 0, wxTOP | wxALIGN_LEFT, 5);
+
+	asset_box->Add(asset_row_sizer, 1, wxEXPAND | wxALL, 5);
+
+	// Version Link help
+	help_link = newd wxHyperlinkCtrl(general_page, wxID_ANY,
+		"Download Tibia DAT & SPR files here",
+		"https://downloads.ots.me/?sort_by=mod&sort_as=desc&dir=data/tibia-clients/dat_and_spr/");
+	asset_box->Add(help_link, 0, wxTOP | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 5);
+
+	// Populate version choices
+	int version_counter = 0;
+	for (auto version : versions) {
+		if (!version->isVisible()) {
+			continue;
+		}
+		default_version_choice->Append(wxstr(version->getName()));
+		if (version->getID() == g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION)) {
+			default_version_choice->SetSelection(version_counter);
+		}
+		version_counter++;
+	}
+
+	default_version_choice->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+		UpdateScanStatus();
+	});
+
+	open_folder_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		ClientVersionList env_versions = ClientVersion::getAllVisible();
+		int selection = default_version_choice->GetSelection();
+		if (selection != wxNOT_FOUND) {
+			int counter = 0;
+			ClientVersion* selected_version = nullptr;
+			for (auto version : env_versions) {
+				if (!version->isVisible()) continue;
+				if (counter == selection) {
+					selected_version = version;
+					break;
+				}
+				counter++;
+			}
+			if (selected_version) {
+				FileName local_dir = selected_version->getDataPath();
+				local_dir.Mkdir(0755, wxPATH_MKDIR_FULL);
+				wxString folder_path = local_dir.GetFullPath();
+#ifdef __WINDOWS__
+				wxExecute("explorer.exe \"" + folder_path + "\"", wxEXEC_ASYNC);
+#else
+				wxLaunchDefaultApplication(folder_path);
+#endif
+				wxLaunchDefaultBrowser("https://downloads.ots.me/?sort_by=mod&sort_as=desc&dir=data/tibia-clients/dat_and_spr/");
+			}
+		}
+	});
+
+	check_sigs_chkbox->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
+		UpdateScanStatus();
+	});
+
+	sizer->Add(asset_box, 0, wxEXPAND | wxALL, 5);
+
+	sizer->AddSpacer(5);
 	wxStaticBoxSizer* net_box = new wxStaticBoxSizer(wxVERTICAL, general_page, "Multiplayer Configuration");
 	wxBoxSizer* port_sizer = new wxBoxSizer(wxHORIZONTAL);
 	port_sizer->Add(new wxStaticText(general_page, wxID_ANY, "Server Port:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
@@ -179,11 +281,6 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	undo_mem_size_spin = newd wxSpinCtrl(general_page, wxID_ANY, i2ws(g_settings.getInteger(Config::UNDO_MEM_SIZE)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 4096);
 	grid_sizer->Add(undo_mem_size_spin, 0);
 	SetWindowToolTip(tmptext, undo_mem_size_spin, "The approximite limit for the memory usage of the undo queue.");
-
-	grid_sizer->Add(tmptext = newd wxStaticText(general_page, wxID_ANY, "Worker Threads: "), 0);
-	worker_threads_spin = newd wxSpinCtrl(general_page, wxID_ANY, i2ws(g_settings.getInteger(Config::WORKER_THREADS)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 64);
-	grid_sizer->Add(worker_threads_spin, 0);
-	SetWindowToolTip(tmptext, worker_threads_spin, "How many threads the editor will use for intensive operations. This should be equivalent to the amount of logical processors in your system.");
 
 	grid_sizer->Add(tmptext = newd wxStaticText(general_page, wxID_ANY, "Replace count: "), 0);
 	replace_size_spin = newd wxSpinCtrl(general_page, wxID_ANY, i2ws(g_settings.getInteger(Config::REPLACE_SIZE)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100000);
@@ -272,79 +369,110 @@ wxNotebookPage* PreferencesWindow::CreateEditorPage() {
 	return editor_page;
 }
 
-wxNotebookPage* PreferencesWindow::CreateGraphicsPage() {
-	// Removed unused 'tmp' variable previously at line 276/208
-	wxNotebookPage* graphics_page = newd wxPanel(book, wxID_ANY);
-	graphics_page->SetBackgroundColour(book->GetBackgroundColour());
-	graphics_page->SetForegroundColour(book->GetForegroundColour());
+wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
+	wxNotebookPage* performance_page = newd wxPanel(book, wxID_ANY);
+	performance_page->SetBackgroundColour(book->GetBackgroundColour());
+	performance_page->SetForegroundColour(book->GetForegroundColour());
 
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
-    
-    wxStaticBoxSizer* backend_group = new wxStaticBoxSizer(wxVERTICAL, graphics_page, "Graphics Engine");
-    wxString backend_choices[] = { "Legacy OpenGL (Stable)", "Modern Vulkan (Experimental / High-DPI)" };
-    backend_radio = new wxRadioBox(graphics_page, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 2, backend_choices, 1, wxRA_SPECIFY_COLS);
-    // backend_radio->SetSelection(g_settings.getInteger(Config::RENDER_BACKEND));
-    backend_group->Add(backend_radio, 0, wxALL | wxEXPAND, 5);
-    sizer->Add(backend_group, 0, wxEXPAND | wxALL, 5);
 
-    wxStaticBoxSizer* visual_group = new wxStaticBoxSizer(wxVERTICAL, graphics_page, "Editor Visuals");
+	// Rendering details merged directly here!
+    wxStaticBoxSizer* visual_group = newd wxStaticBoxSizer(wxVERTICAL, performance_page, "Editor Visuals & Rendering");
     
-    parchment_background_chkbox = new wxCheckBox(graphics_page, wxID_ANY, "Use Parchment Background (instead of Black)");
+    parchment_background_chkbox = newd wxCheckBox(performance_page, wxID_ANY, "Use Parchment Background (instead of Black)");
     parchment_background_chkbox->SetValue(g_settings.getInteger(Config::USE_PARCHMENT_BACKGROUND) == 1);
     visual_group->Add(parchment_background_chkbox, 0, wxALL, 5);
 
-    wxBoxSizer* opacity_sizer = new wxBoxSizer(wxHORIZONTAL);
-    opacity_sizer->Add(new wxStaticText(graphics_page, wxID_ANY, "Grid Opacity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-    grid_opacity_slider = new wxSlider(graphics_page, wxID_ANY, g_settings.getInteger(Config::GRID_OPACITY), 0, 255);
+    wxBoxSizer* opacity_sizer = newd wxBoxSizer(wxHORIZONTAL);
+    opacity_sizer->Add(newd wxStaticText(performance_page, wxID_ANY, "Grid Opacity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    grid_opacity_slider = newd wxSlider(performance_page, wxID_ANY, g_settings.getInteger(Config::GRID_OPACITY), 0, 255);
     opacity_sizer->Add(grid_opacity_slider, 1, wxEXPAND);
     visual_group->Add(opacity_sizer, 0, wxEXPAND | wxALL, 5);
 
-    wxBoxSizer* light_sizer = new wxBoxSizer(wxHORIZONTAL);
-    light_sizer->Add(new wxStaticText(graphics_page, wxID_ANY, "Global Light Intensity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-    light_intensity_slider = new wxSlider(graphics_page, wxID_ANY, int(g_settings.getFloat(Config::LIGHT_INTENSITY) * 100), 10, 100);
+    wxBoxSizer* light_sizer = newd wxBoxSizer(wxHORIZONTAL);
+    light_sizer->Add(newd wxStaticText(performance_page, wxID_ANY, "Global Light Intensity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    light_intensity_slider = newd wxSlider(performance_page, wxID_ANY, int(g_settings.getFloat(Config::LIGHT_INTENSITY) * 100), 10, 100);
     light_sizer->Add(light_intensity_slider, 1, wxEXPAND);
     visual_group->Add(light_sizer, 0, wxEXPAND | wxALL, 5);
 
     sizer->Add(visual_group, 0, wxEXPAND | wxALL, 5);
 
-    wxStaticBoxSizer* shader_group = new wxStaticBoxSizer(wxVERTICAL, graphics_page, "Shader Effects");
-	auto* subsizer = newd wxFlexGridSizer(2, 10, 10);
-	subsizer->AddGrowableCol(1);
+	wxStaticBoxSizer* preset_group = new wxStaticBoxSizer(wxVERTICAL, performance_page, "Performance Presets");
+	wxArrayString presets;
+	presets.Add("Balanced");
+	presets.Add("Low");
+	presets.Add("High");
+	presets.Add("Custom");
+	performance_preset_choice = newd wxChoice(performance_page, wxID_ANY, wxDefaultPosition, wxDefaultSize, presets);
+	performance_preset_choice->SetSelection(0);
+	preset_group->Add(performance_preset_choice, 0, wxALL | wxEXPAND, 5);
+	preset_group->Add(newd wxStaticText(performance_page, wxID_ANY, "Balanced keeps the editor responsive while still using the richer visual effects."), 0, wxALL, 5);
+	sizer->Add(preset_group, 0, wxEXPAND | wxALL, 5);
 
-    subsizer->Add(new wxStaticText(graphics_page, wxID_ANY, "Visual AA:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
-    aa_choice = new wxChoice(graphics_page, wxID_ANY);
-    aa_choice->Append("Off (Pixel Perfect)");
-    aa_choice->Append("FXAA Low");
-    aa_choice->Append("FXAA High");
-    aa_choice->SetSelection(g_settings.getInteger(Config::SHADER_AA_LEVEL));
-    subsizer->Add(aa_choice, 0, wxEXPAND | wxRIGHT, 5);
+	wxStaticBoxSizer* tuning_group = new wxStaticBoxSizer(wxVERTICAL, performance_page, "Tuning");
+	performance_vsync_chkbox = newd wxCheckBox(performance_page, wxID_ANY, "Vertical Sync");
+	performance_vsync_chkbox->SetValue(g_settings.getBoolean(Config::V_SYNC));
+	tuning_group->Add(performance_vsync_chkbox, 0, wxALL, 5);
 
-    subsizer->Add(new wxStaticText(graphics_page, wxID_ANY, "Retro CRT:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
-    crt_strength_slider = new wxSlider(graphics_page, wxID_ANY, g_settings.getInteger(Config::SHADER_CRT_STRENGTH), 0, 100);
-    subsizer->Add(crt_strength_slider, 0, wxEXPAND | wxRIGHT, 5);
+	performance_multimonitor_chkbox = newd wxCheckBox(performance_page, wxID_ANY, "Multi-display workspace");
+	performance_multimonitor_chkbox->SetValue(g_settings.getBoolean(Config::MULTI_MONITOR_WORKSPACE));
+	tuning_group->Add(performance_multimonitor_chkbox, 0, wxALL, 5);
 
-    subsizer->Add(new wxStaticText(graphics_page, wxID_ANY, "Water Speed:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
-    water_anim_slider = new wxSlider(graphics_page, wxID_ANY, int(g_settings.getFloat(Config::SHADER_WATER_ANIM_SPEED) * 10), 0, 50);
-    subsizer->Add(water_anim_slider, 0, wxEXPAND | wxRIGHT, 5);
-    
-    shader_group->Add(subsizer, 1, wxEXPAND | wxALL, 5);
-    sizer->Add(shader_group, 0, wxEXPAND | wxALL, 5);
+	wxFlexGridSizer* grid = newd wxFlexGridSizer(2, 10, 10);
+	grid->AddGrowableCol(1);
+	grid->Add(newd wxStaticText(performance_page, wxID_ANY, "Worker threads:"), 0, wxALIGN_CENTER_VERTICAL);
+	performance_worker_threads_slider = newd wxSlider(performance_page, wxID_ANY, g_settings.getInteger(Config::WORKER_THREADS), 1, 16);
+	grid->Add(performance_worker_threads_slider, 0, wxEXPAND);
+	grid->Add(newd wxStaticText(performance_page, wxID_ANY, "Anti-aliasing:"), 0, wxALIGN_CENTER_VERTICAL);
+	performance_aa_choice = newd wxChoice(performance_page, wxID_ANY);
+	performance_aa_choice->Append("Off");
+	performance_aa_choice->Append("Low");
+	performance_aa_choice->Append("High");
+	performance_aa_choice->SetSelection(g_settings.getInteger(Config::SHADER_AA_LEVEL));
+	grid->Add(performance_aa_choice, 0, wxEXPAND);
+	grid->Add(newd wxStaticText(performance_page, wxID_ANY, "CRT strength:"), 0, wxALIGN_CENTER_VERTICAL);
+	performance_crt_slider = newd wxSlider(performance_page, wxID_ANY, g_settings.getInteger(Config::SHADER_CRT_STRENGTH), 0, 100);
+	grid->Add(performance_crt_slider, 0, wxEXPAND);
+	grid->Add(newd wxStaticText(performance_page, wxID_ANY, "Water speed:"), 0, wxALIGN_CENTER_VERTICAL);
+	performance_water_slider = newd wxSlider(performance_page, wxID_ANY, int(g_settings.getFloat(Config::SHADER_WATER_ANIM_SPEED) * 10), 0, 50);
+	grid->Add(performance_water_slider, 0, wxEXPAND);
+	tuning_group->Add(grid, 0, wxALL | wxEXPAND, 5);
+	sizer->Add(tuning_group, 0, wxEXPAND | wxALL, 5);
 
-    wxStaticBoxSizer* perf_group = new wxStaticBoxSizer(wxVERTICAL, graphics_page, "Performance");
-    vsync_chkbox = new wxCheckBox(graphics_page, wxID_ANY, "Vertical Sync (Limit to Monitor Refresh)");
-    vsync_chkbox->SetValue(g_settings.getBoolean(Config::V_SYNC));
-    perf_group->Add(vsync_chkbox, 0, wxALL, 5);
+	performance_preset_choice->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+		int preset = performance_preset_choice->GetSelection();
+		switch (preset) {
+		case 1:
+			performance_vsync_chkbox->SetValue(true);
+			performance_multimonitor_chkbox->SetValue(false);
+			performance_worker_threads_slider->SetValue(2);
+			performance_aa_choice->SetSelection(0);
+			performance_crt_slider->SetValue(0);
+			performance_water_slider->SetValue(3);
+			break;
+		case 2:
+			performance_vsync_chkbox->SetValue(true);
+			performance_multimonitor_chkbox->SetValue(true);
+			performance_worker_threads_slider->SetValue(8);
+			performance_aa_choice->SetSelection(2);
+			performance_crt_slider->SetValue(50);
+			performance_water_slider->SetValue(20);
+			break;
+		case 3:
+			break;
+		default:
+			performance_vsync_chkbox->SetValue(true);
+			performance_multimonitor_chkbox->SetValue(false);
+			performance_worker_threads_slider->SetValue(4);
+			performance_aa_choice->SetSelection(1);
+			performance_crt_slider->SetValue(25);
+			performance_water_slider->SetValue(10);
+			break;
+		}
+	});
 
-    multi_monitor_workspace_chkbox = new wxCheckBox(graphics_page, wxID_ANY, "Multi-Display-Support");
-    multi_monitor_workspace_chkbox->SetValue(g_settings.getBoolean(Config::MULTI_MONITOR_WORKSPACE));
-    multi_monitor_workspace_chkbox->SetToolTip("May cause lag in this version..");
-    perf_group->Add(multi_monitor_workspace_chkbox, 0, wxALL, 5);
-    
-    sizer->Add(perf_group, 0, wxEXPAND | wxALL, 5);
-
-	graphics_page->SetSizerAndFit(sizer);
-
-	return graphics_page;
+	performance_page->SetSizerAndFit(sizer);
+	return performance_page;
 }
 
 wxChoice* PreferencesWindow::AddPaletteStyleChoice(wxWindow* parent, wxSizer* sizer, const wxString& short_description, const wxString& description, const std::string& setting) {
@@ -497,112 +625,6 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	return ui_page;
 }
 
-wxNotebookPage* PreferencesWindow::CreateClientPage() {
-	wxNotebookPage* client_page = newd wxPanel(book, wxID_ANY);
-	client_page->SetBackgroundColour(book->GetBackgroundColour());
-	client_page->SetForegroundColour(book->GetForegroundColour());
-
-	ClientVersion::saveVersions();
-	ClientVersionList versions = ClientVersion::getAllVisible();
-
-    std::sort(versions.begin(), versions.end(), [](const ClientVersion* a, const ClientVersion* b) {
-		return a->getID() < b->getID();
-    });
-
-	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
-
-	auto* options_sizer = newd wxFlexGridSizer(2, 10, 10);
-	options_sizer->AddGrowableCol(1);
-
-	// Client version choice control
-	default_version_choice = newd wxChoice(client_page, wxID_ANY);
-	wxStaticText* default_client_label = newd wxStaticText(client_page, wxID_ANY, "Client version:");
-	options_sizer->Add(default_client_label, 0, wxLEFT | wxTOP | wxALIGN_CENTER_VERTICAL, 5);
-	options_sizer->Add(default_version_choice, 1, wxEXPAND | wxTOP, 5);
-
-	// Check file sigs checkbox
-	check_sigs_chkbox = newd wxCheckBox(client_page, wxID_ANY, "Check file signatures");
-	check_sigs_chkbox->SetValue(g_settings.getBoolean(Config::CHECK_SIGNATURES));
-	check_sigs_chkbox->SetToolTip("When this option is not checked, the editor will load any OTB/DAT/SPR combination without complaints. This may cause graphics bugs.");
-	options_sizer->Add(check_sigs_chkbox, 0, wxLEFT | wxRIGHT | wxTOP, 5);
-	options_sizer->AddSpacer(0); // align grid
-
-	// Scan status label and text
-	wxStaticText* status_lbl = newd wxStaticText(client_page, wxID_ANY, "Scan status:");
-	scan_status_txt = newd wxStaticText(client_page, wxID_ANY, "Scan: Pending...");
-	options_sizer->Add(status_lbl, 0, wxLEFT | wxTOP | wxALIGN_CENTER_VERTICAL, 5);
-	options_sizer->Add(scan_status_txt, 1, wxEXPAND | wxTOP | wxALIGN_CENTER_VERTICAL, 5);
-
-	// Open folder & download webpage button
-	open_folder_btn = newd wxButton(client_page, wxID_ANY, "Open");
-	open_folder_btn->SetToolTip("Open the local client data folder and the asset download webpage in your browser.");
-	options_sizer->AddSpacer(0);
-	options_sizer->Add(open_folder_btn, 0, wxTOP | wxALIGN_LEFT, 5);
-
-	topsizer->Add(options_sizer, wxSizerFlags(0).Expand().Border(wxALL, 10));
-
-	// Add link below as help
-	help_link = newd wxHyperlinkCtrl(client_page, wxID_ANY,
-		"Download Tibia DAT & SPR files here",
-		"https://downloads.ots.me/?sort_by=mod&sort_as=desc&dir=data/tibia-clients/dat_and_spr/");
-	topsizer->Add(help_link, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 10);
-
-	// Populate versions
-	int version_counter = 0;
-	for (auto version : versions) {
-		if (!version->isVisible()) {
-			continue;
-		}
-		default_version_choice->Append(wxstr(version->getName()));
-		if (version->getID() == g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION)) {
-			default_version_choice->SetSelection(version_counter);
-		}
-		version_counter++;
-	}
-
-	// Bind choice and button
-	default_version_choice->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
-		UpdateScanStatus();
-	});
-
-	open_folder_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-		ClientVersionList versions = ClientVersion::getAllVisible();
-		int selection = default_version_choice->GetSelection();
-		if (selection != wxNOT_FOUND) {
-			int counter = 0;
-			ClientVersion* selected_version = nullptr;
-			for (auto version : versions) {
-				if (!version->isVisible()) continue;
-				if (counter == selection) {
-					selected_version = version;
-					break;
-				}
-				counter++;
-			}
-			if (selected_version) {
-				FileName local_dir = selected_version->getDataPath();
-				local_dir.Mkdir(0755, wxPATH_MKDIR_FULL);
-				wxString folder_path = local_dir.GetFullPath();
-#ifdef __WINDOWS__
-				wxExecute("explorer.exe \"" + folder_path + "\"", wxEXEC_ASYNC);
-#else
-				wxLaunchDefaultApplication(folder_path);
-#endif
-				wxLaunchDefaultBrowser("https://downloads.ots.me/?sort_by=mod&sort_as=desc&dir=data/tibia-clients/dat_and_spr/");
-			}
-		}
-	});
-
-	check_sigs_chkbox->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
-		UpdateScanStatus();
-	});
-
-	UpdateScanStatus();
-
-	client_page->SetSizerAndFit(topsizer);
-	return client_page;
-}
-
 // Event handlers!
 
 void PreferencesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
@@ -645,6 +667,19 @@ void PreferencesWindow::Apply() {
 	}
 	g_settings.setInteger(Config::SHOW_TILESET_EDITOR, enable_tileset_editing_chkbox->GetValue());
 
+	// Save Client Settings from within General Page
+	ClientVersionList versions = ClientVersion::getAllVisible();
+	for (auto version : versions) {
+		if (version->getName() == default_version_choice->GetStringSelection()) {
+			g_settings.setInteger(Config::DEFAULT_CLIENT_VERSION, version->getID());
+		}
+	}
+	g_settings.setInteger(Config::CHECK_SIGNATURES, check_sigs_chkbox->GetValue());
+
+	// Make sure to reload client paths
+	ClientVersion::saveVersions();
+	ClientVersion::loadVersions();
+
 	// Editor
 	g_settings.setInteger(Config::GROUP_ACTIONS, group_actions_chkbox->GetValue());
 	g_settings.setInteger(Config::WARN_FOR_DUPLICATE_ID, duplicate_id_warn_chkbox->GetValue());
@@ -666,11 +701,12 @@ void PreferencesWindow::Apply() {
 	// 	g_settings.setInteger(Config::RENDER_BACKEND, backend_radio->GetSelection());
 	// 	must_restart = true;
 	// }
-    g_settings.setInteger(Config::SHADER_AA_LEVEL, aa_choice->GetSelection());
-    g_settings.setInteger(Config::SHADER_CRT_STRENGTH, crt_strength_slider->GetValue());
-    g_settings.setFloat(Config::SHADER_WATER_ANIM_SPEED, water_anim_slider->GetValue() / 10.0f);
-    g_settings.setInteger(Config::V_SYNC, vsync_chkbox->GetValue());
-    g_settings.setInteger(Config::MULTI_MONITOR_WORKSPACE, multi_monitor_workspace_chkbox->GetValue());
+    g_settings.setInteger(Config::V_SYNC, performance_vsync_chkbox ? performance_vsync_chkbox->GetValue() : 0);
+    g_settings.setInteger(Config::MULTI_MONITOR_WORKSPACE, performance_multimonitor_chkbox ? performance_multimonitor_chkbox->GetValue() : 0);
+    g_settings.setInteger(Config::WORKER_THREADS, performance_worker_threads_slider ? performance_worker_threads_slider->GetValue() : 4);
+    g_settings.setInteger(Config::SHADER_AA_LEVEL, performance_aa_choice ? performance_aa_choice->GetSelection() : 0);
+    g_settings.setInteger(Config::SHADER_CRT_STRENGTH, performance_crt_slider ? performance_crt_slider->GetValue() : 0);
+    g_settings.setFloat(Config::SHADER_WATER_ANIM_SPEED, performance_water_slider ? performance_water_slider->GetValue() / 10.0f : 1.0f);
 
 	// Screenshots
 	if (screenshot_directory_picker) {
@@ -732,19 +768,6 @@ void PreferencesWindow::Apply() {
 	g_settings.setFloat(Config::SCROLL_SPEED, scroll_mul * scroll_speed_slider->GetValue() / 10.f);
 	g_settings.setFloat(Config::ZOOM_SPEED, zoom_speed_slider->GetValue() / 10.f);
 
-	// Client
-	ClientVersionList versions = ClientVersion::getAllVisible();
-	for (auto version : versions) {
-		if (version->getName() == default_version_choice->GetStringSelection()) {
-			g_settings.setInteger(Config::DEFAULT_CLIENT_VERSION, version->getID());
-		}
-	}
-	g_settings.setInteger(Config::CHECK_SIGNATURES, check_sigs_chkbox->GetValue());
-
-	// Make sure to reload client paths
-	ClientVersion::saveVersions();
-	ClientVersion::loadVersions();
-
 	g_settings.save();
 
 	if (must_restart) {
@@ -794,6 +817,22 @@ void PreferencesWindow::UpdateScanStatus() {
 		scan_status_txt->SetForegroundColour(GetForegroundColour());
 		open_folder_btn->Hide();
 		return;
+	}
+
+	// Dynamic visibility of check_sigs_chkbox: Google Research shows signatures verification is only critical 
+	// for old client versions (lower or equal to 10.98 / Tibia 10). For modern client architectures (Tibia 11+ / client versions higher than 10.98),
+	// we hide the checkbox control automatically to prevent signature mismatch bug states and error dialog loops.
+	bool is_modern_client = false;
+	if (selected_version->getID() > 1098) {
+		is_modern_client = true;
+	}
+
+	if (is_modern_client) {
+		check_sigs_chkbox->Hide();
+		// Automatically disable signature tracking for advanced simulated formats (since they lack valid headers)
+		check_sigs_chkbox->SetValue(false);
+	} else {
+		check_sigs_chkbox->Show();
 	}
 
 	// Backup current settings and apply the check sigs temporarily for validation

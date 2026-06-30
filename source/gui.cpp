@@ -1,26 +1,9 @@
-//////////////////////////////////////////////////////////////////////
-// This file is part of Remere's Map Editor
-//////////////////////////////////////////////////////////////////////
-// Remere's Map Editor is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Remere's Map Editor is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
-//////////////////////////////////////////////////////////////////////
-
 #include "gui_preview.h"
 #include "main.h"
 #include "palette_brushlist.h"
 
-
 #include "core_forward.h"
+#include <wx/app.h>
 #include <wx/display.h>
 #include <wx/statline.h>
 
@@ -39,11 +22,10 @@
 
 #include "application.h"
 #include "common_windows.h"
-#include "imgui_palette.h"
+
 #include "lua/lua_api.h"
 #include "map_display.h"
 #include "map_drawer.h"
-#include "minimap_window.h"
 #include "palette_brushlist.h"
 #include "palette_window.h"
 #include "result_window.h"
@@ -212,18 +194,8 @@ PaletteWindow *GUI::CreatePalette() {
                                     .BestSize(230, 450)
                                     .MinSize(wxSize(180, 200)));
 
-  if (palette->collection_palette) {
-    aui_manager->AddPane(palette->collection_palette,
-                         wxAuiPaneInfo()
-                             .Name("Collections Palette")
-                             .Caption("Collections Palette / Tileset")
-                             .Bottom()
-                             .Layer(1)
-                             .Position(1)
-                             .CloseButton(true)
-                             .BestSize(800, 150)
-                             .MinSize(wxSize(200, 100)));
-  }
+  // NOTE: Collections Palette / Tileset panel intentionally removed.
+  // Only the main Terrain Palette (left) is retained for a lean UI.
 
   if (GetCurrentEditor()) {
     if (!in_game_preview) {
@@ -291,7 +263,7 @@ PaletteWindow *GUI::CreatePalette() {
   palettes.push_front(palette);
   // Select brush from this palette
   palette->SelectPage(static_cast<PaletteType>(
-      TILESET_CREATURE)); // Explicit cast to PaletteType
+      TILESET_TERRAIN)); // Explicit cast to PaletteType
   SelectBrushInternal(palette->GetSelectedBrush());
   // fix for blank house list on f5 or new palette
   palette->OnUpdate(IsEditorOpen() ? &GetCurrentMap() : nullptr);
@@ -372,6 +344,8 @@ void GUI::SelectPalettePage(PaletteType pt) {
 }
 
 //=============================================================================
+
+void GUI::UpdateMinimap() { RefreshView(); }
 
 void GUI::RefreshView() {
   EditorTab *editorTab = GetCurrentTab();
@@ -480,9 +454,11 @@ void GUI::DestroyLoadBar() {
 
 void GUI::ShowWelcomeDialog(const wxBitmap &icon) {
   std::vector<wxString> recent_files = root->GetRecentFiles();
+  // Clear the sub-title version description text as requested by the user, and
+  // use wider dialog size to fit sizer cleanly
   welcomeDialog =
-      newd WelcomeDialog("Mio's Map Editor", "v4.5 (a Fork by Mioshiro)",
-                         FROM_DIP(root, wxSize(800, 480)), icon, recent_files);
+      newd WelcomeDialog("Mios Map Editor", "",
+                         FROM_DIP(root, wxSize(680, 580)), icon, recent_files);
   welcomeDialog->Bind(wxEVT_CLOSE_WINDOW, &GUI::OnWelcomeDialogClosed, this);
   welcomeDialog->Bind(WELCOME_DIALOG_ACTION, &GUI::OnWelcomeDialogAction, this);
   welcomeDialog->Show();
@@ -493,7 +469,7 @@ void GUI::FinishWelcomeDialog() {
   if (welcomeDialog != nullptr) {
     welcomeDialog->Hide();
     root->Show();
-    welcomeDialog->Destroy();
+    wxTheApp->ScheduleForDestruction(welcomeDialog);
     welcomeDialog = nullptr;
   }
   UpdateMenubar();
@@ -504,12 +480,81 @@ bool GUI::IsWelcomeDialogShown() {
 }
 
 void GUI::OnWelcomeDialogClosed(wxCloseEvent &event) {
-  welcomeDialog->Destroy();
+  wxTheApp->ScheduleForDestruction(welcomeDialog);
+  welcomeDialog = nullptr;
   root->Close();
 }
 
 void GUI::OnWelcomeDialogAction(wxCommandEvent &event) {
+  ScopedAction action("GUI::OnWelcomeDialogAction");
   if (event.GetId() == wxID_NEW) {
+    ClientVersionID selected_version = CLIENT_VERSION_NONE;
+    wxArrayString choices;
+    std::vector<ClientVersionID> version_ids;
+
+    for (ClientVersion *version : ClientVersion::getAllVisible()) {
+      if (version != nullptr) {
+        // Skip auto-detected versions
+        if (version->getName().rfind("Auto", 0) == 0) {
+          continue;
+        }
+        // filter: only completely ready / fully functional client versions
+        // (have metadata and spr files)
+        if (version->hasValidPaths()) {
+          // ensure no duplicates exist in the choices to prevent double
+          // displays
+          wxString nameStr = wxString::FromUTF8(version->getName());
+          bool duplicate = false;
+          for (size_t c = 0; c < choices.size(); ++c) {
+            if (choices[c] == nameStr) {
+              duplicate = true;
+              break;
+            }
+          }
+          if (!duplicate) {
+            choices.Add(nameStr);
+            version_ids.push_back(version->getID());
+          }
+        }
+      }
+    }
+
+    if (!choices.empty()) {
+      wxSingleChoiceDialog dialog(
+          root, "Choose the client version for the new map:", "Client Version",
+          choices);
+      if (dialog.ShowModal() != wxID_OK) {
+        return;
+      }
+      int selection = dialog.GetSelection();
+      if (selection >= 0 && selection < static_cast<int>(version_ids.size())) {
+        selected_version = version_ids[selection];
+      }
+    } else {
+      selected_version = g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION);
+      if (selected_version == CLIENT_VERSION_NONE) {
+        ClientVersion *latest = ClientVersion::getLatestVersion();
+        if (latest != nullptr) {
+          selected_version = latest->getID();
+        }
+      }
+    }
+
+    if (selected_version != CLIENT_VERSION_NONE &&
+        selected_version != GetCurrentVersionID()) {
+      wxString error;
+      wxArrayString warnings;
+      if (!LoadVersion(selected_version, error, warnings, true)) {
+        ClientVersion *cv = ClientVersion::get(selected_version);
+        wxString nameStr =
+            cv ? wxString::FromUTF8(cv->getName()) : wxString("Unknown");
+        PopupDialog("Asset Load Error",
+                    "Failed to load assets for version " + nameStr,
+                    wxOK | wxICON_ERROR);
+        return;
+      }
+    }
+
     NewMap();
   } else if (event.GetId() == wxID_OPEN) {
     LoadMap(FileName(event.GetString()));
@@ -645,7 +690,47 @@ void GUI::ChangeFloor(int new_floor) {
 
     if (old_floor != new_floor) {
       tab->GetCanvas()->ChangeFloor(new_floor);
+      if (root && root->GetAuiToolBar()) {
+        root->GetAuiToolBar()->SetFloor(new_floor);
+      }
     }
+  }
+}
+
+void GUI::EnableHotkeys() { hotkeys_enabled = true; }
+void GUI::DisableHotkeys() { hotkeys_enabled = false; }
+bool GUI::AreHotkeysEnabled() const { return hotkeys_enabled; }
+
+void GUI::AddPendingCanvasEvent(wxEvent &event) {
+  if (MapTab *tab = GetCurrentMapTab()) {
+    if (MapCanvas *canvas = tab->GetCanvas()) {
+      canvas->GetEventHandler()->AddPendingEvent(event);
+    }
+  }
+}
+
+const ClientVersion &GUI::GetCurrentVersion() const {
+  if (auto *version = getLoadedVersion()) {
+    return *version;
+  }
+
+  static const ClientVersion fallback(
+      OtbVersion{"Unknown", OTB_VERSION_1, CLIENT_VERSION_NONE}, "Unknown",
+      wxEmptyString);
+  return fallback;
+}
+
+ClientVersionID GUI::GetCurrentVersionID() const { return loaded_version; }
+
+void GUI::FitViewToMap() {
+  if (MapTab *tab = GetCurrentMapTab()) {
+    FitViewToMap(tab);
+  }
+}
+
+void GUI::FitViewToMap(MapTab *mt) {
+  if (mt && mt->GetView()) {
+    mt->GetView()->FitToMap();
   }
 }
 
@@ -1269,22 +1354,13 @@ void GUI::ShowTextBox(wxWindow *parent, wxString title, wxString content) {
 }
 
 RME_Rendering::RenderBackend *GUI::GetRenderBackend() {
-  if (g_settings.getInteger(Config::RENDER_BACKEND) == 1) { // 1 = Vulkan
-    if (m_vulkan_failed)
-      return nullptr;
-
+  if (g_settings.getInteger(Config::RENDER_BACKEND) == Config::BACKEND_OPENGL) {
     if (!render_backend) {
-      render_backend = std::make_unique<RME_Rendering::VulkanBackend>();
+      render_backend = std::make_unique<RME_Rendering::OpenGLBackend>();
       try {
-        // Initialisierung mit dem Handle des Hauptfensters
         render_backend->Initialize(root->GetHandle());
       } catch (const std::exception &e) {
-        wxLogError("Vulkan failed to start: %s. Falling back to Legacy OpenGL.",
-                   e.what());
-        m_graphicsErrorLog = std::string("Vulkan Error: ") + e.what();
-        g_gui.SetStatusText(
-            "Graphics Error: Vulkan not supported. Using OpenGL.");
-        m_vulkan_failed = true;
+        wxLogError("OpenGL Backend failed to start: %s.", e.what());
         render_backend.reset();
         return nullptr;
       }

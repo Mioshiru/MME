@@ -11,21 +11,6 @@ endif()
 project(rme)
 
 # Graphics & Core Dependencies
-find_package(Vulkan QUIET)
-# Falls Vulkan nicht systemweit gefunden wurde, nutze den lokalen Pfad
-if(NOT Vulkan_FOUND)
-    set(Vulkan_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/deps/vulkan/include")
-    # Markiere Vulkan als gefunden, damit der Build weiterläuft
-    set(Vulkan_FOUND TRUE)
-    # Erstelle ein Dummy-Target für den Linker
-    if(NOT TARGET Vulkan::Vulkan)
-        add_library(Vulkan::Vulkan INTERFACE IMPORTED)
-        set_target_properties(Vulkan::Vulkan PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${Vulkan_INCLUDE_DIR}")
-    endif()
-endif()
-
-# Jetzt kannst du ganz normal mit deinen Targets weiterarbeiten
-include_directories(${Vulkan_INCLUDE_DIR})
 
 find_package(glm CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
@@ -41,16 +26,31 @@ add_definitions(-DSOL_LUA_VERSION=504) # Angepasst an vcpkg Lua 5.4
 add_definitions(-DLUA_COMPAT_5_3)
 
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
+add_definitions(-D_DONT_USE_UPDATER_)
 
 if(MSVC)
     string(APPEND CMAKE_CXX_FLAGS " /W3 /EHsc /bigobj /D_CRT_SECURE_NO_WARNINGS")
     string(APPEND CMAKE_CXX_FLAGS_DEBUG " /D__DEBUG__")
+    if(NOT DEFINED CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES)
+        set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES "$ENV{INCLUDE}")
+    endif()
 else()
     string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-overloaded-virtual -Wno-strict-aliasing -Wno-sign-compare -Wno-unused-function -Wunused-result")
     string(APPEND CMAKE_CXX_FLAGS_DEBUG " -D__DEBUG__")
 endif()
 
 find_package(OpenGL REQUIRED)
+
+if(MSVC)
+    if(NOT OPENGL_gl_LIBRARY OR "${OPENGL_gl_LIBRARY}" STREQUAL "opengl32")
+        set(OPENGL_gl_LIBRARY "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.26100.0/um/x64/OpenGL32.Lib")
+    endif()
+    if(NOT OPENGL_glu_LIBRARY OR "${OPENGL_glu_LIBRARY}" STREQUAL "glu32")
+        set(OPENGL_glu_LIBRARY "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.26100.0/um/x64/Glu32.Lib")
+    endif()
+    set(OPENGL_LIBRARIES "${OPENGL_gl_LIBRARY};${OPENGL_glu_LIBRARY}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LIBPATH:\"C:/Program Files (x86)/Windows Kits/10/Lib/10.0.26100.0/um/x64\" /LIBPATH:\"C:/Program Files (x86)/Windows Kits/10/Lib/10.0.26100.0/ucrt/x64\" /LIBPATH:\"C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/lib/x64\"")
+endif()
 
 if(APPLE)
     set(CMAKE_PREFIX_PATH /usr/local/opt/libarchive)
@@ -104,7 +104,7 @@ if(MSVC)
     find_package(imgui CONFIG REQUIRED)
 
     # Add Graphics & Modern Core Libs
-    set(LIBS_TO_LINK ${LUA_LIB_TARGET} cpr::cpr nlohmann_json::nlohmann_json sol2::sol2 glm::glm EnTT::EnTT NanoSVG::nanosvg Vulkan::Vulkan bgfx::bgfx imgui::imgui)
+    set(LIBS_TO_LINK ${LUA_LIB_TARGET} cpr::cpr nlohmann_json::nlohmann_json sol2::sol2 glm::glm EnTT::EnTT NanoSVG::nanosvg bgfx::bgfx imgui::imgui)
     
     # Add Lua include directory from the target properties
     get_target_property(LUA_INC ${LUA_LIB_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
@@ -165,6 +165,29 @@ else()
 endif()
 
 
+if(MSVC)
+    if(NOT DEFINED CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES OR "${CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES}" STREQUAL "")
+        get_filename_component(_msvc_bin_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
+        get_filename_component(_msvc_host_dir "${_msvc_bin_dir}/.." ABSOLUTE)
+        get_filename_component(_msvc_bin_root "${_msvc_host_dir}/.." ABSOLUTE)
+        get_filename_component(_msvc_tools_root "${_msvc_bin_root}/.." ABSOLUTE)
+
+        set(_msvc_standard_include_dirs "${_msvc_tools_root}/include")
+        if(EXISTS "${_msvc_tools_root}/atlmfc/include")
+            list(APPEND _msvc_standard_include_dirs "${_msvc_tools_root}/atlmfc/include")
+        endif()
+
+        set(_windows_sdk_root "C:/Program Files (x86)/Windows Kits/10/Include/10.0.26100.0")
+        foreach(_sdk_subdir ucrt um shared winrt)
+            if(EXISTS "${_windows_sdk_root}/${_sdk_subdir}")
+                list(APPEND _msvc_standard_include_dirs "${_windows_sdk_root}/${_sdk_subdir}")
+            endif()
+        endforeach()
+
+        set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${_msvc_standard_include_dirs})
+    endif()
+endif()
+
 include(source/CMakeLists.txt)
 if(WIN32)
     add_executable(rme WIN32 ${rme_H} ${rme_SRC})
@@ -180,6 +203,7 @@ if(MSVC)
         LINKER_LANGUAGE CXX
         LINK_FLAGS "/MAP"
     )
+    target_compile_options(rme PRIVATE /permissive- /Zc:__cplusplus /Zc:inline)
 else()
     set_target_properties(rme PROPERTIES 
         CXX_STANDARD 20
@@ -193,6 +217,14 @@ if(COMMAND target_precompiled_headers)
 endif()
 
 include_directories(source)
+if(MSVC)
+    if(DEFINED ENV{INCLUDE} AND NOT "$ENV{INCLUDE}" STREQUAL "")
+        separate_arguments(_vc_include_dirs NATIVE_COMMAND "$ENV{INCLUDE}")
+        target_include_directories(rme PRIVATE ${_vc_include_dirs})
+    else()
+        target_include_directories(rme PRIVATE ${CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES})
+    endif()
+endif()
 if(Boost_FOUND)
     if(DEFINED Boost_INCLUDE_DIRS AND NOT "${Boost_INCLUDE_DIRS}" STREQUAL "")
         target_include_directories(rme PRIVATE ${Boost_INCLUDE_DIRS})
@@ -202,7 +234,3 @@ if(Boost_FOUND)
 endif()
 target_link_libraries(rme PRIVATE ${WX_LIBS} ${BOOST_LINK_TARGETS} ${LibArchive_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBS_TO_LINK})
 
-# Compiler options für MSVC
-if(MSVC)
-    target_compile_options(rme PRIVATE /bigobj)
-endif()

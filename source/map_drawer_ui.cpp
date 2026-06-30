@@ -93,7 +93,7 @@ void MapDrawer::DrawLiveCursors() {
 void MapDrawer::DrawGrid() {
   glDisable(GL_TEXTURE_2D);
   for (int y = start_y; y < end_y; ++y) {
-    glColor4ub(255, 255, 255, 128);
+    glColor4ub(0, 0, 0, 128);
     glBegin(GL_LINES);
     glVertex2f(start_x * TileSize - view_scroll_x,
                y * TileSize - view_scroll_y);
@@ -127,15 +127,28 @@ void MapDrawer::DrawIngameBox() {
 
 void MapDrawer::DrawBrushIndicator(int x, int y, Brush *brush, uint8_t r,
                                    uint8_t g, uint8_t b) {
-  if (!m_nvg)
-    return;
-  float radius = (TileSize / 2.0f);
-  nvgBeginFrame(m_nvg, screensize_x, screensize_y, 1.0f);
-  nvgBeginPath(m_nvg);
-  nvgCircle(m_nvg, x + radius, y + radius, radius);
-  nvgFillColor(m_nvg, nvgRGBA(r, g, b, 120));
-  nvgFill(m_nvg);
-  nvgEndFrame(m_nvg);
+  glDisable(GL_TEXTURE_2D);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glColor4ub(r, g, b, 80); // Leicht schimmernd (Alpha 80)
+  
+  glBegin(GL_QUADS);
+  glVertex2f(x, y);
+  glVertex2f(x + TileSize, y);
+  glVertex2f(x + TileSize, y + TileSize);
+  glVertex2f(x, y + TileSize);
+  glEnd();
+
+  // Outline
+  glColor4ub(r, g, b, 180);
+  glBegin(GL_LINE_LOOP);
+  glVertex2f(x, y);
+  glVertex2f(x + TileSize, y);
+  glVertex2f(x + TileSize, y + TileSize);
+  glVertex2f(x, y + TileSize);
+  glEnd();
+  
+  glEnable(GL_TEXTURE_2D);
 }
 
 void MapDrawer::DrawHookIndicator(int x, int y, const ItemType &type) {

@@ -90,7 +90,3 @@ void MapEditor::destroySelection() {
 	map.doChange();
 	g_gui.RefreshView();
 }
-
-bool MapEditor::hasSelection() const {
-	return selection.size() > 0;
-}

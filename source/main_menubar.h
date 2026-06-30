@@ -117,6 +117,7 @@ namespace MenuBar {
 		SHOW_PATHING,
 		SHOW_TOOLTIPS,
 		SHOW_PREVIEW,
+		SHOW_FPS,
 		SHOW_WALL_HOOKS,
 		SHOW_TOWNS,
 		ALWAYS_SHOW_ZONES,
@@ -151,7 +152,6 @@ namespace MenuBar {
 		FLOOR_13,
 		FLOOR_14,
 		FLOOR_15,
-		DEBUG_VIEW_DAT,
 		EXTENSIONS,
 		GOTO_WEBSITE,
 		ABOUT,
@@ -297,7 +297,6 @@ public:
 	void OnChangeFloor(wxCommandEvent& event);
 
 	// About Menu
-	void OnDebugViewDat(wxCommandEvent& event);
 	void OnListExtensions(wxCommandEvent& event);
 	void OnGotoWebsite(wxCommandEvent& event);
 	void OnAbout(wxCommandEvent& event);

@@ -42,13 +42,12 @@
 // Map Properties Window
 
 BEGIN_EVENT_TABLE(MapPropertiesWindow, wxDialog)
-EVT_CHOICE(MAP_PROPERTIES_VERSION, MapPropertiesWindow::OnChangeVersion)
 EVT_BUTTON(wxID_OK, MapPropertiesWindow::OnClickOK)
 EVT_BUTTON(wxID_CANCEL, MapPropertiesWindow::OnClickCancel)
 END_EVENT_TABLE()
 
 MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor& editor) :
-	wxDialog(parent, wxID_ANY, "Map Properties", wxDefaultPosition, wxSize(300, 200), wxRESIZE_BORDER | wxCAPTION),
+	wxDialog(parent, wxID_ANY, "Map Properties", wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	view(view),
 	editor(editor) {
 
@@ -72,43 +71,11 @@ MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor&
 
 	// Description
 	general_grid->Add(newd wxStaticText(general_box->GetStaticBox(), wxID_ANY, "Description:"), 0, wxALIGN_CENTER_VERTICAL);
-	description_ctrl = newd wxTextCtrl(this, wxID_ANY, wxstr(map.getMapDescription()), wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
+	description_ctrl = newd wxTextCtrl(general_box->GetStaticBox(), wxID_ANY, wxstr(map.getMapDescription()), wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
 	general_grid->Add(description_ctrl, wxSizerFlags(1).Expand());
 
-	// Map version
-	general_grid->Add(newd wxStaticText(general_box->GetStaticBox(), wxID_ANY, "OTBM Version:"), 0, wxALIGN_CENTER_VERTICAL);
-	version_choice = newd wxChoice(this, MAP_PROPERTIES_VERSION);
-	version_choice->Append("OTServ 0.5.0");
-	version_choice->Append("OTServ 0.6.0");
-	version_choice->Append("OTServ 0.6.1");
-	version_choice->Append("OTServ 0.7.0 (revscriptsys)");
-
-	switch (map.getVersion().otbm) {
-		case MAP_OTBM_1:
-			version_choice->SetSelection(0);
-			break;
-		case MAP_OTBM_2:
-			version_choice->SetSelection(1);
-			break;
-		case MAP_OTBM_3:
-			version_choice->SetSelection(2);
-			break;
-		case MAP_OTBM_4:
-			version_choice->SetSelection(3);
-			break;
-		default:
-			version_choice->SetSelection(0);
-	}
-
-	general_grid->Add(version_choice, wxSizerFlags(1).Expand());
-
-	// Version
-	general_grid->Add(newd wxStaticText(general_box->GetStaticBox(), wxID_ANY, "Client Version:"), 0, wxALIGN_CENTER_VERTICAL);
-	protocol_choice = newd wxChoice(this, wxID_ANY);
-
-	protocol_choice->SetStringSelection(wxstr(g_gui.GetCurrentVersion().getName()));
-
-	general_grid->Add(protocol_choice, wxSizerFlags(1).Expand());
+	// Map version is removed because user requested it to be removed.
+	// We no longer show the OTBM/Client Version combobox in Map Properties.
 	general_box->Add(general_grid, 1, wxEXPAND | wxALL, 5);
 	topsizer->Add(general_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
 
@@ -121,21 +88,21 @@ MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor&
 	{
 		wxBoxSizer* subsizer = newd wxBoxSizer(wxHORIZONTAL);
 		subsizer->Add(
-			width_spin = newd wxSpinCtrl(this, wxID_ANY, wxstr(i2s(map.getWidth())), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 256, MAP_MAX_WIDTH), wxSizerFlags(1).Expand()
+			width_spin = newd wxSpinCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(i2s(map.getWidth())), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 256, MAP_MAX_WIDTH), wxSizerFlags(1).Expand()
 		);
-		subsizer->Add(new wxStaticText(this, wxID_ANY, " x "), 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
+		subsizer->Add(new wxStaticText(details_box->GetStaticBox(), wxID_ANY, " x "), 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
 		subsizer->Add(
-			height_spin = newd wxSpinCtrl(this, wxID_ANY, wxstr(i2s(map.getHeight())), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 256, MAP_MAX_HEIGHT), wxSizerFlags(1).Expand()
+			height_spin = newd wxSpinCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(i2s(map.getHeight())), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 256, MAP_MAX_HEIGHT), wxSizerFlags(1).Expand()
 		);
 		details_grid->Add(subsizer, 1, wxEXPAND);
 	}
 
 	// External files
 	details_grid->Add(newd wxStaticText(details_box->GetStaticBox(), wxID_ANY, "Housefile:"), 0, wxALIGN_CENTER_VERTICAL);
-	details_grid->Add(house_filename_ctrl = newd wxTextCtrl(this, wxID_ANY, wxstr(map.getHouseFilename())), 1, wxEXPAND);
+	details_grid->Add(house_filename_ctrl = newd wxTextCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(map.getHouseFilename())), 1, wxEXPAND);
 
 	details_grid->Add(newd wxStaticText(details_box->GetStaticBox(), wxID_ANY, "Spawnfile:"), 0, wxALIGN_CENTER_VERTICAL);
-	details_grid->Add(spawn_filename_ctrl = newd wxTextCtrl(this, wxID_ANY, wxstr(map.getSpawnFilename())), 1, wxEXPAND);
+	details_grid->Add(spawn_filename_ctrl = newd wxTextCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(map.getSpawnFilename())), 1, wxEXPAND);
 
 	details_box->Add(details_grid, 1, wxEXPAND | wxALL, 5);
 	topsizer->Add(details_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
@@ -147,44 +114,7 @@ MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor&
 
 	SetSizerAndFit(topsizer);
 	Centre(wxBOTH);
-	UpdateProtocolList();
-
-	ClientVersion* current_version = ClientVersion::get(map.getVersion().client);
-	protocol_choice->SetStringSelection(wxstr(current_version->getName()));
-}
-
-void MapPropertiesWindow::UpdateProtocolList() {
-	wxString ver = version_choice->GetStringSelection();
-	wxString client = protocol_choice->GetStringSelection();
-
-	protocol_choice->Clear();
-
-	ClientVersionList versions;
-	if (g_settings.getInteger(Config::USE_OTBM_4_FOR_ALL_MAPS)) {
-		versions = ClientVersion::getAllVisible();
-	} else {
-		MapVersionID map_version = MAP_OTBM_1;
-		if (ver.Contains("0.5.0")) {
-			map_version = MAP_OTBM_1;
-		} else if (ver.Contains("0.6.0")) {
-			map_version = MAP_OTBM_2;
-		} else if (ver.Contains("0.6.1")) {
-			map_version = MAP_OTBM_3;
-		} else if (ver.Contains("0.7.0")) {
-			map_version = MAP_OTBM_4;
-		}
-
-		ClientVersionList protocols = ClientVersion::getAllForOTBMVersion(map_version);
-		for (ClientVersionList::const_iterator p = protocols.begin(); p != protocols.end(); ++p) {
-			protocol_choice->Append(wxstr((*p)->getName()));
-		}
-	}
-	protocol_choice->SetSelection(0);
-	protocol_choice->SetStringSelection(client);
-}
-
-void MapPropertiesWindow::OnChangeVersion(wxCommandEvent&) {
-	UpdateProtocolList();
+	// No need to update protocol list
 }
 
 struct MapConversionContext {
@@ -212,95 +142,9 @@ struct MapConversionContext {
 };
 
 void MapPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
+	// Map version is no longer changed from here.
 	Map& map = editor.map;
-
-	MapVersion old_ver = map.getVersion();
-	MapVersion new_ver;
-
-	wxString ver = version_choice->GetStringSelection();
-
-	new_ver.client = ClientVersion::get(nstr(protocol_choice->GetStringSelection()))->getID();
-	if (ver.Contains("0.5.0")) {
-		new_ver.otbm = MAP_OTBM_1;
-	} else if (ver.Contains("0.6.0")) {
-		new_ver.otbm = MAP_OTBM_2;
-	} else if (ver.Contains("0.6.1")) {
-		new_ver.otbm = MAP_OTBM_3;
-	} else if (ver.Contains("0.7.0")) {
-		new_ver.otbm = MAP_OTBM_4;
-	}
-
-	if (new_ver.client != old_ver.client) {
-		if (g_gui.GetOpenMapCount() > 1) {
-			g_gui.PopupDialog(this, "Error", "You can not change editor version with multiple maps open", wxOK);
-			return;
-		}
-		wxString error;
-		wxArrayString warnings;
-
-		// Switch version
-		g_gui.GetCurrentEditor()->selection.clear();
-		g_gui.GetCurrentEditor()->actionQueue->clear();
-
-		if (new_ver.client < old_ver.client) {
-			int ret = g_gui.PopupDialog(this, "Notice", "Converting to a previous version may have serious side-effects, are you sure you want to do this?", wxYES | wxNO);
-			if (ret != wxID_YES) {
-				return;
-			}
-			UnnamedRenderingLock();
-
-			// Remember all creatures types on the map
-			MapConversionContext conversion_context;
-			foreach_TileOnMap(map, conversion_context);
-
-			// Perform the conversion
-			map.convert(new_ver, true);
-
-			// Load the new version
-			if (!g_gui.LoadVersion(new_ver.client, error, warnings)) {
-				g_gui.ListDialog(this, "Warnings", warnings);
-				g_gui.PopupDialog(this, "Map Loader Error", error, wxOK);
-				g_gui.PopupDialog(this, "Conversion Error", "Could not convert map. The map will now be closed.", wxOK);
-
-				EndModal(0);
-				return;
-			}
-
-			// Remove all creatures that were present are present in the new version
-			for (MapConversionContext::CreatureMap::iterator cs = conversion_context.creature_types.begin(); cs != conversion_context.creature_types.end();) {
-				if (g_creatures[cs->first]) {
-					cs = conversion_context.creature_types.erase(cs);
-				} else {
-					++cs;
-				}
-			}
-
-			if (conversion_context.creature_types.size() > 0) {
-				int add = g_gui.PopupDialog(this, "Unrecognized creatures", "There were creatures on the old version that are not present in this and were on the map, do you want to add them to this version as well?", wxYES | wxNO);
-				if (add == wxID_YES) {
-					for (MapConversionContext::CreatureMap::iterator cs = conversion_context.creature_types.begin(); cs != conversion_context.creature_types.end(); ++cs) {
-						MapConversionContext::CreatureInfo info = cs->second;
-						g_creatures.addCreatureType(info.name, info.is_npc, info.outfit);
-					}
-				}
-			}
-
-			map.cleanInvalidTiles(true);
-		} else {
-			UnnamedRenderingLock();
-			if (!g_gui.LoadVersion(new_ver.client, error, warnings)) {
-				g_gui.ListDialog(this, "Warnings", warnings);
-				g_gui.PopupDialog(this, "Map Loader Error", error, wxOK);
-				g_gui.PopupDialog(this, "Conversion Error", "Could not convert map. The map will now be closed.", wxOK);
-
-				EndModal(0);
-				return;
-			}
-			map.convert(new_ver, true);
-		}
-	} else {
-		map.convert(new_ver, true);
-	}
+	MapVersion new_ver = map.getVersion();
 
 	map.setMapDescription(nstr(description_ctrl->GetValue()));
 	map.setHouseFilename(nstr(house_filename_ctrl->GetValue()));
@@ -1151,7 +995,13 @@ void FindDialogListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 		dc.DrawText("Please enter your search string.", rect.GetX() + 40, rect.GetY() + 6);
 	} else {
 		ASSERT(n < brushlist.size());
-		Sprite* spr = g_gui.gfx.getSprite(brushlist[n]->getLookID());
+		int look_id = brushlist[n]->getLookID();
+		Sprite* spr = nullptr;
+		if (look_id > 0 && g_items.typeExists(look_id)) {
+			spr = g_gui.gfx.getSprite(g_items[look_id].clientID);
+		} else {
+			spr = g_gui.gfx.getSprite(look_id);
+		}
 		if (spr) {
 			spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
 		}

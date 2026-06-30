@@ -104,7 +104,9 @@ HousePalettePanel::~HousePalettePanel() {
 }
 
 void HousePalettePanel::SetMap(Map* m) {
-	g_gui.house_brush->setHouse(nullptr);
+	if (g_gui.house_brush) {
+		g_gui.house_brush->setHouse(nullptr);
+	}
 	map = m;
 	OnUpdate();
 }
@@ -136,30 +138,36 @@ void HousePalettePanel::SelectFirstBrush() {
 Brush* HousePalettePanel::GetSelectedBrush() const {
 	if (select_position_button->GetValue()) {
 		House* house = GetCurrentlySelectedHouse();
-		if (house) {
+		if (house && g_gui.house_exit_brush) {
 			g_gui.house_exit_brush->setHouse(house);
 		}
-		return (g_gui.house_exit_brush->getHouseID() != 0 ? g_gui.house_exit_brush : nullptr);
+		return (g_gui.house_exit_brush && g_gui.house_exit_brush->getHouseID() != 0 ? g_gui.house_exit_brush : nullptr);
 	} else if (house_brush_button->GetValue()) {
-		g_gui.house_brush->setHouse(GetCurrentlySelectedHouse());
-		return (g_gui.house_brush->getHouseID() != 0 ? g_gui.house_brush : nullptr);
+		if (g_gui.house_brush) {
+			g_gui.house_brush->setHouse(GetCurrentlySelectedHouse());
+		}
+		return (g_gui.house_brush && g_gui.house_brush->getHouseID() != 0 ? g_gui.house_brush : nullptr);
 	}
 	return nullptr;
 }
 
 bool HousePalettePanel::SelectBrush(const Brush* whatbrush) {
-	if (!whatbrush) {
+	if (!whatbrush || !town_choice || !house_list) {
 		return false;
 	}
 
 	if (whatbrush->isHouse() && map) {
 		const HouseBrush* house_brush = static_cast<const HouseBrush*>(whatbrush);
 		for (HouseMap::iterator house_iter = map->houses.begin(); house_iter != map->houses.end(); ++house_iter) {
-			if (house_iter->second->getID() == house_brush->getHouseID()) {
+			if (house_iter->second && house_iter->second->getID() == house_brush->getHouseID()) {
 				for (uint32_t i = 0; i < town_choice->GetCount(); ++i) {
 					Town* town = reinterpret_cast<Town*>(town_choice->GetClientData(i));
-					// If it's "No Town" (nullptr) select it, or if it has the same town ID as the house
-					if (town == nullptr || town->getID() == house_iter->second->townid) {
+					// Check if town matches the house's town ID.
+					// Note: town == nullptr represents "No Town" option, which should only be selected if the house has no valid town.
+					bool is_no_town_option = (town == nullptr);
+					bool house_has_no_valid_town = (map->towns.getTown(house_iter->second->townid) == nullptr);
+
+					if ((is_no_town_option && house_has_no_valid_town) || (town != nullptr && town->getID() == house_iter->second->townid)) {
 						SelectTown(i);
 						for (uint32_t j = 0; j < house_list->GetCount(); ++j) {
 							if (house_iter->second->getID() == reinterpret_cast<House*>(house_list->GetClientData(j))->getID()) {
@@ -187,73 +195,90 @@ PaletteType HousePalettePanel::GetType() const {
 }
 
 void HousePalettePanel::SelectTown(size_t index) {
-	ASSERT(town_choice->GetCount() >= index);
+	if (map == nullptr || !town_choice || town_choice->GetCount() == 0 || index >= town_choice->GetCount()) {
+		if (add_house_button) {
+			add_house_button->Enable(false);
+		}
+		return;
+	}
 
-	if (map == nullptr || town_choice->GetCount() == 0) {
-		// No towns :(
-		add_house_button->Enable(false);
-	} else {
-		Town* what_town = reinterpret_cast<Town*>(town_choice->GetClientData(index));
+	Town* what_town = reinterpret_cast<Town*>(town_choice->GetClientData(index));
 
-		// Clear the old houselist
+	// Clear the old houselist
+	if (house_list) {
 		house_list->Clear();
+	}
 
-		for (HouseMap::iterator house_iter = map->houses.begin(); house_iter != map->houses.end(); ++house_iter) {
-			if (what_town) {
-				if (house_iter->second->townid == what_town->getID()) {
+	for (HouseMap::iterator house_iter = map->houses.begin(); house_iter != map->houses.end(); ++house_iter) {
+		if (house_iter->second == nullptr) {
+			continue;
+		}
+		if (what_town) {
+			if (house_iter->second->townid == what_town->getID()) {
+				if (house_list) {
 					house_list->Append(wxstr(house_iter->second->getDescription()), house_iter->second);
 				}
-			} else {
-				// "No Town" selected!
-				if (map->towns.getTown(house_iter->second->townid) == nullptr) {
-					// The town doesn't exist
+			}
+		} else {
+			// "No Town" selected!
+			if (map->towns.getTown(house_iter->second->townid) == nullptr) {
+				// The town doesn't exist
+				if (house_list) {
 					house_list->Append(wxstr(house_iter->second->getDescription()), house_iter->second);
 				}
 			}
 		}
+	}
+	if (house_list) {
 		house_list->Sort();
+	}
 
-		// Select first house
-		SelectHouse(0);
-		town_choice->SetSelection(index);
+	// Select first house
+	SelectHouse(0);
+	town_choice->SetSelection(index);
+	if (add_house_button) {
 		add_house_button->Enable(what_town != nullptr);
-		ASSERT(what_town == nullptr || add_house_button->IsEnabled() || !IsEnabled());
 	}
 }
 
 void HousePalettePanel::SelectHouse(size_t index) {
-	ASSERT(house_list->GetCount() >= index);
-
-	if (house_list->GetCount() > 0) {
-		edit_house_button->Enable(true);
-		remove_house_button->Enable(true);
-		select_position_button->Enable(true);
-		house_brush_button->Enable(true);
-		// Select the house
-		house_list->SetSelection(index);
+	if (!house_list || house_list->GetCount() == 0 || index >= house_list->GetCount()) {
+		if (edit_house_button) edit_house_button->Enable(false);
+		if (remove_house_button) remove_house_button->Enable(false);
+		if (select_position_button) select_position_button->Enable(false);
+		if (house_brush_button) house_brush_button->Enable(false);
 		SelectHouseBrush();
-	} else {
-		// No houses :(
-		edit_house_button->Enable(false);
-		remove_house_button->Enable(false);
-		select_position_button->Enable(false);
-		house_brush_button->Enable(false);
+		g_gui.RefreshView();
+		return;
 	}
+
+	if (edit_house_button) edit_house_button->Enable(true);
+	if (remove_house_button) remove_house_button->Enable(true);
+	if (select_position_button) select_position_button->Enable(true);
+	if (house_brush_button) house_brush_button->Enable(true);
+	// Select the house
+	house_list->SetSelection(index);
 
 	SelectHouseBrush();
 	g_gui.RefreshView();
 }
 
 House* HousePalettePanel::GetCurrentlySelectedHouse() const {
+	if (!house_list || house_list->GetCount() == 0) {
+		return nullptr;
+	}
 	int selection = house_list->GetSelection();
-	if (house_list->GetCount() > 0 && selection != wxNOT_FOUND) {
+	if (selection != wxNOT_FOUND && selection >= 0 && (size_t)selection < house_list->GetCount()) {
 		return reinterpret_cast<House*>(house_list->GetClientData(selection));
 	}
 	return nullptr;
 }
 
 void HousePalettePanel::SelectHouseBrush() {
-	if (house_list->GetCount() > 0) {
+	if (!house_brush_button || !select_position_button) {
+		return;
+	}
+	if (house_list && house_list->GetCount() > 0) {
 		house_brush_button->SetValue(true);
 		select_position_button->SetValue(false);
 	} else {
@@ -263,13 +288,21 @@ void HousePalettePanel::SelectHouseBrush() {
 }
 
 void HousePalettePanel::SelectExitBrush() {
-	if (house_list->GetCount() > 0) {
+	if (!house_brush_button || !select_position_button) {
+		return;
+	}
+	if (house_list && house_list->GetCount() > 0) {
 		house_brush_button->SetValue(false);
 		select_position_button->SetValue(true);
 	}
 }
 
 void HousePalettePanel::OnUpdate() {
+	ScopedAction action("HousePalettePanel::OnUpdate");
+	if (!town_choice || !house_list) {
+		return;
+	}
+
 	int old_town_selection = town_choice->GetSelection();
 
 	town_choice->Clear();
@@ -287,7 +320,7 @@ void HousePalettePanel::OnUpdate() {
 		town_choice->Append("No Town", (void*)(nullptr));
 		if (old_town_selection <= 0) {
 			SelectTown(0);
-		} else if ((size_t)old_town_selection <= town_choice->GetCount()) {
+		} else if ((size_t)old_town_selection < town_choice->GetCount()) {
 			SelectTown(old_town_selection);
 		} else {
 			SelectTown(old_town_selection - 1);
@@ -296,26 +329,34 @@ void HousePalettePanel::OnUpdate() {
 		house_list->Enable(true);
 	} else {
 		town_choice->Append("No Town", (void*)(nullptr));
-		select_position_button->Enable(false);
-		select_position_button->SetValue(false);
-		house_brush_button->Enable(false);
-		house_brush_button->SetValue(false);
-		add_house_button->Enable(false);
-		edit_house_button->Enable(false);
-		remove_house_button->Enable(false);
+		if (select_position_button) {
+			select_position_button->Enable(false);
+			select_position_button->SetValue(false);
+		}
+		if (house_brush_button) {
+			house_brush_button->Enable(false);
+			house_brush_button->SetValue(false);
+		}
+		if (add_house_button) add_house_button->Enable(false);
+		if (edit_house_button) edit_house_button->Enable(false);
+		if (remove_house_button) remove_house_button->Enable(false);
 
 		SelectTown(0);
 	}
 }
 
 void HousePalettePanel::OnTownChange(wxCommandEvent& event) {
-	SelectTown(event.GetSelection());
-	g_gui.SelectBrush();
+	if (town_choice && (size_t)event.GetSelection() < town_choice->GetCount()) {
+		SelectTown(event.GetSelection());
+		g_gui.SelectBrush();
+	}
 }
 
 void HousePalettePanel::OnListBoxChange(wxCommandEvent& event) {
-	SelectHouse(event.GetSelection());
-	g_gui.SelectBrush();
+	if (house_list && (size_t)event.GetSelection() < house_list->GetCount()) {
+		SelectHouse(event.GetSelection());
+		g_gui.SelectBrush();
+	}
 }
 
 void HousePalettePanel::OnListBoxDoubleClick(wxCommandEvent& event) {
@@ -337,7 +378,7 @@ void HousePalettePanel::OnClickSelectExitButton(wxCommandEvent& event) {
 }
 
 void HousePalettePanel::OnClickAddHouse(wxCommandEvent& event) {
-	if (map == nullptr) {
+	if (map == nullptr || !town_choice || town_choice->GetSelection() == wxNOT_FOUND || !house_list) {
 		return;
 	}
 
@@ -350,7 +391,11 @@ void HousePalettePanel::OnClickAddHouse(wxCommandEvent& event) {
 	Town* town = reinterpret_cast<Town*>(town_choice->GetClientData(town_choice->GetSelection()));
 
 	ASSERT(town);
-	new_house->townid = town->getID();
+	if (town) {
+		new_house->townid = town->getID();
+	} else {
+		new_house->townid = 0;
+	}
 
 	map->houses.addHouse(new_house);
 	house_list->Append(wxstr(new_house->getDescription()), new_house);
@@ -360,13 +405,16 @@ void HousePalettePanel::OnClickAddHouse(wxCommandEvent& event) {
 }
 
 void HousePalettePanel::OnClickEditHouse(wxCommandEvent& event) {
-	if (house_list->GetCount() == 0) {
+	if (!house_list || house_list->GetCount() == 0 || !town_choice) {
 		return;
 	}
 	if (map == nullptr) {
 		return;
 	}
 	int selection = house_list->GetSelection();
+	if (selection == wxNOT_FOUND || (size_t)selection >= house_list->GetCount()) {
+		return;
+	}
 	House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
 	if (house) {
 		wxDialog* d = newd EditHouseDialog(g_gui.root, map, house);
@@ -385,8 +433,11 @@ void HousePalettePanel::OnClickEditHouse(wxCommandEvent& event) {
 }
 
 void HousePalettePanel::OnClickRemoveHouse(wxCommandEvent& event) {
+	if (!house_list || map == nullptr) {
+		return;
+	}
 	int selection = house_list->GetSelection();
-	if (selection != wxNOT_FOUND) {
+	if (selection != wxNOT_FOUND && (size_t)selection < house_list->GetCount()) {
 		House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
 		map->houses.removeHouse(house);
 		house_list->Delete(selection);
@@ -399,12 +450,16 @@ void HousePalettePanel::OnClickRemoveHouse(wxCommandEvent& event) {
 		if (selection >= 0 && house_list->GetCount()) {
 			house_list->SetSelection(selection);
 		} else {
-			select_position_button->Enable(false);
-			select_position_button->SetValue(false);
-			house_brush_button->Enable(false);
-			house_brush_button->SetValue(false);
-			edit_house_button->Enable(false);
-			remove_house_button->Enable(false);
+			if (select_position_button) {
+				select_position_button->Enable(false);
+				select_position_button->SetValue(false);
+			}
+			if (house_brush_button) {
+				house_brush_button->Enable(false);
+				house_brush_button->SetValue(false);
+			}
+			if (edit_house_button) edit_house_button->Enable(false);
+			if (remove_house_button) remove_house_button->Enable(false);
 		}
 		g_gui.SelectBrush();
 	}

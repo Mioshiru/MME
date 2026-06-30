@@ -95,6 +95,7 @@ namespace Config {
 		USE_LARGE_HOUSE_SIZEBAR,
 		USE_LARGE_RAW_SIZEBAR,
 		USE_GUI_SELECTION_SHADOW,
+		SHOW_FPS,
 		PALETTE_COL_COUNT,
 		PALETTE_TERRAIN_STYLE,
 		PALETTE_DOODAD_STYLE,
@@ -193,10 +194,13 @@ namespace Config {
 
 		UI_THEME,           // Visual Theme (Dark/Light)
 		RENDER_BACKEND,     // Rendering Engine (OpenGL/Vulkan)
+		GRAPHICS_BACKEND = RENDER_BACKEND,
 		UI_TOOLBAR_X,       // NanoVG Toolbar Position X
 		UI_TOOLBAR_Y,       // NanoVG Toolbar Position Y
 		LAST,
 	};
+	static const int BACKEND_OPENGL = 0;
+	static const int BACKEND_VULKAN = 1;
 }
 
 class wxConfigBase;

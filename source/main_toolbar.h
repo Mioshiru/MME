@@ -40,11 +40,13 @@ public:
 	void HideAll(bool update = true);
 	void LoadPerspective();
 	void SavePerspective();
+	void SetFloor(int floor);
 
 	void OnBrushesButtonClick(wxCommandEvent& event);
 	void OnPositionButtonClick(wxCommandEvent& event);
 	void OnPositionKeyUp(wxKeyEvent& event);
 	void OnPastePositionText(wxClipboardTextEvent& event);
+	void OnZChoiceChanged(wxCommandEvent& event);
 	void OnSizesButtonClick(wxCommandEvent& event);
 
 private:
@@ -54,10 +56,7 @@ private:
 
 	wxAuiToolBar* brushes_toolbar;
 	wxAuiToolBar* position_toolbar;
-	NumberTextCtrl* x_control;
-	NumberTextCtrl* y_control;
-	NumberTextCtrl* z_control;
-	wxButton* go_button;
+	wxChoice* z_choice;
 	wxAuiToolBar* sizes_toolbar;
 };
 

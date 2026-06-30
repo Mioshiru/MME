@@ -40,12 +40,68 @@
 
 
 #include <wx/snglinst.h>
+#include <wx/stdpaths.h>
 
 #if defined(__LINUX__) || defined(__WINDOWS__)
 #include <GL/glut.h>
 #endif
 
-#include "../brushes/icon/editor_icon.xpm"
+#include <mutex>
+
+std::vector<std::string> g_active_actions_stack;
+static std::mutex g_actions_stack_mutex;
+
+void PushActiveAction(const std::string& action) {
+  std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
+  g_active_actions_stack.push_back(action);
+}
+
+void PopActiveAction() {
+  std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
+  if (!g_active_actions_stack.empty()) {
+    g_active_actions_stack.pop_back();
+  }
+}
+
+namespace {
+wxBitmap LoadApplicationBitmap() {
+  wxBitmap bitmap;
+  wxArrayString candidates;
+  wxString exe_dir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
+  wxString cwd = wxGetCwd();
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+  candidates.Add(cwd + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+  candidates.Add(cwd + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+  candidates.Add(cwd + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+
+  for (const wxString& candidate : candidates) {
+    if (!wxFileExists(candidate)) {
+      continue;
+    }
+
+    wxImage image;
+    if (image.LoadFile(candidate, wxBITMAP_TYPE_PNG)) {
+      bitmap = wxBitmap(image);
+      if (bitmap.IsOk()) {
+        return bitmap;
+      }
+    }
+  }
+
+  return bitmap;
+}
+
+wxIcon LoadApplicationIcon() {
+  wxIcon icon;
+  wxBitmap bitmap = LoadApplicationBitmap();
+  if (bitmap.IsOk()) {
+    icon.CopyFromBitmap(bitmap);
+  }
+  return icon;
+}
+}
 
 BEGIN_EVENT_TABLE(MainFrame, wxFrame)
 EVT_CLOSE(MainFrame::OnExit)
@@ -97,6 +153,20 @@ Application::~Application() {
 }
 
 bool Application::OnInit() {
+  // Truncate/empty the error.log file on startup
+  {
+    std::ofstream err_file("C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\error.log", std::ios::out | std::ios::trunc);
+    if (!err_file.is_open()) {
+      err_file.open("c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log", std::ios::out | std::ios::trunc);
+    }
+    if (!err_file.is_open()) {
+      err_file.open("error.log", std::ios::out | std::ios::trunc);
+    }
+    if (err_file.is_open()) {
+      err_file.close();
+    }
+  }
+
 #if wxCHECK_VERSION(3, 3, 0) && defined(__WXMSW__)
   // True Dark Mode für Windows aktivieren (verfügbar ab wxWidgets 3.3.0)
   MSWEnableDarkMode(wxApp::DarkMode_Always);
@@ -105,6 +175,8 @@ bool Application::OnInit() {
 #if defined __DEBUG_MODE__ && defined __WINDOWS__
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
+
+  wxHandleFatalExceptions(true);
 
   std::cout
       << "This is free software: you are free to change and redistribute it."
@@ -172,7 +244,28 @@ bool Application::OnInit() {
 
   g_gui.gfx.loadEditorSprites();
 
-  wxHandleFatalExceptions(false);
+  // Create a custom wxWidgets log target to direct all wxLogError & wxLogWarning into error.log
+  class CustomLogTarget : public wxLog {
+  public:
+    virtual void DoLogRecord(wxLogLevel level, const wxString& msg, const wxLogRecordInfo& info) override {
+      std::string prefix;
+      if (level == wxLOG_Error) prefix = "ERROR: ";
+      else if (level == wxLOG_Warning) prefix = "WARNING: ";
+      else prefix = "LOG: ";
+      
+      LogErrorToFile(prefix + msg.ToStdString());
+      
+      // Let standard wxLogGui handle UI display so the user gets interactive popups
+      if (wxTheApp && wxTheApp->GetTopWindow()) {
+        wxLogGui* guiTarget = new wxLogGui();
+        guiTarget->LogRecord(level, msg, info);
+        delete guiTarget;
+      }
+    }
+  };
+  wxLog::SetActiveTarget(new CustomLogTarget());
+
+  wxHandleFatalExceptions(true);
 
 #ifdef _WIN32
   extern LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *
@@ -205,8 +298,10 @@ bool Application::OnInit() {
     g_gui.root->menu_bar->LoadScriptsMenu();
   }
 
-  wxIcon icon(editor_icon);
-  g_gui.root->SetIcon(icon);
+  wxIcon icon = LoadApplicationIcon();
+  if (icon.IsOk()) {
+    g_gui.root->SetIcon(icon);
+  }
 
   if (g_settings.getInteger(Config::WELCOME_DIALOG) == 1 &&
       m_file_to_open == wxEmptyString) {
@@ -409,7 +504,7 @@ std::string GetModuleInfoFromAddress(void *address) {
 LONG WINAPI
 MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
   std::ofstream err_file(
-      "c:/Users/weber/Dokumente/Projekt/In_Arbeit/Map Editor/error.log",
+      "c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log",
       std::ios::app);
   if (!err_file.is_open()) {
     err_file.open("error.log", std::ios::app);
@@ -423,6 +518,11 @@ MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
              << modInfo << " (address 0x"
              << exceptionInfo->ExceptionRecord->ExceptionAddress << ")"
              << std::endl;
+    err_file << "Active actions stack (last first):" << std::endl;
+    std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
+    for (auto it = g_active_actions_stack.rbegin(); it != g_active_actions_stack.rend(); ++it) {
+      err_file << "  - " << *it << std::endl;
+    }
     err_file.close();
   }
   return EXCEPTION_EXECUTE_HANDLER;
@@ -431,8 +531,11 @@ MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
 
 void LogErrorToFile(const std::string &message) {
   std::ofstream err_file(
-      "c:/Users/weber/Dokumente/Projekt/In_Arbeit/Map Editor/error.log",
+      "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\error.log",
       std::ios::app);
+  if (!err_file.is_open()) {
+    err_file.open("c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log", std::ios::app);
+  }
   if (!err_file.is_open()) {
     err_file.open("error.log", std::ios::app);
   }
@@ -446,10 +549,38 @@ void LogErrorToFile(const std::string &message) {
 void Application::OnFatalException() {
   LogErrorToFile("FATAL ERROR: Structured Exception (e.g. Access "
                  "Violation/Crash) occurred in the application!");
+  std::ofstream err_file(
+      "c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log",
+      std::ios::app);
+  if (!err_file.is_open()) {
+    err_file.open("error.log", std::ios::app);
+  }
+  if (err_file.is_open()) {
+    err_file << "Active actions stack (last first):" << std::endl;
+    std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
+    for (auto it = g_active_actions_stack.rbegin(); it != g_active_actions_stack.rend(); ++it) {
+      err_file << "  - " << *it << std::endl;
+    }
+    err_file.close();
+  }
 }
 
 void Application::OnUnhandledException() {
   LogErrorToFile("UNHANDLED EXCEPTION: An unhandled C++ exception occurred!");
+  std::ofstream err_file(
+      "c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log",
+      std::ios::app);
+  if (!err_file.is_open()) {
+    err_file.open("error.log", std::ios::app);
+  }
+  if (err_file.is_open()) {
+    err_file << "Active actions stack (last first):" << std::endl;
+    std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
+    for (auto it = g_active_actions_stack.rbegin(); it != g_active_actions_stack.rend(); ++it) {
+      err_file << "  - " << *it << std::endl;
+    }
+    err_file.close();
+  }
 }
 
 bool Application::OnExceptionInMainLoop() {
@@ -508,10 +639,14 @@ MainFrame::MainFrame(const wxString &title, const wxPoint &pos,
                 << __W_RME_APPLICATION_NAME__ << " " << __W_RME_VERSION__);
 
   // Le sizer
-  g_gui.async_loader = newd RME::Core::AsyncLoader();
+  g_gui.async_loader = nullptr; // newd RME::Core::AsyncLoader();
   g_gui.aui_manager = newd wxAuiManager(this);
   g_gui.aui_manager->SetFlags(g_gui.aui_manager->GetFlags() |
                               wxAUI_MGR_LIVE_RESIZE);
+  if (wxAuiDockArt* art = g_gui.aui_manager->GetArtProvider()) {
+    art->SetMetric(wxAUI_DOCKART_SASH_SIZE, 5);
+    art->SetMetric(wxAUI_DOCKART_PANE_BORDER_SIZE, 0);
+  }
   g_gui.tabbook = newd MapTabbook(this, wxID_ANY);
 
   tool_bar = newd MainToolBar(this, g_gui.aui_manager);

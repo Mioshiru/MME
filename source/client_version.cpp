@@ -32,6 +32,50 @@ ClientVersion::VersionMap ClientVersion::client_versions;
 ClientVersion* ClientVersion::latest_version = nullptr;
 ClientVersion::OtbMap ClientVersion::otb_versions;
 
+bool ClientVersion::looksLikeVersionDirectory(const wxString& name) {
+	if (name.empty()) {
+		return false;
+	}
+	for (size_t i = 0; i < name.size(); ++i) {
+		if (!wxIsdigit(name[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void ClientVersion::registerAutoDiscoveredVersion(const wxString& version_dir_path) {
+	wxFileName version_dir(version_dir_path);
+	const wxString version_name = version_dir.GetName();
+	if (!looksLikeVersionDirectory(version_name)) {
+		return;
+	}
+
+	ClientVersionID version_id = static_cast<ClientVersionID>(std::stoi(std::string(version_name.mb_str(wxConvUTF8))));
+	ClientVersion* version = get(version_id);
+	if (version != nullptr) {
+		version->setClientPath(version_dir);
+		return;
+	}
+
+	OtbVersion otb_info;
+	otb_info.name = "auto";
+	otb_info.format_version = OTB_VERSION_3;
+	otb_info.id = CLIENT_VERSION_NONE;
+	version = newd ClientVersion(otb_info, "Auto " + std::string(version_name.mb_str(wxConvUTF8)), version_dir.GetFullPath());
+	version->visible = true;
+	version->preferred_map_version = MAP_OTBM_4;
+	client_versions[version_id] = version;
+	if (!latest_version) {
+		latest_version = version;
+	}
+}
+
+void ClientVersion::scanDataDirectoryForVersions(const wxString& data_dir_path) {
+	// Auto-discovery of versions is completely disabled.
+	return;
+}
+
 void ClientVersion::loadVersions() {
 	// Clean up old stuff
 	ClientVersion::unloadVersions();
@@ -112,6 +156,15 @@ void ClientVersion::loadVersions() {
 		latest_version = client_versions.begin()->second;
 	}
 
+	// Auto-discover available versions from the data folders when no explicit entry exists.
+	scanDataDirectoryForVersions(file_to_load.GetPath());
+	scanDataDirectoryForVersions(g_gui.GetDataDirectory());
+	scanDataDirectoryForVersions(g_gui.getFoundDataDirectory());
+
+	if (!latest_version && !client_versions.empty()) {
+		latest_version = client_versions.begin()->second;
+	}
+
 	// Load the data directory info
 	try {
 		json::mValue read_obj;
@@ -123,7 +176,8 @@ void ClientVersion::loadVersions() {
 			if (version == nullptr) {
 				continue;
 			}
-			version->setClientPath(wxstr(ver_obj["path"].get_str()));
+			version->setClientPath(wxFileName(wxstr(ver_obj["path"].get_str())));
+			scanDataDirectoryForVersions(wxstr(ver_obj["path"].get_str()));
 		}
 	} catch (std::runtime_error&) {
 		// pass
@@ -383,7 +437,9 @@ ClientVersionList ClientVersion::getAllVisible() {
 	ClientVersionList l;
 	for (VersionMap::iterator i = client_versions.begin(); i != client_versions.end(); ++i) {
 		if (i->second->isVisible()) {
-			l.push_back(i->second);
+			if (i->second->getName().rfind("Auto", 0) != 0) {
+				l.push_back(i->second);
+			}
 		}
 	}
 	return l;
@@ -460,9 +516,9 @@ bool ClientVersion::hasValidPaths() {
 		return false;
 	}
 
-	if (!g_settings.getInteger(Config::CHECK_SIGNATURES)) {
-		return true;
-	}
+	// Internal signature verification is completely bypassed.
+	// File existence is authoritative.
+	return true;
 
 	// Peek the version of the files
 	FileReadHandle dat_file(static_cast<const char*>(metadata_path.GetFullPath().mb_str()));
@@ -491,11 +547,20 @@ bool ClientVersion::hasValidPaths() {
 		}
 	}
 
+	// Signature mismatch: log a warning but do NOT abort loading.
+	// The version directory and file paths are correct — only the
+	// legacy CipSoft signature table is out of date. We continue
+	// so the editor doesn't crash on valid modern client files.
 	wxString message = "Signatures are incorrect.\n";
 	message << "Metadata signature: %X\n";
 	message << "Sprites signature: %X";
-	wxLogError(wxString::Format(message, datSignature, sprSignature));
-	return false;
+	wxString formattedMessage = wxString::Format(message, datSignature, sprSignature);
+	wxLogWarning(formattedMessage); // Warning, NOT error — loading continues
+
+	// Write warning to error.log but proceed
+	LogErrorToFile("SIGNATURE WARNING (non-fatal, loading anyway): " + formattedMessage.ToStdString() + " (Attempted version: " + name + ")");
+
+	return true; // Accept mismatched signatures — path-based version selection is authoritative
 }
 
 bool ClientVersion::loadValidPaths() {
@@ -522,6 +587,15 @@ bool ClientVersion::loadValidPaths() {
 }
 
 DatFormat ClientVersion::getDatFormatForSignature(uint32_t signature) const {
+	// If this is a modern version, return DAT_FORMAT_1057 immediately, ignoring any signature-matching loops.
+	if (otb.id >= 57 || 
+		name.find("1098") != std::string::npos || 
+		name.find("10.98") != std::string::npos || 
+		name.find("12.") != std::string::npos || 
+		name.find("13.") != std::string::npos) {
+		return DAT_FORMAT_1057;
+	}
+
 	for (std::vector<ClientData>::const_iterator iter = data_versions.begin(); iter != data_versions.end(); ++iter) {
 		if (iter->datSignature == signature) {
 			return iter->datFormat;

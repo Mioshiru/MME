@@ -319,6 +319,12 @@ bool Map::hasChanged() const {
 	return has_changed;
 }
 
+bool Map::doChange() {
+	has_changed = true;
+	root.markDirty(-1);
+	return true;
+}
+
 bool Map::clearChanges() {
 	bool doupdate = has_changed;
 	has_changed = false;

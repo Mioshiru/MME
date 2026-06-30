@@ -21,7 +21,12 @@ void MapDrawer::DrawSpriteMagnified(uint32_t item_id, float size) {
     return;
 
   // Erstelle ein temporäres NanoVG Image-Handle aus der GL-ID
-  int img = nvglCreateImageFromHandleGL3(m_nvg, texid, 32, 32, 0);
+  int img = 0;
+#if defined(NANOVG_GL3_IMPLEMENTATION)
+  img = nvglCreateImageFromHandleGL3(m_nvg, texid, 32, 32, 0);
+#endif
+  if (img == 0)
+    return;
 
   ImVec2 pos = ImGui::GetCursorScreenPos();
   nvgBeginPath(m_nvg);
@@ -178,7 +183,7 @@ void MapDrawer::DrawTooltips() {
 void MapDrawer::DrawGrid() {
   uint8_t grid_opacity = g_settings.getInteger(Config::GRID_OPACITY);
   glDisable(GL_TEXTURE_2D);
-  glColor4ub(255, 255, 255, grid_opacity);
+  glColor4ub(0, 0, 0, grid_opacity);
   for (int y = start_y; y < end_y; ++y) {
     glBegin(GL_LINES);
     glVertex2f(start_x * TileSize - canvas->view_scroll_x,

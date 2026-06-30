@@ -9,8 +9,17 @@ struct LightInstanceData {
 
 DeferredRenderer::DeferredRenderer() {
     m_legacyColorTexture = BGFX_INVALID_HANDLE;
+    m_gbufferNormals = BGFX_INVALID_HANDLE;
     m_gbufferFBO = BGFX_INVALID_HANDLE;
+    m_lightAccumulationTexture = BGFX_INVALID_HANDLE;
     m_lightAccumulationFBO = BGFX_INVALID_HANDLE;
+    m_quadVBO = BGFX_INVALID_HANDLE;
+    m_quadIBO = BGFX_INVALID_HANDLE;
+    m_lightPassProgram = BGFX_INVALID_HANDLE;
+    m_compositionProgram = BGFX_INVALID_HANDLE;
+    s_texColor = BGFX_INVALID_HANDLE;
+    s_texNormal = BGFX_INVALID_HANDLE;
+    s_texLightAccum = BGFX_INVALID_HANDLE;
 }
 
 DeferredRenderer::~DeferredRenderer() {
@@ -77,12 +86,12 @@ void DeferredRenderer::createQuad() {
     };
     uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
 
-    m_quadVBO = bgfx::createVertexBuffer(bgfx::makeRef(vertices, sizeof(vertices)), layout);
-    m_quadIBO = bgfx::createIndexBuffer(bgfx::makeRef(indices, sizeof(indices)));
+    m_quadVBO = bgfx::createVertexBuffer(bgfx::copy(vertices, sizeof(vertices)), layout);
+    m_quadIBO = bgfx::createIndexBuffer(bgfx::copy(indices, sizeof(indices)));
 }
 
 void DeferredRenderer::render(const LightingSystem& lightingSystem) {
-    if (!bgfx::isValid(m_legacyColorTexture) || !bgfx::isValid(m_lightPassProgram)) {
+    if (!bgfx::isValid(m_legacyColorTexture) || !bgfx::isValid(m_lightPassProgram) || !bgfx::isValid(m_compositionProgram)) {
         return; // Not ready
     }
 

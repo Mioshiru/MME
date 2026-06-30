@@ -2,9 +2,16 @@
 #include "lua/lua_api.h"
 #include "creature.h"
 #include "editor.h"
+#include "gui.h"
 #include "live_peer.h"
 
 namespace LuaAPI {
+    void registerCreatureAPI(sol::state& lua);
+
+    void registerCreature(sol::state& lua) {
+        registerCreatureAPI(lua);
+    }
+
     void registerCreatureAPI(sol::state& lua) {
         // Creature-Klasse (NPCs/Monster auf der Map)
         lua.new_usertype<Creature>("Creature",

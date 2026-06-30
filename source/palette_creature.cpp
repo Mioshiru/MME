@@ -24,6 +24,7 @@
 #include "creature_brush.h"
 #include "spawn_brush.h"
 #include "materials.h"
+#include "application.h"
 
 // ============================================================================
 // Creature palette
@@ -154,6 +155,7 @@ int CreaturePalettePanel::GetSelectedBrushSize() const {
 }
 
 void CreaturePalettePanel::OnUpdate() {
+	ScopedAction action("CreaturePalettePanel::OnUpdate");
 	tileset_choice->Clear();
 	g_materials.createOtherTileset();
 

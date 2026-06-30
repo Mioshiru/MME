@@ -235,6 +235,10 @@ public:
 	}
 
 private:
+	static void registerAutoDiscoveredVersion(const wxString& version_dir_path);
+	static void scanDataDirectoryForVersions(const wxString& data_dir_path);
+	static bool looksLikeVersionDirectory(const wxString& name);
+
 	OtbVersion otb;
 
 	std::string name;

@@ -24,6 +24,7 @@
 #include "palette_waypoints.h"
 #include "waypoint_brush.h"
 #include "map.h"
+#include "application.h"
 
 BEGIN_EVENT_TABLE(WaypointPalettePanel, PalettePanel)
 EVT_BUTTON(PALETTE_WAYPOINT_ADD_WAYPOINT, WaypointPalettePanel::OnClickAddWaypoint)
@@ -74,9 +75,11 @@ void WaypointPalettePanel::SelectFirstBrush() {
 
 Brush* WaypointPalettePanel::GetSelectedBrush() const {
 	long item = waypoint_list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
-	g_gui.waypoint_brush->setWaypoint(
-		item == -1 ? nullptr : map->waypoints.getWaypoint(nstr(waypoint_list->GetItemText(item)))
-	);
+	if (g_gui.waypoint_brush) {
+		g_gui.waypoint_brush->setWaypoint(
+			item == -1 ? nullptr : map->waypoints.getWaypoint(nstr(waypoint_list->GetItemText(item)))
+		);
+	}
 	return g_gui.waypoint_brush;
 }
 
@@ -98,6 +101,7 @@ wxString WaypointPalettePanel::GetName() const {
 }
 
 void WaypointPalettePanel::OnUpdate() {
+	ScopedAction action("WaypointPalettePanel::OnUpdate");
 	if (wxTextCtrl* tc = waypoint_list->GetEditControl()) {
 		Waypoint* wp = map->waypoints.getWaypoint(nstr(tc->GetValue()));
 		if (wp && wp->pos == Position()) {
@@ -135,7 +139,9 @@ void WaypointPalettePanel::OnClickWaypoint(wxListEvent& event) {
 	Waypoint* wp = map->waypoints.getWaypoint(wpname);
 	if (wp) {
 		g_gui.SetScreenCenterPosition(wp->pos);
-		g_gui.waypoint_brush->setWaypoint(wp);
+		if (g_gui.waypoint_brush) {
+			g_gui.waypoint_brush->setWaypoint(wp);
+		}
 	}
 }
 
@@ -181,7 +187,9 @@ void WaypointPalettePanel::OnEditWaypointLabel(wxListEvent& event) {
 				}
 
 				map->waypoints.addWaypoint(nwp);
-				g_gui.waypoint_brush->setWaypoint(nwp);
+				if (g_gui.waypoint_brush) {
+					g_gui.waypoint_brush->setWaypoint(nwp);
+				}
 
 				// Refresh other palettes
 				refresh_timer.Start(300, true);

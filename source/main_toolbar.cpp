@@ -54,7 +54,6 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	wxBitmap magic_bitmap = wxArtProvider::GetBitmap(ART_DOOR_MAGIC_SMALL, wxART_TOOLBAR, icon_size);
 	wxBitmap quest_bitmap = wxArtProvider::GetBitmap(ART_DOOR_QUEST_SMALL, wxART_TOOLBAR, icon_size);
 	wxBitmap normal_alt_bitmap = wxArtProvider::GetBitmap(ART_DOOR_NORMAL_ALT_SMALL, wxART_TOOLBAR, icon_size);
-	wxBitmap archway_bitmap = wxArtProvider::GetBitmap(ART_DOOR_ARCHWAY_SMALL, wxART_TOOLBAR, icon_size);
 
 	wxBitmap* hatch_bitmap = loadPNGFile(window_hatch_small_png);
 	wxBitmap* window_bitmap = loadPNGFile(window_normal_small_png);
@@ -75,7 +74,6 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_MAGIC_DOOR, wxEmptyString, magic_bitmap, wxNullBitmap, wxITEM_CHECK, "Magic Door", wxEmptyString, NULL);
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_QUEST_DOOR, wxEmptyString, quest_bitmap, wxNullBitmap, wxITEM_CHECK, "Quest Door", wxEmptyString, NULL);
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, wxEmptyString, normal_alt_bitmap, wxNullBitmap, wxITEM_CHECK, "Normal Door (alt)", wxEmptyString, NULL);
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_ARCHWAY_DOOR, wxEmptyString, archway_bitmap, wxNullBitmap, wxITEM_CHECK, "Archway", wxEmptyString, NULL);
 	brushes_toolbar->AddSeparator();
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_HATCH_DOOR, wxEmptyString, *hatch_bitmap, wxNullBitmap, wxITEM_CHECK, "Hatch Window", wxEmptyString, NULL);
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_WINDOW_DOOR, wxEmptyString, *window_bitmap, wxNullBitmap, wxITEM_CHECK, "Window", wxEmptyString, NULL);
@@ -85,19 +83,15 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 
 	position_toolbar = newd wxAuiToolBar(parent, TOOLBAR_POSITION, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_HORZ_TEXT);
 	position_toolbar->SetToolBitmapSize(icon_size);
-	x_control = newd NumberTextCtrl(position_toolbar, wxID_ANY, 0, 0, MAP_MAX_WIDTH, wxTE_PROCESS_ENTER, "X", wxDefaultPosition, FROM_DIP(parent, wxSize(60, 20)));
-	x_control->SetToolTip("X Coordinate");
-	y_control = newd NumberTextCtrl(position_toolbar, wxID_ANY, 0, 0, MAP_MAX_HEIGHT, wxTE_PROCESS_ENTER, "Y", wxDefaultPosition, FROM_DIP(parent, wxSize(60, 20)));
-	y_control->SetToolTip("Y Coordinate");
-	z_control = newd NumberTextCtrl(position_toolbar, wxID_ANY, 0, 0, MAP_MAX_LAYER, wxTE_PROCESS_ENTER, "Z", wxDefaultPosition, FROM_DIP(parent, wxSize(35, 20)));
-	z_control->SetToolTip("Z Coordinate");
-	go_button = newd wxButton(position_toolbar, TOOLBAR_POSITION_GO, wxEmptyString, wxDefaultPosition, parent->FromDIP(wxSize(22, 20)));
-	go_button->SetBitmap(go_bitmap);
-	go_button->SetToolTip("Go To Position");
-	position_toolbar->AddControl(x_control);
-	position_toolbar->AddControl(y_control);
-	position_toolbar->AddControl(z_control);
-	position_toolbar->AddControl(go_button);
+	
+	wxArrayString z_levels;
+	for (int i = 0; i <= MAP_MAX_LAYER; ++i) {
+		z_levels.Add(wxString::Format("Floor %d", i));
+	}
+	z_choice = newd wxChoice(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(100, -1)), z_levels);
+	z_choice->SetToolTip("Select Z-Level (Floor)");
+	
+	position_toolbar->AddControl(z_choice);
 	position_toolbar->Realize();
 
 	wxBitmap circular_bitmap = wxArtProvider::GetBitmap(ART_CIRCULAR, wxART_TOOLBAR, icon_size);
@@ -126,32 +120,20 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	sizes_toolbar->ToggleTool(TOOLBAR_SIZES_RECTANGULAR, true);
 	sizes_toolbar->ToggleTool(TOOLBAR_SIZES_1, true);
 
-	manager->AddPane(brushes_toolbar, wxAuiPaneInfo().Name(BRUSHES_BAR_NAME).Caption("Brushes").CaptionVisible(true).CloseButton(true).Floatable(true).Dockable(true).Top().Row(1).Position(2).MinSize(brushes_toolbar->GetBestSize()));
-	manager->AddPane(position_toolbar, wxAuiPaneInfo().Name(POSITION_BAR_NAME).Caption("Position").CaptionVisible(true).CloseButton(true).Floatable(true).Dockable(true).Top().Row(1).Position(4).MinSize(position_toolbar->GetBestSize()));
-	manager->AddPane(sizes_toolbar, wxAuiPaneInfo().Name(SIZES_BAR_NAME).Caption("Sizes").CaptionVisible(true).CloseButton(true).Floatable(true).Dockable(true).Top().Row(1).Position(3).MinSize(sizes_toolbar->GetBestSize()));
+	manager->AddPane(brushes_toolbar, wxAuiPaneInfo().Name(BRUSHES_BAR_NAME).ToolbarPane().Top().Row(0).Position(0).Floatable(false).CloseButton(false).Gripper(false));
+	manager->AddPane(sizes_toolbar, wxAuiPaneInfo().Name(SIZES_BAR_NAME).ToolbarPane().Top().Row(0).Position(1).Floatable(false).CloseButton(false).Gripper(false));
+	manager->AddPane(position_toolbar, wxAuiPaneInfo().Name(POSITION_BAR_NAME).ToolbarPane().Top().Row(0).Position(2).Floatable(false).CloseButton(false).Gripper(false));
 
 	brushes_toolbar->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
-	x_control->Bind(wxEVT_TEXT_PASTE, &MainToolBar::OnPastePositionText, this);
-	x_control->Bind(wxEVT_KEY_UP, &MainToolBar::OnPositionKeyUp, this);
-	y_control->Bind(wxEVT_TEXT_PASTE, &MainToolBar::OnPastePositionText, this);
-	y_control->Bind(wxEVT_KEY_UP, &MainToolBar::OnPositionKeyUp, this);
-	z_control->Bind(wxEVT_TEXT_PASTE, &MainToolBar::OnPastePositionText, this);
-	z_control->Bind(wxEVT_KEY_UP, &MainToolBar::OnPositionKeyUp, this);
-	go_button->Bind(wxEVT_BUTTON, &MainToolBar::OnPositionButtonClick, this);
+	z_choice->Bind(wxEVT_CHOICE, &MainToolBar::OnZChoiceChanged, this);
 	sizes_toolbar->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnSizesButtonClick, this);
 
-	HideAll();
+	LoadPerspective();
 }
 
 MainToolBar::~MainToolBar() {
 	brushes_toolbar->Unbind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
-	x_control->Unbind(wxEVT_TEXT_PASTE, &MainToolBar::OnPastePositionText, this);
-	x_control->Unbind(wxEVT_KEY_UP, &MainToolBar::OnPositionKeyUp, this);
-	y_control->Unbind(wxEVT_TEXT_PASTE, &MainToolBar::OnPastePositionText, this);
-	y_control->Unbind(wxEVT_KEY_UP, &MainToolBar::OnPositionKeyUp, this);
-	z_control->Unbind(wxEVT_TEXT_PASTE, &MainToolBar::OnPastePositionText, this);
-	z_control->Unbind(wxEVT_KEY_UP, &MainToolBar::OnPositionKeyUp, this);
-	go_button->Unbind(wxEVT_BUTTON, &MainToolBar::OnPositionButtonClick, this);
+	z_choice->Unbind(wxEVT_CHOICE, &MainToolBar::OnZChoiceChanged, this);
 	sizes_toolbar->Unbind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnSizesButtonClick, this);
 
 }
@@ -173,20 +155,15 @@ void MainToolBar::UpdateButtons() {
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_MAGIC_DOOR, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_QUEST_DOOR, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_ARCHWAY_DOOR, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_HATCH_DOOR, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_WINDOW_DOOR, has_map);
 
-	position_toolbar->EnableTool(TOOLBAR_POSITION_GO, has_map);
-	x_control->Enable(has_map);
-	y_control->Enable(has_map);
-	z_control->Enable(has_map);
-
-	if (has_map) {
-		x_control->SetMaxValue(editor->getMapWidth());
-		y_control->SetMaxValue(editor->getMapHeight());
+	if (z_choice) {
+		z_choice->Enable(has_map);
+		if (has_map) {
+			SetFloor(g_gui.GetCurrentFloor());
+		}
 	}
-
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_CIRCULAR, has_map);
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_RECTANGULAR, has_map);
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_1, has_map);
@@ -213,7 +190,6 @@ void MainToolBar::UpdateBrushButtons() {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_MAGIC_DOOR, brush == g_gui.magic_door_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_QUEST_DOOR, brush == g_gui.quest_door_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, brush == g_gui.normal_door_alt_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ARCHWAY_DOOR, brush == g_gui.archway_door_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, brush == g_gui.hatch_door_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, brush == g_gui.window_door_brush);
 	} else {
@@ -228,7 +204,6 @@ void MainToolBar::UpdateBrushButtons() {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_MAGIC_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_QUEST_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ARCHWAY_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, false);
 	}
@@ -278,89 +253,43 @@ void MainToolBar::Show(ToolBarID id, bool show) {
 	if (manager) {
 		wxAuiPaneInfo& pane = GetPane(id);
 		if (pane.IsOk()) {
-			pane.Show(show);
+			pane.Show(true);
 			manager->Update();
 		}
 	}
 }
 
 void MainToolBar::HideAll(bool update) {
-	wxAuiManager* manager = g_gui.GetAuiManager();
-	if (!manager) {
-		return;
-	}
-
-	wxAuiPaneInfoArray& panes = manager->GetAllPanes();
-	for (int i = 0, count = panes.GetCount(); i < count; ++i) {
-		if (!panes.Item(i).IsToolbar()) {
-			panes.Item(i).Hide();
-		}
-	}
-
-	if (update) {
-		manager->Update();
-	}
+	// Locked down: do not hide any toolbars
 }
 
 void MainToolBar::LoadPerspective() {
-	wxAuiManager* manager = g_gui.GetAuiManager();
-	if (!manager) {
-		return;
-	}
+	bool show_brushes = true;
+	bool show_sizes = true;
+	bool show_position = true;
 
-	if (g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES)) {
-		std::string info = g_settings.getString(Config::TOOLBAR_BRUSHES_LAYOUT);
-		if (!info.empty()) {
-			manager->LoadPaneInfo(wxString(info), GetPane(TOOLBAR_BRUSHES));
+	GetPane(TOOLBAR_BRUSHES).Show(show_brushes);
+	GetPane(TOOLBAR_SIZES).Show(show_sizes);
+	GetPane(TOOLBAR_POSITION).Show(show_position);
+
+	if (wxAuiManager* manager = g_gui.GetAuiManager()) {
+		manager->Update();
+		
+		LogErrorToFile("=== AUI Panes Diagnostics ===");
+		wxAuiPaneInfoArray& panes = manager->GetAllPanes();
+		for (int i = 0, count = panes.GetCount(); i < count; ++i) {
+			wxAuiPaneInfo& pane = panes.Item(i);
+			LogErrorToFile(wxString::Format("Pane: name='%s', is_toolbar=%d, is_shown=%d, is_valid=%d, rect=(%d, %d, %d, %d), row=%d, col=%d",
+				pane.name.c_str(), pane.IsToolbar(), pane.IsShown(), pane.IsOk(),
+				pane.rect.x, pane.rect.y, pane.rect.width, pane.rect.height,
+				pane.dock_row, pane.dock_pos).ToStdString());
 		}
-		GetPane(TOOLBAR_BRUSHES).Show();
-	} else {
-		GetPane(TOOLBAR_BRUSHES).Hide();
+		LogErrorToFile("=============================");
 	}
-
-	if (g_settings.getBoolean(Config::SHOW_TOOLBAR_POSITION)) {
-		std::string info = g_settings.getString(Config::TOOLBAR_POSITION_LAYOUT);
-		if (!info.empty()) {
-			manager->LoadPaneInfo(wxString(info), GetPane(TOOLBAR_POSITION));
-		}
-		GetPane(TOOLBAR_POSITION).Show();
-	} else {
-		GetPane(TOOLBAR_POSITION).Hide();
-	}
-
-	if (g_settings.getBoolean(Config::SHOW_TOOLBAR_SIZES)) {
-		std::string info = g_settings.getString(Config::TOOLBAR_SIZES_LAYOUT);
-		if (!info.empty()) {
-			manager->LoadPaneInfo(wxString(info), GetPane(TOOLBAR_SIZES));
-		}
-		GetPane(TOOLBAR_SIZES).Show();
-	} else {
-		GetPane(TOOLBAR_SIZES).Hide();
-	}
-
-	manager->Update();
 }
 
 void MainToolBar::SavePerspective() {
-	wxAuiManager* manager = g_gui.GetAuiManager();
-	if (!manager) {
-		return;
-	}
-
-	if (g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES)) {
-		wxString info = manager->SavePaneInfo(GetPane(TOOLBAR_BRUSHES));
-		g_settings.setString(Config::TOOLBAR_BRUSHES_LAYOUT, info.ToStdString());
-	}
-
-	if (g_settings.getBoolean(Config::SHOW_TOOLBAR_POSITION)) {
-		wxString info = manager->SavePaneInfo(GetPane(TOOLBAR_POSITION));
-		g_settings.setString(Config::TOOLBAR_POSITION_LAYOUT, info.ToStdString());
-	}
-
-	if (g_settings.getBoolean(Config::SHOW_TOOLBAR_SIZES)) {
-		wxString info = manager->SavePaneInfo(GetPane(TOOLBAR_SIZES));
-		g_settings.setString(Config::TOOLBAR_SIZES_LAYOUT, info.ToStdString());
-	}
+	// Toolbars are now fixed and their layout isn't saved anymore
 }
 
 void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
@@ -402,9 +331,6 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 		case PALETTE_TERRAIN_NORMAL_ALT_DOOR:
 			g_gui.SelectBrush(g_gui.normal_door_alt_brush);
 			break;
-		case PALETTE_TERRAIN_ARCHWAY_DOOR:
-			g_gui.SelectBrush(g_gui.archway_door_brush);
-			break;
 		case PALETTE_TERRAIN_HATCH_DOOR:
 			g_gui.SelectBrush(g_gui.hatch_door_brush);
 			break;
@@ -416,48 +342,19 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 	}
 }
 
-void MainToolBar::OnPositionButtonClick(wxCommandEvent& event) {
+void MainToolBar::SetFloor(int floor) {
+	if (z_choice && floor >= 0 && floor <= MAP_MAX_LAYER) {
+		z_choice->SetSelection(floor);
+	}
+}
+
+void MainToolBar::OnZChoiceChanged(wxCommandEvent& event) {
 	if (!g_gui.IsEditorOpen()) {
 		return;
 	}
-
-	if (event.GetId() == TOOLBAR_POSITION_GO) {
-		Position pos(x_control->GetIntValue(), y_control->GetIntValue(), z_control->GetIntValue());
-		if (pos.isValid()) {
-			g_gui.SetScreenCenterPosition(pos);
-		}
-	}
-}
-
-void MainToolBar::OnPositionKeyUp(wxKeyEvent& event) {
-	if (event.GetKeyCode() == WXK_TAB) {
-		if (x_control->HasFocus()) {
-			y_control->SelectAll();
-			y_control->SetFocus();
-		} else if (y_control->HasFocus()) {
-			z_control->SelectAll();
-			z_control->SetFocus();
-		} else if (z_control->HasFocus()) {
-			go_button->SetFocus();
-		}
-	} else if (event.GetKeyCode() == WXK_NUMPAD_ENTER || event.GetKeyCode() == WXK_RETURN) {
-		Position pos(x_control->GetIntValue(), y_control->GetIntValue(), z_control->GetIntValue());
-		if (pos.isValid()) {
-			g_gui.SetScreenCenterPosition(pos);
-		}
-	}
-	event.Skip();
-}
-
-void MainToolBar::OnPastePositionText(wxClipboardTextEvent& event) {
-	Position position;
-	const Map& currentMap = g_gui.GetCurrentMap();
-	if (posFromClipboard(position, currentMap.getWidth(), currentMap.getHeight())) {
-		x_control->SetIntValue(position.x);
-		y_control->SetIntValue(position.y);
-		z_control->SetIntValue(position.z);
-	} else {
-		event.Skip();
+	int z = event.GetSelection();
+	if (z >= 0 && z <= MAP_MAX_LAYER) {
+		g_gui.ChangeFloor(z);
 	}
 }
 

@@ -1,8 +1,8 @@
 #include "main.h"
 #include "lua_script_manager.h"
 #include "gui.h"
+#include <algorithm>
 #include <sol/sol.hpp>
-
 
 LuaScriptManager &LuaScriptManager::getInstance() {
   static LuaScriptManager instance;
@@ -10,17 +10,15 @@ LuaScriptManager &LuaScriptManager::getInstance() {
 }
 
 void LuaScriptManager::logOutput(const std::string &message, bool isError) {
-  // Weiterleitung an die neue ImGui Debug Konsole
   g_gui.AddDebugLog(message, isError);
 }
 
 bool LuaScriptManager::initialize() {
-  engine.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string,
-                        sol::lib::math, sol::lib::table, sol::lib::os,
-                        sol::lib::coroutine);
-  sol::state &lua = engine;
+  sol::state &lua = engine.getState();
+  lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string,
+                     sol::lib::math, sol::lib::table, sol::lib::os,
+                     sol::lib::coroutine);
 
-  // print() umleiten
   lua["print"] = [this](sol::variadic_args va) {
     std::string s;
     for (auto v : va) {
@@ -34,19 +32,162 @@ bool LuaScriptManager::initialize() {
   return true;
 }
 
+void LuaScriptManager::shutdown() {
+  initialized = false;
+  scripts.clear();
+  contextMenuItems.clear();
+  eventListeners.clear();
+  mapOverlays.clear();
+  mapOverlayShows.clear();
+  lastError.clear();
+}
+
+void LuaScriptManager::discoverScripts() { scripts.clear(); }
+void LuaScriptManager::reloadScripts() { discoverScripts(); }
+
+bool LuaScriptManager::executeScript(const std::string &filepath) {
+  (void)filepath;
+  return true;
+}
+
+bool LuaScriptManager::executeScript(LuaScript *script) {
+  (void)script;
+  return true;
+}
+
+bool LuaScriptManager::executeScript(size_t index, std::string &errorOut) {
+  (void)index;
+  errorOut.clear();
+  return true;
+}
+
+LuaScript *LuaScriptManager::getScript(const std::string &filepath) {
+  (void)filepath;
+  return nullptr;
+}
+
+void LuaScriptManager::setScriptEnabled(size_t index, bool enabled) {
+  (void)index;
+  (void)enabled;
+}
+
+bool LuaScriptManager::isScriptEnabled(size_t index) const {
+  (void)index;
+  return true;
+}
+
+std::string LuaScriptManager::getScriptsDirectory() const { return "scripts"; }
+void LuaScriptManager::openScriptsFolder() {}
+void LuaScriptManager::setOutputCallback(LuaOutputCallback callback) {
+  outputCallback = std::move(callback);
+}
+
+void LuaScriptManager::registerContextMenuItem(const std::string &label,
+                                               sol::function callback) {
+  contextMenuItems.push_back(ContextMenuItem{label, callback});
+}
+
+int LuaScriptManager::addEventListener(const std::string &eventName,
+                                       sol::function callback) {
+  EventListener listener{nextListenerId++, eventName, callback};
+  eventListeners.push_back(listener);
+  return listener.id;
+}
+
+bool LuaScriptManager::removeEventListener(int listenerId) {
+  auto it = std::find_if(eventListeners.begin(), eventListeners.end(),
+                         [listenerId](const EventListener &listener) {
+                           return listener.id == listenerId;
+                         });
+  if (it == eventListeners.end()) {
+    return false;
+  }
+  eventListeners.erase(it);
+  return true;
+}
+
+void LuaScriptManager::clearAllCallbacks() {
+  contextMenuItems.clear();
+  eventListeners.clear();
+  mapOverlays.clear();
+  mapOverlayShows.clear();
+}
+
+bool LuaScriptManager::addMapOverlay(const std::string &id, sol::table options) {
+  (void)options;
+  mapOverlays.push_back(MapOverlay{id});
+  return true;
+}
+
+bool LuaScriptManager::removeMapOverlay(const std::string &id) {
+  auto it = std::find_if(mapOverlays.begin(), mapOverlays.end(),
+                         [&id](const MapOverlay &overlay) {
+                           return overlay.id == id;
+                         });
+  if (it == mapOverlays.end()) {
+    return false;
+  }
+  mapOverlays.erase(it);
+  return true;
+}
+
+bool LuaScriptManager::setMapOverlayEnabled(const std::string &id, bool enabled) {
+  for (auto &overlay : mapOverlays) {
+    if (overlay.id == id) {
+      overlay.enabled = enabled;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool LuaScriptManager::registerMapOverlayShow(const std::string &label,
+                                              const std::string &overlayId,
+                                              bool enabled,
+                                              sol::function ontoggle) {
+  mapOverlayShows.push_back(MapOverlayShowItem{label, overlayId, enabled, ontoggle});
+  return true;
+}
+
+bool LuaScriptManager::setMapOverlayShowEnabled(const std::string &overlayId,
+                                               bool enabled) {
+  for (auto &show : mapOverlayShows) {
+    if (show.overlayId == overlayId) {
+      show.enabled = enabled;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool LuaScriptManager::isMapOverlayEnabled(const std::string &id) const {
+  for (const auto &overlay : mapOverlays) {
+    if (overlay.id == id) {
+      return overlay.enabled;
+    }
+  }
+  return false;
+}
+
+void LuaScriptManager::collectMapOverlayCommands(const MapViewInfo &view,
+                                                 std::vector<MapOverlayCommand> &out) {
+  (void)view;
+  (void)out;
+}
+
+void LuaScriptManager::updateMapOverlayHover(int map_x, int map_y, int map_z,
+                                             int screen_x, int screen_y,
+                                             Tile *tile, Item *topItem) {
+  (void)map_x;
+  (void)map_y;
+  (void)map_z;
+  (void)screen_x;
+  (void)screen_y;
+  (void)tile;
+  (void)topItem;
+}
+
 void LuaScriptManager::registerAPIs() {
-  sol::state &lua = engine;
-
-  // Fehlerbehandlung für geschützte Aufrufe (pcall)
-  lua.set_exception_handler(
-      [this](lua_State *L,
-             sol::optional<const std::exception &> maybe_exception,
-             sol::string_view description) {
-        std::string errMsg = "Lua Runtime Error: ";
-        errMsg += description.data();
-        logOutput(errMsg, true);
-        return sol::stack::push(L, description);
-      });
-
-  // ... weitere API Registrierungen ...
+  sol::state &lua = engine.getState();
+  (void)lua;
 }

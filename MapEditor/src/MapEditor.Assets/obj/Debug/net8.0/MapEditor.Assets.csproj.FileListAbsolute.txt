@@ -1,0 +1,16 @@
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEditor.Assets.csproj.AssemblyReference.cache
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEditor.Assets.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEditor.Assets.AssemblyInfoInputs.cache
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEditor.Assets.AssemblyInfo.cs
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEditor.Assets.csproj.CoreCompileInputs.cache
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEditor.Assets.sourcelink.json
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\bin\Debug\net8.0\MapEditor.Assets.deps.json
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\bin\Debug\net8.0\MapEditor.Assets.dll
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\bin\Debug\net8.0\MapEditor.Assets.pdb
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\bin\Debug\net8.0\MapEditor.Core.dll
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\bin\Debug\net8.0\MapEditor.Core.pdb
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEdito.FD309664.Up2Date
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEditor.Assets.dll
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\refint\MapEditor.Assets.dll
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\MapEditor.Assets.pdb
+C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.Assets\obj\Debug\net8.0\ref\MapEditor.Assets.dll

@@ -38,7 +38,7 @@ TableBrush::~TableBrush() {
 
 bool TableBrush::load(pugi::xml_node node, wxArrayString& warnings) {
 	if (const pugi::xml_attribute attribute = node.attribute("server_lookid")) {
-		look_id = g_items[attribute.as_ushort()].clientID;
+		look_id = attribute.as_ushort();
 	}
 
 	if (look_id == 0) {

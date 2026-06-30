@@ -64,7 +64,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	doodad_palette = static_cast<BrushPalettePanel*>(CreateDoodadPalette(choicebook, tilesets));
 	choicebook->AddPage(doodad_palette, doodad_palette->GetName());
 
-	collection_palette = static_cast<BrushPalettePanel*>(CreateCollectionPalette(parent, tilesets));
+	collection_palette = nullptr;
 
 	item_palette = static_cast<BrushPalettePanel*>(CreateItemPalette(choicebook, tilesets));
 	choicebook->AddPage(item_palette, item_palette->GetName());
@@ -89,7 +89,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 
 	// Load first page
 	LoadCurrentContents();
-	SelectPage(TILESET_CREATURE);
+	SelectPage(TILESET_TERRAIN);
 
 	Fit();
 }

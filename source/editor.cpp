@@ -53,18 +53,26 @@ MapEditor::MapEditor(CopyBuffer& copybuffer) :
 	wxArrayString warnings;
 	bool ok = true;
 
-	ClientVersionID defaultVersion = ClientVersionID(g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION));
-	if (defaultVersion == CLIENT_VERSION_NONE) {
-		defaultVersion = ClientVersion::getLatestVersion()->getID();
-	}
+	ClientVersionID currentVersion = g_gui.GetCurrentVersionID();
+	if (currentVersion == CLIENT_VERSION_NONE) {
+		ClientVersionID defaultVersion = ClientVersionID(g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION));
+		if (defaultVersion == CLIENT_VERSION_NONE && ClientVersion::getLatestVersion() != nullptr) {
+			defaultVersion = ClientVersion::getLatestVersion()->getID();
+		}
 
-	if (g_gui.GetCurrentVersionID() != defaultVersion) {
-		if (g_gui.CloseAllEditors()) {
-			ok = g_gui.LoadVersion(defaultVersion, error, warnings);
-			g_gui.PopupDialog("Error", error, wxOK);
-			g_gui.ListDialog("Warnings", warnings);
+		if (defaultVersion != CLIENT_VERSION_NONE) {
+			if (g_gui.CloseAllEditors()) {
+				ok = g_gui.LoadVersion(defaultVersion, error, warnings);
+				if (!ok) {
+					g_gui.PopupDialog("Error", error, wxOK);
+					g_gui.ListDialog("Warnings", warnings);
+				}
+			} else {
+				throw std::runtime_error("All maps of different versions were not closed.");
+			}
 		} else {
-			throw std::runtime_error("All maps of different versions were not closed.");
+			ok = false;
+			error = "No client version selected or default version available.";
 		}
 	}
 
@@ -180,7 +188,7 @@ void MapEditor::addAction(Action* action, int stacking_delay) {
 	g_gui.UpdateMenus();
 }
 
-void MapEditor::saveMap(FileName filename, bool showdialog) {
+bool MapEditor::saveMap(FileName filename, bool show_dialog) {
 	std::string savefile = filename.GetFullPath().mb_str(wxConvUTF8).data();
 	bool save_as = false;
 	bool save_otgz = false;
@@ -269,7 +277,7 @@ void MapEditor::saveMap(FileName filename, bool showdialog) {
 		map.filename = fn.GetFullPath().mb_str(wxConvUTF8);
 		map.name = fn.GetFullName().mb_str(wxConvUTF8);
 
-		if (showdialog) {
+		if (show_dialog) {
 			g_gui.CreateLoadBar("Saving OTBM map...");
 		}
 
@@ -277,7 +285,7 @@ void MapEditor::saveMap(FileName filename, bool showdialog) {
 		IOMapOTBM mapsaver(map.getVersion());
 		bool success = mapsaver.saveMap(map, fn);
 
-		if (showdialog) {
+		if (show_dialog) {
 			g_gui.DestroyLoadBar();
 		}
 
@@ -322,7 +330,7 @@ void MapEditor::saveMap(FileName filename, bool showdialog) {
 
 		// If failure, don't run the rest of the function
 		if (!success) {
-			return;
+			return false;
 		}
 	}
 
@@ -377,6 +385,7 @@ void MapEditor::saveMap(FileName filename, bool showdialog) {
 	}
 
 	map.clearChanges();
+	return true;
 }
 
 bool MapEditor::importMiniMap(FileName filename, int import, int import_x_offset, int import_y_offset, int import_z_offset) {
@@ -840,14 +849,14 @@ void MapEditor::borderizeSelection() {
 	addAction(action);
 }
 
-void MapEditor::borderizeMap(bool showdialog) {
-	if (showdialog) {
+void MapEditor::borderizeMap(bool show_dialog) {
+	if (show_dialog) {
 		g_gui.CreateLoadBar("Borderizing map...");
 	}
 
 	uint64_t tiles_done = 0;
 	for (TileLocation* tileLocation : map) {
-		if (showdialog && tiles_done % 4096 == 0) {
+		if (show_dialog && tiles_done % 4096 == 0) {
 			g_gui.SetLoadDone(static_cast<int32_t>(tiles_done / double(map.tilecount) * 100.0));
 		}
 
@@ -858,7 +867,7 @@ void MapEditor::borderizeMap(bool showdialog) {
 		++tiles_done;
 	}
 
-	if (showdialog) {
+	if (show_dialog) {
 		g_gui.DestroyLoadBar();
 	}
 }
@@ -889,14 +898,14 @@ void MapEditor::randomizeSelection() {
 	addAction(action);
 }
 
-void MapEditor::randomizeMap(bool showdialog) {
-	if (showdialog) {
+void MapEditor::randomizeMap(bool show_dialog) {
+	if (show_dialog) {
 		g_gui.CreateLoadBar("Randomizing map...");
 	}
 
 	uint64_t tiles_done = 0;
 	for (TileLocation* tileLocation : map) {
-		if (showdialog && tiles_done % 4096 == 0) {
+		if (show_dialog && tiles_done % 4096 == 0) {
 			g_gui.SetLoadDone(static_cast<int32_t>(tiles_done / double(map.tilecount) * 100.0));
 		}
 
@@ -927,13 +936,13 @@ void MapEditor::randomizeMap(bool showdialog) {
 		++tiles_done;
 	}
 
-	if (showdialog) {
+	if (show_dialog) {
 		g_gui.DestroyLoadBar();
 	}
 }
 
-void MapEditor::clearInvalidHouseTiles(bool showdialog) {
-	if (showdialog) {
+void MapEditor::clearInvalidHouseTiles(bool show_dialog) {
+	if (show_dialog) {
 		g_gui.CreateLoadBar("Clearing invalid house tiles...");
 	}
 
@@ -966,7 +975,7 @@ void MapEditor::clearInvalidHouseTiles(bool showdialog) {
 
 	uint64_t tiles_done = 0;
 	for (MapIterator map_iter = map.begin(); map_iter != map.end(); ++map_iter) {
-		if (showdialog && tiles_done % 4096 == 0) {
+		if (show_dialog && tiles_done % 4096 == 0) {
 			g_gui.SetLoadDone(int(tiles_done / double(map.tilecount) * 100.0));
 		}
 
@@ -980,19 +989,19 @@ void MapEditor::clearInvalidHouseTiles(bool showdialog) {
 		++tiles_done;
 	}
 
-	if (showdialog) {
+	if (show_dialog) {
 		g_gui.DestroyLoadBar();
 	}
 }
 
-void MapEditor::clearModifiedTileState(bool showdialog) {
-	if (showdialog) {
+void MapEditor::clearModifiedTileState(bool show_dialog) {
+	if (show_dialog) {
 		g_gui.CreateLoadBar("Clearing modified state from all tiles...");
 	}
 
 	uint64_t tiles_done = 0;
 	for (MapIterator map_iter = map.begin(); map_iter != map.end(); ++map_iter) {
-		if (showdialog && tiles_done % 4096 == 0) {
+		if (show_dialog && tiles_done % 4096 == 0) {
 			g_gui.SetLoadDone(int(tiles_done / double(map.tilecount) * 100.0));
 		}
 
@@ -1002,7 +1011,7 @@ void MapEditor::clearModifiedTileState(bool showdialog) {
 		++tiles_done;
 	}
 
-	if (showdialog) {
+	if (show_dialog) {
 		g_gui.DestroyLoadBar();
 	}
 }
@@ -1945,6 +1954,29 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		}
 
 		addBatch(batch, 2);
+	} else if (brush->isDoodad()) {
+		if (dodraw) {
+			for (PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
+				drawInternal(*it, alt, dodraw);
+				if (tilestodraw.size() > 1) {
+					g_gui.FillDoodadPreviewBuffer();
+				}
+			}
+		} else {
+			BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
+			Action* action = actionQueue->createAction(batch);
+			for (PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
+				TileLocation* location = map.createTileL(*it);
+				Tile* tile = location->get();
+				if (tile) {
+					Tile* new_tile = tile->deepCopy(map);
+					brush->undraw(&map, new_tile);
+					action->addChange(newd Change(new_tile));
+				}
+			}
+			batch->addAndCommitAction(action);
+			addBatch(batch, 2);
+		}
 	} else {
 		Action* action = actionQueue->createAction(ACTION_DRAW);
 		for (PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {

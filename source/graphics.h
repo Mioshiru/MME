@@ -109,7 +109,7 @@ protected:
 	class NormalImage;
 	class TemplateImage;
 
-	wxMemoryDC* getDC(SpriteSize size);
+	wxBitmap* getBitmap(SpriteSize size);
 	TemplateImage* getTemplateImage(int sprite_index, const Outfit& outfit);
 
 	class Image {
@@ -181,7 +181,7 @@ protected:
 	};
 
 	uint32_t id;
-	wxMemoryDC* dc[SPRITE_SIZE_COUNT];
+	wxBitmap* bm[SPRITE_SIZE_COUNT];
 
 public:
 	// GameSprite info
@@ -313,6 +313,9 @@ public:
 	}
 	wxFileName getSpritesFileName() const {
 		return sprites_file;
+	}
+	DatFormat getDatFormat() const {
+		return dat_format;
 	}
 
 	bool hasTransparency() const;

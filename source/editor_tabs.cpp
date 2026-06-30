@@ -135,8 +135,12 @@ void MapTabbook::OnAllowNotebookDND(wxAuiNotebookEvent& evt) {
 
 void MapTabbook::AddTab(EditorTab* tab, bool select) {
 	tab->GetWindow()->Reparent(notebook);
-	notebook->AddPage(tab->GetWindow(), tab->GetTitle(), select);
+	// Register the tab in conv BEFORE AddPage(), because AddPage() with
+	// select=true fires OnNotebookPageChanged synchronously. At that point
+	// GetTab() is called, which looks up conv. If conv is not yet populated,
+	// GetCurrentMapTab() returns nullptr and GetCurrentMap() crashes.
 	conv[tab->GetWindow()] = tab;
+	notebook->AddPage(tab->GetWindow(), tab->GetTitle(), select);
 }
 
 void MapTabbook::SetFocusedTab(int idx) {

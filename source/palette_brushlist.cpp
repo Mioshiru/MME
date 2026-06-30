@@ -87,7 +87,7 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 
 	for (TilesetContainer::const_iterator iter = tilesets.begin(); iter != tilesets.end(); ++iter) {
 		const TilesetCategory* tcg = iter->second->getCategory(category);
-		if (tcg) {
+		if (tcg && tcg->size() > 0) {
 			BrushPanel* panel = newd BrushPanel(tmp_choicebook);
 			panel->AssignTileset(tcg);
 			tmp_choicebook->AddPage(panel, wxstr(iter->second->name));
@@ -102,7 +102,14 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 	search_panel->AssignBrushes(global_brushes);
 
 	if (tileset_choice->GetCount() > 0) {
-		tileset_choice->SetSelection(0);
+		int caveIdx = tileset_choice->FindString("Cave");
+		if (caveIdx != wxNOT_FOUND) {
+			tileset_choice->SetSelection(caveIdx);
+			tmp_choicebook->SetSelection(caveIdx);
+		} else {
+			tileset_choice->SetSelection(0);
+			tmp_choicebook->SetSelection(0);
+		}
 	}
 	tmp_choicebook->GetChoiceCtrl()->Hide();
 
@@ -774,7 +781,13 @@ bool BrushListBox::SelectBrush(const Brush* whatbrush) {
 
 void BrushListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const {
 	ASSERT(n < visible_brushes.size());
-	Sprite* spr = g_gui.gfx.getSprite(visible_brushes[n]->getLookID());
+	int look_id = visible_brushes[n]->getLookID();
+	Sprite* spr = nullptr;
+	if (look_id > 0 && g_items.typeExists(look_id)) {
+		spr = g_gui.gfx.getSprite(g_items[look_id].clientID);
+	} else {
+		spr = g_gui.gfx.getSprite(look_id);
+	}
 	if (spr) {
 		spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
 	}

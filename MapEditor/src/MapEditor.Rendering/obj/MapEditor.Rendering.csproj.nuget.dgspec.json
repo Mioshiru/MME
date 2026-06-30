@@ -1,0 +1,209 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\MapEditor.Rendering.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj",
+        "projectName": "MapEditor.Assets",
+        "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj",
+        "packagesPath": "C:\\Users\\weber\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\weber\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj": {
+                "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Silk.NET.OpenGL": {
+              "target": "Package",
+              "version": "[2.22.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\tools\\.dotnet\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj",
+        "projectName": "MapEditor.Core",
+        "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj",
+        "packagesPath": "C:\\Users\\weber\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\weber\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\tools\\.dotnet\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\MapEditor.Rendering.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\MapEditor.Rendering.csproj",
+        "projectName": "MapEditor.Rendering",
+        "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\MapEditor.Rendering.csproj",
+        "packagesPath": "C:\\Users\\weber\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\weber\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj": {
+                "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj"
+              },
+              "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj": {
+                "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Silk.NET.OpenGL": {
+              "target": "Package",
+              "version": "[2.22.0, )"
+            },
+            "StbImageSharp": {
+              "target": "Package",
+              "version": "[2.30.15, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\tools\\.dotnet\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

@@ -173,6 +173,7 @@
 		</menu>
 		<menu name="Show/Hide Filters">
 			<item name="Show Animation" action="SHOW_PREVIEW" help="Show item animations."/>
+			<item name="Show FPS" action="SHOW_FPS" help="Toggle frames per second display."/>
 			<item name="Show Light" action="SHOW_LIGHTS" help="Show lights."/>
 			<item name="Show Light Strength" action="SHOW_LIGHT_STR" help="Show indicators of light strength."/>
 			<item name="Show Technical Items" action="SHOW_TECHNICAL_ITEMS" help="Shows some of special items that are not visible in game."/>
@@ -200,11 +201,6 @@
 				<item name="Creature" action="SELECT_CREATURE" help="Select the Creature palette."/>
 				<item name="Waypoint" action="SELECT_WAYPOINT" help="Select the Waypoint palette."/>
 				<item name="RAW" action="SELECT_RAW" help="Select the RAW palette."/>
-			</menu>
-			<menu name="Toolbars">
-				<item name="Brushes" action="VIEW_TOOLBARS_BRUSHES" help="Show or hide the Brushes toolbar."/>
-				<item name="Position" action="VIEW_TOOLBARS_POSITION" help="Show or hide the Position toolbar."/>
-				<item name="Sizes" action="VIEW_TOOLBARS_SIZES" help="Show or hide the Sizes toolbar."/>
 			</menu>
 			<item name="Show Minimap HUD" action="SHOW_MINIMAP_HUD" help="Toggle visibility of the in-canvas minimap."/>
 		</menu>

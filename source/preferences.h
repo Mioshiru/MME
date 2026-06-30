@@ -129,6 +129,13 @@ public:
 	wxButton* open_folder_btn;
 	wxHyperlinkCtrl* help_link;
 	wxCheckBox* check_sigs_chkbox;
+	wxChoice* performance_preset_choice;
+	wxCheckBox* performance_vsync_chkbox;
+	wxCheckBox* performance_multimonitor_chkbox;
+	wxSlider* performance_worker_threads_slider;
+	wxChoice* performance_aa_choice;
+	wxSlider* performance_crt_slider;
+	wxSlider* performance_water_slider;
 
 	void UpdateScanStatus();
 
@@ -138,10 +145,9 @@ public:
 
 	// Create windows
 	wxNotebookPage* CreateGeneralPage();
-	wxNotebookPage* CreateGraphicsPage();
+	wxNotebookPage* CreatePerformancePage();
 	wxNotebookPage* CreateUIPage();
 	wxNotebookPage* CreateEditorPage();
-	wxNotebookPage* CreateClientPage();
 
 	DECLARE_EVENT_TABLE()
 };

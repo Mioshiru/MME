@@ -155,11 +155,15 @@ protected:
 
   bool dragging;
   bool boundbox_selection;
+  bool dragging_selection;
+  int drag_start_map_x;
+  int drag_start_map_y;
   bool screendragging;
   bool isPasting() const;
   bool drawing;
   bool dragging_draw;
   bool replace_dragging;
+  bool rectangle_mode;
 
   uint8_t *screenshot_buffer;
 

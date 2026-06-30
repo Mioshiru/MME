@@ -19,7 +19,8 @@ void MapCanvas::UpdateMinimapTexture() {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 180, 180, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 	}
 
-	int cx, cy; GetScreenCenter(&center_x, &center_y);
+	int center_x, center_y;
+	GetScreenCenter(&center_x, &center_y);
 	int start_x = std::max(0, center_x - 90);
 	int start_y = std::max(0, center_y - 90);
 	minimap_start_x = start_x; minimap_start_y = start_y;

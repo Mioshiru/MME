@@ -3,6 +3,7 @@
 #include "editor.h"
 #include "main_menubar.h"
 #include "application.h"
+#include "common_windows.h"
 
 void GUI::SaveCurrentMap(FileName filename, bool showdialog) {
 	MapTab* mapTab = GetCurrentMapTab();
@@ -22,13 +23,42 @@ void GUI::SaveCurrentMap(FileName filename, bool showdialog) {
 }
 
 bool GUI::NewMap() {
+	ScopedAction action("GUI::NewMap");
 	FinishWelcomeDialog();
+	
+	// Ensure the user actually has a valid version loaded, else trigger choice prompt
+	if (loaded_version == CLIENT_VERSION_NONE) {
+		wxCommandEvent trigger_event(WELCOME_DIALOG_ACTION);
+		trigger_event.SetId(wxID_NEW);
+		OnWelcomeDialogAction(trigger_event);
+		return true;
+	}
+
+	// Memory safety: verify that the graphics/sprite data was actually loaded
+	// before constructing the Editor. If loadSpriteMetadata failed or returned
+	// an unknown DAT format, accessing sprite_space[id] will be a null pointer
+	// dereference and produce a 0xc0000005 access violation.
+	if (gfx.getDatFormat() == DAT_FORMAT_UNKNOWN) {
+		ClientVersion* cv = getLoadedVersion();
+		wxString nameStr = cv ? wxString::FromUTF8(cv->getName()) : wxString("Unknown");
+		PopupDialog(root, "Asset Load Error",
+			"Failed to load assets for version " + nameStr,
+			wxOK | wxICON_ERROR);
+		return false;
+	}
+
 	Editor* editor;
 	try { editor = newd Editor(copybuffer); } catch (std::runtime_error& e) {
 		PopupDialog(root, "Error!", wxString(e.what(), wxConvUTF8), wxOK); return false;
 	}
 	auto* mapTab = newd MapTab(tabbook, editor);
 	mapTab->OnSwitchEditorMode(mode);
+
+	// Show map properties window once upon map creation
+	MapPropertiesWindow* propWindow = newd MapPropertiesWindow(root, mapTab, *editor);
+	propWindow->ShowModal();
+	propWindow->Destroy();
+
 	editor->map.clearChanges();
 	UpdateTitle(); RefreshPalettes();
 	root->UpdateMenubar(); root->Refresh();
@@ -44,6 +74,17 @@ void GUI::OpenMap() {
 bool GUI::LoadMap(const FileName& fileName) {
 	FinishWelcomeDialog();
 	if (GetCurrentEditor() && !GetCurrentMap().hasChanged() && !GetCurrentMap().hasFile()) CloseCurrentEditor();
+	// Memory safety: verify that the graphics/sprite data was actually loaded
+	// before constructing the Editor.
+	if (gfx.getDatFormat() == DAT_FORMAT_UNKNOWN) {
+		ClientVersion* cv = getLoadedVersion();
+		wxString nameStr = cv ? wxString::FromUTF8(cv->getName()) : wxString("Unknown");
+		PopupDialog(root, "Asset Load Error",
+			"Failed to load assets for version " + nameStr,
+			wxOK | wxICON_ERROR);
+		return false;
+	}
+
 	Editor* editor;
 	try { editor = newd Editor(copybuffer, fileName); } catch (std::runtime_error& e) {
 		PopupDialog(root, "Error!", wxString(e.what(), wxConvUTF8), wxOK); return false;
@@ -94,13 +135,16 @@ bool GUI::IsAnyEditorOpen() const {
 
 Map& GUI::GetCurrentMap() {
 	Editor* editor = GetCurrentEditor();
- ASSERT(editor);
+	ASSERT(editor);
+	if (!editor) {
+		throw std::runtime_error("GetCurrentMap() called with no active editor");
+	}
 	return editor->map;
 }
 
 void GUI::CloseCurrentEditor() {
 	if (tabbook && tabbook->GetTabCount() > 0) {
-		tabbook->DeleteTab(tabbook->GetTabSelection());
+		tabbook->DeleteTab(tabbook->GetSelection());
 	}
 }
 

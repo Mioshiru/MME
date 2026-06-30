@@ -42,7 +42,7 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings) {
 	}
 
 	if ((attribute = node.attribute("server_lookid"))) {
-		look_id = g_items[attribute.as_ushort()].clientID;
+		look_id = attribute.as_ushort();
 	}
 
 	for (pugi::xml_node childNode = node.first_child(); childNode; childNode = childNode.next_sibling()) {
@@ -370,20 +370,16 @@ void WallBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 	tile->addWallItem(Item::Create(id));
 }
 
-bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, uint32_t x, uint32_t y, uint32_t z) {
+bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, unsigned int x, unsigned int y, unsigned int z) {
 	Tile* t = map->getTile(x, y, z);
-	if (!t) {
-		return false;
-	}
-
-	ItemVector::const_iterator it = t->items.begin();
+	if (!t) return false;
+	
+	ItemVector::iterator it = t->items.begin();
 	for (; it != t->items.end(); ++it) {
 		Item* item = *it;
 		if (item->isWall()) {
 			WallBrush* wb = item->getWallBrush();
-			if (wb == wall_brush) {
-				return !g_items[item->getID()].wall_hate_me;
-			} else if (wall_brush->friendOf(wb) || wb->friendOf(wall_brush)) {
+			if (wb && !wb->isWallDecoration()) {
 				return !g_items[item->getID()].wall_hate_me;
 			}
 		}

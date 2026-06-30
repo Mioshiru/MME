@@ -19,6 +19,7 @@
 #define RME_FILEHANDLE_H_
 
 #include "definitions.h"
+#include <boost/noncopyable.hpp>
 
 #include <stdexcept>
 #include <string>

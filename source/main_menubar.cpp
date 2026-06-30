@@ -21,7 +21,6 @@
 #include "application.h"
 #include "preferences.h"
 #include "about_window.h"
-#include "dat_debug_view.h"
 #include "result_window.h"
 #include "extension_window.h"
 #include "find_item_window.h"
@@ -155,6 +154,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(SHOW_PATHING, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_TOOLTIPS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_PREVIEW, wxITEM_CHECK, OnChangeViewSettings);
+	MAKE_ACTION(SHOW_FPS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_WALL_HOOKS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_TOWNS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(ALWAYS_SHOW_ZONES, wxITEM_CHECK, OnChangeViewSettings);
@@ -195,7 +195,6 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(FLOOR_14, wxITEM_RADIO, OnChangeFloor);
 	MAKE_ACTION(FLOOR_15, wxITEM_RADIO, OnChangeFloor);
 
-	MAKE_ACTION(DEBUG_VIEW_DAT, wxITEM_NORMAL, OnDebugViewDat);
 	MAKE_ACTION(EXTENSIONS, wxITEM_NORMAL, OnListExtensions);
 	MAKE_ACTION(GOTO_WEBSITE, wxITEM_NORMAL, OnGotoWebsite);
 	MAKE_ACTION(ABOUT, wxITEM_NORMAL, OnAbout);
@@ -436,8 +435,6 @@ void MainMenuBar::Update() {
 	EnableItem(LIVE_JOIN, loaded);
 	EnableItem(LIVE_CLOSE, is_live);
 
-	EnableItem(DEBUG_VIEW_DAT, loaded);
-
 	UpdateFloorMenu();
 }
 
@@ -496,6 +493,7 @@ void MainMenuBar::LoadValues() {
 	CheckItem(SHOW_PATHING, g_settings.getBoolean(Config::SHOW_BLOCKING));
 	CheckItem(SHOW_TOOLTIPS, g_settings.getBoolean(Config::SHOW_TOOLTIPS));
 	CheckItem(SHOW_PREVIEW, g_settings.getBoolean(Config::SHOW_PREVIEW));
+	CheckItem(SHOW_FPS, g_settings.getBoolean(Config::SHOW_FPS));
 	CheckItem(SHOW_WALL_HOOKS, g_settings.getBoolean(Config::SHOW_WALL_HOOKS));
 	CheckItem(SHOW_TOWNS, g_settings.getBoolean(Config::SHOW_TOWNS));
 	CheckItem(ALWAYS_SHOW_ZONES, g_settings.getBoolean(Config::ALWAYS_SHOW_ZONES));
@@ -663,6 +661,9 @@ wxObject* MainMenuBar::LoadItem(pugi::xml_node node, wxMenu* parent, wxArrayStri
 		}
 
 		std::string name = attribute.as_string();
+		if (name == "Toolbars") {
+			return nullptr;
+		}
 		std::string menuName = name;
 		std::replace(name.begin(), name.end(), '$', '&');
 
@@ -760,7 +761,10 @@ wxObject* MainMenuBar::LoadItem(pugi::xml_node node, wxMenu* parent, wxArrayStri
 }
 
 void MainMenuBar::OnNew(wxCommandEvent& WXUNUSED(event)) {
-	g_gui.NewMap();
+	// Trigger the Welcome Dialog action that properly asks for the version (preserving the select version dialog)
+	wxCommandEvent trigger_event(WELCOME_DIALOG_ACTION);
+	trigger_event.SetId(wxID_NEW);
+	g_gui.OnWelcomeDialogAction(trigger_event);
 }
 
 void MainMenuBar::OnGenerateMap(wxCommandEvent& WXUNUSED(event)) {
@@ -865,12 +869,6 @@ void MainMenuBar::OnExportTilesets(wxCommandEvent& WXUNUSED(event)) {
 		dlg.ShowModal();
 		dlg.Destroy();
 	}
-}
-
-void MainMenuBar::OnDebugViewDat(wxCommandEvent& WXUNUSED(event)) {
-	wxDialog dlg(frame, wxID_ANY, "Debug .dat file", wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
-	new DatDebugView(&dlg);
-	dlg.ShowModal();
 }
 
 void MainMenuBar::OnReloadDataFiles(wxCommandEvent& WXUNUSED(event)) {
@@ -1129,6 +1127,7 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event) {
 	g_settings.setInteger(Config::SHOW_BLOCKING, IsItemChecked(MenuBar::SHOW_PATHING));
 	g_settings.setInteger(Config::SHOW_TOOLTIPS, IsItemChecked(MenuBar::SHOW_TOOLTIPS));
 	g_settings.setInteger(Config::SHOW_PREVIEW, IsItemChecked(MenuBar::SHOW_PREVIEW));
+	g_settings.setInteger(Config::SHOW_FPS, IsItemChecked(MenuBar::SHOW_FPS));
 	g_settings.setInteger(Config::SHOW_WALL_HOOKS, IsItemChecked(MenuBar::SHOW_WALL_HOOKS));
 	g_settings.setInteger(Config::SHOW_TOWNS, IsItemChecked(MenuBar::SHOW_TOWNS));
 	g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, IsItemChecked(MenuBar::ALWAYS_SHOW_ZONES));

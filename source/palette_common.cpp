@@ -30,7 +30,7 @@
 // Palette Panel
 
 BEGIN_EVENT_TABLE(PalettePanel, wxPanel)
-EVT_TIMER(PALETTE_DELAYED_REFRESH_TIMER, WaypointPalettePanel::OnRefreshTimer)
+EVT_TIMER(PALETTE_DELAYED_REFRESH_TIMER, PalettePanel::OnRefreshTimer)
 END_EVENT_TABLE()
 
 PalettePanel::PalettePanel(wxWindow* parent, wxWindowID id, long style) :
@@ -296,6 +296,8 @@ void BrushSizePanel::OnSwitchIn() {
 }
 
 void BrushSizePanel::OnUpdateBrushSize(BrushShape shape, int size) {
+	if (!loaded) return;
+	
 	if (shape == BRUSHSHAPE_SQUARE) {
 		brushshapeCircleButton->SetValue(false);
 		brushshapeSquareButton->SetValue(true);
@@ -399,7 +401,6 @@ EVT_TOGGLEBUTTON(PALETTE_TERRAIN_QUEST_DOOR, BrushToolPanel::OnClickQuestDoorBut
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_HATCH_DOOR, BrushToolPanel::OnClickHatchDoorButton)
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_WINDOW_DOOR, BrushToolPanel::OnClickWindowDoorButton)
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_NORMAL_ALT_DOOR, BrushToolPanel::OnClickNormalAltDoorButton)
-EVT_TOGGLEBUTTON(PALETTE_TERRAIN_ARCHWAY_DOOR, BrushToolPanel::OnClickArchwayDoorButton)
 
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_PZ_TOOL, BrushToolPanel::OnClickPZBrushButton)
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_NOPVP_TOOL, BrushToolPanel::OnClickNOPVPBrushButton)
@@ -423,7 +424,6 @@ BrushToolPanel::BrushToolPanel(wxWindow* parent) :
 	hatchDoorButton(nullptr),
 	windowDoorButton(nullptr),
 	normalDoorAltButton(nullptr),
-	archwayDoorButton(nullptr),
 	pzBrushButton(nullptr),
 	nopvpBrushButton(nullptr),
 	nologBrushButton(nullptr),
@@ -441,7 +441,7 @@ void BrushToolPanel::InvalidateContents() {
 		DestroyChildren();
 		SetSizer(nullptr);
 
-		optionalBorderButton = eraserButton = normalDoorButton = lockedDoorButton = magicDoorButton = questDoorButton = hatchDoorButton = windowDoorButton = normalDoorAltButton = archwayDoorButton = pzBrushButton = nopvpBrushButton = nologBrushButton = pvpzoneBrushButton = prefabCreatorButton = nullptr;
+		optionalBorderButton = eraserButton = normalDoorButton = lockedDoorButton = magicDoorButton = questDoorButton = hatchDoorButton = windowDoorButton = normalDoorAltButton = pzBrushButton = nopvpBrushButton = nologBrushButton = pvpzoneBrushButton = prefabCreatorButton = nullptr;
 
 		loaded = false;
 	}
@@ -515,10 +515,6 @@ void BrushToolPanel::LoadAllContents() {
 	size_sizer->Add(normalDoorAltButton = newd BrushButton(this, g_gui.normal_door_alt_brush, render_size, PALETTE_TERRAIN_NORMAL_ALT_DOOR));
 	normalDoorAltButton->SetToolTip("Normal Door (alt)");
 
-	ASSERT(g_gui.archway_door_brush);
-	size_sizer->Add(archwayDoorButton = newd BrushButton(this, g_gui.archway_door_brush, render_size, PALETTE_TERRAIN_ARCHWAY_DOOR));
-	archwayDoorButton->SetToolTip("Archway Tool");
-
 	size_sizer->AddSpacer(large_icons ? 42 : 24);
 
 	wxSizer* checkbox_sub_sizer = newd wxBoxSizer(wxVERTICAL);
@@ -579,7 +575,6 @@ void BrushToolPanel::DeselectAll() {
 		hatchDoorButton->SetValue(false);
 		windowDoorButton->SetValue(false);
 		normalDoorAltButton->SetValue(false);
-		archwayDoorButton->SetValue(false);
 		pzBrushButton->SetValue(false);
 		nopvpBrushButton->SetValue(false);
 		nologBrushButton->SetValue(false);
@@ -615,9 +610,6 @@ Brush* BrushToolPanel::GetSelectedBrush() const {
 	}
 	if (normalDoorAltButton->GetValue()) {
 		return g_gui.normal_door_alt_brush;
-	}
-	if (archwayDoorButton->GetValue()) {
-		return g_gui.archway_door_brush;
 	}
 	if (pzBrushButton->GetValue()) {
 		return g_gui.pz_brush;
@@ -657,8 +649,6 @@ bool BrushToolPanel::SelectBrush(const Brush* whatbrush) {
 		button = windowDoorButton;
 	} else if (whatbrush == g_gui.normal_door_alt_brush) {
 		button = normalDoorAltButton;
-	} else if (whatbrush == g_gui.archway_door_brush) {
-		button = archwayDoorButton;
 	} else if (whatbrush == g_gui.pz_brush) {
 		button = pzBrushButton;
 	} else if (whatbrush == g_gui.rook_brush) {
@@ -809,7 +799,12 @@ BrushButton::BrushButton(wxWindow* parent, Brush* _brush, RenderSize sz, uint32_
 	brush(_brush) {
 	ASSERT(sz != RENDER_SIZE_64x64);
 	if (brush) {
-		SetSprite(brush->getLookID());
+		int look_id = brush->getLookID();
+		if (look_id > 0 && g_items.typeExists(look_id)) {
+			SetSprite(g_items[look_id].clientID);
+		} else {
+			SetSprite(look_id);
+		}
 		SetToolTip(wxstr(brush->getName()));
 	} else {
 		SetSprite(0);

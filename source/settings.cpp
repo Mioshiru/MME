@@ -321,6 +321,7 @@ void Settings::IO(IOMode mode) {
 	Int(USE_LARGE_HOUSE_SIZEBAR, 1);
 	Int(USE_LARGE_RAW_SIZEBAR, 1);
 	Int(USE_GUI_SELECTION_SHADOW, 0);
+	Int(SHOW_FPS, 1);
 	Int(PALETTE_COL_COUNT, 8);
 	String(PALETTE_TERRAIN_STYLE, "large icons");
 	String(PALETTE_COLLECTION_STYLE, "large icons");
@@ -351,9 +352,9 @@ void Settings::IO(IOMode mode) {
 	String(NUMERICAL_HOTKEYS, "none:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\n");
 
 	Int(SHOW_TOOLBAR_STANDARD, 1);
-	Int(SHOW_TOOLBAR_BRUSHES, 0);
-	Int(SHOW_TOOLBAR_POSITION, 0);
-	Int(SHOW_TOOLBAR_SIZES, 0);
+	Int(SHOW_TOOLBAR_BRUSHES, 1);
+	Int(SHOW_TOOLBAR_POSITION, 1);
+	Int(SHOW_TOOLBAR_SIZES, 1);
 	String(TOOLBAR_STANDARD_LAYOUT, "");
 	String(TOOLBAR_BRUSHES_LAYOUT, "");
 	String(TOOLBAR_POSITION_LAYOUT, "");

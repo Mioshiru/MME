@@ -1,0 +1,6 @@
+#include "main.h"
+#include "materials.h"
+
+void Materials::clear() {}
+void Materials::createOtherTileset() {}
+bool Materials::isInTileset(Item *, const std::string) const { return false; }

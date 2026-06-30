@@ -1,5 +1,7 @@
 #include "main.h"
+#include "lua/lua_script_manager.h"
 #include "map_drawer.h"
+#include "renderer.h"
 #include "map_display.h"
 #include "gui.h"
 #include "editor.h"
@@ -11,6 +13,17 @@
 	#include <GLUT/glut.h>
 #else
 	#include <GL/glut.h>
+#endif
+
+#ifdef _WIN32
+#include <GL/glext.h>
+#ifndef GL_ARRAY_BUFFER
+#define GL_ARRAY_BUFFER 0x8892
+#define GL_STATIC_DRAW 0x88E4
+#endif
+extern "C" void APIENTRY glGenBuffers(GLsizei n, GLuint* buffers);
+extern "C" void APIENTRY glBindBuffer(GLenum target, GLuint buffer);
+extern "C" void APIENTRY glBufferData(GLenum target, GLsizeiptr size, const void* data, GLenum usage);
 #endif
 
 // VBO & Batching Globals (Internal to Drawer System)
@@ -154,30 +167,6 @@ void MapDrawer::DrawMap() {
 					Floor* f = nd->getFloor(map_z);
 					if (!f) continue;
 
-void MapDrawer::RebuildFloorVBO(QTreeNode* nd, int map_z) {
-    Floor* f = nd->getFloor(map_z);
-    if (f->vbo_id == 0) glGenBuffers(1, &f->vbo_id);
-
-    g_vbo_vertices.clear();
-    g_vbo_batches.clear();
-    // Vorallozierung für 4x4 Tiles à durchschnittlich 4 Vertices pro Item
-    g_vbo_vertices.reserve(16 * 4 * 4); 
-    
-    g_vbo_building = true;
-    for (int map_x = 0; map_x < 4; ++map_x) {
-        for (int map_y = 0; map_y < 4; ++map_y) {
-            DrawTile(nd->getTile(map_x, map_y, map_z));
-        }
-    }
-    g_vbo_building = false;
-
-    if (!g_vbo_vertices.empty()) {
-        glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
-        glBufferData(GL_ARRAY_BUFFER, g_vbo_vertices.size() * sizeof(RME_Rendering::MapVertex), g_vbo_vertices.data(), GL_STATIC_DRAW);
-        g_floor_batches[f->vbo_id] = g_vbo_batches;
-    }
-}
-
 					// Execute VBO Draw Call
 					RenderFloorVBO(f);
 
@@ -193,6 +182,37 @@ void MapDrawer::RebuildFloorVBO(QTreeNode* nd, int map_z) {
 			}
 		}
 	}
+}
+
+void MapDrawer::RebuildFloorVBO(QTreeNode* nd, int map_z) {
+	Floor* f = nd ? nd->getFloor(map_z) : nullptr;
+	if (!f) return;
+	if (f->vbo_id == 0) {
+		glGenBuffers(1, &f->vbo_id);
+	}
+
+	g_vbo_vertices.clear();
+	g_vbo_batches.clear();
+	g_vbo_vertices.reserve(16 * 4 * 4);
+
+	g_vbo_building = true;
+	for (int map_x = 0; map_x < 4; ++map_x) {
+		for (int map_y = 0; map_y < 4; ++map_y) {
+			DrawTile(nd->getTile(map_x, map_y, map_z));
+		}
+	}
+	g_vbo_building = false;
+
+	if (!g_vbo_vertices.empty()) {
+		glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
+		glBufferData(GL_ARRAY_BUFFER, g_vbo_vertices.size() * sizeof(RME_Rendering::MapVertex), g_vbo_vertices.data(), GL_STATIC_DRAW);
+		g_floor_batches[f->vbo_id] = g_vbo_batches;
+	}
+}
+
+void MapDrawer::RenderFloorVBO(Floor* f) {
+	if (!f || f->vbo_id == 0) return;
+	glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
 }
 
 void MapDrawer::bindTexture(int texture_number) {

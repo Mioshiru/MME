@@ -26,7 +26,7 @@
 #include "dcbutton.h"
 #include "brush_enums.h"
 #include <memory> // Für std::unique_ptr 
-#include "render_backend.h" // Hinzugefügt für RME_Rendering::RenderBackend
+#include "renderer.h" // Hinzugefügt für RME_Rendering::RenderBackend
 
 namespace RME_Rendering { class RenderBackend; } // Forward-Deklaration
 namespace RME::Core { class AsyncLoader; }
@@ -205,6 +205,7 @@ public:
 	void SetTitle(wxString newtitle);
 	void UpdateTitle();
 	void UpdateMenus();
+	void UpdateMinimap();
 	void ShowToolbar(ToolBarID id, bool show);
 	void SetStatusText(wxString text);
 	void AddDebugLog(const std::string& msg, bool isError = false);
@@ -359,7 +360,7 @@ public:
 
 	// Map
 	Map& GetCurrentMap();
-	int GetOpenMapCount();
+	int GetOpenMapCount() const;
 	bool ShouldSave();
 
 	void RegisterVirtualBrush(const std::string& name, const std::string& data, const std::string& iconName);

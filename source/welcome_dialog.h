@@ -24,14 +24,18 @@ wxDECLARE_EVENT(WELCOME_DIALOG_ACTION, wxCommandEvent);
 wxDECLARE_EVENT(WELCOME_DIALOG_DELETE_RECENT, wxCommandEvent);
 
 class WelcomeDialogPanel;
+class TransparentStaticBitmap;
+class TransparentStaticText;
 
 class WelcomeDialog : public wxDialog {
 public:
 	WelcomeDialog(const wxString& titleText, const wxString& versionText, const wxSize& size, const wxBitmap& rmeLogo, const std::vector<wxString>& recentFiles);
+	void OnRemoveRecentRequested(wxCommandEvent& event);
+	void OnSlotAction(wxCommandEvent& event);
 	void OnButtonClicked(const wxMouseEvent& event);
 	void OnCheckboxClicked(const wxCommandEvent& event);
-	void OnRecentItemClicked(const wxMouseEvent& event);
-	void OnRemoveRecentRequested(wxCommandEvent& event);
+
+	WelcomeDialogPanel* GetPanel() { return m_welcome_dialog_panel; }
 
 private:
 	WelcomeDialogPanel* m_welcome_dialog_panel;
@@ -74,29 +78,25 @@ private:
 	bool m_is_hover;
 };
 
-class RecentMapsPanel : public wxPanel {
-public:
-	RecentMapsPanel(wxWindow* parent, WelcomeDialog* dialog, const wxColour& base_colour, const std::vector<wxString>& recent_files);
-};
-
 class RecentItem : public wxPanel {
 public:
-	RecentItem(wxWindow* parent, const wxColour& base_colour, const wxString& item_name);
+	RecentItem(wxWindow* parent, WelcomeDialog* dialog, const wxColour& base_colour, const wxString& item_name, int slot_index);
+	void OnPaint(const wxPaintEvent& event);
 	void OnMouseEnter(const wxMouseEvent& event);
 	void OnMouseLeave(const wxMouseEvent& event);
-	void PropagateItemClicked(wxMouseEvent& event);
-	void OnDeleteClicked(const wxMouseEvent& event);
+	void OnMouseClick(const wxMouseEvent& event);
+	void OnRightClick(const wxMouseEvent& event);
 	wxString GetText() {
 		return m_item_text;
 	};
 
 private:
+	WelcomeDialog* m_dialog;
 	wxColour m_text_colour;
 	wxColour m_text_colour_hover;
-	wxPanel* m_delete_button;
-	wxStaticText* m_title;
-	wxStaticText* m_file_path;
 	wxString m_item_text;
+	int m_slot_index;
+	bool m_is_hover;
 };
 
 #endif // WELCOME_DIALOG_H

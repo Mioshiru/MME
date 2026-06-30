@@ -26,45 +26,246 @@
 wxDEFINE_EVENT(WELCOME_DIALOG_ACTION, wxCommandEvent);
 wxDEFINE_EVENT(WELCOME_DIALOG_DELETE_RECENT, wxCommandEvent);
 
+namespace {
+wxBitmap LoadLandingPageBitmap(const wxBitmap& fallback_logo) {
+	if (fallback_logo.IsOk()) {
+		return fallback_logo;
+	}
+
+	wxArrayString candidates;
+	wxString exe_dir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
+	wxString cwd = wxGetCwd();
+	candidates.Add(exe_dir + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+	candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+	candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+	candidates.Add(cwd + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+	candidates.Add(cwd + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+	candidates.Add(cwd + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
+
+	for (const wxString& candidate : candidates) {
+		if (!wxFileExists(candidate)) {
+			continue;
+		}
+
+		wxImage image;
+		if (image.LoadFile(candidate, wxBITMAP_TYPE_PNG)) {
+			wxBitmap bitmap(image);
+			if (bitmap.IsOk()) {
+				return bitmap;
+			}
+		}
+	}
+
+	return wxNullBitmap;
+}
+}
+
+// Forward declarations for subclassed controls to prevent syntax errors
+class TransparentStaticBitmap : public wxStaticBitmap {
+public:
+	TransparentStaticBitmap(wxWindow* parent, wxWindowID id, const wxBitmap& label, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize)
+		: wxStaticBitmap(parent, id, label, pos, size) {
+		SetBackgroundStyle(wxBG_STYLE_PAINT);
+		Bind(wxEVT_PAINT, &TransparentStaticBitmap::OnPaint, this);
+		Bind(wxEVT_ERASE_BACKGROUND, &TransparentStaticBitmap::OnEraseBackground, this);
+	}
+	void OnEraseBackground(wxEraseEvent& event) {
+		// Do nothing to avoid background erasing with system colors
+	}
+	void OnPaint(const wxPaintEvent&) {
+		wxPaintDC dc(this);
+		wxWindow* parent = GetParent();
+		wxColour bg = wxColor(10, 15, 25); // Hardcoded fallback
+		if (parent) {
+			bg = parent->GetBackgroundColour();
+		}
+		dc.SetBrush(wxBrush(bg));
+		dc.SetPen(wxPen(bg));
+		dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
+		
+		if (GetBitmap().IsOk()) {
+			dc.DrawBitmap(GetBitmap(), wxPoint(0, 0), true);
+		}
+	}
+};
+
+class TransparentStaticText : public wxStaticText {
+public:
+	TransparentStaticText(wxWindow* parent, wxWindowID id, const wxString& label, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0)
+		: wxStaticText(parent, id, label, pos, size, style) {
+		SetBackgroundStyle(wxBG_STYLE_PAINT);
+		Bind(wxEVT_PAINT, &TransparentStaticText::OnPaint, this);
+		Bind(wxEVT_ERASE_BACKGROUND, &TransparentStaticText::OnEraseBackground, this);
+	}
+	void OnEraseBackground(wxEraseEvent& event) {
+		// Do nothing to avoid background erasing with system colors
+	}
+	void OnPaint(const wxPaintEvent&) {
+		wxPaintDC dc(this);
+		wxWindow* parent = GetParent();
+		wxColour bg = wxColor(10, 15, 25); // Hardcoded fallback for absolute color fidelity
+		if (parent) {
+			bg = parent->GetBackgroundColour();
+		}
+		dc.SetBrush(wxBrush(bg));
+		dc.SetPen(wxPen(bg));
+		dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
+
+		dc.SetFont(GetFont());
+		dc.SetTextForeground(GetForegroundColour());
+		dc.SetBackgroundMode(wxTRANSPARENT);
+		
+		int width, height;
+		GetClientSize(&width, &height);
+		wxSize text_size = dc.GetTextExtent(GetLabel());
+		
+		int x = 0;
+		if (GetWindowStyle() & wxALIGN_CENTER_HORIZONTAL) {
+			x = (width - text_size.x) / 2;
+			if (x < 0) x = 0;
+		}
+		int y = (height - text_size.y) / 2;
+		if (y < 0) y = 0;
+		
+		dc.DrawText(GetLabel(), wxPoint(x, y));
+	}
+};
+
 WelcomeDialog::WelcomeDialog(const wxString& title_text, const wxString& version_text, const wxSize& size, const wxBitmap& rme_logo, const std::vector<wxString>& recent_files) :
-	wxDialog(nullptr, wxID_ANY, "", wxDefaultPosition, size) {
+	wxDialog(nullptr, wxID_ANY, "", wxDefaultPosition, size, wxSTAY_ON_TOP | wxDEFAULT_DIALOG_STYLE) {
 	Centre();
 	wxColour base_colour = wxColor(10, 15, 25); // Tiefes Dunkelblau/Schwarz
-	m_welcome_dialog_panel = newd WelcomeDialogPanel(this, GetClientSize(), title_text, version_text, base_colour, wxBitmap(rme_logo.ConvertToImage().Scale(FROM_DIP(this, 48), FROM_DIP(this, 48))), recent_files);
+	SetBackgroundColour(base_colour);
+	
+	// Robustly load the specified icon from the user's explicit path
+	wxBitmap landing_logo;
+	wxString explicit_path = "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\icons\\editor_icon.png";
+	if (wxFileExists(explicit_path)) {
+		wxImage img;
+		if (img.LoadFile(explicit_path, wxBITMAP_TYPE_PNG)) {
+			// Rescale beautifully for the game menu
+			landing_logo = wxBitmap(img.Scale(140, 140, wxIMAGE_QUALITY_HIGH));
+		}
+	}
+	if (!landing_logo.IsOk() && rme_logo.IsOk()) {
+		landing_logo = wxBitmap(rme_logo.ConvertToImage().Scale(140, 140, wxIMAGE_QUALITY_HIGH));
+	} else if (!landing_logo.IsOk()) {
+		landing_logo = LoadLandingPageBitmap(rme_logo);
+		if (landing_logo.IsOk()) {
+			landing_logo = wxBitmap(landing_logo.ConvertToImage().Scale(140, 140, wxIMAGE_QUALITY_HIGH));
+		}
+	}
+
+	m_welcome_dialog_panel = newd WelcomeDialogPanel(this, GetClientSize(), title_text, version_text, base_colour, landing_logo, recent_files);
 	Bind(WELCOME_DIALOG_DELETE_RECENT, &WelcomeDialog::OnRemoveRecentRequested, this);
 }
 
+void WelcomeDialog::OnSlotAction(wxCommandEvent& event) {
+	if (event.GetId() == wxID_NEW) {
+		if (event.GetString().empty()) {
+			wxArrayString choices;
+			choices.Add("Create a new map");
+			choices.Add("Open an existing map");
+			wxSingleChoiceDialog dialog(this, "What should this empty save slot do?", "Empty save slot", choices);
+			if (dialog.ShowModal() != wxID_OK) {
+				return;
+			}
+
+			if (dialog.GetStringSelection() == "Create a new map") {
+				// Intercept and load the specific versions choose dialog directly
+				wxCommandEvent trigger_event(WELCOME_DIALOG_ACTION);
+				trigger_event.SetId(wxID_NEW);
+				g_gui.OnWelcomeDialogAction(trigger_event);
+				return;
+			} else {
+				wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? "(*.otbm;*.otgz)|*.otbm;*.otgz" : "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
+				wxFileDialog file_dialog(this, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+				if (file_dialog.ShowModal() != wxID_OK) {
+					return;
+				}
+				event.SetString(file_dialog.GetPath());
+				event.SetId(wxID_OPEN);
+			}
+		}
+
+		if (event.GetId() == wxID_NEW) {
+			// Trigger a custom Welcome Dialog action that prompts for the version exactly like GUI::OnWelcomeDialogAction does
+			wxCommandEvent trigger_event(WELCOME_DIALOG_ACTION);
+			trigger_event.SetId(wxID_NEW);
+			g_gui.OnWelcomeDialogAction(trigger_event);
+			return;
+		}
+	}
+
+	wxString map_path = event.GetString();
+	if (map_path.empty()) {
+		wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? "(*.otbm;*.otgz)|*.otbm;*.otgz" : "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
+		wxFileDialog file_dialog(this, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+		if (file_dialog.ShowModal() != wxID_OK) {
+			return;
+		}
+		map_path = file_dialog.GetPath();
+	}
+
+	ClientVersionID version_id = g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION);
+	if (version_id == CLIENT_VERSION_NONE) {
+		ClientVersion* latest = ClientVersion::getLatestVersion();
+		if (latest) {
+			version_id = latest->getID();
+		}
+	}
+	if (version_id != CLIENT_VERSION_NONE && version_id != g_gui.GetCurrentVersionID()) {
+		wxString error;
+		wxArrayString warnings;
+		if (!g_gui.LoadVersion(version_id, error, warnings, true)) {
+			g_gui.PopupDialog("Asset warning", error, wxOK);
+			if (!warnings.empty()) {
+				g_gui.ListDialog("Warnings", warnings);
+			}
+			PreferencesWindow preferences_window(this, true);
+			preferences_window.ShowModal();
+			return;
+		}
+	}
+	g_gui.LoadMap(FileName(map_path));
+}
+
 void WelcomeDialog::OnRemoveRecentRequested(wxCommandEvent& event) {
-    wxString path = event.GetString();
-    // Logik zum Entfernen aus der Registry/Config via MainMenuBar
-    MainMenuBar* menuBar = g_gui.root ? g_gui.root->menu_bar : nullptr;
-    if (menuBar) {
-        std::vector<wxString> recent = menuBar->GetRecentFiles();
-        for (size_t i = 0; i < recent.size(); ++i) {
-            if (recent[i] == path) {
-                menuBar->RemoveRecentFile(i);
-                break;
-            }
-        }
-    }
-    
-    // Schließe den aktuellen Dialog sauber
-    this->EndModal(wxID_CANCEL);
-    
-    // Starte die Landingpage in der nächsten Event-Loop-Iteration neu
-    wxTheApp->CallAfter([]() {
-        g_gui.ShowWelcomeDialog(wxNullBitmap);
-    });
+	wxString path = event.GetString();
+	MainMenuBar* menuBar = g_gui.root ? g_gui.root->menu_bar : nullptr;
+	if (menuBar) {
+		std::vector<wxString> recent = menuBar->GetRecentFiles();
+		for (size_t i = 0; i < recent.size(); ++i) {
+			if (recent[i] == path) {
+				menuBar->RemoveRecentFile(i);
+				break;
+			}
+		}
+	}
+
+	this->EndModal(wxID_CANCEL);
+	wxTheApp->CallAfter([this]() {
+		g_gui.ShowWelcomeDialog(wxNullBitmap);
+	});
 }
 
 void WelcomeDialog::OnButtonClicked(const wxMouseEvent& event) {
 	auto* button = dynamic_cast<WelcomeDialogButton*>(event.GetEventObject());
+	if (!button) return;
 	wxSize button_size = button->GetSize();
 	wxPoint click_point = event.GetPosition();
-	if (click_point.x > 0 && click_point.x < button_size.x && click_point.y > 0 && click_point.y < button_size.x) {
+	if (click_point.x > 0 && click_point.x < button_size.x && click_point.y > 0 && click_point.y < button_size.y) {
 		if (button->GetAction() == wxID_PREFERENCES) {
-			PreferencesWindow preferences_window(m_welcome_dialog_panel, true);
+			// Disable signature checking temporarily during/before we load the settings dialog (to prevent "Signatures are incorrect" on clients.xml load inside Settings dialog)
+			int old_check_sigs = g_settings.getInteger(Config::CHECK_SIGNATURES);
+			g_settings.setInteger(Config::CHECK_SIGNATURES, 0);
+
+			PreferencesWindow preferences_window(this, true);
 			preferences_window.ShowModal();
+
+			// Restore the signature checking setting after the Settings window closes
+			g_settings.setInteger(Config::CHECK_SIGNATURES, old_check_sigs);
+
 			m_welcome_dialog_panel->updateInputs();
 		} else {
 			wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
@@ -87,83 +288,107 @@ void WelcomeDialog::OnCheckboxClicked(const wxCommandEvent& event) {
 	g_settings.setInteger(Config::WELCOME_DIALOG, event.GetInt());
 }
 
-void WelcomeDialog::OnRecentItemClicked(const wxMouseEvent& event) {
-	auto* recent_item = dynamic_cast<RecentItem*>(event.GetEventObject());
-	wxSize button_size = recent_item->GetSize();
-	wxPoint click_point = event.GetPosition();
-	if (click_point.x > 0 && click_point.x < button_size.x && click_point.y > 0 && click_point.y < button_size.x) {
-		wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
-		action_event.SetString(recent_item->GetText());
-		action_event.SetId(wxID_OPEN);
-		ProcessWindowEvent(action_event);
-	}
-}
-
 WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size, const wxString& title_text, const wxString& version_text, const wxColour& base_colour, const wxBitmap& rme_logo, const std::vector<wxString>& recent_files) :
 	wxPanel(dialog),
 	m_rme_logo(rme_logo),
 	m_title_text(title_text),
 	m_version_text(version_text),
-	m_text_colour(wxColor(218, 165, 32)), // Edles RPG-Gold
+	m_text_colour(wxColor(218, 165, 32)),
 	m_background_colour(base_colour) {
 
-	auto* recent_maps_panel = newd RecentMapsPanel(this, dialog, base_colour, recent_files);
-	recent_maps_panel->SetBackgroundColour(wxColor(10, 15, 25)); // Dunkler Listen-Hintergrund
-
-	wxSize button_size = FROM_DIP(this, wxSize(150, 35));
-	wxColour button_base_colour = wxColor(30, 45, 70);
-
-	int button_pos_center_x = size.x / 4 - button_size.x / 2;
-	int button_pos_center_y = size.y / 2;
-
-	wxPoint newMapButtonPoint(button_pos_center_x, button_pos_center_y);
-	auto* new_map_button = newd WelcomeDialogButton(this, wxDefaultPosition, button_size, button_base_colour, "New");
-	new_map_button->SetAction(wxID_NEW);
-	new_map_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
-
-	auto* open_map_button = newd WelcomeDialogButton(this, wxDefaultPosition, button_size, button_base_colour, "Open");
-	open_map_button->SetAction(wxID_OPEN);
-	open_map_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
-	auto* preferences_button = newd WelcomeDialogButton(this, wxDefaultPosition, button_size, button_base_colour, "Settings");
-	preferences_button->SetAction(wxID_PREFERENCES);
-	preferences_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+	SetBackgroundColour(base_colour);
+	// Make the panel background and we set transparent background flags so the static bitmaps/text blend elegantly
+	SetBackgroundStyle(wxBG_STYLE_PAINT);
 
 	Bind(wxEVT_PAINT, &WelcomeDialogPanel::OnPaint, this);
 
-	wxClientDC dc(this);
-	wxFont font = GetFont();
-	font.SetPointSize(20);
-	font.SetWeight(wxFONTWEIGHT_BOLD);
-	dc.SetFont(font);
-	wxSize header_size = dc.GetTextExtent(m_title_text);
-	int title_left_x = (size.x / 4) - (header_size.x / 2);
+	wxSizer* rootSizer = newd wxBoxSizer(wxVERTICAL);
 
-	wxSizer* rootSizer = newd wxBoxSizer(wxHORIZONTAL);
-	wxSizer* buttons_sizer = newd wxBoxSizer(wxVERTICAL);
-	buttons_sizer->AddSpacer(size.y / 2);
-	buttons_sizer->Add(new_map_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
-	buttons_sizer->Add(open_map_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
-	buttons_sizer->Add(preferences_button, 0, wxALIGN_CENTER | wxTOP, FROM_DIP(this, 10));
 
-	wxSizer* vertical_sizer = newd wxBoxSizer(wxVERTICAL);
-	wxSizer* horizontal_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	// Let's create the top header elements as real controls so they are automatically positioned by sizers!
+	rootSizer->AddSpacer(FROM_DIP(this, 15));
+
+	// 1. Logo
+	if (m_rme_logo.IsOk()) {
+		auto* logo_ctrl = newd TransparentStaticBitmap(this, wxID_ANY, m_rme_logo);
+		rootSizer->Add(logo_ctrl, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, FROM_DIP(this, 10));
+	}
+
+	// 2. Title Text
+	auto* title_ctrl = newd TransparentStaticText(this, wxID_ANY, m_title_text, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL);
+	
+	// Create a vintage, hand-written curly game title font
+	wxFont title_font = GetFont();
+	title_font.SetPointSize(24);
+	title_font.SetWeight(wxFONTWEIGHT_BOLD);
+	title_font.SetStyle(wxFONTSTYLE_ITALIC);
+	// Use classical fantasy serif/script font families if available, otherwise fall back to system serif
+	title_font.SetFaceName("Georgia");
+	
+	title_ctrl->SetFont(title_font);
+	title_ctrl->SetForegroundColour(m_text_colour);
+	rootSizer->Add(title_ctrl, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, FROM_DIP(this, 15));
+
+	// 3. Version Text
+	if (!m_version_text.empty()) {
+		auto* version_ctrl = newd TransparentStaticText(this, wxID_ANY, m_version_text, wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL);
+		wxFont version_font = GetFont().Smaller();
+		version_ctrl->SetFont(version_font);
+		version_ctrl->SetForegroundColour(m_text_colour.ChangeLightness(110));
+		rootSizer->Add(version_ctrl, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, FROM_DIP(this, 20));
+	} else {
+		// Just spacing
+		rootSizer->AddSpacer(FROM_DIP(this, 10));
+	}
+
+
+	// Recent items list (Save Slots) in a nice clean sizer
+	wxBoxSizer* slotsSizer = newd wxBoxSizer(wxVERTICAL);
+	std::vector<wxString> slots = recent_files;
+	if (slots.size() < 3) {
+		slots.resize(3);
+	}
+	for (size_t i = 0; i < 3; ++i) {
+		wxString file;
+		if (i < recent_files.size()) {
+			file = recent_files[i];
+		}
+		auto* recent_item = newd RecentItem(this, dialog, base_colour, file, static_cast<int>(i));
+		slotsSizer->Add(recent_item, 0, wxEXPAND | wxBOTTOM, FROM_DIP(this, 10));
+	}
+	rootSizer->Add(slotsSizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FROM_DIP(this, 40));
+
+	rootSizer->AddSpacer(FROM_DIP(this, 15));
+
+	// Bottom bar with Settings and the Checkbox
+	wxBoxSizer* bottomSizer = newd wxBoxSizer(wxHORIZONTAL);
+	
+	wxSize button_size = FROM_DIP(this, wxSize(64, 48)); // Width is smaller because we only want a big gear wheel icon
+	wxColour button_base_colour = wxColor(32, 48, 78);
+	auto* preferences_button = newd WelcomeDialogButton(this, wxDefaultPosition, button_size, button_base_colour, wxString::FromUTF8("⚙"));
+	preferences_button->SetAction(wxID_PREFERENCES);
+	preferences_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+	bottomSizer->Add(preferences_button, 0, wxALIGN_CENTER_VERTICAL);
+
+
+	bottomSizer->AddSpacer(FROM_DIP(this, 30));
 
 	m_show_welcome_dialog_checkbox = newd wxCheckBox(this, wxID_ANY, "Show this dialog on startup");
 	m_show_welcome_dialog_checkbox->SetValue(g_settings.getInteger(Config::WELCOME_DIALOG) == 1);
 	m_show_welcome_dialog_checkbox->Bind(wxEVT_CHECKBOX, &WelcomeDialog::OnCheckboxClicked, dialog);
 	m_show_welcome_dialog_checkbox->SetForegroundColour(m_text_colour);
-	horizontal_sizer->AddSpacer(button_pos_center_x);
-	horizontal_sizer->Add(m_show_welcome_dialog_checkbox, 0, wxALIGN_CENTER_VERTICAL);
-	vertical_sizer->Add(buttons_sizer, 0, wxEXPAND | wxCENTER);
-	vertical_sizer->Add(horizontal_sizer, 1, wxEXPAND);
+	bottomSizer->Add(m_show_welcome_dialog_checkbox, 0, wxALIGN_CENTER_VERTICAL);
 
-	rootSizer->Add(vertical_sizer, 1, wxEXPAND);
-	rootSizer->Add(recent_maps_panel, 1, wxEXPAND | wxALL, FROM_DIP(this, 15));
+	rootSizer->Add(bottomSizer, 0, wxALIGN_CENTER_HORIZONTAL);
+	rootSizer->AddSpacer(FROM_DIP(this, 15));
+
 	SetSizer(rootSizer);
 }
 
 void WelcomeDialogPanel::updateInputs() {
-	m_show_welcome_dialog_checkbox->SetValue(g_settings.getInteger(Config::WELCOME_DIALOG) == 1);
+	if (m_show_welcome_dialog_checkbox) {
+		m_show_welcome_dialog_checkbox->SetValue(g_settings.getInteger(Config::WELCOME_DIALOG) == 1);
+	}
 }
 
 void WelcomeDialogPanel::OnPaint(const wxPaintEvent& event) {
@@ -173,35 +398,28 @@ void WelcomeDialogPanel::OnPaint(const wxPaintEvent& event) {
 	dc.SetPen(wxPen(m_background_colour));
 	dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
 
-    // Goldener Rahmen
-    dc.SetPen(wxPen(wxColor(180, 140, 50, 180), 2));
-    dc.SetBrush(*wxTRANSPARENT_BRUSH);
-    dc.DrawRectangle(GetClientSize());
-
-	dc.DrawBitmap(m_rme_logo, wxPoint(GetSize().x / 4 - m_rme_logo.GetWidth() / 2, FROM_DIP(this, 50)), true);
-
-	wxFont font = GetFont();
-	font.SetPointSize(20);
-    font.SetWeight(wxFONTWEIGHT_BOLD);
-	dc.SetFont(font);
-	wxSize header_size = dc.GetTextExtent(m_title_text);
-	wxSize header_point(GetSize().x / 4, GetSize().y / 4);
-	dc.SetTextForeground(m_text_colour);
-	dc.DrawText(m_title_text, wxPoint(header_point.x - header_size.x / 2, header_point.y));
-
-	dc.SetFont(GetFont());
-	wxSize version_size = dc.GetTextExtent(m_version_text);
-	dc.SetTextForeground(m_text_colour.ChangeLightness(110));
-	dc.DrawText(m_version_text, wxPoint(header_point.x - version_size.x / 2, header_point.y + header_size.y + 10));
+	// Draw golden double border like in the Ziel-UI screenshot
+	dc.SetPen(wxPen(wxColor(255, 215, 0), 2));
+	dc.SetBrush(*wxTRANSPARENT_BRUSH);
+	
+	// Outer border
+	dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
+	
+	// Inner thin golden highlight border
+	dc.SetPen(wxPen(wxColor(180, 140, 50, 150), 1));
+	dc.DrawRectangle(wxRect(wxPoint(3, 3), GetClientSize() - wxSize(6, 6)));
 }
+
+
+
 
 WelcomeDialogButton::WelcomeDialogButton(wxWindow* parent, const wxPoint& pos, const wxSize& size, const wxColour& base_colour, const wxString& text) :
 	wxPanel(parent, wxID_ANY, pos, size),
 	m_action(wxID_CLOSE),
 	m_text(text),
 	m_text_colour(wxColor(255, 255, 255)),
-	m_background(wxColor(35, 45, 70)),
-	m_background_hover(wxColor(180, 140, 50)), // Goldenes Highlight beim Hover
+	m_background(wxColor(22, 33, 55)),
+	m_background_hover(wxColor(255, 215, 0)), // Goldenes Highlight beim Hover
 	m_is_hover(false) {
 	Bind(wxEVT_PAINT, &WelcomeDialogButton::OnPaint, this);
 	Bind(wxEVT_ENTER_WINDOW, &WelcomeDialogButton::OnMouseEnter, this);
@@ -213,13 +431,16 @@ void WelcomeDialogButton::OnPaint(const wxPaintEvent& event) {
 
 	wxColour colour = m_is_hover ? m_background_hover : m_background;
 	dc.SetBrush(wxBrush(colour));
-	dc.SetPen(wxPen(m_is_hover ? wxColor(255, 255, 200) : wxColor(150, 120, 40), 1));
+	dc.SetPen(wxPen(m_is_hover ? wxColor(255, 255, 255) : wxColor(140, 110, 40), m_is_hover ? 2 : 1));
 	dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
 
-	dc.SetFont(GetFont());
-	dc.SetTextForeground(m_is_hover ? *wxBLACK : m_text_colour); // Text schwarz auf gold beim Hover
+	// Use larger font for the gear symbol
+	wxFont button_font = GetFont();
+	button_font.SetPointSize(16);
+	dc.SetFont(button_font);
+	dc.SetTextForeground(m_is_hover ? *wxBLACK : wxColour(255, 215, 0)); // Text gold im Standard, schwarz auf gold beim Hover
 	wxSize text_size = dc.GetTextExtent(m_text);
-	dc.DrawText(m_text, wxPoint(GetSize().x / 2 - text_size.x / 2, GetSize().y / 2 - text_size.y / 2));
+	dc.DrawText(m_text, wxPoint(GetSize().x / 2 - text_size.x / 2, GetSize().y / 2 - text_size.y / 2 - 2));
 }
 
 void WelcomeDialogButton::OnMouseEnter(const wxMouseEvent& event) {
@@ -232,91 +453,127 @@ void WelcomeDialogButton::OnMouseLeave(const wxMouseEvent& event) {
 	Refresh();
 }
 
-RecentMapsPanel::RecentMapsPanel(wxWindow* parent, WelcomeDialog* dialog, const wxColour& base_colour, const std::vector<wxString>& recent_files) :
-	wxPanel(parent, wxID_ANY) {
-	wxBoxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
-	sizer->AddStretchSpacer(1);
-	for (const wxString& file : recent_files) {
-		auto* recent_item = newd RecentItem(this, base_colour, file);
-		sizer->Add(recent_item, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
-		recent_item->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnRecentItemClicked, dialog);
-	}
-	sizer->AddStretchSpacer(1);
-	SetSizer(sizer);
-}
-
-RecentItem::RecentItem(wxWindow* parent, const wxColour& base_colour, const wxString& item_name) :
+RecentItem::RecentItem(wxWindow* parent, WelcomeDialog* dialog, const wxColour& base_colour, const wxString& item_name, int slot_index) :
 	wxPanel(parent, wxID_ANY),
+	m_dialog(dialog),
 	m_text_colour(wxColor(180, 180, 190)),
 	m_text_colour_hover(wxColor(255, 215, 0)),
-	m_item_text(item_name) {
-	SetBackgroundColour(wxColor(20, 25, 40)); // Dunkler Slot-Hintergrund
-	m_title = newd wxStaticText(this, wxID_ANY, wxFileNameFromPath(m_item_text));
-	m_title->SetFont(GetFont().Bold());
-	m_title->SetForegroundColour(m_text_colour);
-	m_title->SetToolTip(m_item_text);
-	m_file_path = newd wxStaticText(this, wxID_ANY, m_item_text, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_START);
-	m_file_path->SetToolTip(m_item_text);
-	m_file_path->SetFont(GetFont().Smaller());
-	m_file_path->SetForegroundColour(m_text_colour);
+	m_item_text(item_name),
+	m_slot_index(slot_index),
+	m_is_hover(false) {
+	
+	SetBackgroundColour(wxColor(20, 25, 40));
+	SetMinSize(FROM_DIP(this, wxSize(460, 64)));
 
-    m_delete_button = newd wxPanel(this, wxID_ANY, wxDefaultPosition, FROM_DIP(this, wxSize(20, 20)));
-    m_delete_button->SetBackgroundColour(wxColor(80, 20, 20));
-    m_delete_button->SetToolTip("Entfernen");
-    
-    // Zeichne ein kleines 'X' auf den Löschen-Button
-    m_delete_button->Bind(wxEVT_PAINT, [this](wxPaintEvent& evt){
-        wxPaintDC dc(m_delete_button);
-        dc.SetPen(wxPen(wxColor(200, 50, 50), 2));
-        dc.DrawLine(4, 4, 16, 16);
-        dc.DrawLine(16, 4, 4, 16);
-    });
-
-	wxBoxSizer* mainSizer = newd wxBoxSizer(wxHORIZONTAL);
-	wxBoxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
-	sizer->Add(m_title);
-	sizer->Add(m_file_path, 0, wxTOP, 2);
-	mainSizer->Add(sizer, 1, wxEXPAND | wxALL, 10);
-    mainSizer->Add(m_delete_button, 0, wxALIGN_CENTER | wxRIGHT, 15);
-
+	Bind(wxEVT_PAINT, &RecentItem::OnPaint, this);
 	Bind(wxEVT_ENTER_WINDOW, &RecentItem::OnMouseEnter, this);
 	Bind(wxEVT_LEAVE_WINDOW, &RecentItem::OnMouseLeave, this);
-	m_title->Bind(wxEVT_LEFT_UP, &RecentItem::PropagateItemClicked, this);
-	m_file_path->Bind(wxEVT_LEFT_UP, &RecentItem::PropagateItemClicked, this);
-    m_delete_button->Bind(wxEVT_LEFT_UP, &RecentItem::OnDeleteClicked, this);
-
-	SetSizerAndFit(mainSizer);
+	Bind(wxEVT_LEFT_UP, &RecentItem::OnMouseClick, this);
+	Bind(wxEVT_RIGHT_DOWN, &RecentItem::OnRightClick, this);
 }
 
-void RecentItem::OnDeleteClicked(const wxMouseEvent& event) {
-    wxCommandEvent del_event(WELCOME_DIALOG_DELETE_RECENT);
-    del_event.SetString(m_item_text);
-    if (g_gui.welcomeDialog) {
-        g_gui.welcomeDialog->GetEventHandler()->ProcessEvent(del_event);
-    }
+void RecentItem::OnPaint(const wxPaintEvent& event) {
+	wxPaintDC dc(this);
+
+	// Custom paint resembling a game slot (Golden frame, clean retro or sci-fi borders)
+	wxColour bg_col = m_is_hover ? wxColour(25, 35, 60) : wxColour(13, 18, 30);
+	wxColour border_col = m_is_hover ? wxColour(255, 215, 0) : wxColour(160, 130, 45);
+
+	dc.SetBrush(wxBrush(bg_col));
+	dc.SetPen(wxPen(border_col, m_is_hover ? 2 : 1));
+	dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
+
+	// Draw slot label/number index and title
+	dc.SetTextForeground(m_is_hover ? wxColour(255, 215, 0) : wxColour(218, 165, 32));
+	wxFont label_font = GetFont();
+	label_font.SetPointSize(12);
+	label_font.SetWeight(wxFONTWEIGHT_BOLD);
+	dc.SetFont(label_font);
+
+	wxString slot_num = wxString::Format("SLOT %d:  ", m_slot_index + 1);
+	wxString title_text = m_item_text.empty() ? wxString("EMPTY SLOT") : wxFileNameFromPath(m_item_text);
+	
+	wxSize label_size = dc.GetTextExtent(slot_num);
+	dc.DrawText(slot_num, wxPoint(FROM_DIP(this, 15), GetSize().y / 2 - label_size.y / 2 - 8));
+
+	// Make the text color stand out even more nicely on hollow slots
+	if (m_item_text.empty()) {
+		dc.SetTextForeground(m_is_hover ? wxColour(230, 235, 255) : wxColour(140, 150, 175));
+	} else {
+		dc.SetTextForeground(m_is_hover ? wxColour(255, 255, 255) : wxColour(210, 215, 230));
+	}
+	dc.DrawText(title_text, wxPoint(FROM_DIP(this, 15) + label_size.x, GetSize().y / 2 - label_size.y / 2 - 8));
+
+	// Draw file path or hint text
+	wxFont path_font = GetFont().Smaller();
+	dc.SetFont(path_font);
+	dc.SetTextForeground(m_is_hover ? wxColour(220, 200, 150) : wxColour(130, 130, 140));
+	wxString sub_text = m_item_text.empty() ? wxString("Click to select an action") : m_item_text;
+	wxSize sub_size = dc.GetTextExtent(sub_text);
+	dc.DrawText(sub_text, wxPoint(FROM_DIP(this, 15), GetSize().y / 2 + 6));
+
+	// Context menu tip for non-empty ones
+	if (!m_item_text.empty()) {
+		dc.SetTextForeground(wxColour(110, 110, 120));
+		wxString hint = "Right-click to Clear";
+		wxSize hint_size = dc.GetTextExtent(hint);
+		dc.DrawText(hint, wxPoint(GetSize().x - hint_size.x - FROM_DIP(this, 15), GetSize().y / 2 - hint_size.y / 2));
+	}
 }
-void RecentItem::PropagateItemClicked(wxMouseEvent& event) {
-	event.ResumePropagation(1);
-	event.SetEventObject(this);
-	event.Skip();
+
+void RecentItem::OnMouseClick(const wxMouseEvent& event) {
+	wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
+	if (m_item_text.empty()) {
+		// prompt on empty slot
+		wxArrayString choices;
+		choices.Add("New Map");
+		choices.Add("Load Map");
+		wxSingleChoiceDialog choice_dlg(m_dialog, "What would you like to do with this Save Slot?", "Select Action", choices);
+		if (choice_dlg.ShowModal() != wxID_OK) {
+			return;
+		}
+
+		if (choice_dlg.GetStringSelection() == "New Map") {
+			action_event.SetId(wxID_NEW);
+			action_event.SetString(""); // trigger new map flow with choice
+		} else {
+			wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? "(*.otbm;*.otgz)|*.otbm;*.otgz" : "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
+			wxFileDialog file_dialog(m_dialog, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+			if (file_dialog.ShowModal() != wxID_OK) {
+				return;
+			}
+			action_event.SetId(wxID_OPEN);
+			action_event.SetString(file_dialog.GetPath());
+		}
+	} else {
+		// Load the map immediately on populated slot
+		action_event.SetId(wxID_OPEN);
+		action_event.SetString(m_item_text);
+	}
+	m_dialog->GetEventHandler()->ProcessEvent(action_event);
+}
+
+
+void RecentItem::OnRightClick(const wxMouseEvent& event) {
+	if (m_item_text.empty()) {
+		return;
+	}
+	int answer = wxMessageBox("Remove this save slot entry from the recent list?", "Confirm", wxYES_NO | wxICON_QUESTION);
+	if (answer != wxYES) {
+		return;
+	}
+	wxCommandEvent del_event(WELCOME_DIALOG_DELETE_RECENT);
+	del_event.SetString(m_item_text);
+	m_dialog->GetEventHandler()->ProcessEvent(del_event);
 }
 
 void RecentItem::OnMouseEnter(const wxMouseEvent& event) {
-	if (GetScreenRect().Contains(ClientToScreen(event.GetPosition()))
-		&& m_title->GetForegroundColour() != m_text_colour_hover) {
-		m_title->SetForegroundColour(m_text_colour_hover);
-		m_file_path->SetForegroundColour(m_text_colour_hover);
-		m_title->Refresh();
-		m_file_path->Refresh();
-	}
+	m_is_hover = true;
+	Refresh();
 }
 
 void RecentItem::OnMouseLeave(const wxMouseEvent& event) {
-	if (!GetScreenRect().Contains(ClientToScreen(event.GetPosition()))
-		&& m_title->GetForegroundColour() != m_text_colour) {
-		m_title->SetForegroundColour(m_text_colour);
-		m_file_path->SetForegroundColour(m_text_colour);
-		m_title->Refresh();
-		m_file_path->Refresh();
-	}
+	m_is_hover = false;
+	Refresh();
 }
+

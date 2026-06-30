@@ -20,6 +20,9 @@
 
 #include "extension.h"
 
+class Item;
+class Brush;
+
 class Materials {
 public:
 	Materials();

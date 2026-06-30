@@ -42,7 +42,7 @@
 #include "tile.h"
 #include "tileset_window.h"
 
-#include "imgui_palette.h"
+
 #include "performance_logger.h"
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -118,6 +118,357 @@ EVT_MENU_RANGE(MAP_POPUP_MENU_SCRIPT_FIRST, MAP_POPUP_MENU_SCRIPT_LAST,
                MapCanvas::OnScriptMenu)
 END_EVENT_TABLE()
 
+#define MAPCANVAS_EVENT_STUB(name, type) \
+  void MapCanvas::name(type &event) { (void)event; }
+
+MAPCANVAS_EVENT_STUB(OnKeyDown, wxKeyEvent)
+MAPCANVAS_EVENT_STUB(OnKeyUp, wxKeyEvent)
+
+void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
+	cursor_x = event.GetX();
+	cursor_y = event.GetY();
+
+	int mouse_map_x, mouse_map_y;
+	ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+
+	LogErrorToFile(wxString::Format("OnMouseLeftClick: screen=(%d, %d), map=(%d, %d), floor=%d, drawing=%d, current_brush=%s",
+		cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, drawing,
+		g_gui.GetCurrentBrush() ? g_gui.GetCurrentBrush()->getName().c_str() : "nullptr").ToStdString());
+
+	if (event.RightIsDown()) {
+		g_gui.SelectBrush(nullptr);
+		return;
+	}
+
+	last_click_x = int(cursor_x * zoom);
+	last_click_y = int(cursor_y * zoom);
+
+	int start_x = 0, start_y = 0;
+	if (auto* map_window = static_cast<MapWindow *>(GetParent())) {
+		map_window->GetViewStart(&start_x, &start_y);
+	}
+	last_click_abs_x = last_click_x + start_x;
+	last_click_abs_y = last_click_y + start_y;
+
+	last_click_map_x = mouse_map_x;
+	last_click_map_y = mouse_map_y;
+	last_click_map_z = floor;
+
+	if (drawing) {
+		dragging_draw = true;
+		rectangle_mode = event.ShiftDown();
+		if (!rectangle_mode) {
+			PositionVector tilestodraw;
+			PositionVector tilestoborder;
+			getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, false);
+			editor.draw(tilestodraw, tilestoborder, event.AltDown());
+		}
+	} else {
+		Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+		if (tile) {
+			if (editor.selection.getTiles().count(tile) == 0 && !event.ShiftDown() && !event.ControlDown()) {
+				editor.selection.clear();
+				editor.selection.start(Selection::INTERNAL);
+				Item* top_item = tile->getTopItem();
+				if (top_item) {
+					editor.selection.add(tile, top_item);
+				} else if (tile->ground) {
+					editor.selection.add(tile, tile->ground);
+				}
+				editor.selection.finish(Selection::INTERNAL);
+			} else if (event.ShiftDown() || event.ControlDown()) {
+				editor.selection.start(Selection::INTERNAL);
+				Item* top_item = tile->getTopItem();
+				if (top_item) {
+					editor.selection.add(tile, top_item);
+				} else if (tile->ground) {
+					editor.selection.add(tile, tile->ground);
+				}
+				editor.selection.finish(Selection::INTERNAL);
+			}
+			dragging_selection = true;
+			drag_start_map_x = mouse_map_x;
+			drag_start_map_y = mouse_map_y;
+		} else {
+			editor.selection.clear();
+		}
+	}
+	CallAfter([this]() { Refresh(); });
+}
+
+void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
+	if (drawing && dragging_draw && rectangle_mode) {
+		int cursor_x = event.GetX();
+		int cursor_y = event.GetY();
+		int mouse_map_x, mouse_map_y;
+		ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+
+		if (last_click_map_x != -1 && last_click_map_y != -1) {
+			int start_x = std::min(last_click_map_x, mouse_map_x);
+			int end_x = std::max(last_click_map_x, mouse_map_x);
+			int start_y = std::min(last_click_map_y, mouse_map_y);
+			int end_y = std::max(last_click_map_y, mouse_map_y);
+
+			bool is_wall = g_gui.GetCurrentBrush() && g_gui.GetCurrentBrush()->isWall();
+			PositionVector tilestodraw;
+			PositionVector tilestoborder;
+			for (int y = start_y - 1; y <= end_y + 1; ++y) {
+				for (int x = start_x - 1; x <= end_x + 1; ++x) {
+					Position pos(x, y, floor);
+					if (x >= start_x && x <= end_x && y >= start_y && y <= end_y) {
+						if (!is_wall || (x == start_x || x == end_x || y == start_y || y == end_y)) {
+							tilestodraw.push_back(pos);
+						}
+					}
+					tilestoborder.push_back(pos);
+				}
+			}
+			editor.draw(tilestodraw, tilestoborder, event.AltDown());
+		}
+	}
+	
+	if (!drawing && dragging_selection) {
+		int cursor_x = event.GetX();
+		int cursor_y = event.GetY();
+		int mouse_map_x, mouse_map_y;
+		ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+		
+		int dx = mouse_map_x - drag_start_map_x;
+		int dy = mouse_map_y - drag_start_map_y;
+		if (dx != 0 || dy != 0) {
+			editor.moveSelection(Position(dx, dy, 0));
+		}
+		dragging_selection = false;
+	}
+
+	dragging_draw = false;
+	rectangle_mode = false;
+	last_click_map_x = -1;
+	last_click_map_y = -1;
+	last_click_map_z = -1;
+	CallAfter([this]() { Refresh(); });
+}
+
+void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
+	cursor_x = event.GetX();
+	cursor_y = event.GetY();
+
+	int mouse_map_x, mouse_map_y;
+	ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+
+	LogErrorToFile(wxString::Format("OnMouseRightClick: screen=(%d, %d), map=(%d, %d), floor=%d, drawing=%d, current_brush=%s",
+		cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, drawing,
+		g_gui.GetCurrentBrush() ? g_gui.GetCurrentBrush()->getName().c_str() : "nullptr").ToStdString());
+
+	last_click_x = int(cursor_x * zoom);
+	last_click_y = int(cursor_y * zoom);
+
+	int start_x = 0, start_y = 0;
+	if (auto* map_window = static_cast<MapWindow *>(GetParent())) {
+		map_window->GetViewStart(&start_x, &start_y);
+	}
+	last_click_abs_x = last_click_x + start_x;
+	last_click_abs_y = last_click_y + start_y;
+
+	last_click_map_x = mouse_map_x;
+	last_click_map_y = mouse_map_y;
+	last_click_map_z = floor;
+
+	if (drawing) {
+		if (event.LeftIsDown()) {
+			g_gui.SelectBrush(nullptr);
+		} else if (event.ShiftDown()) {
+			dragging_draw = true;
+			rectangle_mode = true;
+		} else if (g_gui.GetCurrentBrush() != nullptr) {
+			g_gui.SelectBrush(nullptr);
+		} else {
+			if (editor.selection.size() == 0) {
+				Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+				if (tile) {
+					editor.selection.start(Selection::INTERNAL);
+					Item* top_item = tile->getTopItem();
+					if (top_item) {
+						editor.selection.add(tile, top_item);
+					} else if (tile->ground) {
+						editor.selection.add(tile, tile->ground);
+					}
+					editor.selection.finish(Selection::INTERNAL);
+				}
+			}
+			popup_menu->Update();
+			PopupMenu(popup_menu);
+		}
+	} else {
+		if (editor.selection.size() == 0) {
+			Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+			if (tile) {
+				editor.selection.start(Selection::INTERNAL);
+				Item* top_item = tile->getTopItem();
+				if (top_item) {
+					editor.selection.add(tile, top_item);
+				} else if (tile->ground) {
+					editor.selection.add(tile, tile->ground);
+				}
+				editor.selection.finish(Selection::INTERNAL);
+			}
+		}
+		popup_menu->Update();
+		PopupMenu(popup_menu);
+	}
+	CallAfter([this]() { Refresh(); });
+}
+
+void MapCanvas::OnMouseRightRelease(wxMouseEvent& event) {
+	if (drawing && dragging_draw && rectangle_mode) {
+		int cursor_x = event.GetX();
+		int cursor_y = event.GetY();
+		int mouse_map_x, mouse_map_y;
+		ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+
+		if (last_click_map_x != -1 && last_click_map_y != -1) {
+			int start_x = std::min(last_click_map_x, mouse_map_x);
+			int end_x = std::max(last_click_map_x, mouse_map_x);
+			int start_y = std::min(last_click_map_y, mouse_map_y);
+			int end_y = std::max(last_click_map_y, mouse_map_y);
+
+			PositionVector tilestodraw;
+			PositionVector tilestoborder;
+			for (int y = start_y - 1; y <= end_y + 1; ++y) {
+				for (int x = start_x - 1; x <= end_x + 1; ++x) {
+					Position pos(x, y, floor);
+					if (x >= start_x && x <= end_x && y >= start_y && y <= end_y) {
+						tilestodraw.push_back(pos);
+					}
+					tilestoborder.push_back(pos);
+				}
+			}
+			editor.undraw(tilestodraw, tilestoborder, event.AltDown());
+		}
+	}
+	dragging_draw = false;
+	rectangle_mode = false;
+	last_click_map_x = -1;
+	last_click_map_y = -1;
+	last_click_map_z = -1;
+	CallAfter([this]() { Refresh(); });
+}
+
+void MapCanvas::OnMouseMove(wxMouseEvent& event) {
+	cursor_x = event.GetX();
+	cursor_y = event.GetY();
+
+	if (screendragging && event.MiddleIsDown()) {
+		int dx = cursor_x - drag_start_x;
+		int dy = cursor_y - drag_start_y;
+		
+		if (dx != 0 || dy != 0) {
+			MapWindow* map_win = static_cast<MapWindow*>(GetParent());
+			int scroll_x, scroll_y;
+			map_win->GetViewStart(&scroll_x, &scroll_y);
+			map_win->Scroll(scroll_x - dx, scroll_y - dy);
+			
+			// Update start pos so we can drag continuously
+			drag_start_x = cursor_x;
+			drag_start_y = cursor_y;
+		}
+	}
+
+	int mouse_map_x, mouse_map_y;
+	ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+	
+	if (drawing && (mouse_map_x != last_cursor_map_x || mouse_map_y != last_cursor_map_y || floor != last_cursor_map_z)) {
+		LogErrorToFile(wxString::Format("OnMouseMove (drawing): screen=(%d, %d), map=(%d, %d), floor=%d, dragging_draw=%d",
+			cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, dragging_draw).ToStdString());
+	}
+
+	if (mouse_map_x != last_cursor_map_x || mouse_map_y != last_cursor_map_y || floor != last_cursor_map_z) {
+		int prev_x = last_cursor_map_x;
+		int prev_y = last_cursor_map_y;
+		last_cursor_map_x = mouse_map_x;
+		last_cursor_map_y = mouse_map_y;
+		last_cursor_map_z = floor;
+		UpdatePositionStatus(mouse_map_x, mouse_map_y);
+
+		if (drawing && dragging_draw && !rectangle_mode) {
+			PositionVector tilestodraw;
+			PositionVector tilestoborder;
+
+			int x0 = (prev_x != -1) ? prev_x : mouse_map_x;
+			int y0 = (prev_y != -1) ? prev_y : mouse_map_y;
+			int x1 = mouse_map_x;
+			int y1 = mouse_map_y;
+
+			int dx = std::abs(x1 - x0);
+			int dy = std::abs(y1 - y0);
+			int sx = (x0 < x1) ? 1 : -1;
+			int sy = (y0 < y1) ? 1 : -1;
+			int err = dx - dy;
+
+			while (true) {
+				getTilesToDraw(x0, y0, floor, &tilestodraw, &tilestoborder, false);
+				if (x0 == x1 && y0 == y1) break;
+				int e2 = 2 * err;
+				if (e2 > -dy) { err -= dy; x0 += sx; }
+				if (e2 < dx) { err += dx; y0 += sy; }
+			}
+			
+			if (event.LeftIsDown()) {
+				editor.draw(tilestodraw, tilestoborder, event.AltDown());
+			} else if (event.RightIsDown()) {
+				editor.undraw(tilestodraw, tilestoborder, event.AltDown());
+			}
+		}
+	}
+	Refresh();
+}
+
+MAPCANVAS_EVENT_STUB(OnMouseLeftDoubleClick, wxMouseEvent)
+
+void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
+	if (!screendragging) {
+		screendragging = true;
+		drag_start_x = event.GetX();
+		drag_start_y = event.GetY();
+		SetCursor(wxCursor(wxCURSOR_HAND));
+	}
+}
+
+void MapCanvas::OnMouseCenterRelease(wxMouseEvent& event) {
+	if (screendragging) {
+		screendragging = false;
+		SetCursor(wxNullCursor);
+	}
+}
+void MapCanvas::OnWheel(wxMouseEvent& event) {
+  if (event.GetWheelRotation() > 0) {
+    SetZoom(zoom * 0.9);
+  } else if (event.GetWheelRotation() < 0) {
+    SetZoom(zoom * 1.1);
+  }
+}
+MAPCANVAS_EVENT_STUB(OnGainMouse, wxMouseEvent)
+MAPCANVAS_EVENT_STUB(OnLoseMouse, wxMouseEvent)
+
+void MapCanvas::ChangeFloor(int new_floor) {
+  floor = new_floor;
+  Refresh();
+}
+
+void MapCanvas::EnterSelectionMode() {
+  drawing = false;
+  Refresh();
+}
+
+void MapCanvas::EnterDrawingMode() {
+  drawing = true;
+  Refresh();
+}
+
+bool MapCanvas::isPasting() const { return false; }
+
+#undef MAPCANVAS_EVENT_STUB
+
 bool MapCanvas::processed[MapCanvas::BLOCK_SIZE * MapCanvas::BLOCK_SIZE] = {
     0};                           // Correctly size the static array
 int MapCanvas::countMaxFills = 0; // Definition for static member
@@ -125,9 +476,9 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
     : wxGLCanvas(parent, wxID_ANY, attriblist, wxDefaultPosition, wxDefaultSize,
                  wxWANTS_CHARS),
       editor(editor_ref), floor(GROUND_LAYER), zoom(1.0), cursor_x(-1),
-      cursor_y(-1), dragging(false), boundbox_selection(false),
+      cursor_y(-1), dragging(false), boundbox_selection(false), dragging_selection(false), drag_start_map_x(-1), drag_start_map_y(-1),
       screendragging(false), drawing(false), dragging_draw(false),
-      replace_dragging(false),
+      replace_dragging(false), rectangle_mode(false),
 
       screenshot_buffer(nullptr),
 
@@ -142,8 +493,16 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
       last_mmb_click_x(-1), last_mmb_click_y(-1) {
   popup_menu = newd MapPopupMenu(editor);
   animation_timer = newd AnimationTimer(this);
-  animation_timer->Start();
-  SetCurrent(*g_gui.GetGLContext(this));
+  // NOTE: Do NOT start the animation timer here. The timer fires every 4ms
+  // and calls Refresh() -> OnPaint(). If it fires before drawer is constructed
+  // (line below), drawer is still nullptr -> crash. Timer is started after
+  // full initialization at the bottom of this constructor.
+
+  // SetCurrent requires a realized (shown) canvas. Guard against calling it
+  // on an unrealized canvas which can crash on some wxWidgets/Windows builds.
+  if (IsShownOnScreen()) {
+    SetCurrent(*g_gui.GetGLContext(this));
+  }
   drawer = std::make_unique<MapDrawer>(this); // Use unique_ptr
   keyCode = WXK_NONE;
 
@@ -166,6 +525,10 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
   ui_toolbar->addButton("Waypoints", RME::UI::SVG::ICON_WAYPOINT, [this]() {
     g_gui.SelectPalettePage(TILESET_WAYPOINT);
   });
+
+  // Start animation timer AFTER drawer is fully initialized so that the
+  // first Notify() -> Refresh() -> OnPaint() never sees a null drawer.
+  animation_timer->Start();
 }
 
 MapCanvas::~MapCanvas() {
@@ -365,6 +728,7 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     }
 
     std::fill(std::begin(processed), std::end(processed), false);
+    MapCanvas::countMaxFills = 0;
     floodFill(&editor.map, position, BLOCK_SIZE / 2, BLOCK_SIZE / 2, oldBrush,
               tilestodraw);
 

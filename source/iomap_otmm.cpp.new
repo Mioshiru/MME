@@ -1,0 +1,5 @@
+#include "main.h"
+#include "iomap_otmm.h"
+
+// OTMM support is currently not used by the active build path. This file is kept
+// intentionally minimal to avoid conflicting with the existing OTBM-based code.

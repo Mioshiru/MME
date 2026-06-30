@@ -70,8 +70,7 @@ void AutoScalePerformanceSettings() {
 	}
 
 	if (high_end_ram) {
-		g_settings.setInteger(Config::USE_MEMCACHED_SPRITES, 1);
-		wxLogDebug("Hardware Profiler: Auto-enabled USE_MEMCACHED_SPRITES for ultra-smooth performance.");
+		wxLogDebug("Hardware Profiler: High-end RAM detected.");
 	}
 	
 	if (high_end_gpu) {
@@ -84,7 +83,13 @@ void AutoScalePerformanceSettings() {
 
 void MapCanvas::OnPaint(wxPaintEvent& event) {
 	PerformanceLogger::BeginFrame();
-	wxPaintDC dc(this);
+	wxPaintDC dc(this); // Must always be created in EVT_PAINT to validate the region
+	if (!drawer) {
+		// drawer not yet initialized (very early paint event before constructor
+		// completes). Skip rendering but keep the DC alive to avoid infinite repaints.
+		PerformanceLogger::EndFrame();
+		return;
+	}
 	SetCurrent(*g_gui.GetGLContext(this));
 
 #ifdef __WINDOWS__
@@ -101,6 +106,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	if (!imgui_initialized) {
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
+		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable; // <--- THIS WAS MISSING AND CAUSED THE CRASH
 		ImGui::StyleColorsDark();
 		
 		// Custom styling for a premium look
@@ -159,7 +165,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		style.Colors[ImGuiCol_TabUnfocused]           = ImVec4(0.12f, 0.13f, 0.18f, 1.00f);
 		style.Colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.16f, 0.18f, 0.25f, 1.00f);
 
-		ImGui_ImplOpenGL3_Init();
+		ImGui_ImplOpenGL3_Init("#version 450");
 		imgui_initialized = true;
 	}
 
@@ -232,12 +238,17 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui::NewFrame();
 
+	// Bulletproof Dockspace definition
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
 	// Overlay for FPS
-	ImGui::SetNextWindowPos(ImVec2(10, 10));
-	ImGui::Begin("Overlay", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove);
-	ImGui::Text("FPS: %.1f (%.3f ms/frame)", io.Framerate, 1000.0f / (io.Framerate > 0 ? io.Framerate : 1.0f));
-	ImGui::End();
-
+	if (g_settings.getBoolean(Config::SHOW_FPS)) {
+		ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+		ImGui::SetNextWindowBgAlpha(0.35f);
+		if (ImGui::Begin("Overlay", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav)) {
+			ImGui::Text("FPS: %.1f (%.3f ms/frame)", io.Framerate, 1000.0f / (io.Framerate > 0 ? io.Framerate : 1.0f));
+			ImGui::End();
+		}
+	}
 	// Team Chat Window (Multiplayer only)
 	if (editor.IsLive()) {
 		ImGui::SetNextWindowPos(ImVec2(10, io.DisplaySize.y - 220), ImGuiCond_FirstUseEver);
@@ -379,11 +390,6 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		}
 		ImGui::End();
 	}
-
-	// Draw Palettes
-	// ImGuiPalette::DrawToolsWindow();
-	// ImGuiPalette::DrawBrushSizeWindow();
-	// ImGuiPalette::DrawTilesetWindow();
 
 	ImGui::Render();
 	{

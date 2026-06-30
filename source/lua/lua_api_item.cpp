@@ -3,17 +3,22 @@
 #include "item.h"
 
 namespace LuaAPI {
+    void registerItemAPI(sol::state& lua);
+
+    void registerItem(sol::state& lua) {
+        registerItemAPI(lua);
+    }
+
     void registerItemAPI(sol::state& lua) {
         lua.new_usertype<Item>("Item",
+            sol::no_constructor,
             "getId", &Item::getID,
             "getClientId", &Item::getClientID,
             "getName", &Item::getName,
             "getFullName", &Item::getFullName,
-            "getWeight", &Item::getWeight,
+            "getWeight", [](Item& item) { return item.getWeight(); },
             "getCount", &Item::getCount,
             "setCount", &Item::setSubtype,
-            
-            // Attribute
             "getUniqueId", &Item::getUniqueID,
             "setUniqueId", &Item::setUniqueID,
             "getActionId", &Item::getActionID,
@@ -22,16 +27,11 @@ namespace LuaAPI {
             "setText", &Item::setText,
             "getDescription", &Item::getDescription,
             "setDescription", &Item::setDescription,
-            
-            // Flags
             "isStackable", &Item::isStackable,
             "isMoveable", &Item::isMoveable,
             "isGround", &Item::isGroundTile,
             "isWall", &Item::isWall,
-            "isDoor", &Item::isDoor,
-            
-            // Vergleiche
-            "equals", [](Item& a, Item* b) { return b && a.getID() == b->getID(); }
+            "isDoor", &Item::isDoor
         );
 
         lua["Item"]["create"] = [](uint16_t id) { return Item::Create(id); };

@@ -1,0 +1,11 @@
+#include "main.h"
+#include "map_drawer.h"
+
+namespace {
+void noop() {}
+}
+
+void MapDrawer::MakeTooltip(int, int, const std::string &, unsigned char, unsigned char, unsigned char) { noop(); }
+void MapDrawer::DrawBrush() { noop(); }
+void MapDrawer::DrawGrid() { noop(); }
+void MapDrawer::DrawTooltips() { noop(); }

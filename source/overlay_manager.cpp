@@ -3,6 +3,7 @@
 #include <nanovg.h>
 #include <format>
 #include "style_manager.h"
+#include "settings.h"
 
 namespace RME::UI {
 
@@ -32,11 +33,13 @@ void OverlayManager::RenderHUD(int sw, int sh, int mx, int my, int mz, float fps
     nvgFill(m_nvg);
 
     // FPS Anzeige (Rechts)
-    std::string fpsText = std::format("FPS: {:.1f}", fps);
-    nvgFontSize(m_nvg, 14.0f);
-    nvgFillColor(m_nvg, nvgRGBA(218, 165, 32, 255)); // Gold
-    nvgTextAlign(m_nvg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
-    nvgText(m_nvg, (float)sw - 20, (float)sh - 15, fpsText.c_str(), nullptr);
+    if (g_settings.getBoolean(Config::SHOW_FPS)) {
+        std::string fpsText = std::format("FPS: {:.1f}", fps);
+        nvgFontSize(m_nvg, 14.0f);
+        nvgFillColor(m_nvg, nvgRGBA(218, 165, 32, 255)); // Gold
+        nvgTextAlign(m_nvg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
+        nvgText(m_nvg, (float)sw - 20, (float)sh - 15, fpsText.c_str(), nullptr);
+    }
 
     // Koordinaten (Links)
     std::string posText = std::format("X: {}  Y: {}  Z: {}", mx, my, mz);

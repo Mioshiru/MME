@@ -94,6 +94,8 @@ void GUI::discoverDataDirectory(const wxString& existentFile) {
 }
 
 bool GUI::LoadVersion(ClientVersionID version, wxString& error, wxArrayString& warnings, bool force) {
+	std::string actVal = "GUI::LoadVersion " + std::to_string(static_cast<int>(version));
+	ScopedAction action(actVal);
 	if (ClientVersion::get(version) == nullptr) {
 		error = "Unsupported client version!"; return false;
 	}

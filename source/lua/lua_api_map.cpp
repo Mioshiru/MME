@@ -6,6 +6,12 @@
 
 
 namespace LuaAPI {
+void registerMapAPI(sol::state &lua);
+
+void registerMap(sol::state &lua) {
+  registerMapAPI(lua);
+}
+
 void registerMapAPI(sol::state &lua) {
   auto map_api = lua["map"].get_or_create<sol::table>();
 

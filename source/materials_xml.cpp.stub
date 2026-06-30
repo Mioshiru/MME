@@ -1,0 +1,5 @@
+#include "main.h"
+#include "materials.h"
+
+bool Materials::loadMaterials(const wxFileName &, wxString &, wxArrayString &) { return false; }
+bool Materials::loadExtensions(wxFileName, wxString &, wxArrayString &) { return false; }

@@ -19,12 +19,34 @@
 #define RME_MAP_DRAWER_H_
 
 #include "map_overlay.h"
+#include <GL/gl.h>
+#include <cstdint>
+#include <memory>
+#include <sstream>
+#include <vector>
 
 class GameSprite;
 class TileLocation;
-struct ItemType;
-struct Waypoint;
-struct Position;
+class QTreeNode;
+class Floor;
+class Creature;
+struct Outfit;
+enum Direction : int;
+class ItemType;
+class Waypoint;
+class Position;
+
+struct DrawBatch {
+  GLuint textureId;
+  uint32_t start;
+  uint32_t count;
+};
+
+struct DoodadInstance {
+  float x, y;
+  uint8_t r, g, b, a;
+  float scale;
+};
 
 struct MapTooltip {
   enum TextLength {
@@ -179,6 +201,13 @@ public:
   void DrawGrid();
   void DrawTooltips();
   void DrawLight();
+  void RebuildFloorVBO(QTreeNode *nd, int map_z);
+  void RenderFloorVBO(Floor *f);
+  void DrawSpriteMagnified(uint32_t item_id, float size);
+  void DrawHoverPreview();
+  void DrawImGuiProperties();
+  void DrawDebugConsole();
+  void DrawMinimapHUD();
 
   void TakeScreenshot(uint8_t *screenshot_buffer);
 

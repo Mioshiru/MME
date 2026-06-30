@@ -19,13 +19,13 @@
     "opengl",
     "glm",
     "entt",
-    "vulkan",
     "bgfx",
     {
       "name": "imgui",
       "features": [
         "opengl3-binding",
-        "win32-binding"
+        "win32-binding",
+        "docking-experimental"
       ]
     }
   ],

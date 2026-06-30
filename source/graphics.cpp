@@ -1,5 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 // This file is part of Remere's Map Editor
+// Modified for OpenGL 4.5 rendering architecture compatibility.
 //////////////////////////////////////////////////////////////////////
 // Remere's Map Editor is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -574,6 +575,10 @@ bool GraphicManager::loadSpriteMetadata(const FileName& datafile, wxString& erro
 	uint32_t maxID = item_count + creature_count;
 
 	dat_format = client_version->getDatFormatForSignature(datSignature);
+	if (dat_format == DAT_FORMAT_UNKNOWN) {
+		wxLogWarning("Signatures are incorrect or format is unknown. Defaulting to DAT_FORMAT_1057.");
+		dat_format = DAT_FORMAT_1057;
+	}
 
 	if (!otfi_found) {
 		is_extended = dat_format >= DAT_FORMAT_96;
@@ -1072,8 +1077,8 @@ GameSprite::GameSprite() :
 	drawoffset_x(0),
 	drawoffset_y(0),
 	minimap_color(0) {
-	dc[SPRITE_SIZE_16x16] = nullptr;
-	dc[SPRITE_SIZE_32x32] = nullptr;
+	bm[SPRITE_SIZE_16x16] = nullptr;
+	bm[SPRITE_SIZE_32x32] = nullptr;
 }
 
 GameSprite::~GameSprite() {
@@ -1093,12 +1098,7 @@ void GameSprite::clean(int time) {
 	}
 }
 
-void GameSprite::unloadDC() {
-	delete dc[SPRITE_SIZE_16x16];
-	delete dc[SPRITE_SIZE_32x32];
-	dc[SPRITE_SIZE_16x16] = nullptr;
-	dc[SPRITE_SIZE_32x32] = nullptr;
-}
+
 
 int GameSprite::getDrawHeight() const {
 	return draw_height;
@@ -1170,10 +1170,10 @@ GLuint GameSprite::getHardwareID(int _x, int _y, int _dir, int _addon, int _patt
 	return spriteList[v]->getHardwareID();
 }
 
-wxMemoryDC* GameSprite::getDC(SpriteSize size) {
+wxBitmap* GameSprite::getBitmap(SpriteSize size) {
 	ASSERT(size == SPRITE_SIZE_16x16 || size == SPRITE_SIZE_32x32);
 
-	if (!dc[size]) {
+	if (!bm[size]) {
 		ASSERT(width >= 1 && height >= 1);
 
 		const int bgshade = g_settings.getInteger(Config::ICON_BACKGROUND);
@@ -1188,10 +1188,11 @@ wxMemoryDC* GameSprite::getDC(SpriteSize size) {
 					const int i = getIndex(w, h, l, 0, 0, 0, 0);
 					uint8_t* data = spriteList[i]->getRGBData();
 					if (data) {
-						wxImage img(SPRITE_PIXELS, SPRITE_PIXELS, data);
+						wxImage img(SPRITE_PIXELS, SPRITE_PIXELS, data, true);
 						img.SetMaskColour(0xFF, 0x00, 0xFF);
 						image.Paste(img, (width - w - 1) * SPRITE_PIXELS, (height - h - 1) * SPRITE_PIXELS);
 						img.Destroy();
+						delete[] data;
 					}
 				}
 			}
@@ -1199,16 +1200,15 @@ wxMemoryDC* GameSprite::getDC(SpriteSize size) {
 
 		// Now comes the resizing / antialiasing
 		if (size == SPRITE_SIZE_16x16 || image.GetWidth() > SPRITE_PIXELS || image.GetHeight() > SPRITE_PIXELS) {
-			int new_size = SPRITE_SIZE_16x16 ? 16 : 32;
+			int new_size = (size == SPRITE_SIZE_16x16) ? 16 : 32;
 			image.Rescale(new_size, new_size);
 		}
 
-		wxBitmap bmp(image);
-		dc[size] = newd wxMemoryDC(bmp);
+		bm[size] = newd wxBitmap(image);
 		g_gui.gfx.addSpriteToCleanup(this);
 		image.Destroy();
 	}
-	return dc[size];
+	return bm[size];
 }
 
 void GameSprite::DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width, int height) {
@@ -1218,15 +1218,22 @@ void GameSprite::DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int w
 	if (height == -1) {
 		height = sz == SPRITE_SIZE_32x32 ? 32 : 16;
 	}
-	wxDC* sdc = getDC(sz);
+	wxBitmap* sdc = getBitmap(sz);
 	if (sdc) {
-		dc->Blit(start_x, start_y, width, height, sdc, 0, 0, wxCOPY, true);
+		dc->DrawBitmap(*sdc, start_x, start_y, true);
 	} else {
 		const wxBrush& b = dc->GetBrush();
 		dc->SetBrush(*wxRED_BRUSH);
 		dc->DrawRectangle(start_x, start_y, width, height);
 		dc->SetBrush(b);
 	}
+}
+
+void GameSprite::unloadDC() {
+	delete bm[SPRITE_SIZE_16x16];
+	delete bm[SPRITE_SIZE_32x32];
+	bm[SPRITE_SIZE_16x16] = nullptr;
+	bm[SPRITE_SIZE_32x32] = nullptr;
 }
 
 GameSprite::Image::Image() :
@@ -1407,16 +1414,15 @@ GLuint GameSprite::NormalImage::getHardwareID() {
 		if (!isGLQueueing) {
 			isGLQueueing = true;
 			if (g_gui.async_loader) {
-				g_gui.async_loader->StreamSprite(id, [this](uint8_t* target, uint16_t target_size) {
-					this->dump = target;
-					this->size = target_size;
-					this->isGLQueueing = false;
-					if (this->dump) {
-						this->createGLTexture(this->id);
-					}
-				});
+				g_gui.async_loader->queueSpriteLoad(id, "");
+				this->isGLQueueing = false;
+				if (this->dump) {
+					this->createGLTexture(this->id);
+				}
 			} else {
 				createGLTexture(id);
+				isGLQueueing = false;
+				return id; // Return loaded ID immediately
 			}
 		}
 		return 0;

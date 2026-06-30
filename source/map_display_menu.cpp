@@ -77,15 +77,31 @@ void MapCanvas::OnSelectMoveTo(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
-	if (editor.selection.size() != 1) {
+	Tile* tile = nullptr;
+	Item* item = nullptr;
+
+	if (editor.selection.size() == 1) {
+		tile = editor.selection.getSelectedTile();
+		if (tile) {
+			ItemVector selected_items = tile->getSelectedItems();
+			for (Item* it : selected_items) {
+				if (it->isSelected()) {
+					item = it;
+					break;
+				}
+			}
+		}
+	} else if (editor.selection.size() == 0) {
+		tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
+		if (tile) {
+			item = tile->getTopItem();
+		}
+	}
+
+	if (!tile || (!item && !tile->spawn && !tile->creature)) {
 		return;
 	}
 
-	Tile* tile = editor.selection.getSelectedTile();
-	if (!tile) {
-		return;
-	}
-	ASSERT(tile->isSelected());
 	Tile* new_tile = tile->deepCopy(editor.map);
 
 	wxDialog* w = nullptr; 
@@ -94,25 +110,29 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 		w = newd OldPropertiesWindow(g_gui.root, &editor.map, new_tile, new_tile->spawn);
 	} else if (new_tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
 		w = newd OldPropertiesWindow(g_gui.root, &editor.map, new_tile, new_tile->creature);
-	} else {
-		ItemVector selected_items = new_tile->getSelectedItems();
-
-		Item* item = nullptr;
-		for (Item* it : selected_items) {
-			if (it->isSelected()) {
-				item = it;
-				break;
+	} else if (item) {
+		Item* new_item = nullptr;
+		if (item == tile->ground) {
+			new_item = new_tile->ground;
+		} else {
+			for (size_t i = 0; i < tile->items.size() && i < new_tile->items.size(); ++i) {
+				if (tile->items[i] == item) {
+					new_item = new_tile->items[i];
+					break;
+				}
 			}
 		}
-
-		if (item) {
-			w = new PropertiesWindow(g_gui.root, &editor.map, new_tile, item); 
-		} else {
-			return;
+		if (new_item) {
+			w = new PropertiesWindow(g_gui.root, &editor.map, new_tile, new_item); 
 		}
 	}
 
-	int ret = w->ShowModal(); // unique_ptr verwaltet dies jetzt
+	if (!w) {
+		delete new_tile;
+		return;
+	}
+
+	int ret = w->ShowModal();
 	if (ret != 0) {
 		Action* action = editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
 		action->addChange(newd Change(new_tile));
@@ -126,7 +146,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 
 MapPopupMenu::MapPopupMenu(MapEditor& map_editor_ref) :
 	wxMenu(""), editor(map_editor_ref) {
-	////
+	SetTitle("Map Popup Menu");
 }
 
 MapPopupMenu::~MapPopupMenu() {
@@ -361,3 +381,93 @@ void MapCanvas::OnScriptMenu(wxCommandEvent& event) {
 		}
 	}
 }
+
+void MapCanvas::OnCut(wxCommandEvent& WXUNUSED(event)) { g_gui.DoCut(); }
+void MapCanvas::OnCopy(wxCommandEvent& WXUNUSED(event)) { g_gui.DoCopy(); }
+void MapCanvas::OnPaste(wxCommandEvent& WXUNUSED(event)) { g_gui.PreparePaste(); }
+void MapCanvas::OnDelete(wxCommandEvent& WXUNUSED(event)) {
+	if (editor.selection.size() == 0) {
+		Tile* tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
+		if (tile && (!tile->empty() || tile->ground)) {
+			Item* top = tile->getTopItem();
+			if (top) {
+				BatchAction* batch = editor.actionQueue->createBatch(ACTION_DELETE_TILES);
+				Action* action = editor.actionQueue->createAction(batch);
+				Tile* new_tile = tile->deepCopy(editor.map);
+				Item* new_top = nullptr;
+				if (top == tile->ground) new_top = new_tile->ground;
+				else {
+					for (size_t i = 0; i < tile->items.size() && i < new_tile->items.size(); ++i) {
+						if (tile->items[i] == top) { new_top = new_tile->items[i]; break; }
+					}
+				}
+				if (new_top) {
+					if (new_top == new_tile->ground) {
+						delete new_tile->ground;
+						new_tile->ground = nullptr;
+					} else {
+						for (auto it = new_tile->items.begin(); it != new_tile->items.end(); ++it) {
+							if (*it == new_top) {
+								delete *it;
+								new_tile->items.erase(it);
+								break;
+							}
+						}
+					}
+				}
+				action->addChange(newd Change(new_tile));
+				batch->addAndCommitAction(action);
+				editor.addBatch(batch, 2);
+				Refresh();
+			}
+		}
+	} else {
+		editor.destroySelection();
+	}
+}
+void MapCanvas::OnCopyPosition(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnCopyServerId(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnCopyClientId(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnCopyName(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnBrowseTile(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnGotoDestination(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event)) {
+	if (editor.selection.size() == 0) {
+		Tile* tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
+		if (tile && (!tile->empty() || tile->ground)) {
+			Item* top = tile->getTopItem();
+			if (top && top->isRoteable()) {
+				ItemType& it = g_items[top->getID()];
+				if (it.rotateTo != 0) {
+					BatchAction* batch = editor.actionQueue->createBatch(ACTION_DRAW);
+					Action* action = editor.actionQueue->createAction(batch);
+					Tile* new_tile = tile->deepCopy(editor.map);
+					Item* new_top = nullptr;
+					if (top == tile->ground) new_top = new_tile->ground;
+					else {
+						for (size_t i = 0; i < tile->items.size() && i < new_tile->items.size(); ++i) {
+							if (tile->items[i] == top) { new_top = new_tile->items[i]; break; }
+						}
+					}
+					if (new_top) {
+						new_top->setID(it.rotateTo);
+					}
+					action->addChange(newd Change(new_tile));
+					batch->addAndCommitAction(action);
+					editor.addBatch(batch, 2);
+					Refresh();
+				}
+			}
+		}
+	}
+}
+void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectRAWBrush(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectGroundBrush(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectDoodadBrush(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectDoorBrush(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectWallBrush(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectCarpetBrush(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectTableBrush(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectHouseBrush(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSelectCollectionBrush(wxCommandEvent& WXUNUSED(event)) {}

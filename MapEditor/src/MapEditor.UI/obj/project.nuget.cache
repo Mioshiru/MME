@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "dgSpecHash": "zr/30InIsLg=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.UI\\MapEditor.UI.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\weber\\.nuget\\packages\\imgui.net\\1.90.8.1\\imgui.net.1.90.8.1.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\microsoft.dotnet.platformabstractions\\3.1.6\\microsoft.dotnet.platformabstractions.3.1.6.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\microsoft.extensions.dependencymodel\\8.0.0\\microsoft.extensions.dependencymodel.8.0.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\silk.net.core\\2.22.0\\silk.net.core.2.22.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\silk.net.input.common\\2.22.0\\silk.net.input.common.2.22.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\silk.net.input.extensions\\2.22.0\\silk.net.input.extensions.2.22.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\silk.net.maths\\2.22.0\\silk.net.maths.2.22.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\silk.net.opengl\\2.22.0\\silk.net.opengl.2.22.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\silk.net.opengl.extensions.imgui\\2.22.0\\silk.net.opengl.extensions.imgui.2.22.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\silk.net.windowing.common\\2.22.0\\silk.net.windowing.common.2.22.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\stbimagesharp\\2.30.15\\stbimagesharp.2.30.15.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\system.buffers\\4.4.0\\system.buffers.4.4.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\system.memory\\4.5.5\\system.memory.4.5.5.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\system.text.encodings.web\\8.0.0\\system.text.encodings.web.8.0.0.nupkg.sha512",
+    "C:\\Users\\weber\\.nuget\\packages\\system.text.json\\8.0.0\\system.text.json.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

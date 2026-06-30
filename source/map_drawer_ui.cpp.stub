@@ -1,0 +1,12 @@
+#include "main.h"
+#include "map_drawer.h"
+
+void MapDrawer::DrawSelectionBox() {}
+void MapDrawer::DrawLiveCursors() {}
+void MapDrawer::DrawGrid() {}
+void MapDrawer::DrawIngameBox() {}
+void MapDrawer::DrawHookIndicator(int, int, const ItemType &) {}
+void MapDrawer::drawRect(int, int, int, int, const wxColor &, int) {}
+void MapDrawer::drawFilledRect(int, int, int, int, const wxColor &) {}
+void MapDrawer::glBlitSquare(int, int, int, int, int, int, int) {}
+void MapDrawer::DrawTooltips() {}

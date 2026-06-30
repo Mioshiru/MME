@@ -19,11 +19,22 @@
 #define RME_ITEMS_H_
 
 #include <vector>
+#include <map>
+
+#include <wx/arrstr.h>
+#include <wx/filename.h>
+#include <wx/string.h>
 
 #include "filehandle.h"
 #include "brush_enums.h"
+#include "con_vector.h"
+#include "ext/pugixml.hpp"
 
 class Item;
+class wxString;
+class wxArrayString;
+class wxFileName;
+typedef wxFileName FileName;
 
 typedef std::vector<Item*> ItemVector;
 
