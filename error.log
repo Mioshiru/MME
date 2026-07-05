@@ -1,183 +1,636 @@
-[2026-07-05 22:46:30] === AUI Panes Diagnostics ===
-[2026-07-05 22:46:30] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
-[2026-07-05 22:46:30] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
-[2026-07-05 22:46:30] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 56, 27), row=0, col=628
-[2026-07-05 22:46:30] =============================
-[2026-07-05 22:46:30] === AUI Panes Diagnostics ===
-[2026-07-05 22:46:30] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
-[2026-07-05 22:46:30] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
-[2026-07-05 22:46:30] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 110, 27), row=0, col=628
-[2026-07-05 22:46:30] Pane: name='55dcaf006a4ac2a60000003800000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 27, 1535, 841), row=0, col=0
-[2026-07-05 22:46:30] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
-[2026-07-05 22:46:30] =============================
-[2026-07-05 22:46:32] === AUI Panes Diagnostics ===
-[2026-07-05 22:46:32] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
-[2026-07-05 22:46:32] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
-[2026-07-05 22:46:32] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 110, 27), row=0, col=628
-[2026-07-05 22:46:32] Pane: name='55dcaf006a4ac2a60000003800000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(230, 27, 1305, 841), row=0, col=0
-[2026-07-05 22:46:32] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
-[2026-07-05 22:46:32] Pane: name='443939106a2ea9170000581a00000007', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 44, 225, 824), row=0, col=0
-[2026-07-05 22:46:32] Pane: name='Tools', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=3
-[2026-07-05 22:46:32] Pane: name='Brush Size', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=4
-[2026-07-05 22:46:32] =============================
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(919, 283), map=(1032, 1020), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1008, 1024), vertices=36
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1008, 1028), vertices=12
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1020), vertices=56
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1024), vertices=84
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1028), vertices=76
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1016), vertices=24
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1020), vertices=88
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1024), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1028), vertices=84
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1032), vertices=4
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1016), vertices=48
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1020), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1024), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1028), vertices=80
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1032), vertices=16
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1016), vertices=44
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1020), vertices=72
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1024), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1028), vertices=80
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1032), vertices=16
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1016), vertices=12
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1020), vertices=84
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1024), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1028), vertices=88
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1032), vertices=8
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1020), vertices=72
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1024), vertices=92
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1028), vertices=48
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1036, 1020), vertices=4
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1036, 1024), vertices=16
-[2026-07-05 22:46:32] DrawBrush run: mouse_map=(1032, 1020), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1008, 1024), vertices=36
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1008, 1028), vertices=12
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1020), vertices=56
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1024), vertices=84
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1028), vertices=76
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1016), vertices=24
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1020), vertices=88
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1024), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1028), vertices=84
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1032), vertices=4
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1016), vertices=48
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1020), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1024), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1028), vertices=80
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1032), vertices=16
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1016), vertices=44
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1020), vertices=72
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1024), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1028), vertices=80
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1032), vertices=16
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1016), vertices=12
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1020), vertices=84
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1024), vertices=64
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1028), vertices=88
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1032), vertices=8
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1020), vertices=72
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1024), vertices=92
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1028), vertices=48
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1036, 1020), vertices=4
-[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1036, 1024), vertices=16
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(892, 278), map=(1031, 1020), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(850, 270), map=(1030, 1020), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(840, 267), map=(1030, 1019), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(833, 266), map=(1029, 1019), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(784, 253), map=(1028, 1019), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(762, 245), map=(1027, 1019), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(724, 234), map=(1026, 1018), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(701, 227), map=(1025, 1018), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(644, 209), map=(1024, 1018), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(619, 199), map=(1023, 1017), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(591, 190), map=(1022, 1017), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(563, 178), map=(1021, 1017), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(537, 167), map=(1020, 1016), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(485, 145), map=(1019, 1016), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(456, 133), map=(1018, 1015), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(426, 121), map=(1017, 1015), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(395, 107), map=(1016, 1014), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(364, 95), map=(1015, 1014), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(309, 75), map=(1013, 1013), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(281, 63), map=(1012, 1013), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(253, 52), map=(1011, 1013), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(227, 41), map=(1011, 1012), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(205, 32), map=(1010, 1012), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(181, 21), map=(1009, 1012), floor=7, dragging_draw=0
-[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(161, 10), map=(1008, 1011), floor=7, dragging_draw=0
-[2026-07-05 22:46:33] DrawBrush run: mouse_map=(1008, 1011), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
-[2026-07-05 22:46:34] DrawBrush run: mouse_map=(1008, 1011), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
-[2026-07-05 22:46:35] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:35] OnMouseLeftClick: screen=(140, 142), map=(1008, 1016), floor=7, drawing=0, current_brush=cave
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1008, 1024), vertices=36
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1008, 1028), vertices=12
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1012, 1020), vertices=56
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1012, 1024), vertices=84
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1012, 1028), vertices=76
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1016), vertices=24
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1020), vertices=88
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1024), vertices=64
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1028), vertices=84
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1032), vertices=4
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1016), vertices=48
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1020), vertices=64
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1024), vertices=64
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1028), vertices=80
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1032), vertices=16
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1016), vertices=44
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1020), vertices=72
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1024), vertices=64
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1028), vertices=80
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1032), vertices=16
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1016), vertices=12
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1020), vertices=84
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1024), vertices=64
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1028), vertices=88
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1032), vertices=8
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1032, 1020), vertices=72
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1032, 1024), vertices=92
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1032, 1028), vertices=48
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1036, 1020), vertices=4
-[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1036, 1024), vertices=16
-[2026-07-05 22:46:36] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:37] OnMouseLeftClick: screen=(1195, 669), map=(1041, 1032), floor=7, drawing=0, current_brush=cave
-[2026-07-05 22:46:37] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:38] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:39] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:40] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:41] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:42] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:43] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:44] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:45] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:46] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:47] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:48] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:49] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:50] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:51] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:52] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:53] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:54] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:55] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:56] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:58] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:46:59] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:00] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:01] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:02] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:03] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:04] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:05] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:06] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:07] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:08] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:09] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:10] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:11] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:12] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:13] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
-[2026-07-05 22:47:13] FATAL ERROR: Structured Exception (e.g. Access Violation/Crash) occurred in the application!
+[2026-07-06 00:47:23] === AUI Panes Diagnostics ===
+[2026-07-06 00:47:23] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
+[2026-07-06 00:47:23] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
+[2026-07-06 00:47:23] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 56, 27), row=0, col=628
+[2026-07-06 00:47:23] =============================
+[2026-07-06 00:47:23] === AUI Panes Diagnostics ===
+[2026-07-06 00:47:23] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
+[2026-07-06 00:47:23] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
+[2026-07-06 00:47:23] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 110, 27), row=0, col=628
+[2026-07-06 00:47:23] Pane: name='f3aa6fe06a4adefb0000003500000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 27, 1535, 841), row=0, col=0
+[2026-07-06 00:47:23] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-07-06 00:47:23] =============================
+[2026-07-06 00:47:25] === AUI Panes Diagnostics ===
+[2026-07-06 00:47:25] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
+[2026-07-06 00:47:25] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
+[2026-07-06 00:47:25] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 110, 27), row=0, col=628
+[2026-07-06 00:47:25] Pane: name='f3aa6fe06a4adefb0000003500000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(230, 27, 1305, 841), row=0, col=0
+[2026-07-06 00:47:25] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-07-06 00:47:25] Pane: name='443939106a2ea9170000581a00000007', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 44, 225, 824), row=0, col=0
+[2026-07-06 00:47:25] Pane: name='Tools', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=3
+[2026-07-06 00:47:25] Pane: name='Brush Size', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=4
+[2026-07-06 00:47:25] =============================
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(415, 204), map=(1016, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1008, 1024), vertices=36
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1008, 1028), vertices=12
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1012, 1020), vertices=56
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1012, 1024), vertices=84
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1012, 1028), vertices=76
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1016), vertices=24
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1020), vertices=88
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1024), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1028), vertices=84
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1032), vertices=4
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1016), vertices=48
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1020), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1024), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1028), vertices=80
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1032), vertices=16
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1016), vertices=44
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1020), vertices=72
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1024), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1028), vertices=80
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1032), vertices=16
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1016), vertices=12
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1020), vertices=84
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1024), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1028), vertices=88
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1032), vertices=8
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1032, 1020), vertices=72
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1032, 1024), vertices=92
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1032, 1028), vertices=48
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1036, 1020), vertices=4
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1036, 1024), vertices=16
+[2026-07-06 00:47:25] DrawBrush run: mouse_map=(1016, 1017), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(412, 205), map=(1016, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1008, 1024), vertices=36
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1008, 1028), vertices=12
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1012, 1020), vertices=56
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1012, 1024), vertices=84
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1012, 1028), vertices=76
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1016), vertices=24
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1020), vertices=88
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1024), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1028), vertices=84
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1016, 1032), vertices=4
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1016), vertices=48
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1020), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1024), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1028), vertices=80
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1020, 1032), vertices=16
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1016), vertices=44
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1020), vertices=72
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1024), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1028), vertices=80
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1024, 1032), vertices=16
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1016), vertices=12
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1020), vertices=84
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1024), vertices=64
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1028), vertices=88
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1028, 1032), vertices=8
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1032, 1020), vertices=72
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1032, 1024), vertices=92
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1032, 1028), vertices=48
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1036, 1020), vertices=4
+[2026-07-06 00:47:25] VBO Rebuild: floor=7, leaf=(1036, 1024), vertices=16
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(385, 208), map=(1015, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(353, 208), map=(1014, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(313, 207), map=(1013, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(288, 201), map=(1012, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(255, 194), map=(1011, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(222, 183), map=(1010, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(185, 170), map=(1009, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(140, 152), map=(1008, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(93, 134), map=(1006, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(48, 116), map=(1005, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:25] OnMouseMove (drawing): screen=(7, 101), map=(1004, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:26] DrawBrush run: mouse_map=(1004, 1014), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:27] DrawBrush run: mouse_map=(1004, 1014), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:28] DrawBrush run: mouse_map=(1004, 1014), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:29] DrawBrush run: mouse_map=(1004, 1014), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:30] DrawBrush run: mouse_map=(1004, 1014), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:31] DrawBrush run: mouse_map=(1004, 1014), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(35, 89), map=(1005, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(87, 91), map=(1006, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(118, 92), map=(1007, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(170, 94), map=(1009, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(197, 96), map=(1010, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(272, 99), map=(1012, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(297, 102), map=(1013, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(347, 106), map=(1014, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(369, 107), map=(1015, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(392, 109), map=(1016, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(436, 112), map=(1017, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(453, 112), map=(1018, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(516, 116), map=(1020, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(564, 118), map=(1021, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(589, 120), map=(1022, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(612, 121), map=(1023, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(657, 125), map=(1024, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(691, 130), map=(1025, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(715, 135), map=(1026, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(750, 142), map=(1027, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(771, 146), map=(1028, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(813, 154), map=(1029, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(835, 158), map=(1030, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] DrawBrush run: mouse_map=(1030, 1016), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(867, 164), map=(1031, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(898, 170), map=(1032, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(917, 173), map=(1032, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(934, 178), map=(1033, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(963, 186), map=(1034, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(999, 195), map=(1035, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(1029, 195), map=(1036, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:32] OnMouseMove (drawing): screen=(1058, 192), map=(1037, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:33] DrawBrush run: mouse_map=(1040, 1015), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:34] DrawBrush run: mouse_map=(1760, 1184), TileSize=32, view_scroll=(55167, 37779), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(974, 69), map=(1987, 65), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(945, 64), map=(1986, 65), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(897, 53), map=(1985, 65), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(871, 48), map=(1984, 65), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(817, 36), map=(1982, 64), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(788, 30), map=(1981, 64), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(734, 18), map=(1979, 64), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(684, 8), map=(1978, 63), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(652, 1), map=(1977, 63), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] DrawBrush run: mouse_map=(1977, 63), TileSize=32, view_scroll=(62623, 2035), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(202, 8), map=(1963, 63), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(258, 22), map=(1965, 64), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(314, 34), map=(1966, 64), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(392, 54), map=(1969, 65), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(459, 69), map=(1971, 65), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(547, 88), map=(1974, 66), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(614, 103), map=(1976, 66), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(687, 118), map=(1978, 67), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(764, 135), map=(1980, 67), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(821, 147), map=(1982, 68), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(890, 162), map=(1984, 68), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(941, 172), map=(1986, 68), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(991, 181), map=(1987, 69), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(1034, 189), map=(1989, 69), floor=7, dragging_draw=0
+[2026-07-06 00:47:35] OnMouseMove (drawing): screen=(1073, 196), map=(1990, 69), floor=7, dragging_draw=0
+[2026-07-06 00:47:36] DrawBrush run: mouse_map=(1993, 71), TileSize=32, view_scroll=(62623, 2035), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(1051, 257), map=(1036, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(1022, 253), map=(1035, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(981, 247), map=(1034, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(932, 238), map=(1033, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(908, 234), map=(1032, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(881, 227), map=(1031, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(851, 219), map=(1030, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(825, 213), map=(1029, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(795, 206), map=(1028, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(765, 198), map=(1027, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(712, 184), map=(1026, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(682, 176), map=(1025, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(628, 162), map=(1023, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(577, 148), map=(1022, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(552, 142), map=(1021, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(506, 129), map=(1019, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(460, 115), map=(1018, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(436, 107), map=(1017, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(390, 94), map=(1016, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(343, 78), map=(1014, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(318, 71), map=(1013, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(267, 55), map=(1012, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(239, 45), map=(1011, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(190, 29), map=(1009, 1012), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] DrawBrush run: mouse_map=(1009, 1012), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(119, 6), map=(1007, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(49, 0), map=(1005, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(222, 33), map=(1010, 1012), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(268, 42), map=(1012, 1012), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(340, 57), map=(1014, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(388, 68), map=(1016, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(463, 86), map=(1018, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(541, 105), map=(1020, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(595, 117), map=(1022, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(670, 134), map=(1024, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(740, 151), map=(1027, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(788, 163), map=(1028, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(855, 177), map=(1030, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(909, 191), map=(1032, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(957, 201), map=(1033, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(1005, 212), map=(1035, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(1048, 224), map=(1036, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:37] OnMouseMove (drawing): screen=(1091, 235), map=(1038, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:47:38] OnMouseMove (drawing): screen=(1275, 282), map=(1043, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:47:38] OnMouseMove (drawing): screen=(1282, 275), map=(1044, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:47:38] OnMouseMove (drawing): screen=(1256, 270), map=(1043, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:47:38] OnMouseMove (drawing): screen=(1248, 268), map=(1042, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:38] DrawBrush run: mouse_map=(1041, 1019), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:38] OnMouseMove (drawing): screen=(1193, 259), map=(1041, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(1183, 259), map=(1040, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(1152, 261), map=(1039, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(1119, 262), map=(1038, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(1088, 262), map=(1037, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(1050, 263), map=(1036, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(1016, 266), map=(1035, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(980, 272), map=(1034, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(947, 278), map=(1033, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(927, 281), map=(1032, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(871, 292), map=(1031, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(839, 299), map=(1030, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(783, 309), map=(1028, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(754, 316), map=(1027, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(725, 320), map=(1026, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(672, 330), map=(1024, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(624, 338), map=(1023, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(599, 341), map=(1022, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(548, 349), map=(1021, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(498, 356), map=(1019, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(453, 366), map=(1018, 1023), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(428, 372), map=(1017, 1023), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] DrawBrush run: mouse_map=(1017, 1023), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(409, 379), map=(1016, 1023), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(373, 391), map=(1015, 1023), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(348, 404), map=(1014, 1024), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(314, 427), map=(1013, 1024), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(307, 431), map=(1013, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(286, 445), map=(1012, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(271, 462), map=(1012, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(256, 481), map=(1011, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(238, 494), map=(1011, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(211, 503), map=(1010, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(177, 508), map=(1009, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(147, 508), map=(1008, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(87, 507), map=(1006, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:47:39] OnMouseMove (drawing): screen=(61, 504), map=(1005, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:47:40] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:41] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:42] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:43] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:44] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:45] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:46] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:47] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:48] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:49] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:50] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:51] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:52] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:53] DrawBrush run: mouse_map=(1005, 1027), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(446, 770), map=(1017, 1035), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(434, 742), map=(1017, 1034), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(407, 702), map=(1016, 1033), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(390, 677), map=(1016, 1032), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(378, 663), map=(1015, 1032), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(360, 638), map=(1015, 1031), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(346, 616), map=(1014, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(322, 582), map=(1014, 1029), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(308, 559), map=(1013, 1029), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(289, 532), map=(1013, 1028), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(270, 505), map=(1012, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(246, 473), map=(1011, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(222, 447), map=(1010, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(192, 414), map=(1009, 1024), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(160, 384), map=(1008, 1023), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(124, 356), map=(1007, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(92, 334), map=(1006, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(82, 330), map=(1006, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(58, 320), map=(1005, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] OnMouseMove (drawing): screen=(23, 311), map=(1004, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:47:54] DrawBrush run: mouse_map=(1004, 1021), TileSize=32, view_scroll=(32127, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:55] DrawBrush run: mouse_map=(1004, 1022), TileSize=32, view_scroll=(32127, 32403), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:56] DrawBrush run: mouse_map=(1053, 994), TileSize=32, view_scroll=(33695, 31507), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:57] DrawBrush run: mouse_map=(998, 1020), TileSize=32, view_scroll=(31935, 32339), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:58] DrawBrush run: mouse_map=(953, 1050), TileSize=32, view_scroll=(30495, 33299), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:47:59] DrawBrush run: mouse_map=(991, 1029), TileSize=32, view_scroll=(31711, 32627), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:00] DrawBrush run: mouse_map=(1036, 1096), TileSize=32, view_scroll=(33151, 34771), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:01] DrawBrush run: mouse_map=(1193, 1073), TileSize=32, view_scroll=(38175, 34035), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:02] DrawBrush run: mouse_map=(1090, 966), TileSize=32, view_scroll=(34879, 30611), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:03] DrawBrush run: mouse_map=(698, 941), TileSize=32, view_scroll=(22335, 29811), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(14, 638), map=(706, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(36, 638), map=(707, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(86, 637), map=(708, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(116, 637), map=(709, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(151, 637), map=(710, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(181, 637), map=(711, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(214, 637), map=(712, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(268, 637), map=(714, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(298, 637), map=(715, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(325, 637), map=(716, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(368, 637), map=(717, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(391, 637), map=(718, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(433, 640), map=(719, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(465, 641), map=(720, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] OnMouseMove (drawing): screen=(487, 643), map=(721, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:04] DrawBrush run: mouse_map=(721, 959), TileSize=32, view_scroll=(22591, 30067), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(36, 286), map=(722, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(86, 295), map=(723, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(100, 298), map=(724, 959), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(129, 306), map=(725, 960), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(197, 325), map=(727, 960), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(220, 334), map=(727, 961), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(264, 351), map=(729, 961), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(289, 362), map=(730, 961), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(318, 378), map=(731, 962), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(372, 409), map=(732, 963), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(397, 430), map=(733, 964), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(425, 450), map=(734, 964), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(448, 470), map=(734, 965), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(473, 494), map=(735, 966), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(490, 514), map=(735, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(507, 540), map=(736, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] OnMouseMove (drawing): screen=(510, 547), map=(736, 968), floor=7, dragging_draw=0
+[2026-07-06 00:48:05] DrawBrush run: mouse_map=(736, 968), TileSize=32, view_scroll=(23089, 30452), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(285, 258), map=(736, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(253, 197), map=(735, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(245, 179), map=(735, 966), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(259, 186), map=(735, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(267, 193), map=(736, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(289, 212), map=(737, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(303, 225), map=(737, 968), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(312, 233), map=(736, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(320, 239), map=(736, 968), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(330, 247), map=(737, 968), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(348, 261), map=(735, 968), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(370, 275), map=(733, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(379, 278), map=(733, 968), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(383, 278), map=(731, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(389, 278), map=(732, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(407, 279), map=(733, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(408, 280), map=(730, 966), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(409, 280), map=(728, 966), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(410, 281), map=(725, 965), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(411, 281), map=(726, 965), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(412, 282), map=(723, 964), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(416, 286), map=(723, 965), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] DrawBrush run: mouse_map=(723, 965), TileSize=32, view_scroll=(22081, 30139), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(420, 290), map=(724, 965), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(433, 302), map=(725, 966), floor=7, dragging_draw=0
+[2026-07-06 00:48:06] OnMouseMove (drawing): screen=(446, 314), map=(726, 967), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(458, 329), map=(727, 968), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(468, 344), map=(727, 969), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(473, 353), map=(728, 970), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(479, 364), map=(728, 971), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(484, 373), map=(729, 972), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(490, 386), map=(729, 973), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(494, 398), map=(730, 974), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(502, 418), map=(730, 975), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(507, 432), map=(731, 976), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(508, 438), map=(731, 977), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(513, 455), map=(731, 978), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(515, 461), map=(731, 979), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(522, 477), map=(732, 980), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(524, 484), map=(732, 981), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(528, 498), map=(732, 982), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(536, 516), map=(733, 983), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(538, 522), map=(733, 984), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(544, 536), map=(734, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(548, 545), map=(734, 986), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(517, 503), map=(734, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(480, 430), map=(733, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(507, 272), map=(734, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(766, 193), map=(734, 984), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] OnMouseMove (drawing): screen=(836, 169), map=(735, 984), floor=7, dragging_draw=0
+[2026-07-06 00:48:07] DrawBrush run: mouse_map=(735, 984), TileSize=32, view_scroll=(21363, 31066), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(827, 170), map=(734, 984), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(816, 174), map=(733, 984), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(799, 177), map=(732, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(781, 181), map=(730, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(752, 186), map=(728, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(731, 190), map=(726, 986), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(699, 195), map=(724, 986), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(660, 199), map=(721, 986), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(608, 205), map=(716, 987), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(560, 210), map=(712, 987), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(514, 214), map=(709, 988), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(472, 218), map=(705, 988), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(430, 221), map=(702, 988), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(389, 227), map=(699, 989), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(357, 232), map=(696, 989), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(342, 234), map=(695, 989), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(330, 238), map=(694, 990), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(325, 239), map=(693, 990), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(327, 249), map=(694, 990), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(329, 251), map=(694, 991), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(914, 552), map=(695, 991), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(926, 568), map=(695, 992), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(924, 579), map=(694, 991), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(910, 574), map=(693, 991), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(902, 571), map=(692, 991), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(891, 567), map=(691, 990), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(875, 561), map=(690, 990), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(864, 556), map=(689, 990), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(840, 548), map=(687, 989), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(825, 542), map=(686, 988), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(805, 533), map=(684, 988), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(758, 511), map=(681, 986), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(732, 500), map=(679, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(700, 484), map=(676, 984), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(669, 470), map=(673, 983), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(614, 444), map=(669, 980), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(582, 428), map=(666, 979), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(530, 404), map=(662, 977), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(501, 390), map=(660, 976), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(475, 379), map=(658, 975), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(436, 360), map=(655, 974), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(423, 353), map=(654, 973), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(399, 341), map=(652, 972), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(394, 338), map=(651, 972), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(388, 333), map=(651, 971), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] OnMouseMove (drawing): screen=(418, 288), map=(651, 970), floor=7, dragging_draw=0
+[2026-07-06 00:48:08] DrawBrush run: mouse_map=(651, 970), TileSize=32, view_scroll=(19752, 30343), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(383, 117), map=(650, 969), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(380, 129), map=(650, 970), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(382, 138), map=(650, 971), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(386, 150), map=(650, 972), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(390, 162), map=(651, 973), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(395, 178), map=(651, 974), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(401, 202), map=(651, 976), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(404, 214), map=(652, 977), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(410, 243), map=(652, 979), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(411, 258), map=(652, 980), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(414, 277), map=(653, 982), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(415, 294), map=(653, 983), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(415, 316), map=(653, 985), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(415, 335), map=(653, 987), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(411, 369), map=(652, 989), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(407, 383), map=(652, 991), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(403, 398), map=(652, 992), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(397, 410), map=(651, 993), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(390, 424), map=(651, 994), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(380, 438), map=(650, 995), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(369, 455), map=(649, 996), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(361, 465), map=(648, 997), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(344, 482), map=(647, 999), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(333, 492), map=(646, 999), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(311, 508), map=(644, 1001), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(295, 517), map=(643, 1001), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(258, 533), map=(640, 1003), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(233, 543), map=(638, 1003), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(195, 554), map=(635, 1004), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(160, 561), map=(632, 1005), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(121, 568), map=(629, 1006), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(100, 572), map=(627, 1006), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(60, 579), map=(624, 1006), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(41, 585), map=(622, 1007), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] OnMouseMove (drawing): screen=(21, 592), map=(621, 1007), floor=7, dragging_draw=0
+[2026-07-06 00:48:09] DrawBrush run: mouse_map=(621, 1007), TileSize=32, view_scroll=(19823, 30719), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:10] DrawBrush run: mouse_map=(973, 1039), TileSize=32, view_scroll=(31105, 31739), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(27, 695), map=(974, 1048), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(47, 686), map=(975, 1047), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(89, 669), map=(979, 1046), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(143, 649), map=(983, 1044), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(172, 637), map=(985, 1043), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(221, 617), map=(989, 1041), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(268, 602), map=(993, 1040), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(292, 594), map=(995, 1039), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(341, 578), map=(999, 1038), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(393, 565), map=(1003, 1037), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(419, 558), map=(1005, 1037), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(470, 547), map=(1010, 1036), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(519, 533), map=(1014, 1035), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(565, 522), map=(1017, 1034), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(592, 514), map=(1020, 1033), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(617, 506), map=(1022, 1032), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(658, 491), map=(1025, 1031), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(678, 484), map=(1026, 1031), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(690, 479), map=(1027, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(704, 472), map=(1029, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(714, 468), map=(1029, 1029), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(721, 464), map=(1030, 1029), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(727, 458), map=(1030, 1028), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(728, 456), map=(1031, 1028), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] OnMouseMove (drawing): screen=(734, 436), map=(1031, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:48:11] DrawBrush run: mouse_map=(1031, 1027), TileSize=32, view_scroll=(31110, 31846), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:12] OnMouseMove (drawing): screen=(604, 414), map=(1030, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:48:12] OnMouseMove (drawing): screen=(674, 417), map=(1031, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:48:12] OnMouseMove (drawing): screen=(680, 404), map=(1031, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:48:12] DrawBrush run: mouse_map=(1031, 1026), TileSize=32, view_scroll=(31245, 31814), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:13] OnMouseMove (drawing): screen=(682, 402), map=(1030, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:48:13] OnMouseMove (drawing): screen=(682, 401), map=(1029, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:48:13] OnMouseMove (drawing): screen=(684, 398), map=(1028, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:48:13] OnMouseMove (drawing): screen=(686, 396), map=(1028, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:48:13] OnMouseMove (drawing): screen=(687, 396), map=(1029, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:48:13] OnMouseMove (drawing): screen=(693, 392), map=(1030, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:48:13] DrawBrush run: mouse_map=(1030, 1025), TileSize=32, view_scroll=(29497, 30847), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(695, 390), map=(1030, 1024), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(695, 391), map=(1030, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(697, 400), map=(1030, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(698, 408), map=(1030, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(698, 412), map=(1030, 1028), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(698, 420), map=(1030, 1029), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(698, 425), map=(1030, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(698, 431), map=(1030, 1031), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(698, 438), map=(1030, 1032), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(699, 444), map=(1031, 1033), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(700, 453), map=(1031, 1034), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(701, 456), map=(1031, 1035), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(702, 464), map=(1031, 1036), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(703, 472), map=(1031, 1037), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(704, 474), map=(1031, 1038), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(704, 481), map=(1031, 1039), floor=7, dragging_draw=0
+[2026-07-06 00:48:14] DrawBrush run: mouse_map=(1031, 1039), TileSize=32, view_scroll=(29497, 30847), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:14] OnMouseMove (drawing): screen=(704, 489), map=(1031, 1040), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(704, 496), map=(1031, 1041), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(704, 500), map=(1031, 1042), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(702, 499), map=(1031, 1041), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(696, 496), map=(1030, 1041), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(691, 493), map=(1029, 1041), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(684, 490), map=(1028, 1040), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(670, 481), map=(1026, 1039), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(662, 476), map=(1025, 1038), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(655, 471), map=(1024, 1037), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(649, 466), map=(1023, 1036), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(642, 459), map=(1022, 1035), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(635, 452), map=(1021, 1034), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(630, 446), map=(1020, 1033), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(625, 437), map=(1019, 1032), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(622, 435), map=(1018, 1031), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(616, 426), map=(1018, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(608, 418), map=(1016, 1029), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(605, 414), map=(1016, 1028), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(596, 405), map=(1014, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(591, 400), map=(1014, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(581, 391), map=(1012, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(576, 387), map=(1011, 1024), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(566, 377), map=(1010, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(561, 371), map=(1009, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(557, 366), map=(1008, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(555, 364), map=(1008, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(551, 356), map=(1007, 1019), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(550, 352), map=(1007, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(553, 346), map=(1008, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(556, 344), map=(1008, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(559, 342), map=(1009, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(564, 337), map=(1009, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(567, 336), map=(1010, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(570, 332), map=(1010, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(572, 330), map=(1011, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(576, 325), map=(1011, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(579, 323), map=(1012, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(583, 319), map=(1012, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(585, 318), map=(1013, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(592, 314), map=(1014, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(594, 313), map=(1014, 1012), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(598, 310), map=(1015, 1012), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(599, 307), map=(1015, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(596, 305), map=(1014, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(590, 304), map=(1013, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(583, 304), map=(1012, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(571, 304), map=(1011, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(568, 304), map=(1010, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(561, 304), map=(1009, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseMove (drawing): screen=(558, 304), map=(1008, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:15] OnMouseLeftClick: screen=(557, 304), map=(1008, 1011), floor=7, drawing=1, current_brush=cave
+[2026-07-06 00:48:15] VBO Rebuild: floor=7, leaf=(1008, 1008), vertices=4
+[2026-07-06 00:48:15] VBO Rebuild: floor=7, leaf=(1008, 1008), vertices=4
+[2026-07-06 00:48:15] DrawBrush run: mouse_map=(1008, 1011), TileSize=32, view_scroll=(29497, 30847), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(560, 304), map=(1009, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(565, 304), map=(1010, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(572, 303), map=(1011, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(584, 301), map=(1013, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(590, 300), map=(1013, 1010), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(598, 298), map=(1015, 1010), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(605, 296), map=(1016, 1010), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(612, 294), map=(1017, 1009), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(617, 292), map=(1018, 1009), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(624, 290), map=(1019, 1009), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(632, 286), map=(1020, 1008), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(636, 284), map=(1021, 1008), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(641, 281), map=(1021, 1007), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(643, 281), map=(1022, 1007), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(648, 279), map=(1023, 1007), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseLeftClick: screen=(653, 278), map=(1023, 1007), floor=7, drawing=1, current_brush=cave
+[2026-07-06 00:48:16] VBO Rebuild: floor=7, leaf=(1020, 1004), vertices=4
+[2026-07-06 00:48:16] VBO Rebuild: floor=7, leaf=(1020, 1004), vertices=4
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(650, 282), map=(1023, 1008), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(647, 288), map=(1022, 1008), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(645, 291), map=(1022, 1009), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(643, 295), map=(1022, 1010), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(641, 296), map=(1021, 1010), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(637, 302), map=(1021, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(632, 306), map=(1020, 1011), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(625, 314), map=(1019, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(622, 316), map=(1018, 1013), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(612, 324), map=(1017, 1014), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(607, 328), map=(1016, 1015), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(595, 339), map=(1014, 1016), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(579, 350), map=(1012, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(563, 359), map=(1009, 1020), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(548, 367), map=(1007, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(535, 374), map=(1005, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(514, 382), map=(1002, 1023), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(492, 391), map=(998, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(467, 399), map=(994, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(442, 407), map=(990, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(413, 413), map=(986, 1028), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(384, 418), map=(981, 1029), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(352, 423), map=(976, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(325, 425), map=(972, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(297, 426), map=(968, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(270, 426), map=(963, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(224, 426), map=(956, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(201, 426), map=(953, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(178, 423), map=(949, 1030), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(159, 419), map=(946, 1029), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(138, 413), map=(943, 1028), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(119, 408), map=(940, 1027), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(101, 401), map=(937, 1026), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(81, 391), map=(934, 1025), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(62, 381), map=(931, 1023), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(56, 377), map=(930, 1022), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(39, 365), map=(927, 1021), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(17, 347), map=(924, 1018), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] OnMouseMove (drawing): screen=(10, 341), map=(923, 1017), floor=7, dragging_draw=0
+[2026-07-06 00:48:16] DrawBrush run: mouse_map=(923, 1017), TileSize=32, view_scroll=(29497, 30847), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:18] DrawBrush run: mouse_map=(923, 1017), TileSize=32, view_scroll=(29497, 30847), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:19] DrawBrush run: mouse_map=(923, 1017), TileSize=32, view_scroll=(29497, 30847), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:19] OnMouseMove (drawing): screen=(24, 11), map=(925, 965), floor=7, dragging_draw=0
+[2026-07-06 00:48:19] OnMouseMove (drawing): screen=(55, 10), map=(930, 965), floor=7, dragging_draw=0
+[2026-07-06 00:48:19] OnMouseMove (drawing): screen=(88, 9), map=(935, 965), floor=7, dragging_draw=0
+[2026-07-06 00:48:19] OnMouseMove (drawing): screen=(116, 6), map=(939, 964), floor=7, dragging_draw=0
+[2026-07-06 00:48:20] DrawBrush run: mouse_map=(948, 964), TileSize=32, view_scroll=(29497, 30847), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-06 00:48:21] FATAL ERROR: Structured Exception (e.g. Access Violation/Crash) occurred in the application!
 Active actions stack (last first):

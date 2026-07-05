@@ -202,6 +202,8 @@ protected:
   wxStopWatch refresh_watch;
   std::unique_ptr<RME::UI::UIToolbar> ui_toolbar; // Hinzugefügt
   unsigned int minimap_tex_id = 0;
+  uint8_t minimap_pixels[180 * 180 * 3]; // Added for Palette minimap
+  float minimap_zoom = 1.0f;
   int minimap_start_x = 0;
   int minimap_start_y = 0;
   int minimap_span_w = 180;
@@ -213,6 +215,8 @@ protected:
   AnimationTimer *animation_timer;
 
   friend class MapDrawer;
+  friend class PaletteWindow;
+  friend class MinimapPanel;
 
   DECLARE_EVENT_TABLE()
 };

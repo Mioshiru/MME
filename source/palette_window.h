@@ -83,6 +83,10 @@ protected:
 	WaypointPalettePanel* waypoint_palette;
 	BrushPalettePanel* raw_palette;
 
+public:
+	wxPanel* minimap_panel = nullptr;
+	void UpdateMinimapVisibility();
+
 	DECLARE_EVENT_TABLE()
 };
 

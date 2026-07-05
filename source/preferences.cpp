@@ -633,6 +633,22 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	});
 	update_zoom_label();
 
+	wxStaticText* minimap_label = newd wxStaticText(ui_page, wxID_ANY, "Minimap scroll speed: ");
+	sizer->Add(minimap_label, 0, wxLEFT | wxTOP, 5);
+
+	auto true_minispeed = std::clamp(int(std::round(g_settings.getFloat(Config::MINIMAP_SCROLL_SPEED))), 1, 10);
+	minimap_scroll_speed_slider = newd wxSlider(ui_page, wxID_ANY, true_minispeed, 1, 10);
+	minimap_scroll_speed_slider->SetToolTip("This controls how fast you jump/drag inside the minimap.");
+	sizer->Add(minimap_scroll_speed_slider, 0, wxEXPAND, 5);
+
+	auto update_mini_label = [minimap_label, this]() {
+		minimap_label->SetLabel(wxString::Format("Minimap scroll speed: %d", minimap_scroll_speed_slider->GetValue()));
+	};
+	minimap_scroll_speed_slider->Bind(wxEVT_SLIDER, [update_mini_label](wxCommandEvent&) {
+		update_mini_label();
+	});
+	update_mini_label();
+
 	ui_page->SetSizerAndFit(sizer);
 
 	return ui_page;
@@ -806,6 +822,7 @@ void PreferencesWindow::Apply() {
 		g_settings.setFloat(Config::SCROLL_SPEED, scroll_mul * scroll_speed_slider->GetValue() / 2.f);
 	}
 	if (zoom_speed_slider) g_settings.setFloat(Config::ZOOM_SPEED, zoom_speed_slider->GetValue() / 5.f);
+	if (minimap_scroll_speed_slider) g_settings.setFloat(Config::MINIMAP_SCROLL_SPEED, (float)minimap_scroll_speed_slider->GetValue());
 
 	g_settings.save();
 

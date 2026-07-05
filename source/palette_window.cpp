@@ -31,6 +31,258 @@
 #include "house_brush.h"
 #include "map.h"
 
+#include <wx/dcbuffer.h>
+#include <wx/checkbox.h>
+#include <wx/button.h>
+#include <algorithm>
+
+class MinimapPanel : public wxPanel {
+public:
+	bool dragging = false;
+
+	MinimapPanel(wxWindow* parent) :
+		wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(180, 255)) {
+		SetMinSize(wxSize(180, 255));
+		SetBackgroundColour(wxColor(10, 15, 25));
+		
+		// Dropdown for jumping to towns
+		town_choice = new wxChoice(this, wxID_ANY, wxPoint(5, 182), wxSize(170, 20));
+		town_choice->Bind(wxEVT_CHOICE, &MinimapPanel::OnTownSelected, this);
+
+		// Checkbox for view box
+		view_box_chk = new wxCheckBox(this, wxID_ANY, "Show View Box", wxPoint(5, 207));
+		view_box_chk->SetValue(g_settings.getInteger(Config::MINIMAP_VIEW_BOX) != 0);
+		view_box_chk->SetForegroundColour(wxColor(180, 140, 50));
+		view_box_chk->Bind(wxEVT_CHECKBOX, &MinimapPanel::OnToggleViewBox, this);
+
+		// Button to dock back to canvas
+		dock_btn = new wxButton(this, wxID_ANY, "Dock to Canvas", wxPoint(5, 227), wxSize(170, 20));
+		dock_btn->Bind(wxEVT_BUTTON, &MinimapPanel::OnDockToCanvas, this);
+
+		Bind(wxEVT_PAINT, &MinimapPanel::OnPaint, this);
+		Bind(wxEVT_LEFT_DOWN, &MinimapPanel::OnLeftDown, this);
+		Bind(wxEVT_MOTION, &MinimapPanel::OnMouseMove, this);
+		Bind(wxEVT_LEFT_UP, &MinimapPanel::OnLeftUp, this);
+		Bind(wxEVT_MOUSEWHEEL, &MinimapPanel::OnMouseWheel, this);
+	}
+
+	void UpdateTownList() {
+		town_choice->Clear();
+		town_choice->Append("Go to...");
+		town_choice->Append("Map Center");
+		
+		MapTab* map_tab = g_gui.GetCurrentMapTab();
+		if (!map_tab) {
+			town_choice->SetSelection(0);
+			return;
+		}
+		MapCanvas* canvas = map_tab->GetCanvas();
+		if (!canvas) {
+			town_choice->SetSelection(0);
+			return;
+		}
+
+		const Towns& towns = canvas->editor.map.towns;
+		for (TownMap::const_iterator it = towns.begin(); it != towns.end(); ++it) {
+			Town* town = it->second;
+			if (town && !town->getName().empty()) {
+				town_choice->Append(wxString::FromUTF8(town->getName().c_str()));
+			}
+		}
+		town_choice->SetSelection(0);
+	}
+
+	void OnTownSelected(wxCommandEvent& event) {
+		int sel = town_choice->GetSelection();
+		if (sel <= 0) return; // "Go to..."
+
+		MapTab* map_tab = g_gui.GetCurrentMapTab();
+		if (!map_tab) return;
+		MapCanvas* canvas = map_tab->GetCanvas();
+		if (!canvas) return;
+
+		if (sel == 1) { // Map Center
+			int map_w = canvas->editor.map.getWidth();
+			int map_h = canvas->editor.map.getHeight();
+			g_gui.SetScreenCenterPosition(Position(map_w / 2, map_h / 2, canvas->floor));
+		} else { // Town
+			int idx = sel - 2;
+			const Towns& towns = canvas->editor.map.towns;
+			int curr = 0;
+			for (TownMap::const_iterator it = towns.begin(); it != towns.end(); ++it) {
+				Town* town = it->second;
+				if (town && !town->getName().empty()) {
+					if (curr == idx) {
+						g_gui.SetScreenCenterPosition(town->getTemplePosition());
+						break;
+					}
+					curr++;
+				}
+			}
+		}
+		canvas->last_minimap_update_time = 0;
+		canvas->Refresh();
+		Refresh();
+		town_choice->SetSelection(0); // Reset selection
+	}
+
+	void OnToggleViewBox(wxCommandEvent& event) {
+		g_settings.setInteger(Config::MINIMAP_VIEW_BOX, event.IsChecked() ? 1 : 0);
+		Refresh();
+		if (g_gui.GetCurrentMapTab() && g_gui.GetCurrentMapTab()->GetCanvas()) {
+			g_gui.GetCurrentMapTab()->GetCanvas()->Refresh();
+		}
+	}
+
+	void OnDockToCanvas(wxCommandEvent& event) {
+		g_settings.setInteger(Config::MINIMAP_DOCK_STYLE, 0);
+		g_gui.RefreshPalettes();
+		if (g_gui.GetCurrentMapTab() && g_gui.GetCurrentMapTab()->GetCanvas()) {
+			g_gui.GetCurrentMapTab()->GetCanvas()->Refresh();
+		}
+	}
+
+	void OnPaint(wxPaintEvent& event) {
+		wxPaintDC dc(this);
+		dc.SetBackground(wxBrush(wxColor(10, 15, 25)));
+		dc.Clear();
+
+		MapTab* map_tab = g_gui.GetCurrentMapTab();
+		if (!map_tab) return;
+		MapCanvas* canvas = map_tab->GetCanvas();
+		if (!canvas) return;
+
+		// Rebuild town list dynamically if town count differs
+		const Towns& towns = canvas->editor.map.towns;
+		if ((int)town_choice->GetCount() - 2 != (int)towns.count()) {
+			UpdateTownList();
+		}
+
+		// Make sure texture data is updated
+		canvas->UpdateMinimapTexture();
+
+		// Position controls below the 180x180 minimap image
+		town_choice->Move(5, 185);
+		view_box_chk->Move(5, 210);
+		dock_btn->Move(5, 230);
+
+		// Draw the minimap image
+		wxImage img(180, 180, canvas->minimap_pixels, true);
+		wxBitmap bmp(img);
+		dc.DrawBitmap(bmp, 0, 0, false);
+
+		// Draw gold border around the minimap image
+		dc.SetBrush(*wxTRANSPARENT_BRUSH);
+		dc.SetPen(wxPen(wxColor(180, 140, 50), 1));
+		dc.DrawRectangle(0, 0, 180, 180);
+
+		if (g_settings.getInteger(Config::MINIMAP_VIEW_BOX)) {
+			int screensize_x, screensize_y;
+			int view_scroll_x, view_scroll_y;
+			canvas->GetViewBox(&view_scroll_x, &view_scroll_y, &screensize_x, &screensize_y);
+
+			int tile_size = int(TileSize / canvas->GetZoom());
+			int floor_offset = (canvas->floor > GROUND_LAYER ? 0 : (GROUND_LAYER - canvas->floor));
+
+			int view_start_x = view_scroll_x / TileSize + floor_offset;
+			int view_start_y = view_scroll_y / TileSize + floor_offset;
+			int view_end_x = view_start_x + screensize_x / tile_size + 1;
+			int view_end_y = view_start_y + screensize_y / tile_size + 1;
+
+			const float sx = 180.0f / (float)std::max(1, canvas->minimap_span_w);
+			const float sy = 180.0f / (float)std::max(1, canvas->minimap_span_h);
+			int p_start_x = (int)((view_start_x - canvas->minimap_start_x) * sx);
+			int p_start_y = (int)((view_start_y - canvas->minimap_start_y) * sy);
+			int p_end_x = (int)((view_end_x - canvas->minimap_start_x) * sx);
+			int p_end_y = (int)((view_end_y - canvas->minimap_start_y) * sy);
+
+			p_start_x = std::max(p_start_x, 0);
+			p_start_y = std::max(p_start_y, 0);
+			p_end_x = std::min(p_end_x, 180);
+			p_end_y = std::min(p_end_y, 180);
+
+			if (p_start_x < p_end_x && p_start_y < p_end_y) {
+				dc.SetBrush(*wxTRANSPARENT_BRUSH);
+				dc.SetPen(wxPen(*wxWHITE, 1));
+				dc.DrawRectangle(p_start_x, p_start_y, p_end_x - p_start_x, p_end_y - p_start_y);
+			}
+		}
+	}
+
+	void UpdatePosition(wxMouseEvent& event) {
+		MapTab* map_tab = g_gui.GetCurrentMapTab();
+		if (!map_tab) return;
+		MapCanvas* canvas = map_tab->GetCanvas();
+		if (!canvas) return;
+
+		int mx = event.GetX();
+		int my = event.GetY();
+		mx = std::clamp(mx, 0, 179);
+		my = std::clamp(my, 0, 179);
+
+		float rel_x = (float)mx / 180.0f;
+		float rel_y = (float)my / 180.0f;
+
+		int click_map_x = canvas->minimap_start_x + (int)(rel_x * (float)std::max(1, canvas->minimap_span_w - 1));
+		int click_map_y = canvas->minimap_start_y + (int)(rel_y * (float)std::max(1, canvas->minimap_span_h - 1));
+
+		g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, canvas->floor));
+		canvas->last_minimap_update_time = 0; // immediate update
+		canvas->Refresh();
+		Refresh();
+	}
+
+	void OnLeftDown(wxMouseEvent& event) {
+		int mx = event.GetX();
+		int my = event.GetY();
+		if (mx < 0 || mx >= 180 || my < 0 || my >= 180) return;
+
+		dragging = true;
+		if (HasCapture()) {
+			ReleaseMouse();
+		}
+		CaptureMouse();
+		UpdatePosition(event);
+	}
+
+	void OnMouseMove(wxMouseEvent& event) {
+		if (dragging && event.LeftIsDown()) {
+			UpdatePosition(event);
+		}
+	}
+
+	void OnLeftUp(wxMouseEvent& event) {
+		if (dragging) {
+			dragging = false;
+			if (HasCapture()) {
+				ReleaseMouse();
+			}
+		}
+	}
+
+	void OnMouseWheel(wxMouseEvent& event) {
+		MapTab* map_tab = g_gui.GetCurrentMapTab();
+		if (!map_tab) return;
+		MapCanvas* canvas = map_tab->GetCanvas();
+		if (!canvas) return;
+
+		float zoom = canvas->minimap_zoom;
+		if (event.GetWheelRotation() > 0) zoom /= 1.2f;
+		else zoom *= 1.2f;
+		canvas->minimap_zoom = std::clamp(zoom, 0.25f, 4.0f);
+		canvas->minimap_span_w = (int)(180.0f * canvas->minimap_zoom);
+		canvas->minimap_span_h = (int)(180.0f * canvas->minimap_zoom);
+		canvas->last_minimap_update_time = 0;
+		canvas->Refresh();
+		Refresh();
+	}
+
+private:
+	wxChoice* town_choice;
+	wxCheckBox* view_box_chk;
+	wxButton* dock_btn;
+};
+
 // ============================================================================
 // Palette window
 
@@ -52,7 +304,8 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	creature_palette(nullptr),
 	house_palette(nullptr),
 	waypoint_palette(nullptr),
-	raw_palette(nullptr) {
+	raw_palette(nullptr),
+	minimap_panel(nullptr) {
 	SetMinSize(wxSize(225, 250));
 
 	// Create choicebook
@@ -85,11 +338,17 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
 	choicebook->SetMinSize(wxSize(225, 300));
 	sizer->Add(choicebook, 1, wxEXPAND);
+
+	minimap_panel = new MinimapPanel(this);
+	sizer->Add(minimap_panel, 0, wxALIGN_CENTER | wxALL, 10);
+
 	SetSizer(sizer);
 
 	// Load first page
 	LoadCurrentContents();
 	SelectPage(TILESET_TERRAIN);
+
+	UpdateMinimapVisibility();
 
 	Fit();
 }
@@ -171,6 +430,7 @@ void PaletteWindow::ReloadSettings(Map* map) {
 		raw_palette->SetListType(wxstr(g_settings.getString(Config::PALETTE_RAW_STYLE)));
 		raw_palette->SetToolbarIconSize(g_settings.getBoolean(Config::USE_LARGE_RAW_SIZEBAR));
 	}
+	UpdateMinimapVisibility();
 	InvalidateContents();
 }
 
@@ -401,6 +661,20 @@ void PaletteWindow::OnUpdate(Map* map) {
 	if (waypoint_palette) {
 		waypoint_palette->SetMap(map);
 		waypoint_palette->OnUpdate();
+	}
+	UpdateMinimapVisibility();
+	if (minimap_panel && minimap_panel->IsShown()) {
+		minimap_panel->Refresh();
+	}
+}
+
+void PaletteWindow::UpdateMinimapVisibility() {
+	bool show_minimap = g_settings.getBoolean(Config::MINIMAP_VISIBLE) &&
+		(g_settings.getInteger(Config::MINIMAP_DOCK_STYLE) == 1);
+	if (minimap_panel) {
+		if (minimap_panel->Show(show_minimap)) {
+			GetSizer()->Layout();
+		}
 	}
 }
 

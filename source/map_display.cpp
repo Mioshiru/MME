@@ -268,6 +268,9 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
 	SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
 
   if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->isPointInside((float)cursor_x, (float)cursor_y)) {
     ui_toolbar->onMouseDown((float)cursor_x, (float)cursor_y, 0);
@@ -340,6 +343,9 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 
 void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 	SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
   if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->onMouseClick((float)event.GetX(), (float)event.GetY(), 0)) {
     Refresh();
     return;
@@ -472,6 +478,9 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
   SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
 
   if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->isPointInside((float)cursor_x, (float)cursor_y)) {
     return;
@@ -554,6 +563,9 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 
 void MapCanvas::OnMouseRightRelease(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
 	if (drawing && dragging_draw && rectangle_mode) {
 		int cursor_x = event.GetX();
 		int cursor_y = event.GetY();
@@ -592,6 +604,9 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
   SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
 
 	if (rubber_band_mode) {
 		rubber_end_x = cursor_x;
@@ -612,7 +627,7 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 			MapWindow* map_win = static_cast<MapWindow*>(GetParent());
 			int scroll_x, scroll_y;
 			map_win->GetViewStart(&scroll_x, &scroll_y);
-			map_win->Scroll(scroll_x - dx, scroll_y - dy);
+			map_win->Scroll(scroll_x - int(dx * zoom), scroll_y - int(dy * zoom));
 			
 			// Update start pos so we can drag continuously
 			drag_start_x = cursor_x;
@@ -671,11 +686,17 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 
 void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
   event.Skip();
 }
 
 void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
 	if (!screendragging) {
 		screendragging = true;
 		drag_start_x = event.GetX();
@@ -686,6 +707,9 @@ void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
 
 void MapCanvas::OnMouseCenterRelease(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
 	if (screendragging) {
 		screendragging = false;
 		SetCursor(wxNullCursor);
@@ -769,6 +793,8 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
       tool_wheel_open = false;
       tool_wheel_x = 0.0f;
       tool_wheel_y = 0.0f;
+      minimap_zoom = 1.0f;
+      memset(minimap_pixels, 0, sizeof(minimap_pixels));
   popup_menu = newd MapPopupMenu(editor);
   animation_timer = newd AnimationTimer(this);
   // NOTE: Do NOT start the animation timer here. The timer fires every 4ms
@@ -1303,6 +1329,9 @@ void MapCanvas::UpdateMinimapTexture() {
       }
     }
   }
+
+  // Copy into minimap_pixels so the palette-docked minimap can read it via wxImage
+  memcpy(minimap_pixels, tex_data, sizeof(tex_data));
 
   glBindTexture(GL_TEXTURE_2D, minimap_tex_id);
   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 180, 180, GL_RGB, GL_UNSIGNED_BYTE,

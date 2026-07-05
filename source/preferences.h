@@ -124,6 +124,7 @@ public:
 	wxCheckBox* inversed_scroll_chkbox;
 	wxSlider* scroll_speed_slider;
 	wxSlider* zoom_speed_slider;
+	wxSlider* minimap_scroll_speed_slider;
 
 	wxCheckBox* vsync_chkbox;
 	// Client info

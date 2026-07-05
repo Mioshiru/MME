@@ -150,7 +150,7 @@
 			<item name="Show Wall Hooks" action="SHOW_WALL_HOOKS" help="Show indicators for wall hooks."/>
 		</menu>
 			<separator/>
-			<item name="Show Minimap HUD" action="SHOW_MINIMAP_HUD" help="Toggle visibility of the in-canvas minimap."/>
+			<item name="Show Minimap" action="SHOW_MINIMAP_HUD" help="Toggle visibility of the in-canvas minimap."/>
 			<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
 	</menu>
 	<menu name="Map">

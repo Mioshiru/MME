@@ -351,51 +351,62 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	}
 
 	// Movable minimap window
-	if (g_settings.getBoolean(Config::MINIMAP_VISIBLE)) {
+	if (g_settings.getBoolean(Config::MINIMAP_VISIBLE) && g_settings.getInteger(Config::MINIMAP_DOCK_STYLE) == 0) {
 		bool minimap_open = true;
 
 		UpdateMinimapTexture();
-		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 320.0f, 20.0f), ImGuiCond_FirstUseEver, ImVec2(1.0f, 0.0f));
-		ImGui::SetNextWindowSizeConstraints(ImVec2(220.0f, 180.0f), ImVec2(640.0f, 520.0f));
-		ImGui::SetNextWindowSize(ImVec2(300.0f, 260.0f), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(200.0f, 260.0f), ImGuiCond_Always);
+		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 210.0f, 10.0f), ImGuiCond_Always);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 5.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 0.98f));
-		ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(20.0f / 255.0f, 50.0f / 255.0f, 130.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(60.0f / 255.0f, 120.0f / 255.0f, 220.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImVec4(20.0f / 255.0f, 50.0f / 255.0f, 130.0f / 255.0f, 0.92f));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.95f, 0.95f, 1.0f));
-		ImGuiWindowFlags minimap_flags = 0;
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 1.0f));
+		ImGuiWindowFlags minimap_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
 		const bool minimap_visible = ImGui::Begin("Minimap", &minimap_open, minimap_flags);
 		if (!minimap_open) {
 			g_settings.setInteger(Config::MINIMAP_VISIBLE, 0);
+			g_gui.RefreshPalettes();
+			g_gui.UpdateMenus();
 		}
 
 		if (minimap_visible && minimap_tex_id != 0) {
-			ImVec2 avail = ImGui::GetContentRegionAvail();
-			if (avail.x < 1.0f || avail.y < 1.0f) {
-				avail = ImVec2(240.0f, 240.0f);
-			}
+			ImVec2 avail = ImVec2(180.0f, 180.0f);
 
 			ImVec2 pos = ImGui::GetCursorScreenPos();
 			ImGui::Image((void*)(intptr_t)minimap_tex_id, avail);
 
+			// Handle mouse click and drag to reposition viewport
+			if ((ImGui::IsItemHovered() || ImGui::IsItemActive()) && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+				ImVec2 mouse_pos = ImGui::GetMousePos();
+				float rel_x = (mouse_pos.x - pos.x) / avail.x;
+				float rel_y = (mouse_pos.y - pos.y) / avail.y;
+				rel_x = std::clamp(rel_x, 0.0f, 1.0f);
+				rel_y = std::clamp(rel_y, 0.0f, 1.0f);
+				int click_map_x = minimap_start_x + (int)(rel_x * (float)std::max(1, minimap_span_w - 1));
+				int click_map_y = minimap_start_y + (int)(rel_y * (float)std::max(1, minimap_span_h - 1));
+				g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, floor));
+				last_minimap_update_time = 0; // immediate update
+				Refresh();
+			}
+
+			// Handle mouse wheel zoom
 			if (ImGui::IsItemHovered()) {
-				if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-					ImVec2 mouse_pos = ImGui::GetMousePos();
-					float rel_x = (mouse_pos.x - pos.x) / avail.x;
-					float rel_y = (mouse_pos.y - pos.y) / avail.y;
-					rel_x = std::clamp(rel_x, 0.0f, 1.0f);
-					rel_y = std::clamp(rel_y, 0.0f, 1.0f);
-					int click_map_x = minimap_start_x + (int)(rel_x * (float)std::max(1, minimap_span_w - 1));
-					int click_map_y = minimap_start_y + (int)(rel_y * (float)std::max(1, minimap_span_h - 1));
-					g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, floor));
-					last_minimap_update_time = 0; // immediate update
+				float wheel = ImGui::GetIO().MouseWheel;
+				if (wheel != 0.0f) {
+					if (wheel > 0.0f) minimap_zoom /= 1.2f;
+					else minimap_zoom *= 1.2f;
+					minimap_zoom = std::clamp(minimap_zoom, 0.25f, 4.0f);
+					minimap_span_w = (int)(180.0f * minimap_zoom);
+					minimap_span_h = (int)(180.0f * minimap_zoom);
+					last_minimap_update_time = 0;
 					Refresh();
 				}
 			}
@@ -429,6 +440,39 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					ImDrawList* draw_list = ImGui::GetWindowDrawList();
 					draw_list->AddRect(ImVec2(p_start_x, p_start_y), ImVec2(p_end_x, p_end_y), IM_COL32(255, 255, 255, 255), 0.0f, 0, 1.5f);
 				}
+			}
+
+			// Jump to Town dropdown
+			ImGui::SetNextItemWidth(180.0f);
+			if (ImGui::BeginCombo("##JumpTown", "Go to...")) {
+				// Map Center option
+				if (ImGui::Selectable("Map Center")) {
+					int map_w = editor.map.getWidth();
+					int map_h = editor.map.getHeight();
+					g_gui.SetScreenCenterPosition(Position(map_w / 2, map_h / 2, floor));
+					last_minimap_update_time = 0;
+					Refresh();
+				}
+
+				// Towns
+				const Towns& towns = editor.map.towns;
+				for (TownMap::const_iterator it = towns.begin(); it != towns.end(); ++it) {
+					Town* town = it->second;
+					if (town && !town->getName().empty()) {
+						if (ImGui::Selectable(town->getName().c_str())) {
+							g_gui.SetScreenCenterPosition(town->getTemplePosition());
+							last_minimap_update_time = 0;
+							Refresh();
+						}
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			// Dock button: show "Palette" when on canvas
+			if (ImGui::Button("Palette", ImVec2(180.0f, 0.0f))) {
+				g_settings.setInteger(Config::MINIMAP_DOCK_STYLE, 1);
+				g_gui.RefreshPalettes();
 			}
 		}
 		ImGui::End();
@@ -548,6 +592,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	// Send new node requests
 	editor.SendNodeRequests();
 	
+	g_gui.RefreshMinimapPanel();
 	PerformanceLogger::EndFrame();
 }
 

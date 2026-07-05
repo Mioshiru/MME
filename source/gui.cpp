@@ -164,6 +164,14 @@ void GUI::RefreshPalettes(Map *m, bool usedefault) {
   SelectBrush();
 }
 
+void GUI::RefreshMinimapPanel() {
+  for (auto &palette : palettes) {
+    if (palette && palette->minimap_panel && palette->minimap_panel->IsShown()) {
+      palette->minimap_panel->Refresh();
+    }
+  }
+}
+
 void GUI::RefreshOtherPalettes(PaletteWindow *p) {
   for (auto &palette : palettes) {
     if (palette != p) {
