@@ -4,6 +4,7 @@
 #include "ui_button.h"
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 namespace RME::UI {
 
@@ -13,22 +14,31 @@ namespace RME::UI {
  */
 class UIToolbar : public UIElement {
 public:
-    UIToolbar(float x, float y, float w, float h)
-        : UIElement(x, y, w, h) {}
+    UIToolbar(float x, float y, float w, float h, float scale = 1.0f)
+        : UIElement(x, y, w, h), uiScale(std::max(1.0f, scale)) {}
+
+    void setScale(float scale) {
+        uiScale = std::max(1.0f, scale);
+    }
 
     void addButton(const std::string& label, const char* svgIcon, std::function<void()> callback) {
-        float btnHeight = 30.0f;
-        float btnWidth = width - 10.0f;
-        float btnX = x + 5.0f;
-        float btnY = y + 5.0f + (buttons.size() * (btnHeight + 5.0f));
-
-        auto btn = std::make_unique<UIButton>(label, btnX, btnY, btnWidth, btnHeight, svgIcon);
+        auto btn = std::make_unique<UIButton>(label, 0.0f, 0.0f, 0.0f, 0.0f, svgIcon);
         btn->setCallback(callback);
         buttons.push_back(std::move(btn));
+        relayoutButtons();
+    }
+
+    void addButtonImage(const std::string& label, const std::string& imagePath, std::function<void()> callback) {
+        auto btn = std::make_unique<UIButton>(label, 0.0f, 0.0f, 0.0f, 0.0f, imagePath);
+        btn->setCallback(callback);
+        buttons.push_back(std::move(btn));
+        relayoutButtons();
     }
 
     void render(NVGcontext* vg) override {
         if (!visible) return;
+
+        relayoutButtons();
 
         // Hintergrund-Panel zeichnen (#333333)
         nvgBeginPath(vg);
@@ -71,6 +81,29 @@ public:
     }
 
 private:
+    void relayoutButtons() {
+        const float margin = 5.0f * uiScale;
+        const float spacing = 5.0f * uiScale;
+        const float btnHeight = 30.0f * uiScale;
+        const float btnWidth = std::max(24.0f * uiScale, width - (2.0f * margin));
+
+        float contentBottom = y + margin;
+        for (size_t i = 0; i < buttons.size(); ++i) {
+            const float btnX = x + margin;
+            const float btnY = y + margin + (float)i * (btnHeight + spacing);
+            buttons[i]->setPosition(btnX, btnY);
+            buttons[i]->setSize(btnWidth, btnHeight);
+            contentBottom = btnY + btnHeight;
+        }
+
+        const float desiredHeight = (contentBottom - y) + margin;
+        if (desiredHeight > height) {
+            height = desiredHeight;
+        }
+    }
+
+private:
+    float uiScale;
     std::vector<std::unique_ptr<UIButton>> buttons;
 };
 

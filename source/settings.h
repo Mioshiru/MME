@@ -197,6 +197,9 @@ namespace Config {
 		GRAPHICS_BACKEND = RENDER_BACKEND,
 		UI_TOOLBAR_X,       // NanoVG Toolbar Position X
 		UI_TOOLBAR_Y,       // NanoVG Toolbar Position Y
+
+		AUTO_SAVE_ENABLED,  // Auto-Save on/off (0 or 1)
+		AUTO_SAVE_INTERVAL, // Auto-Save interval in minutes (5-40)
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;

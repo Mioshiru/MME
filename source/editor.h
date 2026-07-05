@@ -27,7 +27,7 @@ class MapEditor : public IEditorIO, public IEditorActions, public IEditorSelecti
 public:
 	MapEditor(CopyBuffer& copybuffer, LiveClient* client);
 	MapEditor(CopyBuffer& copybuffer, const FileName& fn);
-	MapEditor(CopyBuffer& copybuffer);
+	MapEditor(CopyBuffer& copybuffer, const wxString& target_dir = "");
 	~MapEditor();
 
 protected:

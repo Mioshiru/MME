@@ -46,6 +46,10 @@
 #include <GL/glut.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <mutex>
 
 std::vector<std::string> g_active_actions_stack;
@@ -114,6 +118,7 @@ EVT_ON_UPDATE_MENUS(wxID_ANY, MainFrame::OnUpdateMenus)
 
 // Idle event handler
 EVT_IDLE(MainFrame::OnIdle)
+EVT_TIMER(wxID_ANY, MainFrame::OnAutoSaveTimer)
 END_EVENT_TABLE()
 
 BEGIN_EVENT_TABLE(MapWindow, wxPanel)
@@ -153,6 +158,26 @@ Application::~Application() {
 }
 
 bool Application::OnInit() {
+#ifdef _WIN32
+  // Enable High DPI Awareness (Per-Monitor V2)
+  HMODULE user32 = GetModuleHandleA("user32.dll");
+  if (user32) {
+      typedef BOOL(WINAPI * SetProcessDpiAwarenessContextFunc)(HANDLE);
+      SetProcessDpiAwarenessContextFunc setDpiAwarenessContext =
+          (SetProcessDpiAwarenessContextFunc)GetProcAddress(user32, "SetProcessDpiAwarenessContext");
+      if (setDpiAwarenessContext) {
+          setDpiAwarenessContext((HANDLE)-4); // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+      } else {
+          typedef BOOL(WINAPI * SetProcessDPIAwareFunc)();
+          SetProcessDPIAwareFunc setDpiAware =
+              (SetProcessDPIAwareFunc)GetProcAddress(user32, "SetProcessDPIAware");
+          if (setDpiAware) {
+              setDpiAware();
+          }
+      }
+  }
+#endif
+
   // Truncate/empty the error.log file on startup
   {
     std::ofstream err_file("C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\error.log", std::ios::out | std::ios::trunc);
@@ -677,6 +702,10 @@ MainFrame::MainFrame(const wxString &title, const wxPoint &pos,
   g_gui.aui_manager->Update();
 
   UpdateMenubar();
+
+  // Start auto-save timer if enabled
+  autosave_timer.SetOwner(this);
+  RestartAutoSaveTimer();
 }
 
 MainFrame::~MainFrame() {
@@ -689,6 +718,34 @@ MainFrame::~MainFrame() {
 void MainFrame::OnIdle(wxIdleEvent &event) {
   if (g_gui.async_loader) {
     g_gui.async_loader->update();
+  }
+}
+
+void MainFrame::OnAutoSaveTimer(wxTimerEvent& /*event*/) {
+  if (!g_settings.getBoolean(Config::AUTO_SAVE_ENABLED)) {
+    return;
+  }
+  // Save all open map tabs silently (no dialog)
+  if (!g_gui.IsAnyEditorOpen()) {
+    return;
+  }
+  MapTab* mapTab = g_gui.GetCurrentMapTab();
+  if (mapTab) {
+    Editor* editor = mapTab->GetEditor();
+    if (editor && editor->map.hasChanged() && editor->map.hasFile()) {
+      editor->saveMap(FileName(), false);
+      g_gui.UpdateTitle();
+    }
+  }
+}
+
+void MainFrame::RestartAutoSaveTimer() {
+  autosave_timer.Stop();
+  if (g_settings.getBoolean(Config::AUTO_SAVE_ENABLED)) {
+    int interval_min = g_settings.getInteger(Config::AUTO_SAVE_INTERVAL);
+    if (interval_min < 5)  interval_min = 5;
+    if (interval_min > 40) interval_min = 40;
+    autosave_timer.Start(interval_min * 60 * 1000); // ms
   }
 }
 

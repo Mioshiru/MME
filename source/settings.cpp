@@ -214,7 +214,7 @@ void Settings::IO(IOMode mode) {
 	Int(SHOW_TECHNICAL_ITEMS, 1);
 	Int(SHOW_WAYPOINTS, 1);
 	Int(SHOW_GRID, 0);
-	Int(GRID_OPACITY, 128);
+	Int(GRID_OPACITY, 60);
 	Int(USE_PARCHMENT_BACKGROUND, 0);
 	Int(SHOW_EXTRA, 1);
 	Int(SHOW_SHADE, 1);
@@ -283,6 +283,8 @@ void Settings::IO(IOMode mode) {
 	Int(SAVE_WITH_OTB_MAGIC_NUMBER, 0);
 	Int(REPLACE_SIZE, 500);
 	Int(COPY_POSITION_FORMAT, 0);
+	Int(AUTO_SAVE_ENABLED, 0);   // disabled by default (opt-in)
+	Int(AUTO_SAVE_INTERVAL, 10); // 10 minutes default
 
 	section("Graphics");
 	Int(TEXTURE_MANAGEMENT, 1);

@@ -145,8 +145,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 }
 
 MapPopupMenu::MapPopupMenu(MapEditor& map_editor_ref) :
-	wxMenu(""), editor(map_editor_ref) {
-	SetTitle("Map Popup Menu");
+	wxMenu("Map Context"), editor(map_editor_ref) {
 }
 
 MapPopupMenu::~MapPopupMenu() {
@@ -154,6 +153,8 @@ MapPopupMenu::~MapPopupMenu() {
 }
 
 void MapPopupMenu::Update() {
+	SetTitle("Map Context");
+
 	// Clear the menu of all items
 	while (GetMenuItemCount() != 0) {
 		wxMenuItem* m_item = FindItemByPosition(0);

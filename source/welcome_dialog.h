@@ -33,7 +33,6 @@ public:
 	void OnRemoveRecentRequested(wxCommandEvent& event);
 	void OnSlotAction(wxCommandEvent& event);
 	void OnButtonClicked(const wxMouseEvent& event);
-	void OnCheckboxClicked(const wxCommandEvent& event);
 
 	WelcomeDialogPanel* GetPanel() { return m_welcome_dialog_panel; }
 
@@ -53,7 +52,6 @@ private:
 	wxString m_version_text;
 	wxColour m_text_colour;
 	wxColour m_background_colour;
-	wxCheckBox* m_show_welcome_dialog_checkbox;
 };
 
 class WelcomeDialogButton : public wxPanel {

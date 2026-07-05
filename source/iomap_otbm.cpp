@@ -717,31 +717,18 @@ bool IOMapOTBM::loadMap(Map& map, const FileName& filename) {
 	}
 #endif
 
-	// Massiv beschleunigtes Laden durch Memory-Buffering (RAM statt Disk-Hops)
-	wxFile mapFile;
-	if (!mapFile.Open(filename.GetFullPath(), wxFile::read)) {
-		error("Couldn't open file for reading.");
+	// Use DiskNodeFileReadHandle exactly like RME - handles OTBM magic number automatically
+	DiskNodeFileReadHandle f(nstr(filename.GetFullPath()), StringVector(1, "OTBM"));
+	if (!f.isOk()) {
+		error("Could not open file \"" + nstr(filename.GetFullPath()) + "\".");
 		return false;
 	}
-
-	wxFileOffset fileSize = mapFile.Length();
-	std::vector<uint8_t> buffer(static_cast<size_t>(fileSize));
-	
-	if (mapFile.Read(buffer.data(), buffer.size()) != fileSize) {
-		error("Failed to read the entire map file into memory.");
-		return false;
-	}
-	mapFile.Close();
-
-	// Nutze MemoryNodeFileReadHandle statt Disk-Handle
-	// Wir überspringen den 4-Byte Header ("OTBM")
-	MemoryNodeFileReadHandle f(buffer.data() + 4, buffer.size() - 4);
 
 	if (!loadMap(map, f)) {
 		return false;
 	}
 
-	// Read auxilliary files
+	// Read auxilliary files (spawn and house only - no waypoint file like RME)
 	if (!loadHouses(map, filename)) {
 		warning("Failed to load houses.");
 		map.housefile = nstr(filename.GetName()) + "-house.xml";
@@ -749,11 +736,6 @@ bool IOMapOTBM::loadMap(Map& map, const FileName& filename) {
 	if (!loadSpawns(map, filename)) {
 		warning("Failed to load spawns.");
 		map.spawnfile = nstr(filename.GetName()) + "-spawn.xml";
-	}
-	if (!loadWaypoints(map, filename)) {
-		// just assume the map did not have this file before
-		// warning("Failed to load waypoints.");
-		map.waypointfile = nstr(filename.GetName()) + "-waypoint.xml";
 	}
 	return true;
 }
@@ -1461,8 +1443,21 @@ bool IOMapOTBM::saveMap(Map& map, const FileName& identifier) {
 		return false;
 	}
 
+	// Create directory if it doesn't exist
+	wxFileName dir = identifier;
+	if (!dir.DirExists()) {
+		dir.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+	}
+
 	wxFile diskFile(identifier.GetFullPath(), wxFile::write);
-	if (g_settings.getInteger(Config::SAVE_WITH_OTB_MAGIC_NUMBER)) diskFile.Write("OTBM", 4);
+	if (g_settings.getInteger(Config::SAVE_WITH_OTB_MAGIC_NUMBER)) {
+		diskFile.Write("OTBM", 4);
+	} else {
+		// Always write 4 header bytes so DiskNodeFileReadHandle can read the file.
+		// RME uses 0x00000000 as the "no magic number" identifier.
+		const uint8_t nullHeader[4] = {0, 0, 0, 0};
+		diskFile.Write(nullHeader, 4);
+	}
 	diskFile.Write(f.getMemory(), f.getSize());
 	diskFile.Close();
 
@@ -1472,9 +1467,9 @@ bool IOMapOTBM::saveMap(Map& map, const FileName& identifier) {
 	g_gui.SetLoadDone(99, "Saving houses...");
 	saveHouses(map, identifier);
 
-	g_gui.SetLoadDone(99, "Saving waypoints...");
-	saveWaypoints(map, identifier);
+	// Note: waypoints are stored inline in the OTBM, no separate file needed.
 
+	g_gui.DestroyLoadBar();
 	return true;
 }
 
@@ -1679,23 +1674,32 @@ bool IOMapOTBM::saveSpawns(Map& map, pugi::xml_document& doc) {
 	if (!decl) {
 		return false;
 	}
-
 	decl.append_attribute("version") = "1.0";
 
-	CreatureList creatureList;
+	pugi::xml_node rootNode = doc.append_child("spawns");
+	struct ResetSavedGuard {
+		std::vector<Creature*>& list;
+		~ResetSavedGuard() {
+			for (auto* creature : list) {
+				creature->reset();
+			}
+		}
+	};
+	std::vector<Creature*> creatureList;
+	ResetSavedGuard guard { creatureList };
 
-	pugi::xml_node spawnNodes = doc.append_child("spawns");
-	for (const auto& spawnPosition : map.spawns) {
-		Tile* tile = map.getTile(spawnPosition);
-		if (tile == nullptr) {
+	for (const auto& spawnPos : map.spawns) {
+		const Tile* tile = map.getTile(spawnPos);
+		if (!tile) {
+			continue;
+		}
+		Spawn* spawn = tile->spawn;
+		if (!spawn) {
 			continue;
 		}
 
-		Spawn* spawn = tile->spawn;
-		ASSERT(spawn);
-
-		pugi::xml_node spawnNode = spawnNodes.append_child("spawn");
-
+		Position spawnPosition = spawnPos;
+		pugi::xml_node spawnNode = rootNode.append_child("spawn");
 		spawnNode.append_attribute("centerx") = spawnPosition.x;
 		spawnNode.append_attribute("centery") = spawnPosition.y;
 		spawnNode.append_attribute("centerz") = spawnPosition.z;
@@ -1705,33 +1709,27 @@ bool IOMapOTBM::saveSpawns(Map& map, pugi::xml_document& doc) {
 
 		for (int32_t y = -radius; y <= radius; ++y) {
 			for (int32_t x = -radius; x <= radius; ++x) {
-				Tile* creature_tile = map.getTile(spawnPosition + Position(x, y, 0));
-				if (creature_tile) {
-					Creature* creature = creature_tile->creature;
-					if (creature && !creature->isSaved()) {
-						pugi::xml_node creatureNode = spawnNode.append_child(creature->isNpc() ? "npc" : "monster");
+				const Tile* creatureTile = map.getTile(spawnPosition + Position(x, y, 0));
+				if (creatureTile && creatureTile->creature && !creatureTile->creature->isSaved()) {
+					Creature* creature = creatureTile->creature;
+					pugi::xml_node creatureNode = spawnNode.append_child(creature->isNpc() ? "npc" : "monster");
 
-						creatureNode.append_attribute("name") = creature->getName().c_str();
-						creatureNode.append_attribute("x") = x;
-						creatureNode.append_attribute("y") = y;
-						creatureNode.append_attribute("z") = spawnPosition.z;
-						creatureNode.append_attribute("spawntime") = creature->getSpawnTime();
-						if (creature->getDirection() != NORTH) {
-							creatureNode.append_attribute("direction") = creature->getDirection();
-						}
+					creatureNode.append_attribute("name") = creature->getName().c_str();
+					creatureNode.append_attribute("x") = x;
+					creatureNode.append_attribute("y") = y;
+					creatureNode.append_attribute("spawntime") = creature->getSpawnTime();
 
-						// Mark as saved
-						creature->save();
-						creatureList.push_back(creature);
+					if (creature->getDirection() != NORTH) {
+						creatureNode.append_attribute("direction") = static_cast<int>(creature->getDirection());
 					}
+
+					creature->save();
+					creatureList.push_back(creature);
 				}
 			}
 		}
 	}
 
-	for (Creature* creature : creatureList) {
-		creature->reset();
-	}
 	return true;
 }
 
@@ -1752,29 +1750,34 @@ bool IOMapOTBM::saveHouses(Map& map, pugi::xml_document& doc) {
 	if (!decl) {
 		return false;
 	}
-
 	decl.append_attribute("version") = "1.0";
 
-	pugi::xml_node houseNodes = doc.append_child("houses");
+	pugi::xml_node rootNode = doc.append_child("houses");
 	for (const auto& houseEntry : map.houses) {
 		const House* house = houseEntry.second;
-		pugi::xml_node houseNode = houseNodes.append_child("house");
+		pugi::xml_node houseNode = rootNode.append_child("house");
 
 		houseNode.append_attribute("name") = house->name.c_str();
 		houseNode.append_attribute("houseid") = house->getID();
-
+		
 		const Position& exitPosition = house->getExit();
 		houseNode.append_attribute("entryx") = exitPosition.x;
 		houseNode.append_attribute("entryy") = exitPosition.y;
 		houseNode.append_attribute("entryz") = exitPosition.z;
 
-		houseNode.append_attribute("rent") = house->rent;
+		if (house->rent) {
+			houseNode.append_attribute("rent") = house->rent;
+		}
+
+		if (house->townid) {
+			houseNode.append_attribute("townid") = house->townid;
+		}
+
+		houseNode.append_attribute("size") = static_cast<int32_t>(house->size());
+
 		if (house->guildhall) {
 			houseNode.append_attribute("guildhall") = true;
 		}
-
-		houseNode.append_attribute("townid") = house->townid;
-		houseNode.append_attribute("size") = static_cast<int32_t>(house->size());
 	}
 	return true;
 }
@@ -1796,18 +1799,18 @@ bool IOMapOTBM::saveWaypoints(Map& map, pugi::xml_document& doc) {
 	if (!decl) {
 		return false;
 	}
-
 	decl.append_attribute("version") = "1.0";
 
-	pugi::xml_node wpNodes = doc.append_child("waypoints");
-	for (const auto& wpEntry : map.waypoints) {
-		const Waypoint* wp = wpEntry.second;
-		pugi::xml_node wpNode = wpNodes.append_child("waypoint");
+	pugi::xml_node rootNode = doc.append_child("waypoints");
 
-		wpNode.append_attribute("name") = wp->name.c_str();
-		wpNode.append_attribute("x") = wp->pos.x;
-		wpNode.append_attribute("y") = wp->pos.y;
-		wpNode.append_attribute("z") = wp->pos.z;
+	for (const auto& wpEntry : map.waypoints) {
+		const Waypoint* waypoint = wpEntry.second;
+		pugi::xml_node wpNode = rootNode.append_child("waypoint");
+
+		wpNode.append_attribute("name") = waypoint->name.c_str();
+		wpNode.append_attribute("x") = waypoint->pos.x;
+		wpNode.append_attribute("y") = waypoint->pos.y;
+		wpNode.append_attribute("z") = waypoint->pos.z;
 	}
 	return true;
 }

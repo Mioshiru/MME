@@ -47,7 +47,10 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 	scan_status_txt(nullptr),
 	open_folder_btn(nullptr),
 	help_link(nullptr),
-	position_choice(nullptr) {
+	position_choice(nullptr),
+	autosave_enabled_chkbox(nullptr),
+	autosave_interval_slider(nullptr),
+	autosave_interval_label(nullptr) {
     
     // RPG Design Apply
     auto& theme = RME::UI::StyleManager::GetTheme();
@@ -120,6 +123,39 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	always_make_backup_chkbox = newd wxCheckBox(general_page, wxID_ANY, "Always make map backup");
 	always_make_backup_chkbox->SetValue(g_settings.getInteger(Config::ALWAYS_MAKE_BACKUP) == 1);
 	sizer->Add(always_make_backup_chkbox, 0, wxLEFT | wxTOP, 5);
+
+	// ── Auto-Save Group ──────────────────────────────────────────────────
+	wxStaticBoxSizer* autosave_box = newd wxStaticBoxSizer(wxVERTICAL, general_page, "Auto-Save");
+
+	autosave_enabled_chkbox = newd wxCheckBox(general_page, wxID_ANY, "Enable Auto-Save");
+	autosave_enabled_chkbox->SetValue(g_settings.getBoolean(Config::AUTO_SAVE_ENABLED));
+	autosave_enabled_chkbox->SetToolTip("Automatically saves the current map at a fixed interval.");
+	autosave_box->Add(autosave_enabled_chkbox, 0, wxALL, 5);
+
+	wxBoxSizer* slider_row = newd wxBoxSizer(wxHORIZONTAL);
+	slider_row->Add(newd wxStaticText(general_page, wxID_ANY, "Interval:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+	int cur_interval = g_settings.getInteger(Config::AUTO_SAVE_INTERVAL);
+	if (cur_interval < 5)  cur_interval = 5;
+	if (cur_interval > 40) cur_interval = 40;
+	autosave_interval_slider = newd wxSlider(general_page, wxID_ANY, cur_interval, 5, 40,
+		wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_LABELS);
+	autosave_interval_slider->SetToolTip("Auto-save interval in minutes (5 to 40).");
+	slider_row->Add(autosave_interval_slider, 1, wxEXPAND);
+	autosave_interval_label = newd wxStaticText(general_page, wxID_ANY, wxString::Format(" %d min", cur_interval));
+	slider_row->Add(autosave_interval_label, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
+	autosave_box->Add(slider_row, 0, wxEXPAND | wxALL, 5);
+
+	// Enable/disable slider based on checkbox
+	autosave_interval_slider->Enable(autosave_enabled_chkbox->GetValue());
+	autosave_enabled_chkbox->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
+		autosave_interval_slider->Enable(autosave_enabled_chkbox->GetValue());
+	});
+	autosave_interval_slider->Bind(wxEVT_SLIDER, [this](wxCommandEvent&) {
+		autosave_interval_label->SetLabel(wxString::Format(" %d min", autosave_interval_slider->GetValue()));
+	});
+
+	sizer->Add(autosave_box, 0, wxEXPAND | wxALL, 5);
+	// ─────────────────────────────────────────────────────────────────────
 
 	update_check_on_startup_chkbox = newd wxCheckBox(general_page, wxID_ANY, "Check for updates on startup");
 	update_check_on_startup_chkbox->SetValue(g_settings.getInteger(Config::USE_UPDATER) == 1);
@@ -397,17 +433,7 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 
     sizer->Add(visual_group, 0, wxEXPAND | wxALL, 5);
 
-	wxStaticBoxSizer* preset_group = new wxStaticBoxSizer(wxVERTICAL, performance_page, "Performance Presets");
-	wxArrayString presets;
-	presets.Add("Balanced");
-	presets.Add("Low");
-	presets.Add("High");
-	presets.Add("Custom");
-	performance_preset_choice = newd wxChoice(performance_page, wxID_ANY, wxDefaultPosition, wxDefaultSize, presets);
-	performance_preset_choice->SetSelection(0);
-	preset_group->Add(performance_preset_choice, 0, wxALL | wxEXPAND, 5);
-	preset_group->Add(newd wxStaticText(performance_page, wxID_ANY, "Balanced keeps the editor responsive while still using the richer visual effects."), 0, wxALL, 5);
-	sizer->Add(preset_group, 0, wxEXPAND | wxALL, 5);
+
 
 	wxStaticBoxSizer* tuning_group = new wxStaticBoxSizer(wxVERTICAL, performance_page, "Tuning");
 	performance_vsync_chkbox = newd wxCheckBox(performance_page, wxID_ANY, "Vertical Sync");
@@ -439,37 +465,6 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	tuning_group->Add(grid, 0, wxALL | wxEXPAND, 5);
 	sizer->Add(tuning_group, 0, wxEXPAND | wxALL, 5);
 
-	performance_preset_choice->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
-		int preset = performance_preset_choice->GetSelection();
-		switch (preset) {
-		case 1:
-			performance_vsync_chkbox->SetValue(true);
-			performance_multimonitor_chkbox->SetValue(false);
-			performance_worker_threads_slider->SetValue(2);
-			performance_aa_choice->SetSelection(0);
-			performance_crt_slider->SetValue(0);
-			performance_water_slider->SetValue(3);
-			break;
-		case 2:
-			performance_vsync_chkbox->SetValue(true);
-			performance_multimonitor_chkbox->SetValue(true);
-			performance_worker_threads_slider->SetValue(8);
-			performance_aa_choice->SetSelection(2);
-			performance_crt_slider->SetValue(50);
-			performance_water_slider->SetValue(20);
-			break;
-		case 3:
-			break;
-		default:
-			performance_vsync_chkbox->SetValue(true);
-			performance_multimonitor_chkbox->SetValue(false);
-			performance_worker_threads_slider->SetValue(4);
-			performance_aa_choice->SetSelection(1);
-			performance_crt_slider->SetValue(25);
-			performance_water_slider->SetValue(10);
-			break;
-		}
-	});
 
 	performance_page->SetSizerAndFit(sizer);
 	return performance_page;
@@ -606,19 +601,37 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 
 	sizer->AddSpacer(10);
 
-	sizer->Add(newd wxStaticText(ui_page, wxID_ANY, "Scroll speed: "), 0, wxLEFT | wxTOP, 5);
+	wxStaticText* scroll_label = newd wxStaticText(ui_page, wxID_ANY, "Scroll speed: ");
+	sizer->Add(scroll_label, 0, wxLEFT | wxTOP, 5);
 
-	auto true_scrollspeed = int(std::abs(g_settings.getFloat(Config::SCROLL_SPEED)) * 10);
-	scroll_speed_slider = newd wxSlider(ui_page, wxID_ANY, true_scrollspeed, 1, max(true_scrollspeed, 100));
+	auto true_scrollspeed = std::clamp(int(std::round(std::abs(g_settings.getFloat(Config::SCROLL_SPEED)) * 2.0f)), 1, 10);
+	scroll_speed_slider = newd wxSlider(ui_page, wxID_ANY, true_scrollspeed, 1, 10);
 	scroll_speed_slider->SetToolTip("This controls how fast the map will scroll when you hold down the center mouse button and move it around.");
 	sizer->Add(scroll_speed_slider, 0, wxEXPAND, 5);
 
-	sizer->Add(newd wxStaticText(ui_page, wxID_ANY, "Zoom speed: "), 0, wxLEFT | wxTOP, 5);
+	auto update_scroll_label = [scroll_label, this]() {
+		scroll_label->SetLabel(wxString::Format("Scroll speed: %d", scroll_speed_slider->GetValue()));
+	};
+	scroll_speed_slider->Bind(wxEVT_SLIDER, [update_scroll_label](wxCommandEvent&) {
+		update_scroll_label();
+	});
+	update_scroll_label();
 
-	auto true_zoomspeed = int(g_settings.getFloat(Config::ZOOM_SPEED) * 10);
-	zoom_speed_slider = newd wxSlider(ui_page, wxID_ANY, true_zoomspeed, 1, max(true_zoomspeed, 100));
+	wxStaticText* zoom_label = newd wxStaticText(ui_page, wxID_ANY, "Zoom speed: ");
+	sizer->Add(zoom_label, 0, wxLEFT | wxTOP, 5);
+
+	auto true_zoomspeed = std::clamp(int(std::round(g_settings.getFloat(Config::ZOOM_SPEED) * 5.0f)), 1, 10);
+	zoom_speed_slider = newd wxSlider(ui_page, wxID_ANY, true_zoomspeed, 1, 10);
 	zoom_speed_slider->SetToolTip("This controls how fast you will zoom when you scroll the center mouse button.");
 	sizer->Add(zoom_speed_slider, 0, wxEXPAND, 5);
+
+	auto update_zoom_label = [zoom_label, this]() {
+		zoom_label->SetLabel(wxString::Format("Zoom speed: %d", zoom_speed_slider->GetValue()));
+	};
+	zoom_speed_slider->Bind(wxEVT_SLIDER, [update_zoom_label](wxCommandEvent&) {
+		update_zoom_label();
+	});
+	update_zoom_label();
 
 	ui_page->SetSizerAndFit(sizer);
 
@@ -650,15 +663,21 @@ void PreferencesWindow::OnCollapsiblePane(wxCollapsiblePaneEvent& event) {
 void PreferencesWindow::Apply() {
 	bool must_restart = false;
 	bool palette_update_needed = false;
+	bool palette_style_changed = false;
 
 	// General
 	g_settings.setInteger(Config::WELCOME_DIALOG, show_welcome_dialog_chkbox->GetValue());
 	g_settings.setInteger(Config::ALWAYS_MAKE_BACKUP, always_make_backup_chkbox->GetValue());
+	g_settings.setInteger(Config::AUTO_SAVE_ENABLED, autosave_enabled_chkbox ? autosave_enabled_chkbox->GetValue() : 0);
+	g_settings.setInteger(Config::AUTO_SAVE_INTERVAL, autosave_interval_slider ? autosave_interval_slider->GetValue() : 10);
+	// Restart the auto-save timer immediately with new settings
+	if (g_gui.root) {
+		g_gui.root->RestartAutoSaveTimer();
+	}
 	g_settings.setInteger(Config::USE_UPDATER, update_check_on_startup_chkbox->GetValue());
 	g_settings.setInteger(Config::ONLY_ONE_INSTANCE, only_one_instance_chkbox->GetValue());
 	g_settings.setInteger(Config::UNDO_SIZE, undo_size_spin->GetValue());
 	g_settings.setInteger(Config::UNDO_MEM_SIZE, undo_mem_size_spin->GetValue());
-	g_settings.setInteger(Config::WORKER_THREADS, worker_threads_spin->GetValue());
 	g_settings.setInteger(Config::REPLACE_SIZE, replace_size_spin->GetValue());
 	g_settings.setInteger(Config::COPY_POSITION_FORMAT, position_choice->GetSelection());
 
@@ -669,12 +688,16 @@ void PreferencesWindow::Apply() {
 
 	// Save Client Settings from within General Page
 	ClientVersionList versions = ClientVersion::getAllVisible();
-	for (auto version : versions) {
-		if (version->getName() == default_version_choice->GetStringSelection()) {
-			g_settings.setInteger(Config::DEFAULT_CLIENT_VERSION, version->getID());
+	if (default_version_choice) {
+		for (auto version : versions) {
+			if (version->getName() == default_version_choice->GetStringSelection()) {
+				g_settings.setInteger(Config::DEFAULT_CLIENT_VERSION, version->getID());
+			}
 		}
 	}
-	g_settings.setInteger(Config::CHECK_SIGNATURES, check_sigs_chkbox->GetValue());
+	if (check_sigs_chkbox) {
+		g_settings.setInteger(Config::CHECK_SIGNATURES, check_sigs_chkbox->GetValue());
+	}
 
 	// Make sure to reload client paths
 	ClientVersion::saveVersions();
@@ -693,9 +716,12 @@ void PreferencesWindow::Apply() {
 	g_settings.setInteger(Config::MERGE_PASTE, merge_paste_chkbox->GetValue());
 
 	// Graphics
-	g_settings.setInteger(Config::USE_PARCHMENT_BACKGROUND, parchment_background_chkbox->GetValue() ? 1 : 0);
-	g_settings.setInteger(Config::GRID_OPACITY, grid_opacity_slider->GetValue());
-	g_settings.setFloat(Config::LIGHT_INTENSITY, light_intensity_slider->GetValue() / 100.0f);
+	if (parchment_background_chkbox)
+		g_settings.setInteger(Config::USE_PARCHMENT_BACKGROUND, parchment_background_chkbox->GetValue() ? 1 : 0);
+	if (grid_opacity_slider)
+		g_settings.setInteger(Config::GRID_OPACITY, grid_opacity_slider->GetValue());
+	if (light_intensity_slider)
+		g_settings.setFloat(Config::LIGHT_INTENSITY, light_intensity_slider->GetValue() / 100.0f);
 
 	// if (g_settings.getInteger(Config::RENDER_BACKEND) != backend_radio->GetSelection()) {
 	// 	g_settings.setInteger(Config::RENDER_BACKEND, backend_radio->GetSelection());
@@ -726,47 +752,60 @@ void PreferencesWindow::Apply() {
 		}
 	}
 
-	wxColor clr = cursor_color_pick->GetColour();
-	g_settings.setInteger(Config::CURSOR_RED, clr.Red());
-	g_settings.setInteger(Config::CURSOR_GREEN, clr.Green());
-	g_settings.setInteger(Config::CURSOR_BLUE, clr.Blue());
-	// g_settings.setInteger(Config::CURSOR_ALPHA, clr.Alpha());
+	if (cursor_color_pick) {
+		wxColor clr = cursor_color_pick->GetColour();
+		g_settings.setInteger(Config::CURSOR_RED, clr.Red());
+		g_settings.setInteger(Config::CURSOR_GREEN, clr.Green());
+		g_settings.setInteger(Config::CURSOR_BLUE, clr.Blue());
+	}
 
-	clr = cursor_alt_color_pick->GetColour();
-	g_settings.setInteger(Config::CURSOR_ALT_RED, clr.Red());
-	g_settings.setInteger(Config::CURSOR_ALT_GREEN, clr.Green());
-	g_settings.setInteger(Config::CURSOR_ALT_BLUE, clr.Blue());
-	// g_settings.setInteger(Config::CURSOR_ALT_ALPHA, clr.Alpha());
+	if (cursor_alt_color_pick) {
+		wxColor clr = cursor_alt_color_pick->GetColour();
+		g_settings.setInteger(Config::CURSOR_ALT_RED, clr.Red());
+		g_settings.setInteger(Config::CURSOR_ALT_GREEN, clr.Green());
+		g_settings.setInteger(Config::CURSOR_ALT_BLUE, clr.Blue());
+	}
 
 
 	// Interface
-    int theme_idx = theme_radio->GetSelection();
-    g_settings.setInteger(Config::UI_THEME, theme_idx);
-    RME::UI::Theme::SetTheme(theme_idx == 0 ? RME::UI::Theme::Type::Dark : RME::UI::Theme::Type::Light);
-
-	SetPaletteStyleChoice(terrain_palette_style_choice, Config::PALETTE_TERRAIN_STYLE);
-	SetPaletteStyleChoice(collection_palette_style_choice, Config::PALETTE_COLLECTION_STYLE);
-	SetPaletteStyleChoice(doodad_palette_style_choice, Config::PALETTE_DOODAD_STYLE);
-	SetPaletteStyleChoice(item_palette_style_choice, Config::PALETTE_ITEM_STYLE);
-	SetPaletteStyleChoice(raw_palette_style_choice, Config::PALETTE_RAW_STYLE);
-	g_settings.setInteger(Config::USE_LARGE_TERRAIN_TOOLBAR, large_terrain_tools_chkbox->GetValue());
-	g_settings.setInteger(Config::USE_LARGE_COLLECTION_TOOLBAR, large_collection_tools_chkbox->GetValue());
-	g_settings.setInteger(Config::USE_LARGE_DOODAD_SIZEBAR, large_doodad_sizebar_chkbox->GetValue());
-	g_settings.setInteger(Config::USE_LARGE_ITEM_SIZEBAR, large_item_sizebar_chkbox->GetValue());
-	g_settings.setInteger(Config::USE_LARGE_HOUSE_SIZEBAR, large_house_sizebar_chkbox->GetValue());
-	g_settings.setInteger(Config::USE_LARGE_RAW_SIZEBAR, large_raw_sizebar_chkbox->GetValue());
-	g_settings.setInteger(Config::USE_LARGE_CONTAINER_ICONS, large_container_icons_chkbox->GetValue());
-	g_settings.setInteger(Config::USE_LARGE_CHOOSE_ITEM_ICONS, large_pick_item_icons_chkbox->GetValue());
-
-	g_settings.setInteger(Config::SWITCH_MOUSEBUTTONS, switch_mousebtn_chkbox->GetValue());
-	g_settings.setInteger(Config::DOUBLECLICK_PROPERTIES, doubleclick_properties_chkbox->GetValue());
-
-	float scroll_mul = 1.0;
-	if (inversed_scroll_chkbox->GetValue()) {
-		scroll_mul = -1.0;
+	if (theme_radio) {
+		int theme_idx = theme_radio->GetSelection();
+		g_settings.setInteger(Config::UI_THEME, theme_idx);
+		RME::UI::Theme::SetTheme(theme_idx == 0 ? RME::UI::Theme::Type::Dark : RME::UI::Theme::Type::Light);
 	}
-	g_settings.setFloat(Config::SCROLL_SPEED, scroll_mul * scroll_speed_slider->GetValue() / 10.f);
-	g_settings.setFloat(Config::ZOOM_SPEED, zoom_speed_slider->GetValue() / 10.f);
+
+	if (terrain_palette_style_choice && collection_palette_style_choice &&
+		doodad_palette_style_choice && item_palette_style_choice && raw_palette_style_choice) {
+		palette_style_changed =
+			g_settings.getString(Config::PALETTE_TERRAIN_STYLE) != (terrain_palette_style_choice->GetSelection() == 0 ? "large icons" : terrain_palette_style_choice->GetSelection() == 1 ? "small icons" : "listbox") ||
+			g_settings.getString(Config::PALETTE_COLLECTION_STYLE) != (collection_palette_style_choice->GetSelection() == 0 ? "large icons" : collection_palette_style_choice->GetSelection() == 1 ? "small icons" : "listbox") ||
+			g_settings.getString(Config::PALETTE_DOODAD_STYLE) != (doodad_palette_style_choice->GetSelection() == 0 ? "large icons" : doodad_palette_style_choice->GetSelection() == 1 ? "small icons" : "listbox") ||
+			g_settings.getString(Config::PALETTE_ITEM_STYLE) != (item_palette_style_choice->GetSelection() == 0 ? "large icons" : item_palette_style_choice->GetSelection() == 1 ? "small icons" : "listbox") ||
+			g_settings.getString(Config::PALETTE_RAW_STYLE) != (raw_palette_style_choice->GetSelection() == 0 ? "large icons" : raw_palette_style_choice->GetSelection() == 1 ? "small icons" : "listbox");
+
+		SetPaletteStyleChoice(terrain_palette_style_choice, Config::PALETTE_TERRAIN_STYLE);
+		SetPaletteStyleChoice(collection_palette_style_choice, Config::PALETTE_COLLECTION_STYLE);
+		SetPaletteStyleChoice(doodad_palette_style_choice, Config::PALETTE_DOODAD_STYLE);
+		SetPaletteStyleChoice(item_palette_style_choice, Config::PALETTE_ITEM_STYLE);
+		SetPaletteStyleChoice(raw_palette_style_choice, Config::PALETTE_RAW_STYLE);
+	}
+	if (large_terrain_tools_chkbox) g_settings.setInteger(Config::USE_LARGE_TERRAIN_TOOLBAR, large_terrain_tools_chkbox->GetValue());
+	if (large_collection_tools_chkbox) g_settings.setInteger(Config::USE_LARGE_COLLECTION_TOOLBAR, large_collection_tools_chkbox->GetValue());
+	if (large_doodad_sizebar_chkbox) g_settings.setInteger(Config::USE_LARGE_DOODAD_SIZEBAR, large_doodad_sizebar_chkbox->GetValue());
+	if (large_item_sizebar_chkbox) g_settings.setInteger(Config::USE_LARGE_ITEM_SIZEBAR, large_item_sizebar_chkbox->GetValue());
+	if (large_house_sizebar_chkbox) g_settings.setInteger(Config::USE_LARGE_HOUSE_SIZEBAR, large_house_sizebar_chkbox->GetValue());
+	if (large_raw_sizebar_chkbox) g_settings.setInteger(Config::USE_LARGE_RAW_SIZEBAR, large_raw_sizebar_chkbox->GetValue());
+	if (large_container_icons_chkbox) g_settings.setInteger(Config::USE_LARGE_CONTAINER_ICONS, large_container_icons_chkbox->GetValue());
+	if (large_pick_item_icons_chkbox) g_settings.setInteger(Config::USE_LARGE_CHOOSE_ITEM_ICONS, large_pick_item_icons_chkbox->GetValue());
+
+	if (switch_mousebtn_chkbox) g_settings.setInteger(Config::SWITCH_MOUSEBUTTONS, switch_mousebtn_chkbox->GetValue());
+	if (doubleclick_properties_chkbox) g_settings.setInteger(Config::DOUBLECLICK_PROPERTIES, doubleclick_properties_chkbox->GetValue());
+
+	if (inversed_scroll_chkbox && scroll_speed_slider) {
+		float scroll_mul = inversed_scroll_chkbox->GetValue() ? -1.0f : 1.0f;
+		g_settings.setFloat(Config::SCROLL_SPEED, scroll_mul * scroll_speed_slider->GetValue() / 2.f);
+	}
+	if (zoom_speed_slider) g_settings.setFloat(Config::ZOOM_SPEED, zoom_speed_slider->GetValue() / 5.f);
 
 	g_settings.save();
 
@@ -774,16 +813,17 @@ void PreferencesWindow::Apply() {
 		g_gui.PopupDialog(this, "Notice", "You must restart the editor for the changes to take effect.", wxOK);
 	}
 
-	if (!palette_update_needed) {
-		// update palette icons
-		g_gui.RebuildPalettes();
-	} else {
+	if (palette_update_needed) {
 		// change palette structure
 		wxString error;
 		wxArrayString warnings;
 		g_gui.LoadVersion(g_gui.GetCurrentVersionID(), error, warnings, true);
 		g_gui.PopupDialog("Error", error, wxOK);
 		g_gui.ListDialog("Warnings", warnings);
+	} else {
+		if (palette_style_changed) {
+			g_gui.RebuildPalettes();
+		}
 	}
 }
 

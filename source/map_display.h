@@ -164,6 +164,14 @@ protected:
   bool dragging_draw;
   bool replace_dragging;
   bool rectangle_mode;
+  bool rubber_band_mode;
+  int rubber_start_x;
+  int rubber_start_y;
+  int rubber_end_x;
+  int rubber_end_y;
+  bool tool_wheel_open;
+  float tool_wheel_x;
+  float tool_wheel_y;
 
   uint8_t *screenshot_buffer;
 
@@ -196,6 +204,8 @@ protected:
   unsigned int minimap_tex_id = 0;
   int minimap_start_x = 0;
   int minimap_start_y = 0;
+  int minimap_span_w = 180;
+  int minimap_span_h = 180;
   unsigned int last_minimap_update_time = 0;
   void UpdateMinimapTexture(); // This is a member of MapCanvas
 

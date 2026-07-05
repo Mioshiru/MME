@@ -62,6 +62,18 @@ public:
 
     float getX() const { return x; }
     float getY() const { return y; }
+    float getWidth() const { return width; }
+    float getHeight() const { return height; }
+
+    void setPosition(float nx, float ny) {
+        x = nx;
+        y = ny;
+    }
+
+    void setSize(float w, float h) {
+        width = w;
+        height = h;
+    }
 
 protected:
     float x, y, width, height;

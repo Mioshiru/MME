@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = MapEditor.UI
-build_property.ProjectDir = C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\MapEditor\src\MapEditor.UI\
+build_property.ProjectDir = C:\Users\weber\Documents\In Arbeit\Map Editor\MapEditor\src\MapEditor.UI\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

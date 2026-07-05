@@ -69,6 +69,21 @@ MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor&
 	wxFlexGridSizer* general_grid = newd wxFlexGridSizer(2, 10, 10);
 	general_grid->AddGrowableCol(1);
 
+	// World Name extraction
+	std::string house_file = map.getHouseFilename();
+	std::string world_name;
+	size_t hpos = house_file.find("-house.xml");
+	if (hpos != std::string::npos) {
+		world_name = house_file.substr(0, hpos);
+	} else {
+		world_name = "world"; // fallback
+	}
+
+	// World Name
+	general_grid->Add(newd wxStaticText(general_box->GetStaticBox(), wxID_ANY, "World Name:"), 0, wxALIGN_CENTER_VERTICAL);
+	world_name_ctrl = newd wxTextCtrl(general_box->GetStaticBox(), wxID_ANY, wxstr(world_name));
+	general_grid->Add(world_name_ctrl, 1, wxEXPAND);
+
 	// Description
 	general_grid->Add(newd wxStaticText(general_box->GetStaticBox(), wxID_ANY, "Description:"), 0, wxALIGN_CENTER_VERTICAL);
 	description_ctrl = newd wxTextCtrl(general_box->GetStaticBox(), wxID_ANY, wxstr(map.getMapDescription()), wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE);
@@ -87,22 +102,31 @@ MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor&
 	details_grid->Add(newd wxStaticText(details_box->GetStaticBox(), wxID_ANY, "Dimensions:"), 0, wxALIGN_CENTER_VERTICAL);
 	{
 		wxBoxSizer* subsizer = newd wxBoxSizer(wxHORIZONTAL);
-		subsizer->Add(
-			width_spin = newd wxSpinCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(i2s(map.getWidth())), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 256, MAP_MAX_WIDTH), wxSizerFlags(1).Expand()
-		);
+		width_spin = newd wxSpinCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(i2s(map.getWidth())), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 256, MAP_MAX_WIDTH);
+		width_spin->Bind(wxEVT_KILL_FOCUS, [this](wxFocusEvent& event) {
+			long long val = 0;
+			if (width_spin->GetTextValue().ToLongLong(&val) && val >= MAP_MAX_WIDTH) {
+				width_spin->SetValue(MAP_MAX_WIDTH);
+			}
+			event.Skip();
+		});
+		subsizer->Add(width_spin, wxSizerFlags(1).Expand());
+
 		subsizer->Add(new wxStaticText(details_box->GetStaticBox(), wxID_ANY, " x "), 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
-		subsizer->Add(
-			height_spin = newd wxSpinCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(i2s(map.getHeight())), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 256, MAP_MAX_HEIGHT), wxSizerFlags(1).Expand()
-		);
+
+		height_spin = newd wxSpinCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(i2s(map.getHeight())), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 256, MAP_MAX_HEIGHT);
+		height_spin->Bind(wxEVT_KILL_FOCUS, [this](wxFocusEvent& event) {
+			long long val = 0;
+			if (height_spin->GetTextValue().ToLongLong(&val) && val >= MAP_MAX_HEIGHT) {
+				height_spin->SetValue(MAP_MAX_HEIGHT);
+			}
+			event.Skip();
+		});
+		subsizer->Add(height_spin, wxSizerFlags(1).Expand());
 		details_grid->Add(subsizer, 1, wxEXPAND);
 	}
 
-	// External files
-	details_grid->Add(newd wxStaticText(details_box->GetStaticBox(), wxID_ANY, "Housefile:"), 0, wxALIGN_CENTER_VERTICAL);
-	details_grid->Add(house_filename_ctrl = newd wxTextCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(map.getHouseFilename())), 1, wxEXPAND);
 
-	details_grid->Add(newd wxStaticText(details_box->GetStaticBox(), wxID_ANY, "Spawnfile:"), 0, wxALIGN_CENTER_VERTICAL);
-	details_grid->Add(spawn_filename_ctrl = newd wxTextCtrl(details_box->GetStaticBox(), wxID_ANY, wxstr(map.getSpawnFilename())), 1, wxEXPAND);
 
 	details_box->Add(details_grid, 1, wxEXPAND | wxALL, 5);
 	topsizer->Add(details_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
@@ -146,9 +170,26 @@ void MapPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 	Map& map = editor.map;
 	MapVersion new_ver = map.getVersion();
 
+	std::string world_name = nstr(world_name_ctrl->GetValue());
+	for (char c : world_name) {
+		if (c == ' ' || (unsigned char)c > 127) {
+			g_gui.PopupDialog("Invalid World Name", "World Name cannot contain spaces or special characters (like umlauts).", wxOK | wxICON_ERROR);
+			return; // Don't close the dialog
+		}
+	}
+	if (world_name.empty()) {
+		g_gui.PopupDialog("Invalid World Name", "World Name cannot be empty.", wxOK | wxICON_ERROR);
+		return;
+	}
+
 	map.setMapDescription(nstr(description_ctrl->GetValue()));
-	map.setHouseFilename(nstr(house_filename_ctrl->GetValue()));
-	map.setSpawnFilename(nstr(spawn_filename_ctrl->GetValue()));
+	map.setHouseFilename(world_name + "-house.xml");
+	map.setSpawnFilename(world_name + "-spawn.xml");
+	map.setName(world_name + ".otbm");
+
+	wxFileName fn(wxstr(map.getFilename()));
+	fn.SetFullName(wxstr(map.getName()));
+	map.setFilename(nstr(fn.GetFullPath()));
 
 	// Only resize if we have to
 	int new_map_width = width_spin->GetValue();

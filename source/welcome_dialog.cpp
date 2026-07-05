@@ -22,7 +22,9 @@
 #include "main_menubar.h"
 #include <wx/app.h>
 #include "gui.h"
-
+#include <wx/dir.h>
+#include <wx/filename.h>
+#include <wx/stdpaths.h>
 wxDEFINE_EVENT(WELCOME_DIALOG_ACTION, wxCommandEvent);
 wxDEFINE_EVENT(WELCOME_DIALOG_DELETE_RECENT, wxCommandEvent);
 
@@ -162,71 +164,14 @@ WelcomeDialog::WelcomeDialog(const wxString& title_text, const wxString& version
 
 void WelcomeDialog::OnSlotAction(wxCommandEvent& event) {
 	if (event.GetId() == wxID_NEW) {
-		if (event.GetString().empty()) {
-			wxArrayString choices;
-			choices.Add("Create a new map");
-			choices.Add("Open an existing map");
-			wxSingleChoiceDialog dialog(this, "What should this empty save slot do?", "Empty save slot", choices);
-			if (dialog.ShowModal() != wxID_OK) {
-				return;
-			}
-
-			if (dialog.GetStringSelection() == "Create a new map") {
-				// Intercept and load the specific versions choose dialog directly
-				wxCommandEvent trigger_event(WELCOME_DIALOG_ACTION);
-				trigger_event.SetId(wxID_NEW);
-				g_gui.OnWelcomeDialogAction(trigger_event);
-				return;
-			} else {
-				wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? "(*.otbm;*.otgz)|*.otbm;*.otgz" : "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
-				wxFileDialog file_dialog(this, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-				if (file_dialog.ShowModal() != wxID_OK) {
-					return;
-				}
-				event.SetString(file_dialog.GetPath());
-				event.SetId(wxID_OPEN);
-			}
-		}
-
-		if (event.GetId() == wxID_NEW) {
-			// Trigger a custom Welcome Dialog action that prompts for the version exactly like GUI::OnWelcomeDialogAction does
-			wxCommandEvent trigger_event(WELCOME_DIALOG_ACTION);
-			trigger_event.SetId(wxID_NEW);
-			g_gui.OnWelcomeDialogAction(trigger_event);
-			return;
-		}
+		wxCommandEvent trigger_event(WELCOME_DIALOG_ACTION);
+		trigger_event.SetId(wxID_NEW);
+		trigger_event.SetString(event.GetString()); // Forward the slot name, e.g. "Saves/Slot 1/"
+		g_gui.OnWelcomeDialogAction(trigger_event);
+		return;
 	}
 
 	wxString map_path = event.GetString();
-	if (map_path.empty()) {
-		wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? "(*.otbm;*.otgz)|*.otbm;*.otgz" : "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
-		wxFileDialog file_dialog(this, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-		if (file_dialog.ShowModal() != wxID_OK) {
-			return;
-		}
-		map_path = file_dialog.GetPath();
-	}
-
-	ClientVersionID version_id = g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION);
-	if (version_id == CLIENT_VERSION_NONE) {
-		ClientVersion* latest = ClientVersion::getLatestVersion();
-		if (latest) {
-			version_id = latest->getID();
-		}
-	}
-	if (version_id != CLIENT_VERSION_NONE && version_id != g_gui.GetCurrentVersionID()) {
-		wxString error;
-		wxArrayString warnings;
-		if (!g_gui.LoadVersion(version_id, error, warnings, true)) {
-			g_gui.PopupDialog("Asset warning", error, wxOK);
-			if (!warnings.empty()) {
-				g_gui.ListDialog("Warnings", warnings);
-			}
-			PreferencesWindow preferences_window(this, true);
-			preferences_window.ShowModal();
-			return;
-		}
-	}
 	g_gui.LoadMap(FileName(map_path));
 }
 
@@ -284,9 +229,7 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent& event) {
 	}
 }
 
-void WelcomeDialog::OnCheckboxClicked(const wxCommandEvent& event) {
-	g_settings.setInteger(Config::WELCOME_DIALOG, event.GetInt());
-}
+	// Removed checkbox logic
 
 WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size, const wxString& title_text, const wxString& version_text, const wxColour& base_colour, const wxBitmap& rme_logo, const std::vector<wxString>& recent_files) :
 	wxPanel(dialog),
@@ -344,16 +287,20 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 
 	// Recent items list (Save Slots) in a nice clean sizer
 	wxBoxSizer* slotsSizer = newd wxBoxSizer(wxVERTICAL);
-	std::vector<wxString> slots = recent_files;
-	if (slots.size() < 3) {
-		slots.resize(3);
-	}
-	for (size_t i = 0; i < 3; ++i) {
+	// Use the executable directory as base so that relative "Saves/..." paths always resolve correctly
+	wxFileName exeDir(wxStandardPaths::Get().GetExecutablePath());
+	wxString basePath = exeDir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
+	for (size_t i = 1; i <= 3; ++i) {
 		wxString file;
-		if (i < recent_files.size()) {
-			file = recent_files[i];
+		wxString slot_dir = basePath + wxString::Format("Saves/Slot %zu", i);
+		if (wxDir::Exists(slot_dir)) {
+			wxDir dir(slot_dir);
+			wxString filename;
+			if (dir.GetFirst(&filename, "*.otbm", wxDIR_FILES)) {
+				file = slot_dir + "/" + filename;
+			}
 		}
-		auto* recent_item = newd RecentItem(this, dialog, base_colour, file, static_cast<int>(i));
+		auto* recent_item = newd RecentItem(this, dialog, base_colour, file, static_cast<int>(i - 1));
 		slotsSizer->Add(recent_item, 0, wxEXPAND | wxBOTTOM, FROM_DIP(this, 10));
 	}
 	rootSizer->Add(slotsSizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FROM_DIP(this, 40));
@@ -373,11 +320,7 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 
 	bottomSizer->AddSpacer(FROM_DIP(this, 30));
 
-	m_show_welcome_dialog_checkbox = newd wxCheckBox(this, wxID_ANY, "Show this dialog on startup");
-	m_show_welcome_dialog_checkbox->SetValue(g_settings.getInteger(Config::WELCOME_DIALOG) == 1);
-	m_show_welcome_dialog_checkbox->Bind(wxEVT_CHECKBOX, &WelcomeDialog::OnCheckboxClicked, dialog);
-	m_show_welcome_dialog_checkbox->SetForegroundColour(m_text_colour);
-	bottomSizer->Add(m_show_welcome_dialog_checkbox, 0, wxALIGN_CENTER_VERTICAL);
+	// Removed checkbox
 
 	rootSizer->Add(bottomSizer, 0, wxALIGN_CENTER_HORIZONTAL);
 	rootSizer->AddSpacer(FROM_DIP(this, 15));
@@ -386,9 +329,7 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 }
 
 void WelcomeDialogPanel::updateInputs() {
-	if (m_show_welcome_dialog_checkbox) {
-		m_show_welcome_dialog_checkbox->SetValue(g_settings.getInteger(Config::WELCOME_DIALOG) == 1);
-	}
+	// Removed checkbox update
 }
 
 void WelcomeDialogPanel::OnPaint(const wxPaintEvent& event) {
@@ -491,7 +432,13 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 	dc.SetFont(label_font);
 
 	wxString slot_num = wxString::Format("SLOT %d:  ", m_slot_index + 1);
-	wxString title_text = m_item_text.empty() ? wxString("EMPTY SLOT") : wxFileNameFromPath(m_item_text);
+	wxString title_text;
+	if (m_item_text.empty()) {
+		title_text = "EMPTY SLOT";
+	} else {
+		wxFileName fn(m_item_text);
+		title_text = fn.GetName(); // e.g. "MyWorld" from "MyWorld.otbm"
+	}
 	
 	wxSize label_size = dc.GetTextExtent(slot_num);
 	dc.DrawText(slot_num, wxPoint(FROM_DIP(this, 15), GetSize().y / 2 - label_size.y / 2 - 8));
@@ -508,7 +455,12 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 	wxFont path_font = GetFont().Smaller();
 	dc.SetFont(path_font);
 	dc.SetTextForeground(m_is_hover ? wxColour(220, 200, 150) : wxColour(130, 130, 140));
-	wxString sub_text = m_item_text.empty() ? wxString("Click to select an action") : m_item_text;
+	wxString sub_text;
+	if (m_item_text.empty()) {
+		sub_text = "Click to create a new map in this slot";
+	} else {
+		sub_text = wxFileName(m_item_text).GetPath(); // e.g. "Saves/Slot 1"
+	}
 	wxSize sub_size = dc.GetTextExtent(sub_text);
 	dc.DrawText(sub_text, wxPoint(FROM_DIP(this, 15), GetSize().y / 2 + 6));
 
@@ -524,29 +476,13 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 void RecentItem::OnMouseClick(const wxMouseEvent& event) {
 	wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
 	if (m_item_text.empty()) {
-		// prompt on empty slot
-		wxArrayString choices;
-		choices.Add("New Map");
-		choices.Add("Load Map");
-		wxSingleChoiceDialog choice_dlg(m_dialog, "What would you like to do with this Save Slot?", "Select Action", choices);
-		if (choice_dlg.ShowModal() != wxID_OK) {
-			return;
-		}
-
-		if (choice_dlg.GetStringSelection() == "New Map") {
-			action_event.SetId(wxID_NEW);
-			action_event.SetString(""); // trigger new map flow with choice
-		} else {
-			wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? "(*.otbm;*.otgz)|*.otbm;*.otgz" : "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
-			wxFileDialog file_dialog(m_dialog, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-			if (file_dialog.ShowModal() != wxID_OK) {
-				return;
-			}
-			action_event.SetId(wxID_OPEN);
-			action_event.SetString(file_dialog.GetPath());
-		}
+		action_event.SetId(wxID_NEW);
+		// Build absolute path to slot directory based on executable location
+		wxFileName exeDir(wxStandardPaths::Get().GetExecutablePath());
+		wxString basePath = exeDir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
+		action_event.SetString(basePath + wxString::Format("Saves/Slot %d", m_slot_index + 1));
 	} else {
-		// Load the map immediately on populated slot
+		// Load the map immediately on populated slot (full absolute path already stored)
 		action_event.SetId(wxID_OPEN);
 		action_event.SetString(m_item_text);
 	}
@@ -558,13 +494,26 @@ void RecentItem::OnRightClick(const wxMouseEvent& event) {
 	if (m_item_text.empty()) {
 		return;
 	}
-	int answer = wxMessageBox("Remove this save slot entry from the recent list?", "Confirm", wxYES_NO | wxICON_QUESTION);
+	int answer = wxMessageBox("Clear this save slot? (This deletes the map file from the slot)", "Confirm", wxYES_NO | wxICON_QUESTION);
 	if (answer != wxYES) {
 		return;
 	}
-	wxCommandEvent del_event(WELCOME_DIALOG_DELETE_RECENT);
-	del_event.SetString(m_item_text);
-	m_dialog->GetEventHandler()->ProcessEvent(del_event);
+	
+	// Delete all files in the slot directory
+	wxString dirPath = wxFileName(m_item_text).GetPath();
+	if (wxDir::Exists(dirPath)) {
+		wxDir dir(dirPath);
+		wxString filename;
+		if (dir.GetFirst(&filename, "", wxDIR_FILES)) {
+			do {
+				wxRemoveFile(dirPath + "/" + filename);
+			} while (dir.GetNext(&filename));
+		}
+	}
+
+	wxTheApp->CallAfter([this]() {
+		g_gui.ShowWelcomeDialog(wxNullBitmap);
+	});
 }
 
 void RecentItem::OnMouseEnter(const wxMouseEvent& event) {

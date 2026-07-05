@@ -25,17 +25,44 @@
 #include "artprovider.h"
 #include <wx/artprov.h>
 #include <wx/mstream.h>
+#include <wx/stdpaths.h>
+
+namespace {
+wxBitmap LoadBitmapFromFileCandidates(const wxSize& icon_size, const std::vector<wxString>& candidates) {
+	for (const wxString& candidate : candidates) {
+		if (!wxFileExists(candidate)) {
+			continue;
+		}
+		wxImage image;
+		if (image.LoadFile(candidate, wxBITMAP_TYPE_PNG)) {
+			if (icon_size.IsFullySpecified() && icon_size.GetWidth() > 0 && icon_size.GetHeight() > 0) {
+				image = image.Scale(icon_size.GetWidth(), icon_size.GetHeight(), wxIMAGE_QUALITY_HIGH);
+			}
+			wxBitmap bitmap(image);
+			if (bitmap.IsOk()) {
+				return bitmap;
+			}
+		}
+	}
+	return wxNullBitmap;
+}
+}
 
 const wxString MainToolBar::BRUSHES_BAR_NAME = "brushes_toolbar";
 const wxString MainToolBar::POSITION_BAR_NAME = "position_toolbar";
 const wxString MainToolBar::SIZES_BAR_NAME = "sizes_toolbar";
 
-#define loadPNGFile(name) _wxGetBitmapFromMemory(name, sizeof(name))
-inline wxBitmap* _wxGetBitmapFromMemory(const unsigned char* data, int length) {
+#define loadPNGFile(name) _wxGetBitmapFromMemory(name, sizeof(name), wxDefaultSize)
+#define loadPNGFileSized(name, size) _wxGetBitmapFromMemory(name, sizeof(name), size)
+inline wxBitmap* _wxGetBitmapFromMemory(const unsigned char* data, int length, const wxSize& target_size) {
 	wxMemoryInputStream is(data, length);
 	wxImage img(is, "image/png");
 	if (!img.IsOk()) {
 		return nullptr;
+	}
+	if (target_size.IsFullySpecified() && target_size.GetWidth() > 0 && target_size.GetHeight() > 0 &&
+		(img.GetWidth() != target_size.GetWidth() || img.GetHeight() != target_size.GetHeight())) {
+		img = img.Scale(target_size.GetWidth(), target_size.GetHeight(), wxIMAGE_QUALITY_HIGH);
 	}
 	return newd wxBitmap(img, -1);
 }
@@ -43,8 +70,16 @@ inline wxBitmap* _wxGetBitmapFromMemory(const unsigned char* data, int length) {
 MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	wxSize icon_size = FROM_DIP(parent, wxSize(16, 16));
 
-	wxBitmap* border_bitmap = loadPNGFile(optional_border_small_png);
-	wxBitmap* eraser_bitmap = loadPNGFile(eraser_small_png);
+	wxBitmap* border_bitmap = loadPNGFileSized(optional_border_small_png, icon_size);
+	wxBitmap bucket_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/bucket.png",
+		"../icons/bucket.png",
+		"Map Editor/icons/bucket.png",
+		"../Map Editor/icons/bucket.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png"
+	});
+	wxBitmap* eraser_bitmap = loadPNGFileSized(eraser_small_png, icon_size);
 	wxBitmap pz_bitmap = wxArtProvider::GetBitmap(ART_PZ_BRUSH, wxART_TOOLBAR, icon_size);
 	wxBitmap nopvp_bitmap = wxArtProvider::GetBitmap(ART_NOPVP_BRUSH, wxART_TOOLBAR, icon_size);
 	wxBitmap nologout_bitmap = wxArtProvider::GetBitmap(ART_NOLOOUT_BRUSH, wxART_TOOLBAR, icon_size);
@@ -55,12 +90,15 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	wxBitmap quest_bitmap = wxArtProvider::GetBitmap(ART_DOOR_QUEST_SMALL, wxART_TOOLBAR, icon_size);
 	wxBitmap normal_alt_bitmap = wxArtProvider::GetBitmap(ART_DOOR_NORMAL_ALT_SMALL, wxART_TOOLBAR, icon_size);
 
-	wxBitmap* hatch_bitmap = loadPNGFile(window_hatch_small_png);
-	wxBitmap* window_bitmap = loadPNGFile(window_normal_small_png);
+	wxBitmap* hatch_bitmap = loadPNGFileSized(window_hatch_small_png, icon_size);
+	wxBitmap* window_bitmap = loadPNGFileSized(window_normal_small_png, icon_size);
 
 	brushes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_BRUSHES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	brushes_toolbar->SetToolBitmapSize(icon_size);
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, wxEmptyString, *border_bitmap, wxNullBitmap, wxITEM_CHECK, "Border", wxEmptyString, NULL);
+	if (bucket_bitmap.IsOk()) {
+		brushes_toolbar->AddTool(PALETTE_TERRAIN_BUCKET_TOOL, wxEmptyString, bucket_bitmap, wxNullBitmap, wxITEM_CHECK, "Bucket Fill", wxEmptyString, NULL);
+	}
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_ERASER, wxEmptyString, *eraser_bitmap, wxNullBitmap, wxITEM_CHECK, "Eraser", wxEmptyString, NULL);
 	brushes_toolbar->AddSeparator();
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_PZ_TOOL, wxEmptyString, pz_bitmap, wxNullBitmap, wxITEM_CHECK, "Protected Zone", wxEmptyString, NULL);
@@ -145,6 +183,7 @@ void MainToolBar::UpdateButtons() {
 	bool is_host = has_map && !editor->IsLiveClient();
 
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, has_map);
+	brushes_toolbar->EnableTool(PALETTE_TERRAIN_BUCKET_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_ERASER, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_PZ_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_NOPVP_TOOL, has_map);
@@ -178,8 +217,25 @@ void MainToolBar::UpdateButtons() {
 
 void MainToolBar::UpdateBrushButtons() {
 	Brush* brush = g_gui.GetCurrentBrush();
+	const bool fill_mode = g_gui.IsFillBrushMode();
 	if (brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PZ_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOPVP_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOLOGOUT_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PVPZONE_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_DOOR, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_LOCKED_DOOR, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_MAGIC_DOOR, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_QUEST_DOOR, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, false);
+
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, brush == g_gui.optional_brush);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, fill_mode);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, brush == g_gui.eraser);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PZ_TOOL, brush == g_gui.pz_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOPVP_TOOL, brush == g_gui.rook_brush);
@@ -194,6 +250,7 @@ void MainToolBar::UpdateBrushButtons() {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, brush == g_gui.window_door_brush);
 	} else {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PZ_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOPVP_TOOL, false);
@@ -215,7 +272,10 @@ void MainToolBar::UpdateBrushSize(BrushShape shape, int size) {
 		sizes_toolbar->ToggleTool(TOOLBAR_SIZES_CIRCULAR, true);
 		sizes_toolbar->ToggleTool(TOOLBAR_SIZES_RECTANGULAR, false);
 
-		wxSize icon_size = wxSize(16, 16);
+		wxSize icon_size = sizes_toolbar->GetToolBitmapSize();
+		if (!icon_size.IsFullySpecified() || icon_size.GetWidth() <= 0 || icon_size.GetHeight() <= 0) {
+			icon_size = wxSize(16, 16);
+		}
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_1, wxArtProvider::GetBitmap(ART_CIRCULAR_1, wxART_TOOLBAR, icon_size));
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_2, wxArtProvider::GetBitmap(ART_CIRCULAR_2, wxART_TOOLBAR, icon_size));
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_3, wxArtProvider::GetBitmap(ART_CIRCULAR_3, wxART_TOOLBAR, icon_size));
@@ -227,7 +287,10 @@ void MainToolBar::UpdateBrushSize(BrushShape shape, int size) {
 		sizes_toolbar->ToggleTool(TOOLBAR_SIZES_CIRCULAR, false);
 		sizes_toolbar->ToggleTool(TOOLBAR_SIZES_RECTANGULAR, true);
 
-		wxSize icon_size = wxSize(16, 16);
+		wxSize icon_size = sizes_toolbar->GetToolBitmapSize();
+		if (!icon_size.IsFullySpecified() || icon_size.GetWidth() <= 0 || icon_size.GetHeight() <= 0) {
+			icon_size = wxSize(16, 16);
+		}
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_1, wxArtProvider::GetBitmap(ART_RECTANGULAR_1, wxART_TOOLBAR, icon_size));
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_2, wxArtProvider::GetBitmap(ART_RECTANGULAR_2, wxART_TOOLBAR, icon_size));
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_3, wxArtProvider::GetBitmap(ART_RECTANGULAR_3, wxART_TOOLBAR, icon_size));
@@ -301,6 +364,10 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 		case PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL:
 			g_gui.SelectBrush(g_gui.optional_brush);
 			break;
+		case PALETTE_TERRAIN_BUCKET_TOOL:
+			g_gui.SetDrawingMode();
+			g_gui.SetFillBrushMode(!g_gui.IsFillBrushMode());
+			break;
 		case PALETTE_TERRAIN_ERASER:
 			g_gui.SelectBrush(g_gui.eraser);
 			break;
@@ -363,12 +430,21 @@ void MainToolBar::OnSizesButtonClick(wxCommandEvent& event) {
 		return;
 	}
 
+	const bool bucket_tool = event.GetId() == PALETTE_TERRAIN_BUCKET_TOOL;
+	if (!bucket_tool) {
+		g_gui.SetFillBrushMode(false);
+	}
+
 	switch (event.GetId()) {
 		case TOOLBAR_SIZES_CIRCULAR:
 			g_gui.SetBrushShape(BRUSHSHAPE_CIRCLE);
 			break;
 		case TOOLBAR_SIZES_RECTANGULAR:
 			g_gui.SetBrushShape(BRUSHSHAPE_SQUARE);
+			break;
+		case PALETTE_TERRAIN_BUCKET_TOOL:
+			g_gui.SetDrawingMode();
+			g_gui.SetFillBrushMode(true);
 			break;
 		case TOOLBAR_SIZES_1:
 			g_gui.SetBrushSize(0);

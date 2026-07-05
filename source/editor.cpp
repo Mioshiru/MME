@@ -41,7 +41,7 @@
 #include "live_action.h"
 #include "snapshot_action.h"
 
-MapEditor::MapEditor(CopyBuffer& copybuffer) :
+MapEditor::MapEditor(CopyBuffer& copybuffer, const wxString& target_dir) :
 	live_server(nullptr),
 	live_client(nullptr),
 	actionQueue(newd ActionQueue(*this)),
@@ -88,15 +88,19 @@ MapEditor::MapEditor(CopyBuffer& copybuffer) :
 	map.height = 2048;
 	map.width = 2048;
 
-	static int unnamed_counter = 0;
-
-	std::string sname = "Untitled-" + i2s(++unnamed_counter);
+	std::string sname = "NewWorld";
 	map.name = sname + ".otbm";
+
+	if (target_dir.empty()) {
+		map.filename = "Saves/" + map.name;
+	} else {
+		map.filename = std::string(target_dir.mb_str()) + "/" + map.name;
+	}
+
 	map.spawnfile = sname + "-spawn.xml";
 	map.housefile = sname + "-house.xml";
-	map.waypointfile = sname + "-waypoint.xml";
 	map.description = "No map description available.";
-	map.unnamed = true;
+	map.unnamed = false;
 
 	map.doChange();
 }
@@ -210,8 +214,6 @@ bool MapEditor::saveMap(FileName filename, bool show_dialog) {
 		map.spawnfile = nstr(_name.GetFullName());
 		_name.SetName(filename.GetName() + "-house");
 		map.housefile = nstr(_name.GetFullName());
-		_name.SetName(filename.GetName() + "-waypoint");
-		map.waypointfile = nstr(_name.GetFullName());
 
 		map.unnamed = false;
 	}

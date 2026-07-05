@@ -22,7 +22,7 @@ void GUI::SaveCurrentMap(FileName filename, bool showdialog) {
 	root->UpdateMenubar(); root->Refresh();
 }
 
-bool GUI::NewMap() {
+bool GUI::NewMap(const wxString& target_dir) {
 	ScopedAction action("GUI::NewMap");
 	FinishWelcomeDialog();
 	
@@ -48,7 +48,7 @@ bool GUI::NewMap() {
 	}
 
 	Editor* editor;
-	try { editor = newd Editor(copybuffer); } catch (std::runtime_error& e) {
+	try { editor = newd Editor(copybuffer, target_dir); } catch (std::runtime_error& e) {
 		PopupDialog(root, "Error!", wxString(e.what(), wxConvUTF8), wxOK); return false;
 	}
 	auto* mapTab = newd MapTab(tabbook, editor);
@@ -74,20 +74,21 @@ void GUI::OpenMap() {
 bool GUI::LoadMap(const FileName& fileName) {
 	FinishWelcomeDialog();
 	if (GetCurrentEditor() && !GetCurrentMap().hasChanged() && !GetCurrentMap().hasFile()) CloseCurrentEditor();
+	Editor* editor;
+	try { editor = newd Editor(copybuffer, fileName); } catch (std::runtime_error& e) {
+		PopupDialog(root, "Error!", wxString(e.what(), wxConvUTF8), wxOK); return false;
+	}
+
 	// Memory safety: verify that the graphics/sprite data was actually loaded
-	// before constructing the Editor.
+	// after constructing the Editor (which determines the version and loads it).
 	if (gfx.getDatFormat() == DAT_FORMAT_UNKNOWN) {
 		ClientVersion* cv = getLoadedVersion();
 		wxString nameStr = cv ? wxString::FromUTF8(cv->getName()) : wxString("Unknown");
 		PopupDialog(root, "Asset Load Error",
 			"Failed to load assets for version " + nameStr,
 			wxOK | wxICON_ERROR);
+		delete editor;
 		return false;
-	}
-
-	Editor* editor;
-	try { editor = newd Editor(copybuffer, fileName); } catch (std::runtime_error& e) {
-		PopupDialog(root, "Error!", wxString(e.what(), wxConvUTF8), wxOK); return false;
 	}
 	auto* mapTab = newd MapTab(tabbook, editor);
 	mapTab->OnSwitchEditorMode(mode);
@@ -155,12 +156,7 @@ void GUI::SaveMap() {
 	}
 }
 
-void GUI::SaveMapAs() {
-	MapTab* mapTab = GetCurrentMapTab();
-	if (mapTab) {
-		mapTab->GetEditor()->saveMap(FileName(), true);
-	}
-}
+
 
 int GUI::GetOpenMapCount() const {
 	if (!tabbook) return 0;

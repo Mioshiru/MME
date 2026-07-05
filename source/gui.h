@@ -248,6 +248,10 @@ public:
 	void SwitchMode();
 	void SetSelectionMode();
 	void SetDrawingMode();
+	void SetFillBrushMode(bool enabled);
+	bool IsFillBrushMode() const {
+		return fill_brush_mode;
+	}
 	bool IsSelectionMode() const {
 		return mode == SELECTION_MODE;
 	}
@@ -372,10 +376,9 @@ public:
 	void SaveCurrentMap(bool showdialog = true) {
 		SaveCurrentMap(FileName(), showdialog);
 	}
-	bool NewMap();
+	bool NewMap(const wxString& target_dir = "");
 	void OpenMap();
 	void SaveMap();
-	void SaveMapAs();
 	bool LoadMap(const FileName& fileName);
 
 protected:
@@ -488,6 +491,7 @@ protected:
 	int brush_size;
 	int brush_variation;
 	int creature_spawntime;
+	bool fill_brush_mode;
 
 	bool draw_locked_doors;
 	bool use_custom_thickness;

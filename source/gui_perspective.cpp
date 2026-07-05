@@ -32,28 +32,34 @@ void GUI::LoadPerspective() {
       palette_list.push_back(tmp);
     }
 
-    for (const std::string &name : palette_list) {
-      PaletteWindow *palette = CreatePalette();
+    if (palette_list.empty()) {
+      CreatePalette();
+    } else {
+      for (const std::string &name : palette_list) {
+        PaletteWindow *palette = CreatePalette();
 
-      wxAuiPaneInfo &info = aui_manager->GetPane(palette);
-      aui_manager->LoadPaneInfo(wxstr(name), info);
+        wxAuiPaneInfo &info = aui_manager->GetPane(palette);
+        aui_manager->LoadPaneInfo(wxstr(name), info);
 
-      if (info.IsFloatable()) {
-        bool offscreen = true;
-        for (uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
-          wxDisplay display(index);
-          wxRect rect = display.GetClientArea();
-          if (rect.Contains(info.floating_pos)) {
-            offscreen = false;
-            break;
+        if (info.IsFloatable()) {
+          bool offscreen = true;
+          for (uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
+            wxDisplay display(index);
+            wxRect rect = display.GetClientArea();
+            if (rect.Contains(info.floating_pos)) {
+              offscreen = false;
+              break;
+            }
           }
-        }
 
-        if (offscreen) {
-          info.Dock();
+          if (offscreen) {
+            info.Dock();
+          }
         }
       }
     }
+
+
 
     if (aui_manager) {
       aui_manager->SetFlags(aui_manager->GetFlags() |

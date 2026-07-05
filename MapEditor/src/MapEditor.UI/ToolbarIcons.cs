@@ -38,7 +38,7 @@ public sealed class ToolbarIcons : IDisposable
 
         DrawIcon = IconLoader.LoadIconTexture(_gl, Path.Combine(iconsDir, "rectangular_1.png"));
         EraseIcon = IconLoader.LoadIconTexture(_gl, Path.Combine(iconsDir, "rectangular_7.png"));
-        SelectIcon = IconLoader.LoadIconTexture(_gl, Path.Combine(iconsDir, "position_go.png"));
+        SelectIcon = IconLoader.LoadIconTexture(_gl, Path.Combine(iconsDir, "pointer.png"));
         FillIcon = IconLoader.LoadIconTexture(_gl, Path.Combine(iconsDir, "circular_1.png"));
         SpawnIcon = IconLoader.LoadIconTexture(_gl, Path.Combine(iconsDir, "circular_3.png"));
         WaypointIcon = IconLoader.LoadIconTexture(_gl, Path.Combine(iconsDir, "circular_5.png"));

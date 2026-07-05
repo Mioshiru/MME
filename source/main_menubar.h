@@ -106,6 +106,8 @@ namespace MenuBar {
 		SHOW_TECHNICAL_ITEMS,
 		SHOW_WAYPOINTS,
 		SHOW_GRID,
+		GRID_INTENSITY_SUBTLE,
+		GRID_INTENSITY_VISIBLE,
 		SHOW_EXTRA,
 		SHOW_CREATURES,
 		SHOW_SPAWNS,
@@ -203,7 +205,7 @@ public:
 	void OnGenerateMap(wxCommandEvent& event);
 	void OnOpenRecent(wxCommandEvent& event);
 	void OnSave(wxCommandEvent& event);
-	void OnSaveAs(wxCommandEvent& event);
+
 	void OnClose(wxCommandEvent& event);
 	void OnPreferences(wxCommandEvent& event);
 	void OnQuit(wxCommandEvent& event);

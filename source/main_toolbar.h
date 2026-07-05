@@ -54,6 +54,8 @@ private:
 	static const wxString POSITION_BAR_NAME;
 	static const wxString SIZES_BAR_NAME;
 
+	wxBitmap LoadBitmapFromCandidates(const wxSize& icon_size, const std::vector<wxString>& candidates) const;
+
 	wxAuiToolBar* brushes_toolbar;
 	wxAuiToolBar* position_toolbar;
 	wxChoice* z_choice;

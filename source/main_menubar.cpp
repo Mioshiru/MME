@@ -54,7 +54,6 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(NEW, wxITEM_NORMAL, OnNew);
 	MAKE_ACTION(OPEN, wxITEM_NORMAL, OnOpen);
 	MAKE_ACTION(SAVE, wxITEM_NORMAL, OnSave);
-	MAKE_ACTION(SAVE_AS, wxITEM_NORMAL, OnSaveAs);
 	MAKE_ACTION(GENERATE_MAP, wxITEM_NORMAL, OnGenerateMap);
 	MAKE_ACTION(CLOSE, wxITEM_NORMAL, OnClose);
 
@@ -144,6 +143,9 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(SHOW_TECHNICAL_ITEMS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_WAYPOINTS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_GRID, wxITEM_CHECK, OnChangeViewSettings);
+	MAKE_ACTION(GRID_INTENSITY_SUBTLE, wxITEM_RADIO, OnChangeViewSettings);
+	MAKE_ACTION(GRID_INTENSITY_VISIBLE, wxITEM_RADIO, OnChangeViewSettings);
+	MAKE_ACTION(SHOW_MINIMAP_HUD, wxITEM_CHECK, OnMinimapWindow);
 	MAKE_ACTION(SHOW_CREATURES, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_SPAWNS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_SPECIAL, wxITEM_CHECK, OnChangeViewSettings);
@@ -358,7 +360,6 @@ void MainMenuBar::Update() {
 
 	EnableItem(CLOSE, is_local);
 	EnableItem(SAVE, is_host);
-	EnableItem(SAVE_AS, is_host);
 	EnableItem(GENERATE_MAP, false);
 
 	EnableItem(IMPORT_MAP, is_local);
@@ -415,6 +416,7 @@ void MainMenuBar::Update() {
 	EnableItem(ZOOM_IN, has_map);
 	EnableItem(ZOOM_OUT, has_map);
 	EnableItem(ZOOM_NORMAL, has_map);
+	EnableItem(SHOW_MINIMAP_HUD, has_map);
 
 	if (has_map) {
 		CheckItem(SHOW_SPAWNS, g_settings.getBoolean(Config::SHOW_SPAWNS));
@@ -481,6 +483,11 @@ void MainMenuBar::LoadValues() {
 	CheckItem(GHOST_HIGHER_FLOORS, g_settings.getBoolean(Config::TRANSPARENT_FLOORS));
 	CheckItem(SHOW_EXTRA, !g_settings.getBoolean(Config::SHOW_EXTRA));
 	CheckItem(SHOW_GRID, g_settings.getBoolean(Config::SHOW_GRID));
+	if (g_settings.getInteger(Config::GRID_OPACITY) <= 70) {
+		CheckItem(GRID_INTENSITY_SUBTLE, true);
+	} else {
+		CheckItem(GRID_INTENSITY_VISIBLE, true);
+	}
 	CheckItem(HIGHLIGHT_ITEMS, g_settings.getBoolean(Config::HIGHLIGHT_ITEMS));
 	CheckItem(HIGHLIGHT_LOCKED_DOORS, g_settings.getBoolean(Config::HIGHLIGHT_LOCKED_DOORS));
 	CheckItem(SHOW_CREATURES, g_settings.getBoolean(Config::SHOW_CREATURES));
@@ -805,9 +812,7 @@ void MainMenuBar::OnSave(wxCommandEvent& WXUNUSED(event)) {
 	g_gui.SaveMap();
 }
 
-void MainMenuBar::OnSaveAs(wxCommandEvent& WXUNUSED(event)) {
-	g_gui.SaveMapAs();
-}
+
 
 void MainMenuBar::OnPreferences(wxCommandEvent& WXUNUSED(event)) {
 	PreferencesWindow dialog(frame);
@@ -872,11 +877,30 @@ void MainMenuBar::OnExportTilesets(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void MainMenuBar::OnReloadDataFiles(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.IsVersionLoaded() || g_gui.GetCurrentVersionID() == CLIENT_VERSION_NONE) {
+		g_gui.PopupDialog("Reload", "No client version is currently loaded.", wxOK | wxICON_INFORMATION);
+		return;
+	}
+
 	wxString error;
 	wxArrayString warnings;
-	g_gui.LoadVersion(g_gui.GetCurrentVersionID(), error, warnings, true);
-	g_gui.PopupDialog("Error", error, wxOK);
-	g_gui.ListDialog("Warnings", warnings);
+	const bool ok = g_gui.LoadVersion(g_gui.GetCurrentVersionID(), error, warnings, true);
+	if (!ok) {
+		wxString reload_error = error;
+		if (reload_error.empty()) {
+			reload_error = "Failed to reload client assets.";
+		}
+		g_gui.PopupDialog("Reload failed", reload_error, wxOK | wxICON_ERROR);
+		if (!warnings.empty()) {
+			g_gui.ListDialog("Warnings", warnings);
+		}
+		return;
+	}
+
+	if (!warnings.empty()) {
+		g_gui.ListDialog("Warnings", warnings);
+	}
+	g_gui.SetStatusText("Assets reloaded successfully.");
 }
 
 void MainMenuBar::OnListExtensions(wxCommandEvent& WXUNUSED(event)) {
@@ -885,7 +909,7 @@ void MainMenuBar::OnListExtensions(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void MainMenuBar::OnGotoWebsite(wxCommandEvent& WXUNUSED(event)) {
-	::wxLaunchDefaultBrowser(__SITE_URL__, wxBROWSER_NEW_WINDOW);
+	::wxLaunchDefaultBrowser("https://github.com/Mioshiru/MME", wxBROWSER_NEW_WINDOW);
 }
 
 void MainMenuBar::OnAbout(wxCommandEvent& WXUNUSED(event)) {
@@ -1079,6 +1103,11 @@ void MainMenuBar::OnTakeScreenshot(wxCommandEvent& WXUNUSED(event)) {
 	);
 }
 
+void MainMenuBar::OnMinimapWindow(wxCommandEvent& WXUNUSED(event)) {
+	g_settings.setInteger(Config::MINIMAP_VISIBLE, IsItemChecked(MenuBar::SHOW_MINIMAP_HUD));
+	g_gui.RefreshView();
+}
+
 void MainMenuBar::OnZoomIn(wxCommandEvent& event) {
 	double zoom = g_gui.GetCurrentZoom();
 	g_gui.SetCurrentZoom(zoom - 0.1);
@@ -1112,6 +1141,7 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event) {
 	g_settings.setInteger(Config::SHOW_TECHNICAL_ITEMS, IsItemChecked(MenuBar::SHOW_TECHNICAL_ITEMS));
 	g_settings.setInteger(Config::SHOW_WAYPOINTS, IsItemChecked(MenuBar::SHOW_WAYPOINTS));
 	g_settings.setInteger(Config::SHOW_GRID, IsItemChecked(MenuBar::SHOW_GRID));
+	g_settings.setInteger(Config::GRID_OPACITY, IsItemChecked(MenuBar::GRID_INTENSITY_VISIBLE) ? 100 : 60);
 	g_settings.setInteger(Config::SHOW_EXTRA, !IsItemChecked(MenuBar::SHOW_EXTRA));
 
 	g_settings.setInteger(Config::SHOW_SHADE, IsItemChecked(MenuBar::SHOW_SHADE));

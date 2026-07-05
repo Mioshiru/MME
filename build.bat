@@ -223,7 +223,7 @@ if !ERRORLEVEL! neq 0 (
         set "CMAKE_GENERATOR_ARGS=-A x64"
     ) else (
         for /f "usebackq delims=" %%I in (`where ninja`) do set "NINJA_EXE=%%I"
-        if defined NINJA_EXE set "CMAKE_GENERATOR_ARGS=-DCMAKE_MAKE_PROGRAM=!NINJA_EXE!"
+        if defined NINJA_EXE set "CMAKE_GENERATOR_ARGS=\"-DCMAKE_MAKE_PROGRAM=!NINJA_EXE!\""
     )
 )
 echo %BOLD%[%STEP%/%TOTAL_STEPS%] Configuring CMake with !CMAKE_GENERATOR!...%RESET%
@@ -233,9 +233,13 @@ if exist "!BUILD_DIR!\CMakeCache.txt" (
     findstr /C:"CMAKE_GENERATOR:INTERNAL=!CMAKE_GENERATOR!" "!BUILD_DIR!\CMakeCache.txt" >nul 2>&1
     if !ERRORLEVEL! neq 0 (
         echo   CMake generator mismatch detected. Cleaning CMake cache...
-        del /f /q "!BUILD_DIR!\CMakeCache.txt" >nul 2>&1
-        rd /s /q "!BUILD_DIR!\CMakeFiles" >nul 2>&1
+        call :cleanup_cmake_state
     )
+)
+
+if exist "!BUILD_DIR!\CMakeFiles\ShowIncludes" (
+    attrib -r "!BUILD_DIR!\CMakeFiles\ShowIncludes\*" /s /d >nul 2>&1
+    rd /s /q "!BUILD_DIR!\CMakeFiles\ShowIncludes" >nul 2>&1
 )
 
 if /I "!CMAKE_GENERATOR!"=="Visual Studio 17 2022" (
@@ -250,6 +254,23 @@ if /I "!CMAKE_GENERATOR!"=="Visual Studio 17 2022" (
         "-DCMAKE_TOOLCHAIN_FILE=!PROJECT_ROOT!\cmake\vcpkg-toolchain.cmake" ^
         "-DVCPKG_TARGET_TRIPLET=x64-windows" ^
         "-DCMAKE_INSTALL_PREFIX=!INSTALL_DIR!" >> "!LOG_FILE!" 2>&1
+)
+if !ERRORLEVEL! neq 0 (
+    echo   Initial CMake configure failed. Performing deep cleanup and retry...
+    call :cleanup_cmake_state
+    if /I "!CMAKE_GENERATOR!"=="Visual Studio 17 2022" (
+        cmake -G "!CMAKE_GENERATOR!" !CMAKE_GENERATOR_ARGS! -S "!PROJECT_ROOT!" -B "!BUILD_DIR!" ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            "-DCMAKE_TOOLCHAIN_FILE=!PROJECT_ROOT!\cmake\vcpkg-toolchain.cmake" ^
+            "-DVCPKG_TARGET_TRIPLET=x64-windows" ^
+            "-DCMAKE_INSTALL_PREFIX=!INSTALL_DIR!" >> "!LOG_FILE!" 2>&1
+    ) else (
+        cmake -G "!CMAKE_GENERATOR!" -S "!PROJECT_ROOT!" -B "!BUILD_DIR!" !CMAKE_GENERATOR_ARGS! ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            "-DCMAKE_TOOLCHAIN_FILE=!PROJECT_ROOT!\cmake\vcpkg-toolchain.cmake" ^
+            "-DVCPKG_TARGET_TRIPLET=x64-windows" ^
+            "-DCMAKE_INSTALL_PREFIX=!INSTALL_DIR!" >> "!LOG_FILE!" 2>&1
+    )
 )
 if !ERRORLEVEL! neq 0 ( set "FAIL_REASON=CMake Configuration" & goto :handle_error )
 echo   %GREEN%OK (Incremental)%RESET%
@@ -315,6 +336,7 @@ for %%D in (data brushes scripts extensions icons) do (
         )
     )
 )
+if not exist "!BUILD_DIR!\Saves" mkdir "!BUILD_DIR!\Saves" >nul 2>&1
 echo.
 echo   %GREEN%Deployment OK%RESET%
 
@@ -327,11 +349,24 @@ echo.
 pause
 exit /b 0
 
+:cleanup_cmake_state
+if exist "!BUILD_DIR!" (
+    attrib -r "!BUILD_DIR!\*" /s /d >nul 2>&1
+    if exist "!BUILD_DIR!\CMakeCache.txt" del /f /q "!BUILD_DIR!\CMakeCache.txt" >nul 2>&1
+    if exist "!BUILD_DIR!\CMakeFiles" rd /s /q "!BUILD_DIR!\CMakeFiles" >nul 2>&1
+    if exist "!BUILD_DIR!\cmake_install.cmake" del /f /q "!BUILD_DIR!\cmake_install.cmake" >nul 2>&1
+    if exist "!BUILD_DIR!\build.ninja" del /f /q "!BUILD_DIR!\build.ninja" >nul 2>&1
+    if exist "!BUILD_DIR!\.ninja_deps" del /f /q "!BUILD_DIR!\.ninja_deps" >nul 2>&1
+    if exist "!BUILD_DIR!\.ninja_log" del /f /q "!BUILD_DIR!\.ninja_log" >nul 2>&1
+    if exist "!BUILD_DIR!\rules.ninja" del /f /q "!BUILD_DIR!\rules.ninja" >nul 2>&1
+)
+exit /b 0
+
 :handle_error
 echo.
 echo %RED%ERROR: !FAIL_REASON! failed!%RESET%
 set "ERROR_LINE="
-for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$lines = Get-Content '!LOG_FILE!' -ErrorAction SilentlyContinue; $found = $null; foreach ($line in $lines) { if ($line -match 'fatal error|error C[0-9]+|error:|CMake Error|FAILED:|FAILED|Fehler|Error:' -and $line.Trim()) { $found = $line.Trim(); break } }; if ($found) { $found } else { 'No matching error line found in build log.' }"`) do set "ERROR_LINE=%%L"
+for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$lines = Get-Content '!LOG_FILE!' -ErrorAction SilentlyContinue; $found = $null; foreach ($line in $lines) { $trimmed = $line.Trim(); if ($trimmed -match '^[0-9]+\s+Fehler$') { continue }; if ($trimmed -match 'fatal error|error C[0-9]+|error:|CMake Error|FAILED:|FAILED|Error:') { $found = $trimmed; break } }; if ($found) { $found } else { 'No matching error line found in build log.' }"`) do set "ERROR_LINE=%%L"
 if not defined ERROR_LINE set "ERROR_LINE=No matching error line found in build log."
 echo %RED%!ERROR_LINE!%RESET%
 echo # Compiler Error Report > "!ERROR_FILE!"

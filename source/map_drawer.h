@@ -188,6 +188,7 @@ public:
   void SetupGL();
   void Release();
   const float *GetCameraProjectionPtr() const { return nullptr; }
+  NVGcontext *GetNanoVGContext() const { return m_nvg; }
 
   void Draw();
   void DrawBackground();

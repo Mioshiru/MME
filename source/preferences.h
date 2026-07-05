@@ -48,6 +48,9 @@ public:
 
 	// General
 	wxCheckBox* always_make_backup_chkbox;
+	wxCheckBox* autosave_enabled_chkbox;
+	wxSlider*   autosave_interval_slider;
+	wxStaticText* autosave_interval_label;
 	wxCheckBox* create_on_startup_chkbox;
 	wxCheckBox* update_check_on_startup_chkbox;
 	wxCheckBox* only_one_instance_chkbox;
@@ -129,7 +132,6 @@ public:
 	wxButton* open_folder_btn;
 	wxHyperlinkCtrl* help_link;
 	wxCheckBox* check_sigs_chkbox;
-	wxChoice* performance_preset_choice;
 	wxCheckBox* performance_vsync_chkbox;
 	wxCheckBox* performance_multimonitor_chkbox;
 	wxSlider* performance_worker_threads_slider;

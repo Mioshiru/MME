@@ -18,14 +18,19 @@
 #include "main.h"
 
 #include "core_forward.h"
+#include <queue>
 #include <sstream>
 #include <time.h>
+#include <unordered_set>
+#include <wx/filefn.h>
+#include <wx/stdpaths.h>
 #include <wx/wfstream.h>
 
 #include "application.h"
 #include "browse_tile_window.h"
 #include "brush.h"
 #include "editor.h"
+#include "copybuffer.h"
 #include "graphics.h"
 #include "gui.h"
 #include "live_peer.h"
@@ -63,7 +68,7 @@
 
 BEGIN_EVENT_TABLE(MapCanvas, wxGLCanvas)
 EVT_KEY_DOWN(MapCanvas::OnKeyDown)
-EVT_KEY_DOWN(MapCanvas::OnKeyUp)
+EVT_KEY_UP(MapCanvas::OnKeyUp)
 
 // Mouse events
 EVT_MOTION(MapCanvas::OnMouseMove)
@@ -118,15 +123,157 @@ EVT_MENU_RANGE(MAP_POPUP_MENU_SCRIPT_FIRST, MAP_POPUP_MENU_SCRIPT_LAST,
                MapCanvas::OnScriptMenu)
 END_EVENT_TABLE()
 
-#define MAPCANVAS_EVENT_STUB(name, type) \
-  void MapCanvas::name(type &event) { (void)event; }
+namespace {
+void SyncImGuiMouseState(const wxMouseEvent& event) {
+  if (!ImGui::GetCurrentContext()) {
+    return;
+  }
 
-MAPCANVAS_EVENT_STUB(OnKeyDown, wxKeyEvent)
-MAPCANVAS_EVENT_STUB(OnKeyUp, wxKeyEvent)
+  ImGuiIO& io = ImGui::GetIO();
+  io.MousePos = ImVec2((float)event.GetX(), (float)event.GetY());
+  io.MouseDown[0] = event.LeftIsDown();
+  io.MouseDown[1] = event.RightIsDown();
+  io.MouseDown[2] = event.MiddleIsDown();
+}
+
+wxString ResolveBorderIconPath() {
+  wxArrayString candidates;
+  wxString exe_dir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
+  wxString cwd = wxGetCwd();
+
+  candidates.Add("brushes/optional_border_small.png");
+  candidates.Add("../brushes/optional_border_small.png");
+  candidates.Add("../../brushes/optional_border_small.png");
+  candidates.Add("Map Editor/brushes/optional_border_small.png");
+  candidates.Add("../Map Editor/brushes/optional_border_small.png");
+
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + "brushes" + wxFILE_SEP_PATH + "optional_border_small.png");
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "brushes" + wxFILE_SEP_PATH + "optional_border_small.png");
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "brushes" + wxFILE_SEP_PATH + "optional_border_small.png");
+
+  candidates.Add(cwd + wxFILE_SEP_PATH + "brushes" + wxFILE_SEP_PATH + "optional_border_small.png");
+  candidates.Add(cwd + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "brushes" + wxFILE_SEP_PATH + "optional_border_small.png");
+  candidates.Add(cwd + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "brushes" + wxFILE_SEP_PATH + "optional_border_small.png");
+
+  for (const wxString& candidate : candidates) {
+    if (wxFileExists(candidate)) {
+      return candidate;
+    }
+  }
+
+  return wxString();
+}
+
+wxString ResolveBucketIconPath() {
+  wxArrayString candidates;
+  wxString exe_dir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
+  wxString cwd = wxGetCwd();
+
+  candidates.Add("icons/bucket.png");
+  candidates.Add("../icons/bucket.png");
+  candidates.Add("../../icons/bucket.png");
+  candidates.Add("Map Editor/icons/bucket.png");
+  candidates.Add("../Map Editor/icons/bucket.png");
+
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png");
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png");
+  candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png");
+
+  candidates.Add(cwd + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png");
+  candidates.Add(cwd + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png");
+  candidates.Add(cwd + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png");
+
+  for (const wxString& candidate : candidates) {
+    if (wxFileExists(candidate)) {
+      return candidate;
+    }
+  }
+
+  return wxString();
+}
+}
+
+void MapCanvas::OnKeyDown(wxKeyEvent& event) {
+  if (!GetParent()) {
+    event.Skip();
+    return;
+  }
+
+  if (event.ShiftDown() && (event.GetKeyCode() == 'Q' || event.GetKeyCode() == 'q')) {
+    tool_wheel_open = !tool_wheel_open;
+    tool_wheel_x = static_cast<float>(cursor_x);
+    tool_wheel_y = static_cast<float>(cursor_y);
+    Refresh();
+    return;
+  }
+
+  if (event.ControlDown()) {
+    if (event.GetKeyCode() == 'C' || event.GetKeyCode() == 'c') {
+      editor.copybuffer.copy(editor, floor);
+      return;
+    }
+    if (event.GetKeyCode() == 'V' || event.GetKeyCode() == 'v') {
+      if (editor.copybuffer.canPaste()) {
+        int mouse_map_x, mouse_map_y;
+        ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+        editor.copybuffer.paste(editor, Position(mouse_map_x, mouse_map_y, floor));
+        Refresh();
+      }
+      return;
+    }
+    if (event.GetKeyCode() == 'X' || event.GetKeyCode() == 'x') {
+      editor.copybuffer.cut(editor, floor);
+      Refresh();
+      return;
+    }
+  }
+
+  if (event.GetKeyCode() == WXK_DELETE || event.GetKeyCode() == WXK_NUMPAD_DELETE) {
+    editor.destroySelection();
+    Refresh();
+    return;
+  }
+
+  MapWindow* map_window = static_cast<MapWindow*>(GetParent());
+  constexpr int pan_step = 96;
+
+  switch (event.GetKeyCode()) {
+    case 'A':
+      map_window->ScrollRelative(-pan_step, 0);
+      Refresh();
+      return;
+    case 'D':
+      map_window->ScrollRelative(pan_step, 0);
+      Refresh();
+      return;
+    case 'W':
+      map_window->ScrollRelative(0, -pan_step);
+      Refresh();
+      return;
+    case 'S':
+      map_window->ScrollRelative(0, pan_step);
+      Refresh();
+      return;
+    default:
+      event.Skip();
+      return;
+  }
+}
+
+void MapCanvas::OnKeyUp(wxKeyEvent& event) {
+  event.Skip();
+}
 
 void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
+	SyncImGuiMouseState(event);
+
+  if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->isPointInside((float)cursor_x, (float)cursor_y)) {
+    ui_toolbar->onMouseDown((float)cursor_x, (float)cursor_y, 0);
+    Refresh();
+    return;
+  }
 
 	int mouse_map_x, mouse_map_y;
 	ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
@@ -155,9 +302,14 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	last_click_map_z = floor;
 
 	if (drawing) {
-		dragging_draw = true;
-		rectangle_mode = event.ShiftDown();
-		if (!rectangle_mode) {
+    dragging_draw = !g_gui.IsFillBrushMode();
+    rectangle_mode = event.ShiftDown() && !g_gui.IsFillBrushMode();
+    if (g_gui.IsFillBrushMode()) {
+      PositionVector tilestodraw;
+      PositionVector tilestoborder;
+      getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, true);
+      editor.draw(tilestodraw, tilestoborder, event.AltDown());
+    } else if (!rectangle_mode) {
 			PositionVector tilestodraw;
 			PositionVector tilestoborder;
 			getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, false);
@@ -165,38 +317,105 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 		}
 	} else {
 		Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
-		if (tile) {
-			if (editor.selection.getTiles().count(tile) == 0 && !event.ShiftDown() && !event.ControlDown()) {
-				editor.selection.clear();
-				editor.selection.start(Selection::INTERNAL);
-				Item* top_item = tile->getTopItem();
-				if (top_item) {
-					editor.selection.add(tile, top_item);
-				} else if (tile->ground) {
-					editor.selection.add(tile, tile->ground);
-				}
-				editor.selection.finish(Selection::INTERNAL);
-			} else if (event.ShiftDown() || event.ControlDown()) {
-				editor.selection.start(Selection::INTERNAL);
-				Item* top_item = tile->getTopItem();
-				if (top_item) {
-					editor.selection.add(tile, top_item);
-				} else if (tile->ground) {
-					editor.selection.add(tile, tile->ground);
-				}
-				editor.selection.finish(Selection::INTERNAL);
-			}
+		bool clicked_selected = (tile != nullptr && editor.selection.getTiles().count(tile) > 0);
+
+		if (clicked_selected) {
 			dragging_selection = true;
 			drag_start_map_x = mouse_map_x;
 			drag_start_map_y = mouse_map_y;
 		} else {
-			editor.selection.clear();
+			rubber_band_mode = true;
+			rubber_start_x = cursor_x;
+			rubber_start_y = cursor_y;
+			rubber_end_x = cursor_x;
+			rubber_end_y = cursor_y;
+
+			if (!event.ShiftDown() && !event.ControlDown()) {
+				editor.selection.clear();
+			}
 		}
 	}
 	CallAfter([this]() { Refresh(); });
 }
 
 void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
+	SyncImGuiMouseState(event);
+  if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->onMouseClick((float)event.GetX(), (float)event.GetY(), 0)) {
+    Refresh();
+    return;
+  }
+
+	if (rubber_band_mode) {
+		rubber_band_mode = false;
+		
+		int dist_x = std::abs(rubber_start_x - rubber_end_x);
+		int dist_y = std::abs(rubber_start_y - rubber_end_y);
+		
+		if (dist_x < 4 && dist_y < 4) {
+			// Single click selection
+			int mouse_map_x, mouse_map_y;
+			ScreenToMap(rubber_start_x, rubber_start_y, &mouse_map_x, &mouse_map_y);
+			Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+			if (tile) {
+				editor.selection.start(Selection::INTERNAL);
+				bool is_selected = editor.selection.getTiles().count(tile) > 0;
+				if (event.ControlDown() && is_selected) {
+					editor.selection.remove(tile);
+				} else if (!is_selected || event.ControlDown()) {
+					Item* top_item = tile->getTopItem();
+					if (top_item) {
+						editor.selection.add(tile, top_item);
+					} else if (tile->ground) {
+						editor.selection.add(tile, tile->ground);
+					} else {
+						editor.selection.add(tile);
+					}
+				}
+				editor.selection.finish(Selection::INTERNAL);
+			}
+		} else {
+			// Drag select
+			int start_map_x, start_map_y;
+			int end_map_x, end_map_y;
+			ScreenToMap(rubber_start_x, rubber_start_y, &start_map_x, &start_map_y);
+			ScreenToMap(rubber_end_x, rubber_end_y, &end_map_x, &end_map_y);
+			
+			int x1 = std::min(start_map_x, end_map_x);
+			int x2 = std::max(start_map_x, end_map_x);
+			int y1 = std::min(start_map_y, end_map_y);
+			int y2 = std::max(start_map_y, end_map_y);
+			
+			editor.selection.start(Selection::INTERNAL);
+			for (int y = y1; y <= y2; ++y) {
+				for (int x = x1; x <= x2; ++x) {
+					Tile* tile = editor.map.getTile(x, y, floor);
+					if (tile) {
+						bool is_selected = editor.selection.getTiles().count(tile) > 0;
+						if (event.ControlDown()) {
+							if (is_selected) {
+								editor.selection.remove(tile);
+							} else {
+								editor.selection.add(tile);
+							}
+						} else {
+							if (!is_selected) {
+								editor.selection.add(tile);
+							}
+						}
+					}
+				}
+			}
+			editor.selection.finish(Selection::INTERNAL);
+		}
+		dragging_draw = false;
+		rectangle_mode = false;
+		last_click_map_x = -1;
+		last_click_map_y = -1;
+		last_click_map_z = -1;
+		CallAfter([this]() { Refresh(); });
+		return;
+	}
+
 	if (drawing && dragging_draw && rectangle_mode) {
 		int cursor_x = event.GetX();
 		int cursor_y = event.GetY();
@@ -252,6 +471,11 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
+  SyncImGuiMouseState(event);
+
+  if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->isPointInside((float)cursor_x, (float)cursor_y)) {
+    return;
+  }
 
 	int mouse_map_x, mouse_map_y;
 	ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
@@ -273,6 +497,15 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 	last_click_map_x = mouse_map_x;
 	last_click_map_y = mouse_map_y;
 	last_click_map_z = floor;
+
+  if (drawing && g_gui.IsFillBrushMode() && g_gui.GetCurrentBrush() != nullptr) {
+    PositionVector tilestodraw;
+    PositionVector tilestoborder;
+    getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, true);
+    editor.undraw(tilestodraw, tilestoborder, event.AltDown());
+    CallAfter([this]() { Refresh(); });
+    return;
+  }
 
 	if (drawing) {
 		if (event.LeftIsDown()) {
@@ -320,6 +553,7 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 }
 
 void MapCanvas::OnMouseRightRelease(wxMouseEvent& event) {
+  SyncImGuiMouseState(event);
 	if (drawing && dragging_draw && rectangle_mode) {
 		int cursor_x = event.GetX();
 		int cursor_y = event.GetY();
@@ -357,6 +591,18 @@ void MapCanvas::OnMouseRightRelease(wxMouseEvent& event) {
 void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
+  SyncImGuiMouseState(event);
+
+	if (rubber_band_mode) {
+		rubber_end_x = cursor_x;
+		rubber_end_y = cursor_y;
+		Refresh();
+		return;
+	}
+
+	if (ui_toolbar && ui_toolbar->isVisible()) {
+		ui_toolbar->onHover((float)cursor_x, (float)cursor_y);
+	}
 
 	if (screendragging && event.MiddleIsDown()) {
 		int dx = cursor_x - drag_start_x;
@@ -423,9 +669,13 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 	Refresh();
 }
 
-MAPCANVAS_EVENT_STUB(OnMouseLeftDoubleClick, wxMouseEvent)
+void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event) {
+  SyncImGuiMouseState(event);
+  event.Skip();
+}
 
 void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
+  SyncImGuiMouseState(event);
 	if (!screendragging) {
 		screendragging = true;
 		drag_start_x = event.GetX();
@@ -435,20 +685,44 @@ void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
 }
 
 void MapCanvas::OnMouseCenterRelease(wxMouseEvent& event) {
+  SyncImGuiMouseState(event);
 	if (screendragging) {
 		screendragging = false;
 		SetCursor(wxNullCursor);
 	}
 }
 void MapCanvas::OnWheel(wxMouseEvent& event) {
+  if (ImGui::GetCurrentContext()) {
+    ImGuiIO& io = ImGui::GetIO();
+    io.MousePos = ImVec2((float)event.GetX(), (float)event.GetY());
+    io.MouseWheel = (float)event.GetWheelRotation() / (float)event.GetWheelDelta();
+  }
+
+  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    return;
+  }
+
   if (event.GetWheelRotation() > 0) {
     SetZoom(zoom * 0.9);
   } else if (event.GetWheelRotation() < 0) {
     SetZoom(zoom * 1.1);
   }
 }
-MAPCANVAS_EVENT_STUB(OnGainMouse, wxMouseEvent)
-MAPCANVAS_EVENT_STUB(OnLoseMouse, wxMouseEvent)
+void MapCanvas::OnGainMouse(wxMouseEvent& event) {
+  SyncImGuiMouseState(event);
+  SetFocus();
+}
+
+void MapCanvas::OnLoseMouse(wxMouseEvent& event) {
+  SyncImGuiMouseState(event);
+  if (ImGui::GetCurrentContext()) {
+    ImGuiIO& io = ImGui::GetIO();
+    io.MouseDown[0] = false;
+    io.MouseDown[1] = false;
+    io.MouseDown[2] = false;
+  }
+  event.Skip();
+}
 
 void MapCanvas::ChangeFloor(int new_floor) {
   floor = new_floor;
@@ -479,6 +753,7 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
       cursor_y(-1), dragging(false), boundbox_selection(false), dragging_selection(false), drag_start_map_x(-1), drag_start_map_y(-1),
       screendragging(false), drawing(false), dragging_draw(false),
       replace_dragging(false), rectangle_mode(false),
+      rubber_band_mode(false), rubber_start_x(-1), rubber_start_y(-1), rubber_end_x(-1), rubber_end_y(-1),
 
       screenshot_buffer(nullptr),
 
@@ -490,7 +765,10 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
       last_click_abs_x(-1), last_click_abs_y(-1), last_click_x(-1),
       last_click_y(-1),
 
-      last_mmb_click_x(-1), last_mmb_click_y(-1) {
+        last_mmb_click_x(-1), last_mmb_click_y(-1) {
+      tool_wheel_open = false;
+      tool_wheel_x = 0.0f;
+      tool_wheel_y = 0.0f;
   popup_menu = newd MapPopupMenu(editor);
   animation_timer = newd AnimationTimer(this);
   // NOTE: Do NOT start the animation timer here. The timer fires every 4ms
@@ -509,20 +787,57 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
   // Initialisierung der Toolbar mit gespeicherten Werten aus der Config
   int tx = g_settings.getInteger(Config::UI_TOOLBAR_X);
   int ty = g_settings.getInteger(Config::UI_TOOLBAR_Y);
+  const float ui_scale = std::max(1.0f, (float)GetContentScaleFactor());
   if (tx <= 0)
     tx = 10;
   if (ty <= 0)
     ty = 10;
   // ui_toolbar wird jetzt in der Member-Initialisierungsliste initialisiert
-  ui_toolbar =
-      std::make_unique<RME::UI::UIToolbar>((float)tx, (float)ty, 45, 300);
+  ui_toolbar = std::make_unique<RME::UI::UIToolbar>((float)tx, (float)ty,
+                                                    45.0f * ui_scale,
+                                                    300.0f * ui_scale,
+                                                    ui_scale);
   ui_toolbar->addButton("Selection", RME::UI::SVG::ICON_SELECT,
-                        [this]() { g_gui.SetSelectionMode(); });
+                        [this]() {
+                          g_gui.SetFillBrushMode(false);
+                          g_gui.SetSelectionMode();
+                        });
   ui_toolbar->addButton("Pencil", RME::UI::SVG::ICON_PENCIL,
-                        [this]() { g_gui.SetDrawingMode(); });
+                        [this]() {
+                          g_gui.SetFillBrushMode(false);
+                          g_gui.SetDrawingMode();
+                        });
+  wxString bucket_icon_path = ResolveBucketIconPath();
+  if (!bucket_icon_path.empty()) {
+    ui_toolbar->addButtonImage("Bucket", bucket_icon_path.ToStdString(), [this]() {
+      g_gui.SetDrawingMode();
+      g_gui.SetFillBrushMode(!g_gui.IsFillBrushMode());
+    });
+  } else {
+    ui_toolbar->addButton("Bucket", RME::UI::SVG::ICON_BUCKET, [this]() {
+      g_gui.SetDrawingMode();
+      g_gui.SetFillBrushMode(!g_gui.IsFillBrushMode());
+    });
+  }
   ui_toolbar->addButton("Eraser", RME::UI::SVG::ICON_ERASER,
-                        [this]() { g_gui.SelectBrush(g_gui.eraser); });
+                        [this]() {
+                          g_gui.SetFillBrushMode(false);
+                          g_gui.SelectBrush(g_gui.eraser);
+                        });
+  wxString border_icon_path = ResolveBorderIconPath();
+  if (!border_icon_path.empty()) {
+    ui_toolbar->addButtonImage("Border", border_icon_path.ToStdString(), [this]() {
+      g_gui.SetFillBrushMode(false);
+      g_gui.SelectBrush(g_gui.optional_brush);
+    });
+  } else {
+    ui_toolbar->addButton("Border", RME::UI::SVG::ICON_SELECT, [this]() {
+      g_gui.SetFillBrushMode(false);
+      g_gui.SelectBrush(g_gui.optional_brush);
+    });
+  }
   ui_toolbar->addButton("Waypoints", RME::UI::SVG::ICON_WAYPOINT, [this]() {
+    g_gui.SetFillBrushMode(false);
     g_gui.SelectPalettePage(TILESET_WAYPOINT);
   });
 
@@ -704,33 +1019,89 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     }
 
     GroundBrush *newBrush = brush->asGround();
-    Position position(mouse_map_x, mouse_map_y, floor);
-
-    Tile *tile = editor.map.getTile(position);
-    GroundBrush *oldBrush = nullptr;
-    if (tile) {
-      oldBrush = tile->getGroundBrush();
-    }
+    Position start(mouse_map_x, mouse_map_y, floor);
+    Tile *start_tile = editor.map.getTile(start);
+    GroundBrush *oldBrush = start_tile ? start_tile->getGroundBrush() : nullptr;
 
     if (oldBrush && oldBrush->getID() == newBrush->getID()) {
       return;
     }
 
-    if ((tile && tile->ground && !oldBrush) || (!tile && oldBrush)) {
-      return;
+    const int map_width = editor.map.getWidth();
+    const int map_height = editor.map.getHeight();
+    constexpr size_t max_fill_tiles = 250000;
+
+    auto encode = [](int x, int y, int z) -> uint64_t {
+      return (static_cast<uint64_t>(z) << 48) |
+             (static_cast<uint64_t>(x & 0xFFFFFF) << 24) |
+             static_cast<uint64_t>(y & 0xFFFFFF);
+    };
+
+    auto get_ground_id = [](Tile *tile) -> uint32_t {
+      GroundBrush *brush = tile ? tile->getGroundBrush() : nullptr;
+      return brush ? brush->getID() : 0;
+    };
+
+    const bool fill_empty = (oldBrush == nullptr);
+    const uint32_t source_ground_id = oldBrush ? oldBrush->getID() : 0;
+    std::queue<Position> queue;
+    std::unordered_set<uint64_t> visited;
+
+    queue.push(start);
+    while (!queue.empty() && tilestodraw->size() < max_fill_tiles) {
+      const Position current = queue.front();
+      queue.pop();
+
+      if (current.x <= 0 || current.y <= 0 || current.x >= map_width ||
+          current.y >= map_height) {
+        continue;
+      }
+
+      const uint64_t key = encode(current.x, current.y, current.z);
+      if (!visited.insert(key).second) {
+        continue;
+      }
+
+      Tile *tile = editor.map.getTile(current);
+      if (fill_empty) {
+        if (tile != nullptr) {
+          continue;
+        }
+      } else if (!tile || get_ground_id(tile) != source_ground_id) {
+        continue;
+      }
+
+      tilestodraw->push_back(current);
+
+      queue.push(Position(current.x - 1, current.y, current.z));
+      queue.push(Position(current.x + 1, current.y, current.z));
+      queue.push(Position(current.x, current.y - 1, current.z));
+      queue.push(Position(current.x, current.y + 1, current.z));
     }
 
-    if (tile && oldBrush) {
-      GroundBrush *groundBrush = tile->getGroundBrush();
-      if (!groundBrush || groundBrush->getID() != oldBrush->getID()) {
-        return;
+    if (tilestoborder && !tilestodraw->empty()) {
+      std::unordered_set<uint64_t> border_positions;
+      border_positions.reserve(tilestodraw->size() * 3);
+
+      for (const Position &pos : *tilestodraw) {
+        const Position neighbors[] = {
+            Position(pos.x, pos.y, pos.z), Position(pos.x - 1, pos.y, pos.z),
+            Position(pos.x + 1, pos.y, pos.z), Position(pos.x, pos.y - 1, pos.z),
+            Position(pos.x, pos.y + 1, pos.z)};
+
+        for (const Position &neighbor : neighbors) {
+          if (neighbor.x <= 0 || neighbor.y <= 0 || neighbor.x >= map_width ||
+              neighbor.y >= map_height) {
+            continue;
+          }
+
+          const uint64_t key = encode(neighbor.x, neighbor.y, neighbor.z);
+          if (border_positions.insert(key).second) {
+            tilestoborder->push_back(neighbor);
+          }
+        }
       }
     }
-
-    std::fill(std::begin(processed), std::end(processed), false);
-    MapCanvas::countMaxFills = 0;
-    floodFill(&editor.map, position, BLOCK_SIZE / 2, BLOCK_SIZE / 2, oldBrush,
-              tilestodraw);
 
   } else {
     for (int y = -g_gui.GetBrushSize() - 1; y <= g_gui.GetBrushSize() + 1;
@@ -903,6 +1274,8 @@ void MapCanvas::UpdateMinimapTexture() {
 
   minimap_start_x = start_x;
   minimap_start_y = start_y;
+  minimap_span_w = std::max(1, end_x - start_x);
+  minimap_span_h = std::max(1, end_y - start_y);
 
   static uint8_t tex_data[180 * 180 * 3];
   memset(tex_data, 0, sizeof(tex_data));

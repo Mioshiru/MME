@@ -119,6 +119,9 @@ public:
 	void setName(const std::string& n) {
 		name = n;
 	}
+	void setFilename(const std::string& f) {
+		filename = f;
+	}
 
 	// Get map data
 	int getWidth() const {

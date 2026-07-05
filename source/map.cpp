@@ -498,8 +498,8 @@ bool Map::hasFile() const {
 }
 
 void Map::setWidth(int new_width) {
-	if (new_width > 65000) {
-		width = 65000;
+	if (new_width > MAP_MAX_WIDTH) {
+		width = MAP_MAX_WIDTH;
 	} else if (new_width < 64) {
 		width = 64;
 	} else {
@@ -508,8 +508,8 @@ void Map::setWidth(int new_width) {
 }
 
 void Map::setHeight(int new_height) {
-	if (new_height > 65000) {
-		height = 65000;
+	if (new_height > MAP_MAX_HEIGHT) {
+		height = MAP_MAX_HEIGHT;
 	} else if (new_height < 64) {
 		height = 64;
 	} else {

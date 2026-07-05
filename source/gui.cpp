@@ -49,7 +49,7 @@ GUI::GUI()
       loaded_version(CLIENT_VERSION_NONE), mode(SELECTION_MODE), pasting(false),
       hotkeys_enabled(true), current_brush(nullptr), previous_brush(nullptr),
       brush_shape(BRUSHSHAPE_SQUARE), brush_size(0), brush_variation(0),
-      creature_spawntime(0), draw_locked_doors(false),
+      creature_spawntime(0), fill_brush_mode(false), draw_locked_doors(false),
       use_custom_thickness(false), custom_thickness_mod(0.0),
       progressBar(nullptr), disabled_counter(0) {
   doodad_buffer_map = newd BaseMap();
@@ -183,16 +183,18 @@ PaletteWindow *GUI::CreatePalette() {
   aui_manager->SetFlags(aui_manager->GetFlags() | wxAUI_MGR_TRANSPARENT_HINT |
                         wxAUI_MGR_LIVE_RESIZE | wxAUI_MGR_HINT_FADE);
 
+  std::string p_name = "Palette_" + std::to_string(palettes.size() + 1);
   auto *palette = newd PaletteWindow(root, g_materials.tilesets);
   aui_manager->AddPane(palette, wxAuiPaneInfo()
-                                    .Name("Palette")
+                                    .Name(wxstr(p_name))
                                     .Caption("Palette")
                                     .Left()
                                     .Layer(1)
-                                    .Position(1)
+                                    .Position(static_cast<int>(palettes.size() + 1))
                                     .CloseButton(true)
                                     .BestSize(230, 450)
-                                    .MinSize(wxSize(180, 200)));
+                                    .MinSize(wxSize(180, 200))
+                                    .Show(true));
 
   // NOTE: Collections Palette / Tileset panel intentionally removed.
   // Only the main Terrain Palette (left) is retained for a lean UI.
@@ -209,7 +211,8 @@ PaletteWindow *GUI::CreatePalette() {
                                                 .Position(1)
                                                 .CloseButton(true)
                                                 .BestSize(230, 250)
-                                                .MinSize(wxSize(180, 150)));
+                                                .MinSize(wxSize(180, 150))
+                                                .Hide());
     }
   }
 
@@ -457,7 +460,7 @@ void GUI::ShowWelcomeDialog(const wxBitmap &icon) {
   // Clear the sub-title version description text as requested by the user, and
   // use wider dialog size to fit sizer cleanly
   welcomeDialog =
-      newd WelcomeDialog("Mios Map Editor", "",
+      newd WelcomeDialog("Mio's Map Editor", "",
                          FROM_DIP(root, wxSize(680, 580)), icon, recent_files);
   welcomeDialog->Bind(wxEVT_CLOSE_WINDOW, &GUI::OnWelcomeDialogClosed, this);
   welcomeDialog->Bind(WELCOME_DIALOG_ACTION, &GUI::OnWelcomeDialogAction, this);
@@ -555,7 +558,7 @@ void GUI::OnWelcomeDialogAction(wxCommandEvent &event) {
       }
     }
 
-    NewMap();
+    NewMap(event.GetString());
   } else if (event.GetId() == wxID_OPEN) {
     LoadMap(FileName(event.GetString()));
   }
@@ -756,24 +759,24 @@ void GUI::SetTitle(wxString title) {
 #endif
 #ifdef __EXPERIMENTAL__
   if (title != "") {
-    g_gui.root->SetTitle(title << " - OTAcademy Map Editor BETA"
+    g_gui.root->SetTitle(title << " - Mio's Map Editor BETA"
                                << TITLE_APPEND);
   } else {
-    g_gui.root->SetTitle(wxString("OTAcademy Map Editor BETA") << TITLE_APPEND);
+    g_gui.root->SetTitle(wxString("Mio's Map Editor BETA") << TITLE_APPEND);
   }
 #elif __SNAPSHOT__
   if (title != "") {
-    g_gui.root->SetTitle(title << " - OTAcademy Map Editor - SNAPSHOT"
+    g_gui.root->SetTitle(title << " - Mio's Map Editor - SNAPSHOT"
                                << TITLE_APPEND);
   } else {
-    g_gui.root->SetTitle(wxString("OTAcademy Map Editor - SNAPSHOT")
+    g_gui.root->SetTitle(wxString("Mio's Map Editor - SNAPSHOT")
                          << TITLE_APPEND);
   }
 #else
   if (!title.empty()) {
-    g_gui.root->SetTitle(title << " - OTAcademy Map Editor" << TITLE_APPEND);
+    g_gui.root->SetTitle(title << " - Mio's Map Editor" << TITLE_APPEND);
   } else {
-    g_gui.root->SetTitle(wxString("OTAcademy Map Editor") << TITLE_APPEND);
+    g_gui.root->SetTitle(wxString("Mio's Map Editor") << TITLE_APPEND);
   }
 #endif
 }
@@ -815,6 +818,8 @@ void GUI::SetSelectionMode() {
     return;
   }
 
+  fill_brush_mode = false;
+
   if (current_brush && current_brush->isDoodad()) {
     secondary_map = nullptr;
   }
@@ -852,6 +857,23 @@ void GUI::SetDrawingMode() {
 
   tabbook->OnSwitchEditorMode(DRAWING_MODE);
   mode = DRAWING_MODE;
+}
+
+void GUI::SetFillBrushMode(bool enabled) {
+  if (fill_brush_mode == enabled) {
+    return;
+  }
+
+  fill_brush_mode = enabled;
+  if (fill_brush_mode) {
+    SetDrawingMode();
+  }
+
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->UpdateBrushButtons();
+  }
+
+  RefreshView();
 }
 
 void GUI::SetBrushSizeInternal(int nz) {

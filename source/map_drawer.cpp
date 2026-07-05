@@ -614,18 +614,23 @@ void MapDrawer::DrawIngameBox() {
   int box_start_x = center_x * TileSize - view_scroll_x;
   int box_start_y = (center_y + 2) * TileSize - view_scroll_y;
 
-  static wxColor side_color = wxColor(10, 15, 25);
   glDisable(GL_TEXTURE_2D);
-  drawFilledRect(0, 0, box_start_x, screensize_y * zoom, side_color);
   drawRect(box_start_x, box_start_y, ClientMapWidth * TileSize,
            ClientMapHeight * TileSize, *wxRED);
   glEnable(GL_TEXTURE_2D);
 }
 
 void MapDrawer::DrawGrid() {
+  int grid_opacity = g_settings.getInteger(Config::GRID_OPACITY);
+  if (grid_opacity < 10) {
+    grid_opacity = 10;
+  } else if (grid_opacity > 180) {
+    grid_opacity = 180;
+  }
+
   glDisable(GL_TEXTURE_2D);
   for (int y = start_y; y < end_y; ++y) {
-    glColor4ub(255, 255, 255, 128);
+    glColor4ub(53, 53, 53, static_cast<uint8_t>(grid_opacity));
     glBegin(GL_LINES);
     glVertex2f(start_x * TileSize - view_scroll_x,
                y * TileSize - view_scroll_y);
@@ -1194,8 +1199,8 @@ bool MapDrawer::addOverlayTooltips(
 }
 
 void MapDrawer::DrawBackground() {
-  // Force Parchment Background (#F5E6CA)
-  glClearColor(0.96078f, 0.90196f, 0.79215f, 1.0f);
+  // Pure black workspace so the map bounds are clearly visible.
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glLoadIdentity();

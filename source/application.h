@@ -101,6 +101,8 @@ public:
 	void UpdateFloorMenu();
 	void OnIdle(wxIdleEvent& event);
 	void OnExit(wxCloseEvent& event);
+	void OnAutoSaveTimer(wxTimerEvent& event);
+	void RestartAutoSaveTimer();
 
 #ifdef _USE_UPDATER_
 	void OnUpdateReceived(wxCommandEvent& event);
@@ -114,6 +116,7 @@ public:
 
 	MainMenuBar* menu_bar;
 	MainToolBar* tool_bar;
+	wxTimer autosave_timer;
 
 protected:
 	friend class Application;

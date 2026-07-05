@@ -65,8 +65,7 @@ protected:
 	wxSpinCtrl* height_spin;
 	wxSpinCtrl* width_spin;
 	wxTextCtrl* description_ctrl;
-	wxTextCtrl* house_filename_ctrl;
-	wxTextCtrl* spawn_filename_ctrl;
+	wxTextCtrl* world_name_ctrl;
 
 	DECLARE_EVENT_TABLE();
 };

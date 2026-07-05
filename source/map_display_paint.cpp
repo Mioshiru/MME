@@ -238,8 +238,19 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui::NewFrame();
 
-	// Bulletproof Dockspace definition
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(viewport->Pos);
+	ImGui::SetNextWindowSize(viewport->Size);
+	ImGui::SetNextWindowViewport(viewport->ID);
+	ImGuiWindowFlags dockspace_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
+		ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground;
+	ImGui::Begin("##MapDockSpaceHost", nullptr, dockspace_flags);
+	ImGuiID dockspace_id = ImGui::GetID("MapEditorDockSpace");
+	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+	ImGui::End();
+
+	// Bulletproof Dockspace definition
 	// Overlay for FPS
 	if (g_settings.getBoolean(Config::SHOW_FPS)) {
 		ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
@@ -333,26 +344,56 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		}
 	}
 
-	// In-Canvas Minimap HUD in the top-right corner
+	if (ui_toolbar && ui_toolbar->isVisible() && drawer->GetNanoVGContext()) {
+		nvgBeginFrame(drawer->GetNanoVGContext(), (float)w, (float)h, (float)GetContentScaleFactor());
+		ui_toolbar->render(drawer->GetNanoVGContext());
+		nvgEndFrame(drawer->GetNanoVGContext());
+	}
+
+	// Movable minimap window
 	if (g_settings.getBoolean(Config::MINIMAP_VISIBLE)) {
+		bool minimap_open = true;
+
 		UpdateMinimapTexture();
-		float canvas_width = io.DisplaySize.x;
-		ImGui::SetNextWindowPos(ImVec2(canvas_width - 200, 10), ImGuiCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(196, 196), ImGuiCond_Always);
-		ImGui::SetNextWindowBgAlpha(0.6f); // 40% transparent (60% opacity)
-		ImGuiWindowFlags minimap_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
-		ImGui::Begin("Minimap HUD", nullptr, minimap_flags);
-		if (minimap_tex_id != 0) {
+		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 320.0f, 20.0f), ImGuiCond_FirstUseEver, ImVec2(1.0f, 0.0f));
+		ImGui::SetNextWindowSizeConstraints(ImVec2(220.0f, 180.0f), ImVec2(640.0f, 520.0f));
+		ImGui::SetNextWindowSize(ImVec2(300.0f, 260.0f), ImGuiCond_FirstUseEver);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 5.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 0.98f));
+		ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(20.0f / 255.0f, 50.0f / 255.0f, 130.0f / 255.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(60.0f / 255.0f, 120.0f / 255.0f, 220.0f / 255.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImVec4(20.0f / 255.0f, 50.0f / 255.0f, 130.0f / 255.0f, 0.92f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.95f, 0.95f, 1.0f));
+		ImGuiWindowFlags minimap_flags = 0;
+		const bool minimap_visible = ImGui::Begin("Minimap", &minimap_open, minimap_flags);
+		if (!minimap_open) {
+			g_settings.setInteger(Config::MINIMAP_VISIBLE, 0);
+		}
+
+		if (minimap_visible && minimap_tex_id != 0) {
+			ImVec2 avail = ImGui::GetContentRegionAvail();
+			if (avail.x < 1.0f || avail.y < 1.0f) {
+				avail = ImVec2(240.0f, 240.0f);
+			}
+
 			ImVec2 pos = ImGui::GetCursorScreenPos();
-			ImGui::Image((void*)(intptr_t)minimap_tex_id, ImVec2(180, 180));
+			ImGui::Image((void*)(intptr_t)minimap_tex_id, avail);
 
 			if (ImGui::IsItemHovered()) {
-				if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+				if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 					ImVec2 mouse_pos = ImGui::GetMousePos();
-					float rel_x = (mouse_pos.x - pos.x) / 180.0f;
-					float rel_y = (mouse_pos.y - pos.y) / 180.0f;
-					int click_map_x = minimap_start_x + (int)(rel_x * 180.0f);
-					int click_map_y = minimap_start_y + (int)(rel_y * 180.0f);
+					float rel_x = (mouse_pos.x - pos.x) / avail.x;
+					float rel_y = (mouse_pos.y - pos.y) / avail.y;
+					rel_x = std::clamp(rel_x, 0.0f, 1.0f);
+					rel_y = std::clamp(rel_y, 0.0f, 1.0f);
+					int click_map_x = minimap_start_x + (int)(rel_x * (float)std::max(1, minimap_span_w - 1));
+					int click_map_y = minimap_start_y + (int)(rel_y * (float)std::max(1, minimap_span_h - 1));
 					g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, floor));
 					last_minimap_update_time = 0; // immediate update
 					Refresh();
@@ -372,15 +413,17 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				int view_end_x = view_start_x + screensize_x / tile_size + 1;
 				int view_end_y = view_start_y + screensize_y / tile_size + 1;
 
-				float p_start_x = pos.x + (view_start_x - minimap_start_x);
-				float p_start_y = pos.y + (view_start_y - minimap_start_y);
-				float p_end_x = pos.x + (view_end_x - minimap_start_x);
-				float p_end_y = pos.y + (view_end_y - minimap_start_y);
+				const float sx = avail.x / (float)std::max(1, minimap_span_w);
+				const float sy = avail.y / (float)std::max(1, minimap_span_h);
+				float p_start_x = pos.x + (view_start_x - minimap_start_x) * sx;
+				float p_start_y = pos.y + (view_start_y - minimap_start_y) * sy;
+				float p_end_x = pos.x + (view_end_x - minimap_start_x) * sx;
+				float p_end_y = pos.y + (view_end_y - minimap_start_y) * sy;
 
 				p_start_x = std::max(p_start_x, pos.x);
 				p_start_y = std::max(p_start_y, pos.y);
-				p_end_x = std::min(p_end_x, pos.x + 180.0f);
-				p_end_y = std::min(p_end_y, pos.y + 180.0f);
+				p_end_x = std::min(p_end_x, pos.x + avail.x);
+				p_end_y = std::min(p_end_y, pos.y + avail.y);
 
 				if (p_start_x < p_end_x && p_start_y < p_end_y) {
 					ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -389,6 +432,105 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			}
 		}
 		ImGui::End();
+		ImGui::PopStyleColor(6);
+		ImGui::PopStyleVar(6);
+	}
+
+	if (tool_wheel_open) {
+		ImGui::SetNextWindowPos(ImVec2(tool_wheel_x, tool_wheel_y), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(420.0f, 255.0f), ImGuiCond_Appearing);
+		ImGuiWindowFlags wheel_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoFocusOnAppearing;
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 5.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 0.98f));
+		ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(20.0f / 255.0f, 50.0f / 255.0f, 130.0f / 255.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(60.0f / 255.0f, 120.0f / 255.0f, 220.0f / 255.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(20.0f / 255.0f, 50.0f / 255.0f, 130.0f / 255.0f, 0.90f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(60.0f / 255.0f, 120.0f / 255.0f, 220.0f / 255.0f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 1.0f));
+		if (ImGui::Begin("Tool Wheel", &tool_wheel_open, wheel_flags)) {
+			ImGui::TextUnformatted("Quick Tools");
+			ImGui::Separator();
+			const float spacing = 8.0f;
+			const float content_w = ImGui::GetContentRegionAvail().x;
+			const float btn_w = (content_w - spacing) * 0.5f;
+			const ImVec2 btn_size(btn_w, 30.0f);
+			auto close_after = [&]() {
+				tool_wheel_open = false;
+				Refresh();
+			};
+			if (ImGui::Button("Selection", btn_size)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SetSelectionMode();
+				close_after();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Pencil", btn_size)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SetDrawingMode();
+				close_after();
+			}
+			if (ImGui::Button("Bucket", btn_size)) {
+				g_gui.SetDrawingMode();
+				g_gui.SetFillBrushMode(true);
+				close_after();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Protection Zone", btn_size)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SelectBrush(g_gui.pz_brush);
+				close_after();
+			}
+			if (ImGui::Button("Normal Door", btn_size)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SelectBrush(g_gui.normal_door_brush);
+				close_after();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Locked Door", btn_size)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SelectBrush(g_gui.locked_door_brush);
+				close_after();
+			}
+			if (ImGui::Button("Magic Door", btn_size)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SelectBrush(g_gui.magic_door_brush);
+				close_after();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Hatch Window", btn_size)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SelectBrush(g_gui.hatch_door_brush);
+				close_after();
+			}
+			if (ImGui::Button("Eraser", btn_size)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SelectBrush(g_gui.eraser);
+				close_after();
+			}
+			if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+				tool_wheel_open = false;
+			}
+		}
+		ImGui::End();
+		ImGui::PopStyleColor(7);
+		ImGui::PopStyleVar(7);
+	}
+	if (rubber_band_mode) {
+		ImGuiViewport* vp = ImGui::GetMainViewport();
+		ImVec2 p_min = ImVec2(vp->Pos.x + std::min(rubber_start_x, rubber_end_x), vp->Pos.y + std::min(rubber_start_y, rubber_end_y));
+		ImVec2 p_max = ImVec2(vp->Pos.x + std::max(rubber_start_x, rubber_end_x), vp->Pos.y + std::max(rubber_start_y, rubber_end_y));
+		
+		ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+		draw_list->AddRectFilled(p_min, p_max, IM_COL32(255, 215, 0, 45));
+		draw_list->AddRect(p_min, p_max, IM_COL32(255, 215, 0, 220), 0.0f, 0, 1.5f);
 	}
 
 	ImGui::Render();

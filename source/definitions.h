@@ -120,8 +120,8 @@
 // The height of the map (there should be more checks for this...)
 #define MAP_LAYERS 16
 
-#define MAP_MAX_WIDTH 65000
-#define MAP_MAX_HEIGHT 65000
+#define MAP_MAX_WIDTH 65535
+#define MAP_MAX_HEIGHT 65535
 #define MAP_MAX_LAYER 15
 
 // The size of the tile in pixels

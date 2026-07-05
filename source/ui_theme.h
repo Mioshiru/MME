@@ -7,11 +7,11 @@ namespace RME::UI::Theme {
     enum class Type { Dark, Light };
 
     // Aktuelle Farben (werden beim Umschalten aktualisiert)
-    inline NVGcolor Background;
-    inline NVGcolor Panel;
-    inline NVGcolor Accent;
-    inline NVGcolor Text;
-    inline NVGcolor Button;
+    inline NVGcolor Background = nvgRGBA(30, 30, 30, 255);
+    inline NVGcolor Panel = nvgRGBA(45, 45, 48, 255);
+    inline NVGcolor Accent = nvgRGBA(0, 120, 215, 255);
+    inline NVGcolor Text = nvgRGBA(240, 240, 240, 255);
+    inline NVGcolor Button = nvgRGBA(60, 60, 60, 255);
 
     static constexpr float CornerRadius = 3.0f; // 2-3px Eckenradius
     static const char* MainFont = "sans";

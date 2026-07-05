@@ -175,15 +175,8 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 	game_panel(nullptr) {
 	wxString about;
 
-	about << "OTAcademy Map Editor (Mioshiro Fork)\n";
-	about << "Fork-Editor: Mioshiro\n\n";
-	about << "Major Fork Improvements:\n";
-	about << "- Canvas Lag Optimization (Texture & Leaf Caching)\n";
-	about << "- Selection-based Prefab Creator Brush & Exporter\n";
-	about << "- Integrated Tileset Search Filter in Palette Panel\n";
-	about << "- Rearrangeable & Draggable Toolbars\n\n";
-	about << "Brought to you by OTAcademy & Mioshiro\n\n";
-
+	about << "Mio's Map Editor\n";
+	about << "Maintainer: Mioshiru\n\n";
 	about << "Version " << __W_RME_VERSION__ << " for ";
 	about <<
 #ifdef __WINDOWS__
@@ -196,6 +189,17 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 		"other OS";
 #endif
 	about << "\n\n";
+
+	about << "Improvements:\n";
+	about << "- Modern canvas toolbar with Pencil/Bucket/Eraser/Border flow\n";
+	about << "- Shift+Q quick tool wheel for fast brush switching\n";
+	about << "- Clickable minimap with live viewport feedback\n";
+	about << "- WASD viewport panning inside canvas\n";
+	about << "- Dark UI refinements and toolbar usability pass\n\n";
+	about << "Controls:\n";
+	about << "- WASD: Move view\n";
+	about << "- Shift+Q: Tool Wheel\n";
+	about << "- Minimap click: Jump to position\n\n";
 
 	about << "Using " << wxVERSION_STRING << " interface\n";
 	about << "OpenGL version " << wxString((char*)glGetString(GL_VERSION), wxConvUTF8) << "\n";
@@ -219,16 +223,28 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 
 	Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
 		wxMessageBox(
-			"Map Editor Quick Help:\n\n"
-			"1. Collections / Prefabs:\n"
-			"   To create a prefab, select an area on the map, copy it (Ctrl+C), then use\n"
-			"   'File -> Save Selection As...' and save it in your 'data/collections' folder.\n"
-			"   After restarting the editor, it will appear in the Collections Palette as a brush.\n\n"
-			"2. Little Rectangles on Tiles:\n"
-			"   - Red/Yellow/Blue: Action ID or Unique ID\n"
-			"   - Black/Colored: Light source\n"
-			"   - Green/Red on Map/Minimap: Spawn or Waypoint",
-			"Quick Help",
+			"Mio's Map Editor - Controls\n\n"
+			"General:\n"
+			"- WASD: Move map view inside canvas\n"
+			"- Middle Mouse Drag: Move map view\n"
+			"- Mouse Wheel: Zoom\n"
+			"- Shift + Q: Open quick Tool Wheel near mouse\n"
+			"- ESC: Close Tool Wheel or dialogs\n\n"
+			"Tool Wheel:\n"
+			"- Pencil\n"
+			"- Bucket\n"
+			"- Protection Zone\n"
+			"- Normal Door / Locked Door / Magic Door\n"
+			"- Hatch Window\n"
+			"- Eraser\n\n"
+			"Minimap:\n"
+			"- Left Click: Jump canvas to clicked minimap coordinate\n"
+			"- Dockable to corners only (Top-Left, Top-Right, Bottom-Left, Bottom-Right)\n"
+			"- Window resize is clamped to min/max limits\n\n"
+			"Project:\n"
+			"- Name: Mio's Map Editor\n"
+			"- Repository: https://github.com/Mioshiru/MME",
+			"Controls",
 			wxOK | wxICON_INFORMATION,
 			this
 		);
