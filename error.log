@@ -1,0 +1,183 @@
+[2026-07-05 22:46:30] === AUI Panes Diagnostics ===
+[2026-07-05 22:46:30] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
+[2026-07-05 22:46:30] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
+[2026-07-05 22:46:30] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 56, 27), row=0, col=628
+[2026-07-05 22:46:30] =============================
+[2026-07-05 22:46:30] === AUI Panes Diagnostics ===
+[2026-07-05 22:46:30] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
+[2026-07-05 22:46:30] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
+[2026-07-05 22:46:30] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 110, 27), row=0, col=628
+[2026-07-05 22:46:30] Pane: name='55dcaf006a4ac2a60000003800000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 27, 1535, 841), row=0, col=0
+[2026-07-05 22:46:30] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-07-05 22:46:30] =============================
+[2026-07-05 22:46:32] === AUI Panes Diagnostics ===
+[2026-07-05 22:46:32] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 395, 27), row=0, col=0
+[2026-07-05 22:46:32] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(395, 0, 233, 27), row=0, col=395
+[2026-07-05 22:46:32] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(628, 0, 110, 27), row=0, col=628
+[2026-07-05 22:46:32] Pane: name='55dcaf006a4ac2a60000003800000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(230, 27, 1305, 841), row=0, col=0
+[2026-07-05 22:46:32] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-07-05 22:46:32] Pane: name='443939106a2ea9170000581a00000007', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 44, 225, 824), row=0, col=0
+[2026-07-05 22:46:32] Pane: name='Tools', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=3
+[2026-07-05 22:46:32] Pane: name='Brush Size', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=4
+[2026-07-05 22:46:32] =============================
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(919, 283), map=(1032, 1020), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1008, 1024), vertices=36
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1008, 1028), vertices=12
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1020), vertices=56
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1024), vertices=84
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1028), vertices=76
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1016), vertices=24
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1020), vertices=88
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1024), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1028), vertices=84
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1032), vertices=4
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1016), vertices=48
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1020), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1024), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1028), vertices=80
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1032), vertices=16
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1016), vertices=44
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1020), vertices=72
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1024), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1028), vertices=80
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1032), vertices=16
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1016), vertices=12
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1020), vertices=84
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1024), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1028), vertices=88
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1032), vertices=8
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1020), vertices=72
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1024), vertices=92
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1028), vertices=48
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1036, 1020), vertices=4
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1036, 1024), vertices=16
+[2026-07-05 22:46:32] DrawBrush run: mouse_map=(1032, 1020), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1008, 1024), vertices=36
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1008, 1028), vertices=12
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1020), vertices=56
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1024), vertices=84
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1012, 1028), vertices=76
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1016), vertices=24
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1020), vertices=88
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1024), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1028), vertices=84
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1016, 1032), vertices=4
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1016), vertices=48
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1020), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1024), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1028), vertices=80
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1020, 1032), vertices=16
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1016), vertices=44
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1020), vertices=72
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1024), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1028), vertices=80
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1024, 1032), vertices=16
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1016), vertices=12
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1020), vertices=84
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1024), vertices=64
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1028), vertices=88
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1028, 1032), vertices=8
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1020), vertices=72
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1024), vertices=92
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1032, 1028), vertices=48
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1036, 1020), vertices=4
+[2026-07-05 22:46:32] VBO Rebuild: floor=7, leaf=(1036, 1024), vertices=16
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(892, 278), map=(1031, 1020), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(850, 270), map=(1030, 1020), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(840, 267), map=(1030, 1019), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(833, 266), map=(1029, 1019), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(784, 253), map=(1028, 1019), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(762, 245), map=(1027, 1019), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(724, 234), map=(1026, 1018), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(701, 227), map=(1025, 1018), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(644, 209), map=(1024, 1018), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(619, 199), map=(1023, 1017), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(591, 190), map=(1022, 1017), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(563, 178), map=(1021, 1017), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(537, 167), map=(1020, 1016), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(485, 145), map=(1019, 1016), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(456, 133), map=(1018, 1015), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(426, 121), map=(1017, 1015), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(395, 107), map=(1016, 1014), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(364, 95), map=(1015, 1014), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(309, 75), map=(1013, 1013), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(281, 63), map=(1012, 1013), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(253, 52), map=(1011, 1013), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(227, 41), map=(1011, 1012), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(205, 32), map=(1010, 1012), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(181, 21), map=(1009, 1012), floor=7, dragging_draw=0
+[2026-07-05 22:46:32] OnMouseMove (drawing): screen=(161, 10), map=(1008, 1011), floor=7, dragging_draw=0
+[2026-07-05 22:46:33] DrawBrush run: mouse_map=(1008, 1011), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-05 22:46:34] DrawBrush run: mouse_map=(1008, 1011), TileSize=32, view_scroll=(32126, 32371), brush_name=cave, lookid=351, has_preview=1, dragging_draw=0
+[2026-07-05 22:46:35] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:35] OnMouseLeftClick: screen=(140, 142), map=(1008, 1016), floor=7, drawing=0, current_brush=cave
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1008, 1024), vertices=36
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1008, 1028), vertices=12
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1012, 1020), vertices=56
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1012, 1024), vertices=84
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1012, 1028), vertices=76
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1016), vertices=24
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1020), vertices=88
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1024), vertices=64
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1028), vertices=84
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1016, 1032), vertices=4
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1016), vertices=48
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1020), vertices=64
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1024), vertices=64
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1028), vertices=80
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1020, 1032), vertices=16
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1016), vertices=44
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1020), vertices=72
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1024), vertices=64
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1028), vertices=80
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1024, 1032), vertices=16
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1016), vertices=12
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1020), vertices=84
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1024), vertices=64
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1028), vertices=88
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1028, 1032), vertices=8
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1032, 1020), vertices=72
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1032, 1024), vertices=92
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1032, 1028), vertices=48
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1036, 1020), vertices=4
+[2026-07-05 22:46:36] VBO Rebuild: floor=7, leaf=(1036, 1024), vertices=16
+[2026-07-05 22:46:36] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:37] OnMouseLeftClick: screen=(1195, 669), map=(1041, 1032), floor=7, drawing=0, current_brush=cave
+[2026-07-05 22:46:37] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:38] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:39] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:40] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:41] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:42] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:43] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:44] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:45] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:46] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:47] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:48] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:49] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:50] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:51] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:52] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:53] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:54] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:55] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:56] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:58] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:46:59] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:00] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:01] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:02] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:03] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:04] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:05] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:06] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:07] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:08] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:09] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:10] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:11] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:12] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:13] DrawBrush skip: IsDrawingMode=0, CurrentBrush=000001CB57F6C6B0, options.ingame=0
+[2026-07-05 22:47:13] FATAL ERROR: Structured Exception (e.g. Access Violation/Crash) occurred in the application!
+Active actions stack (last first):

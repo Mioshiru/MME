@@ -34,7 +34,7 @@ wxBitmap LoadBitmapFromFileCandidates(const wxSize& icon_size, const std::vector
 			continue;
 		}
 		wxImage image;
-		if (image.LoadFile(candidate, wxBITMAP_TYPE_PNG)) {
+		if (image.LoadFile(candidate, wxBITMAP_TYPE_ANY)) {
 			if (icon_size.IsFullySpecified() && icon_size.GetWidth() > 0 && icon_size.GetHeight() > 0) {
 				image = image.Scale(icon_size.GetWidth(), icon_size.GetHeight(), wxIMAGE_QUALITY_HIGH);
 			}
@@ -71,6 +71,14 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	wxSize icon_size = FROM_DIP(parent, wxSize(16, 16));
 
 	wxBitmap* border_bitmap = loadPNGFileSized(optional_border_small_png, icon_size);
+	wxBitmap pointer_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/pointer.png",
+		"../icons/pointer.png",
+		"Map Editor/icons/pointer.png",
+		"../Map Editor/icons/pointer.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pointer.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pointer.png"
+	});
 	wxBitmap bucket_bitmap = LoadBitmapFromFileCandidates(icon_size, {
 		"icons/bucket.png",
 		"../icons/bucket.png",
@@ -95,6 +103,9 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 
 	brushes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_BRUSHES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	brushes_toolbar->SetToolBitmapSize(icon_size);
+	if (pointer_bitmap.IsOk()) {
+		brushes_toolbar->AddTool(PALETTE_TERRAIN_SELECTION_TOOL, wxEmptyString, pointer_bitmap, wxNullBitmap, wxITEM_CHECK, "Selection Tool", wxEmptyString, NULL);
+	}
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, wxEmptyString, *border_bitmap, wxNullBitmap, wxITEM_CHECK, "Border", wxEmptyString, NULL);
 	if (bucket_bitmap.IsOk()) {
 		brushes_toolbar->AddTool(PALETTE_TERRAIN_BUCKET_TOOL, wxEmptyString, bucket_bitmap, wxNullBitmap, wxITEM_CHECK, "Bucket Fill", wxEmptyString, NULL);
@@ -182,6 +193,7 @@ void MainToolBar::UpdateButtons() {
 	bool has_map = editor != nullptr;
 	bool is_host = has_map && !editor->IsLiveClient();
 
+	brushes_toolbar->EnableTool(PALETTE_TERRAIN_SELECTION_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_BUCKET_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_ERASER, has_map);
@@ -218,7 +230,10 @@ void MainToolBar::UpdateButtons() {
 void MainToolBar::UpdateBrushButtons() {
 	Brush* brush = g_gui.GetCurrentBrush();
 	const bool fill_mode = g_gui.IsFillBrushMode();
-	if (brush) {
+	const bool selection_mode = g_gui.IsSelectionMode();
+
+	if (brush && !selection_mode) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_SELECTION_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, false);
@@ -249,6 +264,7 @@ void MainToolBar::UpdateBrushButtons() {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, brush == g_gui.hatch_door_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, brush == g_gui.window_door_brush);
 	} else {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_SELECTION_TOOL, selection_mode);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, false);
@@ -361,6 +377,10 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 	}
 
 	switch (event.GetId()) {
+		case PALETTE_TERRAIN_SELECTION_TOOL:
+			g_gui.SetFillBrushMode(false);
+			g_gui.SetSelectionMode();
+			break;
 		case PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL:
 			g_gui.SelectBrush(g_gui.optional_brush);
 			break;

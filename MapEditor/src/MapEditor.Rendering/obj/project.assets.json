@@ -635,11 +635,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\weber\\Documents\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\MapEditor.Rendering.csproj",
+      "projectUniqueName": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\MapEditor.Rendering.csproj",
       "projectName": "MapEditor.Rendering",
-      "projectPath": "C:\\Users\\weber\\Documents\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\MapEditor.Rendering.csproj",
+      "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\MapEditor.Rendering.csproj",
       "packagesPath": "C:\\Users\\weber\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\weber\\Documents\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\obj\\",
+      "outputPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Rendering\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\weber\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -654,11 +654,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\weber\\Documents\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj": {
-              "projectPath": "C:\\Users\\weber\\Documents\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj"
+            "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj": {
+              "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Assets\\MapEditor.Assets.csproj"
             },
-            "C:\\Users\\weber\\Documents\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj": {
-              "projectPath": "C:\\Users\\weber\\Documents\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj"
+            "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj": {
+              "projectPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\MapEditor\\src\\MapEditor.Core\\MapEditor.Core.csproj"
             }
           }
         }
@@ -703,7 +703,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Users\\weber\\Documents\\In Arbeit\\Map Editor\\tools\\.dotnet\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\tools\\.dotnet\\sdk\\8.0.422/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

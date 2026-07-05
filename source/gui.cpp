@@ -826,6 +826,10 @@ void GUI::SetSelectionMode() {
 
   tabbook->OnSwitchEditorMode(SELECTION_MODE);
   mode = SELECTION_MODE;
+
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->UpdateBrushButtons();
+  }
 }
 
 void GUI::SetDrawingMode() {
@@ -857,6 +861,10 @@ void GUI::SetDrawingMode() {
 
   tabbook->OnSwitchEditorMode(DRAWING_MODE);
   mode = DRAWING_MODE;
+
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->UpdateBrushButtons();
+  }
 }
 
 void GUI::SetFillBrushMode(bool enabled) {
