@@ -269,7 +269,8 @@ public:
 		float zoom = canvas->minimap_zoom;
 		if (event.GetWheelRotation() > 0) zoom /= 1.2f;
 		else zoom *= 1.2f;
-		canvas->minimap_zoom = std::clamp(zoom, 0.25f, 4.0f);
+		float max_zoom = std::max(4.0f, (float)std::max(canvas->editor.map.getWidth(), canvas->editor.map.getHeight()) / 180.0f);
+		canvas->minimap_zoom = std::clamp(zoom, 0.25f, max_zoom);
 		canvas->minimap_span_w = (int)(180.0f * canvas->minimap_zoom);
 		canvas->minimap_span_h = (int)(180.0f * canvas->minimap_zoom);
 		canvas->last_minimap_update_time = 0;

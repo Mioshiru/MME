@@ -86,29 +86,17 @@ void MapWindow::SetSize(int x, int y, bool center) {
   if (x == 0 || y == 0) {
     return;
   }
-
-  int windowSizeX;
-  int windowSizeY;
-
-  canvas->GetSize(&windowSizeX, &windowSizeY);
-
-  hScroll->SetScrollbar(center ? (x - windowSizeX) / 2
-                               : hScroll->GetThumbPosition(),
-                        windowSizeX / x, x, windowSizeX / x);
-  vScroll->SetScrollbar(center ? (y - windowSizeY) / 2
-                               : vScroll->GetThumbPosition(),
-                        windowSizeY / y, y, windowSizeX / y);
-  // wxPanel::SetSize(x, y);
+  int cur_x = hScroll->GetThumbPosition();
+  int cur_y = vScroll->GetThumbPosition();
+  if (center) {
+    cur_x = x / 2;
+    cur_y = y / 2;
+  }
+  Scroll(cur_x, cur_y, center);
 }
 
-void MapWindow::UpdateScrollbars(int nx, int ny) {
-  // nx and ny are size of this window
-  hScroll->SetScrollbar(hScroll->GetThumbPosition(),
-                        nx / max(1, hScroll->GetRange()),
-                        max(1, hScroll->GetRange()), 96);
-  vScroll->SetScrollbar(vScroll->GetThumbPosition(),
-                        ny / max(1, vScroll->GetRange()),
-                        max(1, vScroll->GetRange()), 96);
+void MapWindow::UpdateScrollbars(int /*nx*/, int /*ny*/) {
+  Scroll(hScroll->GetThumbPosition(), vScroll->GetThumbPosition(), false);
 }
 
 void MapWindow::UpdateDialogs(bool show) {
@@ -168,16 +156,26 @@ void MapWindow::GoToPreviousCenterPosition() {
 }
 
 void MapWindow::Scroll(int x, int y, bool center) {
-  if (center) {
-    int windowSizeX, windowSizeY;
+  int windowSizeX, windowSizeY;
+  canvas->GetSize(&windowSizeX, &windowSizeY);
 
-    canvas->GetSize(&windowSizeX, &windowSizeY);
-    x -= int((windowSizeX * g_gui.GetCurrentZoom()) / 2.0);
-    y -= int((windowSizeY * g_gui.GetCurrentZoom()) / 2.0);
+  double zoom = canvas->GetZoom();
+  int thumb_x = std::max(1, int(windowSizeX * zoom));
+  int thumb_y = std::max(1, int(windowSizeY * zoom));
+
+  int map_w_pixels = editor.map.getWidth() * TileSize;
+  int map_h_pixels = editor.map.getHeight() * TileSize;
+
+  if (center) {
+    x -= int((windowSizeX * zoom) / 2.0);
+    y -= int((windowSizeY * zoom) / 2.0);
   }
 
-  hScroll->SetThumbPosition(x);
-  vScroll->SetThumbPosition(y);
+  x = std::max(0, std::min(x, map_w_pixels - thumb_x));
+  y = std::max(0, std::min(y, map_h_pixels - thumb_y));
+
+  hScroll->SetScrollbar(x, thumb_x, map_w_pixels, thumb_x);
+  vScroll->SetScrollbar(y, thumb_y, map_h_pixels, thumb_y);
 }
 
 void MapWindow::ScrollRelative(int x, int y) {

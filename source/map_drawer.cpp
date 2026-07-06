@@ -754,6 +754,7 @@ void MapDrawer::glColorCheck(Brush *brush, const Position &pos) {
 
 void MapDrawer::drawRect(int x, int y, int w, int h, const wxColor &color,
                          int width) {
+  glDisable(GL_TEXTURE_2D);
   glLineWidth(width);
   glColor4ub(color.Red(), color.Green(), color.Blue(), color.Alpha());
   glBegin(GL_LINE_STRIP);
@@ -763,6 +764,7 @@ void MapDrawer::drawRect(int x, int y, int w, int h, const wxColor &color,
   glVertex2f(x, y + h);
   glVertex2f(x, y);
   glEnd();
+  glEnable(GL_TEXTURE_2D);
 }
 
 void MapDrawer::drawFilledRect(int x, int y, int w, int h,

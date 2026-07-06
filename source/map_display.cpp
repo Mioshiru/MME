@@ -713,6 +713,7 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 				drag_start_y = cursor_y;
 			}
 		}
+		return;
 	}
 
 	int mouse_map_x, mouse_map_y;
@@ -976,8 +977,8 @@ void MapCanvas::SetZoom(double value) {
     value = 0.5;
   }
 
-  if (value > 5.0) {
-    value = 5.0;
+  if (value > 7.5) {
+    value = 7.5;
   }
 
   if (zoom != value) {
@@ -1124,6 +1125,9 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
                                PositionVector *tilestodraw,
                                PositionVector *tilestoborder,
                                bool fill /*= false*/) {
+  const int map_width = editor.map.getWidth();
+  const int map_height = editor.map.getHeight();
+
   if (fill) {
     Brush *brush = g_gui.GetCurrentBrush();
     if (!brush || !brush->isGround()) {
@@ -1132,6 +1136,10 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
 
     GroundBrush *newBrush = brush->asGround();
     Position start(mouse_map_x, mouse_map_y, floor);
+    if (start.x <= 0 || start.y <= 0 || start.x >= map_width || start.y >= map_height) {
+      return;
+    }
+
     Tile *start_tile = editor.map.getTile(start);
     GroundBrush *oldBrush = start_tile ? start_tile->getGroundBrush() : nullptr;
 
@@ -1139,9 +1147,15 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
       return;
     }
 
-    const int map_width = editor.map.getWidth();
-    const int map_height = editor.map.getHeight();
-    constexpr size_t max_fill_tiles = 250000;
+    int scroll_x = 0, scroll_y = 0;
+    int client_w = 0, client_h = 0;
+    GetViewBox(&scroll_x, &scroll_y, &client_w, &client_h);
+    int min_x = std::max(1, scroll_x / TileSize);
+    int min_y = std::max(1, scroll_y / TileSize);
+    int max_x = std::min(map_width - 1, int((scroll_x + client_w * zoom) / TileSize) + 1);
+    int max_y = std::min(map_height - 1, int((scroll_y + client_h * zoom) / TileSize) + 1);
+
+    size_t max_fill_tiles = (max_x - min_x + 1) * (max_y - min_y + 1);
 
     auto encode = [](int x, int y, int z) -> uint64_t {
       return (static_cast<uint64_t>(z) << 48) |
@@ -1164,8 +1178,8 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
       const Position current = queue.front();
       queue.pop();
 
-      if (current.x <= 0 || current.y <= 0 || current.x >= map_width ||
-          current.y >= map_height) {
+      if (current.x < min_x || current.y < min_y || current.x > max_x ||
+          current.y > max_y) {
         continue;
       }
 
@@ -1220,33 +1234,35 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
          y++) {
       for (int x = -g_gui.GetBrushSize() - 1; x <= g_gui.GetBrushSize() + 1;
            x++) {
+        int tx = mouse_map_x + x;
+        int ty = mouse_map_y + y;
+        if (tx <= 0 || ty <= 0 || tx >= map_width || ty >= map_height) {
+          continue;
+        }
+
         if (g_gui.GetBrushShape() == BRUSHSHAPE_SQUARE) {
           if (x >= -g_gui.GetBrushSize() && x <= g_gui.GetBrushSize() &&
               y >= -g_gui.GetBrushSize() && y <= g_gui.GetBrushSize()) {
             if (tilestodraw) {
-              tilestodraw->push_back(
-                  Position(mouse_map_x + x, mouse_map_y + y, floor));
+              tilestodraw->push_back(Position(tx, ty, floor));
             }
           }
           if (std::abs(x) - g_gui.GetBrushSize() < 2 &&
               std::abs(y) - g_gui.GetBrushSize() < 2) {
             if (tilestoborder) {
-              tilestoborder->push_back(
-                  Position(mouse_map_x + x, mouse_map_y + y, floor));
+              tilestoborder->push_back(Position(tx, ty, floor));
             }
           }
         } else if (g_gui.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
           double distance = sqrt(double(x * x) + double(y * y));
           if (distance < g_gui.GetBrushSize() + 0.005) {
             if (tilestodraw) {
-              tilestodraw->push_back(
-                  Position(mouse_map_x + x, mouse_map_y + y, floor));
+              tilestodraw->push_back(Position(tx, ty, floor));
             }
           }
           if (std::abs(distance - g_gui.GetBrushSize()) < 1.5) {
             if (tilestoborder) {
-              tilestoborder->push_back(
-                  Position(mouse_map_x + x, mouse_map_y + y, floor));
+              tilestoborder->push_back(Position(tx, ty, floor));
             }
           }
         }

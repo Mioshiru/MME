@@ -29,8 +29,23 @@ void MapCanvas::UpdateMinimapTexture() {
 	minimap_span_w = span_w;
 	minimap_span_h = span_h;
 
-	int start_x = center_x - span_w / 2;
-	int start_y = center_y - span_h / 2;
+	int map_width = editor.map.getWidth();
+	int map_height = editor.map.getHeight();
+
+	int start_x;
+	if (span_w >= map_width) {
+		start_x = (map_width - span_w) / 2;
+	} else {
+		start_x = std::max(0, std::min(center_x - span_w / 2, map_width - span_w));
+	}
+
+	int start_y;
+	if (span_h >= map_height) {
+		start_y = (map_height - span_h) / 2;
+	} else {
+		start_y = std::max(0, std::min(center_y - span_h / 2, map_height - span_h));
+	}
+
 	minimap_start_x = start_x;
 	minimap_start_y = start_y;
 

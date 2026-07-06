@@ -404,7 +404,8 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				if (wheel != 0.0f) {
 					if (wheel > 0.0f) minimap_zoom /= 1.2f;
 					else minimap_zoom *= 1.2f;
-					minimap_zoom = std::clamp(minimap_zoom, 0.25f, 4.0f);
+					float max_zoom = std::max(4.0f, (float)std::max(editor.map.getWidth(), editor.map.getHeight()) / 180.0f);
+					minimap_zoom = std::clamp(minimap_zoom, 0.25f, max_zoom);
 					minimap_span_w = (int)(180.0f * minimap_zoom);
 					minimap_span_h = (int)(180.0f * minimap_zoom);
 					last_minimap_update_time = 0;
