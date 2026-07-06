@@ -20,6 +20,7 @@
 #include <wx/collpane.h>
 #include <wx/url.h>
 #include <wx/sstream.h>
+#include <wx/listctrl.h>
 #include "style_manager.h"
 
 #include "settings.h"
@@ -76,6 +77,7 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 	book->AddPage(CreateEditorPage(), "Editing");
 	book->AddPage(CreatePerformancePage(), "Performance");
 	book->AddPage(CreateUIPage(), "Interface");
+	book->AddPage(CreateHotkeysPage(), "Hotkeys");
 
 	book->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, [this](wxAuiNotebookEvent& event) {
 		this->Layout();
@@ -938,4 +940,51 @@ void PreferencesWindow::UpdateScanStatus() {
 	}
 	Layout();
 	Fit();
+}
+
+wxNotebookPage* PreferencesWindow::CreateHotkeysPage() {
+	wxNotebookPage* page = newd wxPanel(book, wxID_ANY);
+	page->SetBackgroundColour(book->GetBackgroundColour());
+	page->SetForegroundColour(book->GetForegroundColour());
+
+	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxListCtrl* list = newd wxListCtrl(page, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
+	list->SetBackgroundColour(book->GetBackgroundColour());
+	list->SetForegroundColour(book->GetForegroundColour());
+
+	list->InsertColumn(0, "Action", wxLIST_FORMAT_LEFT, 240);
+	list->InsertColumn(1, "Hotkey / Control", wxLIST_FORMAT_LEFT, 180);
+
+	struct HotkeyInfo {
+		wxString action;
+		wxString key;
+	};
+
+	std::vector<HotkeyInfo> hotkeys = {
+		{"Move view (canvas)", "W / A / S / D"},
+		{"Move view (drag)", "Middle Mouse Button Drag"},
+		{"Zoom Map", "Mouse Wheel / Plus / Minus"},
+		{"Open quick Tool Wheel", "Shift + Q"},
+		{"Close Tool Wheel / Dialog", "ESC"},
+		{"Copy Selection", "Ctrl + C"},
+		{"Paste Selection", "Ctrl + V"},
+		{"Cut Selection", "Ctrl + X"},
+		{"Delete Selection", "Delete"},
+		{"Change Floor (Up/Down)", "PageUp / PageDown"},
+		{"New Map", "Ctrl + N"},
+		{"Open Map", "Ctrl + O"},
+		{"Save Map", "Ctrl + S"},
+		{"Undo", "Ctrl + Z"},
+		{"Redo", "Ctrl + Y"}
+	};
+
+	for (size_t i = 0; i < hotkeys.size(); ++i) {
+		long tmp = list->InsertItem(static_cast<long>(i), hotkeys[i].action);
+		list->SetItem(tmp, 1, hotkeys[i].key);
+	}
+
+	sizer->Add(list, 1, wxEXPAND | wxALL, 5);
+	page->SetSizer(sizer);
+	return page;
 }

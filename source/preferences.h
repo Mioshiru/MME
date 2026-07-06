@@ -151,6 +151,7 @@ public:
 	wxNotebookPage* CreatePerformancePage();
 	wxNotebookPage* CreateUIPage();
 	wxNotebookPage* CreateEditorPage();
+	wxNotebookPage* CreateHotkeysPage();
 
 	DECLARE_EVENT_TABLE()
 };

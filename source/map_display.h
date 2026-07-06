@@ -124,6 +124,14 @@ public:
 
   virtual Position GetCursorPosition() const;
 
+  // [PERF] Dirty-flag system: AnimationTimer only repaints when needed
+  void markDirty() { needs_repaint = true; }
+  bool isDirty() const { return needs_repaint; }
+  void clearDirty() { needs_repaint = false; }
+
+  // [UI] Radial selection menu
+  int GetHoveredRadialSlice() const;
+
   void TakeScreenshot(wxFileName path, wxString format);
 
   unsigned int GetMinimapTextureID() const { return minimap_tex_id; }
@@ -213,6 +221,7 @@ protected:
 
   MapPopupMenu *popup_menu;
   AnimationTimer *animation_timer;
+  bool needs_repaint = true; // [PERF] Dirty flag for AnimationTimer
 
   friend class MapDrawer;
   friend class PaletteWindow;

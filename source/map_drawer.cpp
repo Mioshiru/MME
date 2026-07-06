@@ -278,11 +278,11 @@ void MapDrawer::DrawBrush() {
       glEnd();
       glEnable(GL_TEXTURE_2D);
     }
-    if (log_this) {
-      LogErrorToFile(wxString::Format("DrawBrush skip: IsDrawingMode=%d, CurrentBrush=%p, options.ingame=%d",
-        g_gui.IsDrawingMode(), g_gui.GetCurrentBrush(), options.ingame).ToStdString());
-      last_log_time = current_time;
-    }
+    // [PERF] Removed: Disk I/O in render hot-path
+    // if (log_this) {
+    //   LogErrorToFile(...);
+    //   last_log_time = current_time;
+    // }
     return;
   }
 
@@ -290,11 +290,11 @@ void MapDrawer::DrawBrush() {
   int lookid = brush->getLookID();
   bool has_preview = (lookid > 0 && g_items.typeExists(lookid));
 
-  if (log_this) {
-    LogErrorToFile(wxString::Format("DrawBrush run: mouse_map=(%d, %d), TileSize=%d, view_scroll=(%d, %d), brush_name=%s, lookid=%d, has_preview=%d, dragging_draw=%d",
-      mouse_map_x, mouse_map_y, TileSize, view_scroll_x, view_scroll_y, brush->getName().c_str(), lookid, has_preview, dragging_draw).ToStdString());
-    last_log_time = current_time;
-  }
+  // [PERF] Removed: Disk I/O in render hot-path
+  // if (log_this) {
+  //   LogErrorToFile(...);
+  //   last_log_time = current_time;
+  // }
 
   BrushColor brushColor = COLOR_BLANK;
   if (brush->isTerrain() || brush->isTable() || brush->isCarpet()) {
@@ -471,8 +471,10 @@ void MapDrawer::DrawBrush() {
           for (int x = start_x - 1; x <= end_x + 1; x++) {
             int cx = x * TileSize - view_scroll_x - getFloorAdjustment(floor);
             float dx = center_x - x;
-            float distance = sqrt(dx * dx + dy * dy);
-            if (distance < radii) {
+            // [PERF] Squared distance comparison instead of sqrt()
+            float dist_sq = dx * dx + dy * dy;
+            float radii_sq = radii * radii;
+            if (dist_sq < radii_sq) {
               if (has_preview) {
                 glEnable(GL_TEXTURE_2D);
                 DrawRawBrush(cx, cy, &g_items[lookid], 160, 160, 160, 160);
@@ -578,8 +580,9 @@ void MapDrawer::DrawBrush() {
             inside = (x >= -g_gui.GetBrushSize() && x <= g_gui.GetBrushSize() &&
                       y >= -g_gui.GetBrushSize() && y <= g_gui.GetBrushSize());
           } else if (g_gui.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
-            inside = (sqrt(double(x * x) + double(y * y)) <
-                      g_gui.GetBrushSize() + 0.005);
+            // [PERF] Squared distance comparison instead of sqrt()
+            double threshold = g_gui.GetBrushSize() + 0.005;
+            inside = (double(x * x) + double(y * y) < threshold * threshold);
           }
           if (inside) {
             if (has_preview) {
@@ -629,21 +632,20 @@ void MapDrawer::DrawGrid() {
   }
 
   glDisable(GL_TEXTURE_2D);
+  // [PERF] Single glBegin/glEnd batch for all grid lines (was one per line)
+  glColor4ub(53, 53, 53, static_cast<uint8_t>(grid_opacity));
+  glBegin(GL_LINES);
   for (int y = start_y; y < end_y; ++y) {
-    glColor4ub(53, 53, 53, static_cast<uint8_t>(grid_opacity));
-    glBegin(GL_LINES);
     glVertex2f(start_x * TileSize - view_scroll_x,
                y * TileSize - view_scroll_y);
     glVertex2f(end_x * TileSize - view_scroll_x, y * TileSize - view_scroll_y);
-    glEnd();
   }
   for (int x = start_x; x < end_x; ++x) {
-    glBegin(GL_LINES);
     glVertex2f(x * TileSize - view_scroll_x,
                start_y * TileSize - view_scroll_y);
     glVertex2f(x * TileSize - view_scroll_x, end_y * TileSize - view_scroll_y);
-    glEnd();
   }
+  glEnd();
   glEnable(GL_TEXTURE_2D);
 }
 
@@ -1327,8 +1329,9 @@ void MapDrawer::DrawMap() {
                 g_vbo_building = false;
 
                 if (!g_vbo_vertices.empty()) {
-                  LogErrorToFile(wxString::Format("VBO Rebuild: floor=%d, leaf=(%d, %d), vertices=%d",
-                    map_z, nd_map_x, nd_map_y, (int)g_vbo_vertices.size()).ToStdString());
+                  // [PERF] Removed: VBO rebuild logging causes stutter
+                  // LogErrorToFile(wxString::Format("VBO Rebuild: floor=%d, leaf=(%d, %d), vertices=%d",
+                  //   map_z, nd_map_x, nd_map_y, (int)g_vbo_vertices.size()).ToStdString());
                   auto *backend = g_gui.GetRenderBackend();
                   if (backend) {
                     backend->UpdateChunk(f->vbo_id, g_vbo_vertices);
@@ -1337,7 +1340,7 @@ void MapDrawer::DrawMap() {
                     glBufferData(GL_ARRAY_BUFFER,
                                  g_vbo_vertices.size() *
                                      sizeof(RME_Rendering::MapVertex),
-                                 g_vbo_vertices.data(), GL_STATIC_DRAW);
+                                 g_vbo_vertices.data(), GL_DYNAMIC_DRAW); // [PERF] Was GL_STATIC_DRAW – VBOs are rebuilt often
                     glBindBuffer(GL_ARRAY_BUFFER, 0);
                   }
                   g_floor_batches[f->vbo_id] = g_vbo_batches;

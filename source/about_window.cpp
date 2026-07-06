@@ -196,10 +196,6 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 	about << "- Clickable minimap with live viewport feedback\n";
 	about << "- WASD viewport panning inside canvas\n";
 	about << "- Dark UI refinements and toolbar usability pass\n\n";
-	about << "Controls:\n";
-	about << "- WASD: Move view\n";
-	about << "- Shift+Q: Tool Wheel\n";
-	about << "- Minimap click: Jump to position\n\n";
 
 	about << "Using " << wxVERSION_STRING << " interface\n";
 	about << "OpenGL version " << wxString((char*)glGetString(GL_VERSION), wxConvUTF8) << "\n";
@@ -218,37 +214,7 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 
 	wxSizer* choicesizer = newd wxBoxSizer(wxHORIZONTAL);
 	choicesizer->Add(newd wxButton(this, wxID_OK, "OK"), wxSizerFlags(1).Center());
-	choicesizer->Add(newd wxButton(this, wxID_HELP, "Help"), wxSizerFlags(1).Center().Border(wxLEFT, 10));
 	topsizer->Add(choicesizer, 0, wxALIGN_CENTER | wxLEFT | wxRIGHT | wxBOTTOM, 20);
-
-	Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) {
-		wxMessageBox(
-			"Mio's Map Editor - Controls\n\n"
-			"General:\n"
-			"- WASD: Move map view inside canvas\n"
-			"- Middle Mouse Drag: Move map view\n"
-			"- Mouse Wheel: Zoom\n"
-			"- Shift + Q: Open quick Tool Wheel near mouse\n"
-			"- ESC: Close Tool Wheel or dialogs\n\n"
-			"Tool Wheel:\n"
-			"- Pencil\n"
-			"- Bucket\n"
-			"- Protection Zone\n"
-			"- Normal Door / Locked Door / Magic Door\n"
-			"- Hatch Window\n"
-			"- Eraser\n\n"
-			"Minimap:\n"
-			"- Left Click: Jump canvas to clicked minimap coordinate\n"
-			"- Dockable to corners only (Top-Left, Top-Right, Bottom-Left, Bottom-Right)\n"
-			"- Window resize is clamped to min/max limits\n\n"
-			"Project:\n"
-			"- Name: Mio's Map Editor\n"
-			"- Repository: https://github.com/Mioshiru/MME",
-			"Controls",
-			wxOK | wxICON_INFORMATION,
-			this
-		);
-	}, wxID_HELP);
 
 	wxAcceleratorEntry entries[3];
 	entries[0].Set(wxACCEL_NORMAL, WXK_ESCAPE, wxID_CANCEL);

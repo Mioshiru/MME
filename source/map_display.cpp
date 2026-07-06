@@ -199,6 +199,12 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     return;
   }
 
+  if (tool_wheel_open && event.GetKeyCode() == WXK_ESCAPE) {
+    tool_wheel_open = false;
+    Refresh();
+    return;
+  }
+
   if (event.ShiftDown() && (event.GetKeyCode() == 'Q' || event.GetKeyCode() == 'q')) {
     tool_wheel_open = !tool_wheel_open;
     tool_wheel_x = static_cast<float>(cursor_x);
@@ -272,6 +278,53 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
     return;
   }
 
+  if (tool_wheel_open) {
+    int hovered = GetHoveredRadialSlice();
+    if (hovered >= 0) {
+      switch (hovered) {
+        case 0: // Selection
+          g_gui.SetFillBrushMode(false);
+          g_gui.SetSelectionMode();
+          break;
+        case 1: // Pencil
+          g_gui.SetFillBrushMode(false);
+          g_gui.SetDrawingMode();
+          break;
+        case 2: // Bucket
+          g_gui.SetDrawingMode();
+          g_gui.SetFillBrushMode(true);
+          break;
+        case 3: // PZ
+          g_gui.SetFillBrushMode(false);
+          g_gui.SelectBrush(g_gui.pz_brush);
+          break;
+        case 4: // Normal Door
+          g_gui.SetFillBrushMode(false);
+          g_gui.SelectBrush(g_gui.normal_door_brush);
+          break;
+        case 5: // Locked Door
+          g_gui.SetFillBrushMode(false);
+          g_gui.SelectBrush(g_gui.locked_door_brush);
+          break;
+        case 6: // Magic Door
+          g_gui.SetFillBrushMode(false);
+          g_gui.SelectBrush(g_gui.magic_door_brush);
+          break;
+        case 7: // Hatch Window
+          g_gui.SetFillBrushMode(false);
+          g_gui.SelectBrush(g_gui.hatch_door_brush);
+          break;
+        case 8: // Eraser
+          g_gui.SetFillBrushMode(false);
+          g_gui.SelectBrush(g_gui.eraser);
+          break;
+      }
+    }
+    tool_wheel_open = false;
+    Refresh();
+    return;
+  }
+
   if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->isPointInside((float)cursor_x, (float)cursor_y)) {
     ui_toolbar->onMouseDown((float)cursor_x, (float)cursor_y, 0);
     Refresh();
@@ -281,9 +334,10 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	int mouse_map_x, mouse_map_y;
 	ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
 
-	LogErrorToFile(wxString::Format("OnMouseLeftClick: screen=(%d, %d), map=(%d, %d), floor=%d, drawing=%d, current_brush=%s",
-		cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, drawing,
-		g_gui.GetCurrentBrush() ? g_gui.GetCurrentBrush()->getName().c_str() : "nullptr").ToStdString());
+	// [PERF] Removed: Disk I/O in mouse hot-path kills frame rate
+	// LogErrorToFile(wxString::Format("OnMouseLeftClick: screen=(%d, %d), map=(%d, %d), floor=%d, drawing=%d, current_brush=%s",
+	// 	cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, drawing,
+	// 	g_gui.GetCurrentBrush() ? g_gui.GetCurrentBrush()->getName().c_str() : "nullptr").ToStdString());
 
 	if (event.RightIsDown()) {
 		g_gui.SelectBrush(nullptr);
@@ -482,6 +536,12 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
     return;
   }
 
+  if (tool_wheel_open) {
+    tool_wheel_open = false;
+    Refresh();
+    return;
+  }
+
   if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->isPointInside((float)cursor_x, (float)cursor_y)) {
     return;
   }
@@ -489,9 +549,10 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 	int mouse_map_x, mouse_map_y;
 	ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
 
-	LogErrorToFile(wxString::Format("OnMouseRightClick: screen=(%d, %d), map=(%d, %d), floor=%d, drawing=%d, current_brush=%s",
-		cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, drawing,
-		g_gui.GetCurrentBrush() ? g_gui.GetCurrentBrush()->getName().c_str() : "nullptr").ToStdString());
+	// [PERF] Removed: Disk I/O in mouse hot-path kills frame rate
+	// LogErrorToFile(wxString::Format("OnMouseRightClick: screen=(%d, %d), map=(%d, %d), floor=%d, drawing=%d, current_brush=%s",
+	// 	cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, drawing,
+	// 	g_gui.GetCurrentBrush() ? g_gui.GetCurrentBrush()->getName().c_str() : "nullptr").ToStdString());
 
 	last_click_x = int(cursor_x * zoom);
 	last_click_y = int(cursor_y * zoom);
@@ -608,6 +669,11 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
     return;
   }
 
+  if (tool_wheel_open) {
+    Refresh();
+    return;
+  }
+
 	if (rubber_band_mode) {
 		rubber_end_x = cursor_x;
 		rubber_end_y = cursor_y;
@@ -629,19 +695,34 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 			map_win->GetViewStart(&scroll_x, &scroll_y);
 			map_win->Scroll(scroll_x - int(dx * zoom), scroll_y - int(dy * zoom));
 			
-			// Update start pos so we can drag continuously
-			drag_start_x = cursor_x;
-			drag_start_y = cursor_y;
+			int client_w, client_h;
+			GetClientSize(&client_w, &client_h);
+			
+			// [UI] Auto-scroll warping at edges: keep cursor inside canvas limits
+			const int border_threshold = 40;
+			if (cursor_x < border_threshold || cursor_x > client_w - border_threshold ||
+				cursor_y < border_threshold || cursor_y > client_h - border_threshold) 
+			{
+				int target_x = client_w / 2;
+				int target_y = client_h / 2;
+				WarpPointer(target_x, target_y);
+				drag_start_x = target_x;
+				drag_start_y = target_y;
+			} else {
+				drag_start_x = cursor_x;
+				drag_start_y = cursor_y;
+			}
 		}
 	}
 
 	int mouse_map_x, mouse_map_y;
 	ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
 	
-	if (drawing && (mouse_map_x != last_cursor_map_x || mouse_map_y != last_cursor_map_y || floor != last_cursor_map_z)) {
-		LogErrorToFile(wxString::Format("OnMouseMove (drawing): screen=(%d, %d), map=(%d, %d), floor=%d, dragging_draw=%d",
-			cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, dragging_draw).ToStdString());
-	}
+	// [PERF] Removed: Disk I/O in mouse move hot-path kills frame rate
+	// if (drawing && (mouse_map_x != last_cursor_map_x || mouse_map_y != last_cursor_map_y || floor != last_cursor_map_z)) {
+	// 	LogErrorToFile(wxString::Format("OnMouseMove (drawing): screen=(%d, %d), map=(%d, %d), floor=%d, dragging_draw=%d",
+	// 		cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, dragging_draw).ToStdString());
+	// }
 
 	if (mouse_map_x != last_cursor_map_x || mouse_map_y != last_cursor_map_y || floor != last_cursor_map_z) {
 		int prev_x = last_cursor_map_x;
@@ -968,20 +1049,21 @@ Position MapCanvas::GetCursorPosition() const {
   return Position(last_cursor_map_x, last_cursor_map_y, floor);
 }
 
-void MapCanvas::UpdatePositionStatus(int x, int y) {
-  if (x == -1) {
-    x = cursor_x;
-  }
-  if (y == -1) {
-    y = cursor_y;
-  }
-
-  int map_x, map_y;
-  ScreenToMap(x, y, &map_x, &map_y);
+void MapCanvas::UpdatePositionStatus(int /*x*/, int /*y*/) {
+  // [PERF] Use cached map coordinates directly instead of redundant ScreenToMap.
+  // The x and y arguments from OnMouseMove were actually already map coordinates,
+  // causing a bug where ScreenToMap was called on map coordinates!
+  int map_x = last_cursor_map_x;
+  int map_y = last_cursor_map_y;
 
   wxString ss;
   ss << "x: " << map_x << " y:" << map_y << " z:" << floor;
-  g_gui.root->SetStatusText(ss, 2);
+  
+  static wxString last_ss_pos;
+  if (last_ss_pos != ss) {
+      g_gui.root->SetStatusText(ss, 2);
+      last_ss_pos = ss;
+  }
 
   ss = "";
   Tile *tile = editor.map.getTile(map_x, map_y, floor);
@@ -998,7 +1080,7 @@ void MapCanvas::UpdatePositionStatus(int x, int y) {
       ss << " id:" << item->getID();
       ss << " cid:" << item->getClientID();
       if (item->getUniqueID()) {
-        ss << " uid:" << item->getUniqueID(); // Korrigierter Zugriff
+        ss << " uid:" << item->getUniqueID();
       }
       if (item->getActionID()) {
         ss << " aid:" << item->getActionID();
@@ -1019,7 +1101,11 @@ void MapCanvas::UpdatePositionStatus(int x, int y) {
     editor.GetLive().updateCursor(Position(map_x, map_y, floor));
   }
 
-  g_gui.root->SetStatusText(ss, 1);
+  static wxString last_ss_info;
+  if (last_ss_info != ss) {
+      g_gui.root->SetStatusText(ss, 1);
+      last_ss_info = ss;
+  }
 }
 
 void MapCanvas::UpdateZoomStatus() {
@@ -1235,7 +1321,15 @@ AnimationTimer::~AnimationTimer() {
   ////
 };
 
-void AnimationTimer::Notify() { map_canvas->Refresh(); };
+void AnimationTimer::Notify() {
+    // [PERF] Only redraw if explicitly marked dirty, or if animations are visible
+    if (map_canvas->isDirty()) {
+        map_canvas->clearDirty();
+        map_canvas->Refresh();
+    } else if (g_settings.getBoolean(Config::SHOW_PREVIEW) && map_canvas->GetZoom() <= 2.0) {
+        map_canvas->Refresh();
+    }
+}
 
 void AnimationTimer::Start() {
   if (!started) {

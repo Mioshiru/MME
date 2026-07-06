@@ -10,6 +10,7 @@
 #include "live_socket.h"
 #include "live_client.h"
 #include "live_peer.h"
+#include <cmath>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <thread>
@@ -480,92 +481,180 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		ImGui::PopStyleVar(6);
 	}
 
+	// [UI] Old ImGui Tool Wheel replaced with premium ImGui circular selection wheel.
 	if (tool_wheel_open) {
-		ImGui::SetNextWindowPos(ImVec2(tool_wheel_x, tool_wheel_y), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(420.0f, 255.0f), ImGuiCond_Appearing);
-		ImGuiWindowFlags wheel_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoNav |
-			ImGuiWindowFlags_NoFocusOnAppearing;
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 5.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 0.98f));
-		ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(20.0f / 255.0f, 50.0f / 255.0f, 130.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(60.0f / 255.0f, 120.0f / 255.0f, 220.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(20.0f / 255.0f, 50.0f / 255.0f, 130.0f / 255.0f, 0.90f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(60.0f / 255.0f, 120.0f / 255.0f, 220.0f / 255.0f, 0.95f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 0.95f));
-		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 1.0f));
-		if (ImGui::Begin("Tool Wheel", &tool_wheel_open, wheel_flags)) {
-			ImGui::TextUnformatted("Quick Tools");
-			ImGui::Separator();
-			const float spacing = 8.0f;
-			const float content_w = ImGui::GetContentRegionAvail().x;
-			const float btn_w = (content_w - spacing) * 0.5f;
-			const ImVec2 btn_size(btn_w, 30.0f);
-			auto close_after = [&]() {
-				tool_wheel_open = false;
-				Refresh();
+		ImGuiViewport* vp = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(vp->Pos);
+		ImGui::SetNextWindowSize(vp->Size);
+		ImGui::SetNextWindowViewport(vp->ID);
+		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBringToFrontOnFocus |
+			ImGuiWindowFlags_NoMouseInputs;
+		
+		if (ImGui::Begin("##RadialMenuFullscreen", &tool_wheel_open, flags)) {
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			
+			const float r_min = 45.0f;
+			const float r_max = 145.0f;
+			
+			struct RadialTool {
+				std::string label;
 			};
-			if (ImGui::Button("Selection", btn_size)) {
-				g_gui.SetFillBrushMode(false);
-				g_gui.SetSelectionMode();
-				close_after();
+			
+			static const std::vector<RadialTool> tools = {
+				{"SELECTION"},
+				{"PENCIL"},
+				{"BUCKET"},
+				{"PROTECTION ZONE"},
+				{"NORMAL DOOR"},
+				{"LOCKED DOOR"},
+				{"MAGIC DOOR"},
+				{"HATCH WINDOW"},
+				{"ERASER"}
+			};
+			
+			const int N = tools.size();
+			ImVec2 mouse_pos = ImGui::GetMousePos();
+			ImVec2 center(vp->Pos.x + tool_wheel_x, vp->Pos.y + tool_wheel_y);
+			
+			float dx = mouse_pos.x - center.x;
+			float dy = mouse_pos.y - center.y;
+			float dist = std::sqrt(dx * dx + dy * dy);
+			
+			int hovered_slice = GetHoveredRadialSlice();
+			
+			// 1. Draw outer glowing ring (shadow)
+			draw_list->AddCircle(center, r_max + 1.0f, IM_COL32(0, 0, 0, 100), 64, 4.0f);
+			
+			// 2. Draw slices
+			for (int i = 0; i < N; ++i) {
+				float angle_start = (i * 2.0f * PI / N) - PI / 2.0f - (PI / N);
+				float angle_end = ((i + 1) * 2.0f * PI / N) - PI / 2.0f - (PI / N);
+				
+				bool is_hovered = (hovered_slice == i);
+				
+				ImU32 fill_color = is_hovered ? IM_COL32(180, 140, 50, 180) : IM_COL32(12, 16, 26, 235);
+				ImU32 border_color = is_hovered ? IM_COL32(255, 220, 100, 255) : IM_COL32(180, 140, 50, 100);
+				
+				// Fill segment
+				draw_list->PathClear();
+				draw_list->PathArcTo(center, r_max, angle_start, angle_end, 16);
+				draw_list->PathArcTo(center, r_min, angle_end, angle_start, 16);
+				draw_list->PathFillConvex(fill_color);
+				
+				// Stroke borders
+				draw_list->PathClear();
+				draw_list->PathArcTo(center, r_max, angle_start, angle_end, 16);
+				draw_list->PathArcTo(center, r_min, angle_end, angle_start, 16);
+				draw_list->PathStroke(border_color, ImDrawFlags_Closed, is_hovered ? 1.5f : 1.0f);
+				
+				// Draw separator line
+				draw_list->AddLine(
+					ImVec2(center.x + r_min * std::cos(angle_start), center.y + r_min * std::sin(angle_start)),
+					ImVec2(center.x + r_max * std::cos(angle_start), center.y + r_max * std::sin(angle_start)),
+					IM_COL32(180, 140, 50, 60), 1.0f
+				);
+				
+				// 3. Render vector icon
+				float angle_mid = (angle_start + angle_end) / 2.0f;
+				float r_mid = (r_min + r_max) / 2.0f;
+				ImVec2 icon_pos(center.x + r_mid * std::cos(angle_mid), center.y + r_mid * std::sin(angle_mid));
+				
+				ImU32 icon_color = is_hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(180, 140, 50, 225);
+				
+				switch (i) {
+					case 0: { // Selection
+						ImVec2 cursor_pts[7] = {
+							ImVec2(icon_pos.x - 5.0f, icon_pos.y - 8.0f),
+							ImVec2(icon_pos.x + 5.0f, icon_pos.y + 2.0f),
+							ImVec2(icon_pos.x + 1.0f, icon_pos.y + 2.0f),
+							ImVec2(icon_pos.x + 3.0f, icon_pos.y + 7.0f),
+							ImVec2(icon_pos.x + 1.0f, icon_pos.y + 8.0f),
+							ImVec2(icon_pos.x - 1.0f, icon_pos.y + 3.0f),
+							ImVec2(icon_pos.x - 5.0f, icon_pos.y - 0.0f)
+						};
+						draw_list->AddConvexPolyFilled(cursor_pts, 7, icon_color);
+						break;
+					}
+					case 1: { // Pencil
+						draw_list->AddLine(ImVec2(icon_pos.x - 6.0f, icon_pos.y + 6.0f), ImVec2(icon_pos.x + 6.0f, icon_pos.y - 6.0f), icon_color, 2.5f);
+						break;
+					}
+					case 2: { // Bucket
+						ImVec2 b_pts[4] = {
+							ImVec2(icon_pos.x - 6.0f, icon_pos.y - 3.0f),
+							ImVec2(icon_pos.x + 1.0f, icon_pos.y - 7.0f),
+							ImVec2(icon_pos.x + 6.0f, icon_pos.y + 2.0f),
+							ImVec2(icon_pos.x - 1.0f, icon_pos.y + 6.0f)
+						};
+						draw_list->AddPolyline(b_pts, 4, icon_color, ImDrawFlags_Closed, 1.5f);
+						draw_list->AddLine(ImVec2(icon_pos.x - 2.0f, icon_pos.y - 5.0f), ImVec2(icon_pos.x + 4.0f, icon_pos.y + 4.0f), icon_color, 1.0f);
+						break;
+					}
+					case 3: { // PZ Shield
+						ImVec2 s_pts[5] = {
+							ImVec2(icon_pos.x, icon_pos.y - 8.0f),
+							ImVec2(icon_pos.x + 6.0f, icon_pos.y - 4.0f),
+							ImVec2(icon_pos.x + 6.0f, icon_pos.y + 3.0f),
+							ImVec2(icon_pos.x, icon_pos.y + 8.0f),
+							ImVec2(icon_pos.x - 6.0f, icon_pos.y + 3.0f)
+						};
+						draw_list->AddPolyline(s_pts, 5, icon_color, ImDrawFlags_Closed, 1.5f);
+						break;
+					}
+					case 4: { // Normal Door
+						draw_list->AddRect(ImVec2(icon_pos.x - 5.0f, icon_pos.y - 8.0f), ImVec2(icon_pos.x + 5.0f, icon_pos.y + 8.0f), icon_color, 1.0f, 0, 1.5f);
+						draw_list->AddCircleFilled(ImVec2(icon_pos.x + 2.5f, icon_pos.y), 1.5f, icon_color);
+						break;
+					}
+					case 5: { // Locked Door
+						draw_list->AddRect(ImVec2(icon_pos.x - 5.0f, icon_pos.y - 4.0f), ImVec2(icon_pos.x + 5.0f, icon_pos.y + 8.0f), icon_color, 1.0f, 0, 1.5f);
+						draw_list->AddCircle(ImVec2(icon_pos.x, icon_pos.y - 4.0f), 3.0f, icon_color, 0, 1.0f);
+						break;
+					}
+					case 6: { // Magic Door
+						draw_list->AddRect(ImVec2(icon_pos.x - 5.0f, icon_pos.y - 8.0f), ImVec2(icon_pos.x + 5.0f, icon_pos.y + 8.0f), icon_color, 1.0f, 0, 1.5f);
+						draw_list->AddCircleFilled(ImVec2(icon_pos.x - 1.0f, icon_pos.y), 1.0f, icon_color);
+						draw_list->AddLine(ImVec2(icon_pos.x + 2.0f, icon_pos.y - 2.0f), ImVec2(icon_pos.x + 2.0f, icon_pos.y + 2.0f), icon_color, 0.8f);
+						draw_list->AddLine(ImVec2(icon_pos.x - 1.0f, icon_pos.y), ImVec2(icon_pos.x + 5.0f, icon_pos.y), icon_color, 0.8f);
+						break;
+					}
+					case 7: { // Hatch Window
+						draw_list->AddRect(ImVec2(icon_pos.x - 6.0f, icon_pos.y - 6.0f), ImVec2(icon_pos.x + 6.0f, icon_pos.y + 6.0f), icon_color, 1.0f, 0, 1.5f);
+						draw_list->AddLine(ImVec2(icon_pos.x - 6.0f, icon_pos.y), ImVec2(icon_pos.x + 6.0f, icon_pos.y), icon_color, 1.0f);
+						draw_list->AddLine(ImVec2(icon_pos.x, icon_pos.y - 6.0f), ImVec2(icon_pos.x, icon_pos.y + 6.0f), icon_color, 1.0f);
+						break;
+					}
+					case 8: { // Eraser
+						draw_list->AddRectFilled(ImVec2(icon_pos.x - 8.0f, icon_pos.y - 4.0f), ImVec2(icon_pos.x + 8.0f, icon_pos.y + 4.0f), icon_color, 1.5f);
+						break;
+					}
+				}
 			}
-			ImGui::SameLine();
-			if (ImGui::Button("Pencil", btn_size)) {
-				g_gui.SetFillBrushMode(false);
-				g_gui.SetDrawingMode();
-				close_after();
+			
+			// 4. Draw central circle
+			draw_list->AddCircleFilled(center, r_min - 2.0f, IM_COL32(8, 10, 18, 255));
+			draw_list->AddCircle(center, r_min - 2.0f, IM_COL32(180, 140, 50, 255), 64, 2.0f);
+			
+			// 5. Draw center text label
+			std::string center_text = "TOOLS";
+			if (hovered_slice >= 0 && hovered_slice < N) {
+				center_text = tools[hovered_slice].label;
 			}
-			if (ImGui::Button("Bucket", btn_size)) {
-				g_gui.SetDrawingMode();
-				g_gui.SetFillBrushMode(true);
-				close_after();
+			
+			if (hovered_slice >= 0) {
+				draw_list->AddCircle(center, r_min - 5.0f, IM_COL32(180, 140, 50, 40), 64, 1.0f);
 			}
-			ImGui::SameLine();
-			if (ImGui::Button("Protection Zone", btn_size)) {
-				g_gui.SetFillBrushMode(false);
-				g_gui.SelectBrush(g_gui.pz_brush);
-				close_after();
-			}
-			if (ImGui::Button("Normal Door", btn_size)) {
-				g_gui.SetFillBrushMode(false);
-				g_gui.SelectBrush(g_gui.normal_door_brush);
-				close_after();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Locked Door", btn_size)) {
-				g_gui.SetFillBrushMode(false);
-				g_gui.SelectBrush(g_gui.locked_door_brush);
-				close_after();
-			}
-			if (ImGui::Button("Magic Door", btn_size)) {
-				g_gui.SetFillBrushMode(false);
-				g_gui.SelectBrush(g_gui.magic_door_brush);
-				close_after();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Hatch Window", btn_size)) {
-				g_gui.SetFillBrushMode(false);
-				g_gui.SelectBrush(g_gui.hatch_door_brush);
-				close_after();
-			}
-			if (ImGui::Button("Eraser", btn_size)) {
-				g_gui.SetFillBrushMode(false);
-				g_gui.SelectBrush(g_gui.eraser);
-				close_after();
-			}
-			if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-				tool_wheel_open = false;
-			}
+			
+			ImVec2 text_size = ImGui::CalcTextSize(center_text.c_str());
+			draw_list->AddText(
+				ImVec2(center.x - text_size.x * 0.5f, center.y - text_size.y * 0.5f),
+				IM_COL32(180, 140, 50, 255),
+				center_text.c_str()
+			);
 		}
 		ImGui::End();
-		ImGui::PopStyleColor(7);
-		ImGui::PopStyleVar(7);
 	}
 	if (rubber_band_mode) {
 		ImGuiViewport* vp = ImGui::GetMainViewport();
@@ -594,6 +683,31 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	
 	g_gui.RefreshMinimapPanel();
 	PerformanceLogger::EndFrame();
+}
+
+int MapCanvas::GetHoveredRadialSlice() const {
+	if (!tool_wheel_open) return -1;
+	
+	float dx = cursor_x - tool_wheel_x;
+	float dy = cursor_y - tool_wheel_y;
+	float dist = std::sqrt(dx * dx + dy * dy);
+	
+	const float r_min = 45.0f;
+	const float r_max = 145.0f;
+	
+	if (dist < r_min || dist > r_max) {
+		return -1;
+	}
+	
+	float angle = std::atan2(dy, dx);
+	if (angle < 0) angle += 2.0f * PI;
+	
+	const int N = 9;
+	float adjusted_angle = angle + PI / 2.0f + (PI / N);
+	if (adjusted_angle >= 2.0f * PI) adjusted_angle -= 2.0f * PI;
+	
+	int slice = (int)(adjusted_angle / (2.0f * PI / N)) % N;
+	return slice;
 }
 
 void MapCanvas::TakeScreenshot(wxFileName path, wxString format) {

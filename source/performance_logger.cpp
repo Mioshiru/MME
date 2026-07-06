@@ -26,7 +26,9 @@ void PerformanceLogger::StopTimer(const std::string& name) {
 void PerformanceLogger::EndFrame() {
     frame_count++;
     
-    // Dump to file every 60 frames (approx 1 second if VSync is on)
+    // [PERF] File I/O every 60 frames causes periodic micro-stutters.
+    // Only enable when actively profiling by defining PERF_LOG_TO_FILE.
+#ifdef PERF_LOG_TO_FILE
     if (frame_count >= 60) {
         auto total_frame_end = std::chrono::high_resolution_clock::now();
         
@@ -40,8 +42,15 @@ void PerformanceLogger::EndFrame() {
             outfile.close();
         }
         
-        // Reset
         accumulated_times.clear();
         frame_count = 0;
     }
+#else
+    // Silent mode: just reset counters to avoid unbounded memory growth
+    if (frame_count >= 60) {
+        accumulated_times.clear();
+        frame_count = 0;
+    }
+#endif
 }
+

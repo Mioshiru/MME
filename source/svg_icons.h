@@ -36,6 +36,13 @@ namespace RME::UI::SVG {
     inline const char* ICON_BED      = R"(<svg viewBox="0 0 64 64"><path fill="#FFD700" d="M12,24h40v20H12V24z M48,16H16c-2.2,0-4,1.8-4,4v4h40v-4C52,17.8,50.2,16,48,16z M8,32h4v24H8V32z M52,32h4v24h-4V32z"/></svg>)";
     inline const char* ICON_BACKPACK = R"(<svg viewBox="0 0 64 64"><path fill="#FFD700" d="M32,8c-8.8,0-16,7.2-16,16v24h32V24C48,15.2,40.8,8,32,8z M32,16c4.4,0,8,3.6,8,8s-3.6,8-8,8s-8-3.6-8-8S27.6,16,32,16z"/></svg>)";
     inline const char* ICON_WAND     = R"(<svg viewBox="0 0 64 64"><path fill="#FFD700" d="M50.5,13.5c-2-2-5.2-2-7.2,0L13.5,43.3c-2,2-2,5.2,0,7.2l0,0c2,2,5.2,2,7.2,0l29.8-29.8C52.5,18.7,52.5,15.5,50.5,13.5L50.5,13.5z M44,18l2,2l-4,4l-2-2L44,18z"/></svg>)";
+
+    // Neue Icons fuer das Auswahlrad
+    inline const char* ICON_SHIELD   = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>)";
+    inline const char* ICON_DOOR     = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 10c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>)";
+    inline const char* ICON_LOCK     = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>)";
+    inline const char* ICON_MAGIC    = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>)";
+    inline const char* ICON_WINDOW   = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>)";
 }
 
 #endif
