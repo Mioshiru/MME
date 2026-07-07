@@ -1129,6 +1129,7 @@ void GUI::SelectBrushInternal(Brush *brush) {
     secondary_map = doodad_buffer_map;
   }
 
+  SetFillBrushMode(false);
   SetDrawingMode();
   RefreshView();
 

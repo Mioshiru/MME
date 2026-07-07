@@ -210,6 +210,9 @@ protected:
   wxStopWatch refresh_watch;
   std::unique_ptr<RME::UI::UIToolbar> ui_toolbar; // Hinzugefügt
   unsigned int minimap_tex_id = 0;
+  unsigned int radial_tex_ids[10] = {0};
+  bool radial_textures_loaded = false;
+  void LoadRadialTextures();
   uint8_t minimap_pixels[180 * 180 * 3]; // Added for Palette minimap
   float minimap_zoom = 1.0f;
   int minimap_start_x = 0;

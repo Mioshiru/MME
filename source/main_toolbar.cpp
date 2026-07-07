@@ -79,6 +79,14 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pointer.png",
 		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pointer.png"
 	});
+	wxBitmap pencil_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/pencil.png",
+		"../icons/pencil.png",
+		"Map Editor/icons/pencil.png",
+		"../Map Editor/icons/pencil.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pencil.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pencil.png"
+	});
 	wxBitmap bucket_bitmap = LoadBitmapFromFileCandidates(icon_size, {
 		"icons/bucket.png",
 		"../icons/bucket.png",
@@ -86,6 +94,14 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 		"../Map Editor/icons/bucket.png",
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png",
 		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png"
+	});
+	wxBitmap prefab_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/prefab.png",
+		"../icons/prefab.png",
+		"Map Editor/icons/prefab.png",
+		"../Map Editor/icons/prefab.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "prefab.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "prefab.png"
 	});
 	wxBitmap* eraser_bitmap = loadPNGFileSized(eraser_small_png, icon_size);
 	wxBitmap pz_bitmap = wxArtProvider::GetBitmap(ART_PZ_BRUSH, wxART_TOOLBAR, icon_size);
@@ -106,11 +122,17 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	if (pointer_bitmap.IsOk()) {
 		brushes_toolbar->AddTool(PALETTE_TERRAIN_SELECTION_TOOL, wxEmptyString, pointer_bitmap, wxNullBitmap, wxITEM_CHECK, "Selection Tool", wxEmptyString, NULL);
 	}
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, wxEmptyString, *border_bitmap, wxNullBitmap, wxITEM_CHECK, "Border", wxEmptyString, NULL);
+	if (pencil_bitmap.IsOk()) {
+		brushes_toolbar->AddTool(PALETTE_TERRAIN_PENCIL_TOOL, wxEmptyString, pencil_bitmap, wxNullBitmap, wxITEM_CHECK, "Pencil Tool", wxEmptyString, NULL);
+	}
 	if (bucket_bitmap.IsOk()) {
 		brushes_toolbar->AddTool(PALETTE_TERRAIN_BUCKET_TOOL, wxEmptyString, bucket_bitmap, wxNullBitmap, wxITEM_CHECK, "Bucket Fill", wxEmptyString, NULL);
 	}
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_ERASER, wxEmptyString, *eraser_bitmap, wxNullBitmap, wxITEM_CHECK, "Eraser", wxEmptyString, NULL);
+	if (prefab_bitmap.IsOk()) {
+		brushes_toolbar->AddTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, wxEmptyString, prefab_bitmap, wxNullBitmap, wxITEM_CHECK, "Prefab Creator", wxEmptyString, NULL);
+	}
+	brushes_toolbar->AddTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, wxEmptyString, *border_bitmap, wxNullBitmap, wxITEM_CHECK, "Border", wxEmptyString, NULL);
 	brushes_toolbar->AddSeparator();
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_PZ_TOOL, wxEmptyString, pz_bitmap, wxNullBitmap, wxITEM_CHECK, "Protected Zone", wxEmptyString, NULL);
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_NOPVP_TOOL, wxEmptyString, nopvp_bitmap, wxNullBitmap, wxITEM_CHECK, "No PvP Zone", wxEmptyString, NULL);
@@ -194,6 +216,7 @@ void MainToolBar::UpdateButtons() {
 	bool is_host = has_map && !editor->IsLiveClient();
 
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_SELECTION_TOOL, has_map);
+	brushes_toolbar->EnableTool(PALETTE_TERRAIN_PENCIL_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_BUCKET_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_ERASER, has_map);
@@ -208,6 +231,7 @@ void MainToolBar::UpdateButtons() {
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_HATCH_DOOR, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_WINDOW_DOOR, has_map);
+	brushes_toolbar->EnableTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, has_map);
 
 	if (z_choice) {
 		z_choice->Enable(has_map);
@@ -234,6 +258,7 @@ void MainToolBar::UpdateBrushButtons() {
 
 	if (brush && !selection_mode) {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_SELECTION_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PENCIL_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, false);
@@ -248,7 +273,13 @@ void MainToolBar::UpdateBrushButtons() {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, false);
 
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PENCIL_TOOL, !fill_mode && brush && 
+			brush != g_gui.eraser && brush != g_gui.optional_brush && brush != g_gui.prefab_creator_brush &&
+			brush != g_gui.pz_brush && brush != g_gui.rook_brush && brush != g_gui.nolog_brush && brush != g_gui.pvp_brush &&
+			brush != g_gui.normal_door_brush && brush != g_gui.locked_door_brush && brush != g_gui.magic_door_brush && brush != g_gui.quest_door_brush &&
+			brush != g_gui.normal_door_alt_brush && brush != g_gui.hatch_door_brush && brush != g_gui.window_door_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, brush == g_gui.optional_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, fill_mode);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, brush == g_gui.eraser);
@@ -263,8 +294,10 @@ void MainToolBar::UpdateBrushButtons() {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, brush == g_gui.normal_door_alt_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, brush == g_gui.hatch_door_brush);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, brush == g_gui.window_door_brush);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, brush == g_gui.prefab_creator_brush);
 	} else {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_SELECTION_TOOL, selection_mode);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PENCIL_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, false);
@@ -279,6 +312,7 @@ void MainToolBar::UpdateBrushButtons() {
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_ALT_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, false);
 		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, false);
 	}
 	g_gui.GetAuiManager()->Update();
 }
@@ -381,6 +415,10 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 			g_gui.SetFillBrushMode(false);
 			g_gui.SetSelectionMode();
 			break;
+		case PALETTE_TERRAIN_PENCIL_TOOL:
+			g_gui.SetFillBrushMode(false);
+			g_gui.SetDrawingMode();
+			break;
 		case PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL:
 			g_gui.SelectBrush(g_gui.optional_brush);
 			break;
@@ -423,6 +461,9 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 			break;
 		case PALETTE_TERRAIN_WINDOW_DOOR:
 			g_gui.SelectBrush(g_gui.window_door_brush);
+			break;
+		case PALETTE_TERRAIN_PREFAB_CREATOR_TOOL:
+			g_gui.SelectBrush(g_gui.prefab_creator_brush);
 			break;
 		default:
 			break;

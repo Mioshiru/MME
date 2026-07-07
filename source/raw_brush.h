@@ -31,6 +31,7 @@ public:
 	bool isRaw() const {
 		return true;
 	}
+	virtual bool isWall() const override;
 	RAWBrush* asRaw() {
 		return static_cast<RAWBrush*>(this);
 	}

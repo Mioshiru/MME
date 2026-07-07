@@ -30,7 +30,7 @@ public:
 	WallBrush();
 	virtual ~WallBrush();
 
-	bool isWall() const {
+	virtual bool isWall() const override {
 		return true;
 	}
 	WallBrush* asWall() {

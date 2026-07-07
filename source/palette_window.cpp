@@ -34,6 +34,11 @@
 #include <wx/dcbuffer.h>
 #include <wx/checkbox.h>
 #include <wx/button.h>
+#include <wx/file.h>
+#include <wx/filedlg.h>
+#include <wx/menu.h>
+#include <wx/msgdlg.h>
+#include <wx/listbox.h>
 #include <algorithm>
 
 class MinimapPanel : public wxPanel {
@@ -306,6 +311,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	house_palette(nullptr),
 	waypoint_palette(nullptr),
 	raw_palette(nullptr),
+	prefab_palette(nullptr),
 	minimap_panel(nullptr) {
 	SetMinSize(wxSize(225, 250));
 
@@ -335,6 +341,9 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	raw_palette = static_cast<BrushPalettePanel*>(CreateRAWPalette(choicebook, tilesets));
 	choicebook->AddPage(raw_palette, raw_palette->GetName());
 
+	prefab_palette = static_cast<PrefabPalettePanel*>(CreatePrefabPalette(choicebook));
+	choicebook->AddPage(prefab_palette, prefab_palette->GetName());
+
 	// Setup sizers
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
 	choicebook->SetMinSize(wxSize(225, 300));
@@ -356,6 +365,111 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 
 PaletteWindow::~PaletteWindow() {
 	////
+}
+
+enum {
+	ID_PREFAB_LISTBOX = 9000,
+	ID_EXPORT_PREFAB
+};
+
+BEGIN_EVENT_TABLE(PrefabPalettePanel, PalettePanel)
+	EVT_LISTBOX(ID_PREFAB_LISTBOX, PrefabPalettePanel::OnSelect)
+	EVT_CONTEXT_MENU(PrefabPalettePanel::OnContextMenu)
+	EVT_MENU(ID_EXPORT_PREFAB, PrefabPalettePanel::OnExportPrefab)
+END_EVENT_TABLE()
+
+PrefabPalettePanel::PrefabPalettePanel(wxWindow* parent) :
+	PalettePanel(parent, wxID_ANY) {
+	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
+	listbox = newd wxListBox(this, ID_PREFAB_LISTBOX, wxDefaultPosition, wxDefaultSize, 0, nullptr, wxLB_SINGLE);
+	sizer->Add(listbox, 1, wxEXPAND | wxALL, 5);
+	SetSizer(sizer);
+}
+
+PrefabPalettePanel::~PrefabPalettePanel() {
+}
+
+void PrefabPalettePanel::InvalidateContents() {
+	LoadCurrentContents();
+}
+
+void PrefabPalettePanel::LoadCurrentContents() {
+	listbox->Clear();
+	prefabs.clear();
+
+	for (auto& entry : g_brushes.getMap()) {
+		Brush* brush = entry.second;
+		if (brush && brush->isPrefab()) {
+			PrefabBrush* prefab = dynamic_cast<PrefabBrush*>(brush);
+			if (prefab) {
+				listbox->Append(wxstr(prefab->getName()));
+				prefabs.push_back(prefab);
+			}
+		}
+	}
+}
+
+Brush* PrefabPalettePanel::GetSelectedBrush() const {
+	int selection = listbox->GetSelection();
+	if (selection != wxNOT_FOUND && selection < (int)prefabs.size()) {
+		return prefabs[selection];
+	}
+	return nullptr;
+}
+
+bool PrefabPalettePanel::SelectBrush(const Brush* whatbrush) {
+	if (!whatbrush || !whatbrush->isPrefab()) {
+		listbox->SetSelection(wxNOT_FOUND);
+		return false;
+	}
+	for (size_t i = 0; i < prefabs.size(); ++i) {
+		if (prefabs[i] == whatbrush) {
+			listbox->SetSelection(i);
+			return true;
+		}
+	}
+	return false;
+}
+
+void PrefabPalettePanel::OnSelect(wxCommandEvent& event) {
+	Brush* selected = GetSelectedBrush();
+	if (selected) {
+		g_gui.SelectBrush(selected);
+	}
+}
+
+void PrefabPalettePanel::OnContextMenu(wxContextMenuEvent& event) {
+	int selection = listbox->GetSelection();
+	if (selection == wxNOT_FOUND) return;
+
+	wxMenu menu;
+	menu.Append(ID_EXPORT_PREFAB, "Export Prefab...");
+	PopupMenu(&menu);
+}
+
+void PrefabPalettePanel::OnExportPrefab(wxCommandEvent& event) {
+	int selection = listbox->GetSelection();
+	if (selection == wxNOT_FOUND || selection >= (int)prefabs.size()) return;
+
+	PrefabBrush* prefab = prefabs[selection];
+	wxFileDialog saveFileDialog(this, "Export Prefab", "", wxstr(prefab->getName() + ".prefab"),
+		"Prefab files (*.prefab)|*.prefab", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+	if (saveFileDialog.ShowModal() == wxID_CANCEL)
+		return;
+
+	wxString path = saveFileDialog.GetPath();
+	wxFile file(path, wxFile::write);
+	if (file.IsOpened()) {
+		file.Write(prefab->getBase64Data());
+		file.Close();
+	} else {
+		wxMessageBox("Failed to open file for writing.", "Error", wxOK | wxICON_ERROR);
+	}
+}
+
+PalettePanel* PaletteWindow::CreatePrefabPalette(wxWindow* parent) {
+	return newd PrefabPalettePanel(parent);
 }
 
 PalettePanel* PaletteWindow::CreateTerrainPalette(wxWindow* parent, const TilesetContainer& tilesets) {
@@ -523,6 +637,7 @@ bool PaletteWindow::OnSelectBrush(const Brush* whatbrush, PaletteType primary) {
 		if (house_palette) house_palette->SelectBrush(nullptr);
 		if (waypoint_palette) waypoint_palette->SelectBrush(nullptr);
 		if (raw_palette) raw_palette->SelectBrush(nullptr);
+		if (prefab_palette) prefab_palette->SelectBrush(nullptr);
 		return true;
 	}
 
@@ -572,6 +687,13 @@ bool PaletteWindow::OnSelectBrush(const Brush* whatbrush, PaletteType primary) {
 			}
 			break;
 		}
+		case TILESET_PREFAB: {
+			if (prefab_palette && prefab_palette->SelectBrush(whatbrush)) {
+				SelectPage(TILESET_PREFAB);
+				return true;
+			}
+			break;
+		}
 		default:
 			break;
 	}
@@ -610,6 +732,14 @@ bool PaletteWindow::OnSelectBrush(const Brush* whatbrush, PaletteType primary) {
 	if (primary != TILESET_RAW) {
 		if (raw_palette && raw_palette->SelectBrush(whatbrush)) {
 			SelectPage(TILESET_RAW);
+			return true;
+		}
+	}
+
+	// Test if it's a prefab brush
+	if (primary != TILESET_PREFAB) {
+		if (prefab_palette && prefab_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_PREFAB);
 			return true;
 		}
 	}
@@ -676,6 +806,12 @@ void PaletteWindow::UpdateMinimapVisibility() {
 		if (minimap_panel->Show(show_minimap)) {
 			GetSizer()->Layout();
 		}
+	}
+}
+
+void PaletteWindow::InvalidatePrefabPalette() {
+	if (prefab_palette) {
+		prefab_palette->InvalidateContents();
 	}
 }
 

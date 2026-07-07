@@ -204,14 +204,65 @@ Brush* Brushes::getBrush(const std::string& name) const {
 
 // PrefabBrush Konstruktor mit iconName
 PrefabBrush::PrefabBrush(const std::string& name, const std::string& data, const std::string& iconName) :
-    m_name(name), m_base64_data(data), m_icon_name(iconName) {
-    look_id = 0; // Wird später durch Mapping von iconName zu Sprite-ID gesetzt
+    m_name(name), m_base64_data(data), m_icon_name(iconName), look_id(0), m_width(1), m_height(1) {
+    std::vector<uint8_t> decoded = LuaAPI::base64_decode(m_base64_data);
+    if (!decoded.empty()) {
+        size_t offset = 0;
+        auto readU16 = [&]() -> uint16_t {
+            if (offset + 2 > decoded.size()) return 0;
+            uint16_t val = decoded[offset] | (decoded[offset + 1] << 8);
+            offset += 2;
+            return val;
+        };
+
+        int max_x = 0;
+        int max_y = 0;
+        while (offset + 3 <= decoded.size() && decoded[offset] != 0xFF) {
+            int rx = decoded[offset++];
+            int ry = decoded[offset++];
+            int rz = decoded[offset++];
+            if (rx > max_x) max_x = rx;
+            if (ry > max_y) max_y = ry;
+            readU16();
+            uint16_t itemCount = readU16();
+            for (uint16_t i = 0; i < itemCount; ++i) {
+                readU16(); readU16(); readU16();
+            }
+        }
+        m_width = max_x + 1;
+        m_height = max_y + 1;
+    }
 }
 
 PrefabBrush::PrefabBrush(const std::string& name, const std::string& data) :
-    m_name(name), m_base64_data(data) {
-    // Standard-Icon für Prefabs (Blaues Gebäude-Symbol)
-    look_id = 0; // Wird via SVG/Graphics gesetzt
+    m_name(name), m_base64_data(data), m_icon_name(""), look_id(0), m_width(1), m_height(1) {
+    std::vector<uint8_t> decoded = LuaAPI::base64_decode(m_base64_data);
+    if (!decoded.empty()) {
+        size_t offset = 0;
+        auto readU16 = [&]() -> uint16_t {
+            if (offset + 2 > decoded.size()) return 0;
+            uint16_t val = decoded[offset] | (decoded[offset + 1] << 8);
+            offset += 2;
+            return val;
+        };
+
+        int max_x = 0;
+        int max_y = 0;
+        while (offset + 3 <= decoded.size() && decoded[offset] != 0xFF) {
+            int rx = decoded[offset++];
+            int ry = decoded[offset++];
+            int rz = decoded[offset++];
+            if (rx > max_x) max_x = rx;
+            if (ry > max_y) max_y = ry;
+            readU16();
+            uint16_t itemCount = readU16();
+            for (uint16_t i = 0; i < itemCount; ++i) {
+                readU16(); readU16(); readU16();
+            }
+        }
+        m_width = max_x + 1;
+        m_height = max_y + 1;
+    }
 }
 
 void PrefabBrush::draw(BaseMap* map, Tile* tile, void* parameter) {

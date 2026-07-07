@@ -43,6 +43,7 @@ namespace RME::UI::SVG {
     inline const char* ICON_LOCK     = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>)";
     inline const char* ICON_MAGIC    = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>)";
     inline const char* ICON_WINDOW   = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>)";
+    inline const char* ICON_BLUEPRINT = R"(<svg viewBox="0 0 24 24"><path fill="#DAA520" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-1-12H6v10h12V7z M8 9h8v1H8V9zm0 3h8v1H8v-1zm0 3h5v1H8v-1z"/></svg>)";
 }
 
 #endif

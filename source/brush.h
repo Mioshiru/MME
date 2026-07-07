@@ -197,6 +197,9 @@ public:
 	virtual bool isEraser() const {
 		return false;
 	}
+	virtual bool isPrefab() const {
+		return false;
+	}
 
 	virtual RAWBrush* asRaw() {
 		return nullptr;
@@ -286,11 +289,18 @@ public:
 	int getLookID() const override;
 	void setLookID(uint16_t id) { look_id = id; }
 
+	bool isPrefab() const override { return true; }
+	int getWidth() const { return m_width; }
+	int getHeight() const { return m_height; }
+	const std::string& getBase64Data() const { return m_base64_data; }
+
 protected:
 	std::string m_name;
 	std::string m_base64_data;
 	std::string m_icon_name;
 	uint16_t look_id;
+	int m_width;
+	int m_height;
 };
 
 class PrefabCreatorBrush : public Brush {
@@ -405,6 +415,9 @@ public:
 	virtual ~DoorBrush();
 
 	bool isDoor() const {
+		return true;
+	}
+	virtual bool isWall() const override {
 		return true;
 	}
 	DoorBrush* asDoor() {

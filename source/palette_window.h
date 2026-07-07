@@ -25,6 +25,30 @@ class CreaturePalettePanel;
 class HousePalettePanel;
 class WaypointPalettePanel;
 
+class PrefabPalettePanel : public PalettePanel {
+public:
+	PrefabPalettePanel(wxWindow* parent);
+	virtual ~PrefabPalettePanel();
+
+	PaletteType GetType() const override { return TILESET_PREFAB; }
+	wxString GetName() const override { return "Prefabs"; }
+
+	void LoadCurrentContents() override;
+	void InvalidateContents() override;
+	Brush* GetSelectedBrush() const override;
+	bool SelectBrush(const Brush* whatbrush) override;
+
+	void OnSelect(wxCommandEvent& event);
+	void OnContextMenu(wxContextMenuEvent& event);
+	void OnExportPrefab(wxCommandEvent& event);
+
+protected:
+	wxListBox* listbox;
+	std::vector<PrefabBrush*> prefabs;
+
+	DECLARE_EVENT_TABLE()
+};
+
 class PaletteWindow : public wxPanel {
 public:
 	PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets);
@@ -46,6 +70,7 @@ public:
 	// The currently selected page (terrain, doodad...)
 	PaletteType GetSelectedPage() const;
 	BrushPalettePanel* collection_palette;
+	void InvalidatePrefabPalette();
 
 	// Custom Event handlers (something has changed?)
 	// Finds the brush pointed to by whatbrush and selects it as the current brush (also changes page)
@@ -72,6 +97,7 @@ protected:
 	static PalettePanel* CreateHousePalette(wxWindow* parent, const TilesetContainer& tilesets);
 	static PalettePanel* CreateWaypointPalette(wxWindow* parent, const TilesetContainer& tilesets);
 	static PalettePanel* CreateRAWPalette(wxWindow* parent, const TilesetContainer& tilesets);
+	static PalettePanel* CreatePrefabPalette(wxWindow* parent);
 
 	wxChoicebook* choicebook;
 
@@ -82,6 +108,7 @@ protected:
 	HousePalettePanel* house_palette;
 	WaypointPalettePanel* waypoint_palette;
 	BrushPalettePanel* raw_palette;
+	PrefabPalettePanel* prefab_palette;
 
 public:
 	wxPanel* minimap_panel = nullptr;

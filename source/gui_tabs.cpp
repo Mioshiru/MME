@@ -4,6 +4,11 @@
 #include "main_menubar.h"
 #include "application.h"
 #include "common_windows.h"
+#include "brush.h"
+#include "palette_window.h"
+#include "lua/lua_api.h"
+#include <wx/msgdlg.h>
+#include <wx/textdlg.h>
 
 void GUI::SaveCurrentMap(FileName filename, bool showdialog) {
 	MapTab* mapTab = GetCurrentMapTab();
@@ -201,11 +206,55 @@ void GUI::SetCurrentZoom(double zoom) {
 }
 
 void GUI::RegisterVirtualBrush(const std::string& name, const std::string& data, const std::string& iconName) {
-	// Stub implementation
+	PrefabBrush* brush = newd PrefabBrush(name, data, iconName);
+	g_brushes.addBrush(brush);
+	PaletteWindow* palette = GetPalette();
+	if (palette) {
+		palette->InvalidatePrefabPalette();
+	}
 }
 
 void GUI::SavePrefabFromCreator() {
-	// Stub implementation
+	if (!prefab_creator_brush) return;
+	const auto& selected = prefab_creator_brush->getSelectedTiles();
+	if (selected.empty()) {
+		wxMessageBox("No tiles selected in Prefab Creator.", "Error", wxOK | wxICON_ERROR);
+		return;
+	}
+
+	// Calculate bounds
+	int min_x = 0x7FFFFFFF, min_y = 0x7FFFFFFF;
+	int max_x = -0x7FFFFFFF, max_y = -0x7FFFFFFF;
+	for (const auto& pos : selected) {
+		if (pos.x < min_x) min_x = pos.x;
+		if (pos.y < min_y) min_y = pos.y;
+		if (pos.x > max_x) max_x = pos.x;
+		if (pos.y > max_y) max_y = pos.y;
+	}
+
+	int width = max_x - min_x + 1;
+	int height = max_y - min_y + 1;
+
+	// Prompt for name
+	wxString name = wxGetTextFromUser("Enter a name for the new prefab:", "Save Prefab");
+	if (name.empty()) return;
+
+	// Create snapshot
+	Map& map = GetCurrentMap();
+	std::vector<uint8_t> snapshot = map.createRegionSnapshot(min_x, min_y, width, height);
+	std::string base64Data = LuaAPI::base64_encode(snapshot.data(), snapshot.size());
+
+	// Register the brush
+	RegisterVirtualBrush(std::string(name.utf8_str()), base64Data, "icons/prefab.png");
+
+	// Clear creator selection
+	prefab_creator_brush->clear();
+
+	// Select the newly created prefab brush
+	Brush* new_brush = g_brushes.getBrush(std::string(name.utf8_str()));
+	if (new_brush) {
+		SelectBrush(new_brush);
+	}
 }
 
 void GUI::CycleTab(bool forward) {

@@ -18,6 +18,65 @@
 #include <wx/wfstream.h>
 #include <wx/log.h>
 #include <GL/gl.h>
+#include "pngfiles.h"
+#include "artprovider.h"
+#include <wx/artprov.h>
+#include <wx/mstream.h>
+#include <wx/stdpaths.h>
+
+static wxBitmap _wxGetBitmapFromMemoryRadial(const unsigned char* data, int length, const wxSize& target_size) {
+	wxMemoryInputStream is(data, length);
+	wxImage img(is, "image/png");
+	if (!img.IsOk()) {
+		return wxNullBitmap;
+	}
+	if (target_size.IsFullySpecified() && target_size.GetWidth() > 0 && target_size.GetHeight() > 0 &&
+		(img.GetWidth() != target_size.GetWidth() || img.GetHeight() != target_size.GetHeight())) {
+		img = img.Scale(target_size.GetWidth(), target_size.GetHeight(), wxIMAGE_QUALITY_HIGH);
+	}
+	return wxBitmap(img, -1);
+}
+
+static wxBitmap LoadBitmapFromCandidatesRadial(const wxSize& target_size, const std::vector<wxString>& candidates) {
+	for (const auto& filepath : candidates) {
+		wxImage img;
+		if (img.LoadFile(filepath, wxBITMAP_TYPE_PNG)) {
+			if (target_size.IsFullySpecified() && target_size.GetWidth() > 0 && target_size.GetHeight() > 0 &&
+				(img.GetWidth() != target_size.GetWidth() || img.GetHeight() != target_size.GetHeight())) {
+				img = img.Scale(target_size.GetWidth(), target_size.GetHeight(), wxIMAGE_QUALITY_HIGH);
+			}
+			return wxBitmap(img, -1);
+		}
+	}
+	return wxNullBitmap;
+}
+
+static GLuint ConvertBitmapToTexture(const wxBitmap& bitmap) {
+	if (!bitmap.IsOk()) return 0;
+	wxImage img = bitmap.ConvertToImage();
+	int w = img.GetWidth();
+	int h = img.GetHeight();
+	unsigned char* rgb = img.GetData();
+	unsigned char* alpha = img.HasAlpha() ? img.GetAlpha() : nullptr;
+	
+	std::vector<unsigned char> rgba(w * h * 4);
+	for (int i = 0; i < w * h; ++i) {
+		rgba[i * 4 + 0] = rgb[i * 3 + 0];
+		rgba[i * 4 + 1] = rgb[i * 3 + 1];
+		rgba[i * 4 + 2] = rgb[i * 3 + 2];
+		rgba[i * 4 + 3] = alpha ? alpha[i] : 255;
+	}
+	
+	GLuint tex_id = 0;
+	glGenTextures(1, &tex_id);
+	glBindTexture(GL_TEXTURE_2D, tex_id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+	glBindTexture(GL_TEXTURE_2D, 0);
+	return tex_id;
+}
+
 
 #ifdef __WINDOWS__
 #include <windows.h>
@@ -484,6 +543,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 	// [UI] Old ImGui Tool Wheel replaced with premium ImGui circular selection wheel.
 	if (tool_wheel_open) {
+		LoadRadialTextures();
 		ImGuiViewport* vp = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(vp->Pos);
 		ImGui::SetNextWindowSize(vp->Size);
@@ -512,7 +572,8 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				{"LOCKED DOOR"},
 				{"MAGIC DOOR"},
 				{"HATCH WINDOW"},
-				{"ERASER"}
+				{"ERASER"},
+				{"PREFAB CREATOR"}
 			};
 			
 			const int N = tools.size();
@@ -557,80 +618,21 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					IM_COL32(180, 140, 50, 60), 1.0f
 				);
 				
-				// 3. Render vector icon
+				// 3. Render texture icon
 				float angle_mid = (angle_start + angle_end) / 2.0f;
 				float r_mid = (r_min + r_max) / 2.0f;
 				ImVec2 icon_pos(center.x + r_mid * std::cos(angle_mid), center.y + r_mid * std::sin(angle_mid));
 				
-				ImU32 icon_color = is_hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(180, 140, 50, 225);
+				ImU32 icon_color = is_hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(245, 215, 120, 255);
 				
-				switch (i) {
-					case 0: { // Selection
-						ImVec2 cursor_pts[7] = {
-							ImVec2(icon_pos.x - 5.0f, icon_pos.y - 8.0f),
-							ImVec2(icon_pos.x + 5.0f, icon_pos.y + 2.0f),
-							ImVec2(icon_pos.x + 1.0f, icon_pos.y + 2.0f),
-							ImVec2(icon_pos.x + 3.0f, icon_pos.y + 7.0f),
-							ImVec2(icon_pos.x + 1.0f, icon_pos.y + 8.0f),
-							ImVec2(icon_pos.x - 1.0f, icon_pos.y + 3.0f),
-							ImVec2(icon_pos.x - 5.0f, icon_pos.y - 0.0f)
-						};
-						draw_list->AddConvexPolyFilled(cursor_pts, 7, icon_color);
-						break;
-					}
-					case 1: { // Pencil
-						draw_list->AddLine(ImVec2(icon_pos.x - 6.0f, icon_pos.y + 6.0f), ImVec2(icon_pos.x + 6.0f, icon_pos.y - 6.0f), icon_color, 2.5f);
-						break;
-					}
-					case 2: { // Bucket
-						ImVec2 b_pts[4] = {
-							ImVec2(icon_pos.x - 6.0f, icon_pos.y - 3.0f),
-							ImVec2(icon_pos.x + 1.0f, icon_pos.y - 7.0f),
-							ImVec2(icon_pos.x + 6.0f, icon_pos.y + 2.0f),
-							ImVec2(icon_pos.x - 1.0f, icon_pos.y + 6.0f)
-						};
-						draw_list->AddPolyline(b_pts, 4, icon_color, ImDrawFlags_Closed, 1.5f);
-						draw_list->AddLine(ImVec2(icon_pos.x - 2.0f, icon_pos.y - 5.0f), ImVec2(icon_pos.x + 4.0f, icon_pos.y + 4.0f), icon_color, 1.0f);
-						break;
-					}
-					case 3: { // PZ Shield
-						ImVec2 s_pts[5] = {
-							ImVec2(icon_pos.x, icon_pos.y - 8.0f),
-							ImVec2(icon_pos.x + 6.0f, icon_pos.y - 4.0f),
-							ImVec2(icon_pos.x + 6.0f, icon_pos.y + 3.0f),
-							ImVec2(icon_pos.x, icon_pos.y + 8.0f),
-							ImVec2(icon_pos.x - 6.0f, icon_pos.y + 3.0f)
-						};
-						draw_list->AddPolyline(s_pts, 5, icon_color, ImDrawFlags_Closed, 1.5f);
-						break;
-					}
-					case 4: { // Normal Door
-						draw_list->AddRect(ImVec2(icon_pos.x - 5.0f, icon_pos.y - 8.0f), ImVec2(icon_pos.x + 5.0f, icon_pos.y + 8.0f), icon_color, 1.0f, 0, 1.5f);
-						draw_list->AddCircleFilled(ImVec2(icon_pos.x + 2.5f, icon_pos.y), 1.5f, icon_color);
-						break;
-					}
-					case 5: { // Locked Door
-						draw_list->AddRect(ImVec2(icon_pos.x - 5.0f, icon_pos.y - 4.0f), ImVec2(icon_pos.x + 5.0f, icon_pos.y + 8.0f), icon_color, 1.0f, 0, 1.5f);
-						draw_list->AddCircle(ImVec2(icon_pos.x, icon_pos.y - 4.0f), 3.0f, icon_color, 0, 1.0f);
-						break;
-					}
-					case 6: { // Magic Door
-						draw_list->AddRect(ImVec2(icon_pos.x - 5.0f, icon_pos.y - 8.0f), ImVec2(icon_pos.x + 5.0f, icon_pos.y + 8.0f), icon_color, 1.0f, 0, 1.5f);
-						draw_list->AddCircleFilled(ImVec2(icon_pos.x - 1.0f, icon_pos.y), 1.0f, icon_color);
-						draw_list->AddLine(ImVec2(icon_pos.x + 2.0f, icon_pos.y - 2.0f), ImVec2(icon_pos.x + 2.0f, icon_pos.y + 2.0f), icon_color, 0.8f);
-						draw_list->AddLine(ImVec2(icon_pos.x - 1.0f, icon_pos.y), ImVec2(icon_pos.x + 5.0f, icon_pos.y), icon_color, 0.8f);
-						break;
-					}
-					case 7: { // Hatch Window
-						draw_list->AddRect(ImVec2(icon_pos.x - 6.0f, icon_pos.y - 6.0f), ImVec2(icon_pos.x + 6.0f, icon_pos.y + 6.0f), icon_color, 1.0f, 0, 1.5f);
-						draw_list->AddLine(ImVec2(icon_pos.x - 6.0f, icon_pos.y), ImVec2(icon_pos.x + 6.0f, icon_pos.y), icon_color, 1.0f);
-						draw_list->AddLine(ImVec2(icon_pos.x, icon_pos.y - 6.0f), ImVec2(icon_pos.x, icon_pos.y + 6.0f), icon_color, 1.0f);
-						break;
-					}
-					case 8: { // Eraser
-						draw_list->AddRectFilled(ImVec2(icon_pos.x - 8.0f, icon_pos.y - 4.0f), ImVec2(icon_pos.x + 8.0f, icon_pos.y + 4.0f), icon_color, 1.5f);
-						break;
-					}
+				if (radial_tex_ids[i] != 0) {
+					draw_list->AddImage(
+						(ImTextureID)(intptr_t)radial_tex_ids[i],
+						ImVec2(icon_pos.x - 12.0f, icon_pos.y - 12.0f),
+						ImVec2(icon_pos.x + 12.0f, icon_pos.y + 12.0f),
+						ImVec2(0, 0), ImVec2(1, 1),
+						icon_color
+					);
 				}
 			}
 			
@@ -703,7 +705,7 @@ int MapCanvas::GetHoveredRadialSlice() const {
 	float angle = std::atan2(dy, dx);
 	if (angle < 0) angle += 2.0f * PI;
 	
-	const int N = 9;
+	const int N = 10;
 	float adjusted_angle = angle + PI / 2.0f + (PI / N);
 	if (adjusted_angle >= 2.0f * PI) adjusted_angle -= 2.0f * PI;
 	
@@ -786,3 +788,74 @@ void MapCanvas::TakeScreenshot(wxFileName path, wxString format) {
 
 	screenshot_buffer = nullptr;
 }
+
+void MapCanvas::LoadRadialTextures() {
+	if (radial_textures_loaded) return;
+	
+	wxSize size = wxSize(32, 32);
+	
+	// Selection
+	wxBitmap pointer_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/pointer.png", "../icons/pointer.png", "Map Editor/icons/pointer.png", "../Map Editor/icons/pointer.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pointer.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pointer.png"
+	});
+	radial_tex_ids[0] = ConvertBitmapToTexture(pointer_bmp);
+	
+	// Pencil
+	wxBitmap pencil_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/pencil.png", "../icons/pencil.png", "Map Editor/icons/pencil.png", "../Map Editor/icons/pencil.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pencil.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pencil.png"
+	});
+	radial_tex_ids[1] = ConvertBitmapToTexture(pencil_bmp);
+	
+	// Bucket
+	wxBitmap bucket_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/bucket.png", "../icons/bucket.png", "Map Editor/icons/bucket.png", "../Map Editor/icons/bucket.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png"
+	});
+	radial_tex_ids[2] = ConvertBitmapToTexture(bucket_bmp);
+	
+	// Protection Zone (Shield)
+	wxBitmap pz_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/protected_zone.png", "../icons/protected_zone.png", "Map Editor/icons/protected_zone.png", "../Map Editor/icons/protected_zone.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "protected_zone.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "protected_zone.png"
+	});
+	if (!pz_bmp.IsOk()) {
+		pz_bmp = wxArtProvider::GetBitmap(ART_PZ_BRUSH, wxART_TOOLBAR, size);
+	}
+	radial_tex_ids[3] = ConvertBitmapToTexture(pz_bmp);
+	
+	// Normal Door
+	wxBitmap normal_door_bmp = wxArtProvider::GetBitmap(ART_DOOR_NORMAL_SMALL, wxART_TOOLBAR, size);
+	radial_tex_ids[4] = ConvertBitmapToTexture(normal_door_bmp);
+	
+	// Locked Door
+	wxBitmap locked_door_bmp = wxArtProvider::GetBitmap(ART_DOOR_LOCKED_SMALL, wxART_TOOLBAR, size);
+	radial_tex_ids[5] = ConvertBitmapToTexture(locked_door_bmp);
+	
+	// Magic Door
+	wxBitmap magic_door_bmp = wxArtProvider::GetBitmap(ART_DOOR_MAGIC_SMALL, wxART_TOOLBAR, size);
+	radial_tex_ids[6] = ConvertBitmapToTexture(magic_door_bmp);
+	
+	// Hatch Window
+	wxBitmap hatch_bmp = _wxGetBitmapFromMemoryRadial(window_hatch_small_png, sizeof(window_hatch_small_png), size);
+	radial_tex_ids[7] = ConvertBitmapToTexture(hatch_bmp);
+	
+	// Eraser
+	wxBitmap eraser_bmp = _wxGetBitmapFromMemoryRadial(eraser_small_png, sizeof(eraser_small_png), size);
+	radial_tex_ids[8] = ConvertBitmapToTexture(eraser_bmp);
+	
+	// Prefab Creator (Blueprint)
+	wxBitmap prefab_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/prefab.png", "../icons/prefab.png", "Map Editor/icons/prefab.png", "../Map Editor/icons/prefab.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "prefab.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "prefab.png"
+	});
+	radial_tex_ids[9] = ConvertBitmapToTexture(prefab_bmp);
+	
+	radial_textures_loaded = true;
+}

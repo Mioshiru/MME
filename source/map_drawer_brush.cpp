@@ -318,6 +318,26 @@ void MapDrawer::DrawBrush() {
                      255, 64, 64, 160);
       }
       glDisable(GL_TEXTURE_2D);
+    } else if (brush->isPrefab()) {
+      PrefabBrush* prefab_brush = dynamic_cast<PrefabBrush*>(brush);
+      if (prefab_brush) {
+        int w = prefab_brush->getWidth();
+        int h = prefab_brush->getHeight();
+        int start_sx = mouse_map_x * TileSize - view_scroll_x - getFloorAdjustment(floor);
+        int start_sy = mouse_map_y * TileSize - view_scroll_y - getFloorAdjustment(floor);
+        int end_sx = (mouse_map_x + w) * TileSize - view_scroll_x - getFloorAdjustment(floor);
+        int end_sy = (mouse_map_y + h) * TileSize - view_scroll_y - getFloorAdjustment(floor);
+
+        glDisable(GL_TEXTURE_2D);
+        glColor4ub(0, 128, 255, 100);
+        glBegin(GL_QUADS);
+        glVertex2f(start_sx, start_sy);
+        glVertex2f(end_sx, start_sy);
+        glVertex2f(end_sx, end_sy);
+        glVertex2f(start_sx, end_sy);
+        glEnd();
+        glEnable(GL_TEXTURE_2D);
+      }
     } else if (!brush->isDoodad()) {
       RAWBrush *raw_brush = brush->isRaw() ? brush->asRaw() : nullptr;
       if (brush->isRaw())

@@ -205,6 +205,12 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     return;
   }
 
+  if (isPasting() && event.GetKeyCode() == WXK_ESCAPE) {
+    EndPasting();
+    Refresh();
+    return;
+  }
+
   if (event.ShiftDown() && (event.GetKeyCode() == 'Q' || event.GetKeyCode() == 'q')) {
     tool_wheel_open = !tool_wheel_open;
     tool_wheel_x = static_cast<float>(cursor_x);
@@ -220,10 +226,7 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     }
     if (event.GetKeyCode() == 'V' || event.GetKeyCode() == 'v') {
       if (editor.copybuffer.canPaste()) {
-        int mouse_map_x, mouse_map_y;
-        ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
-        editor.copybuffer.paste(editor, Position(mouse_map_x, mouse_map_y, floor));
-        Refresh();
+        g_gui.PreparePaste();
       }
       return;
     }
@@ -318,9 +321,22 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
           g_gui.SetFillBrushMode(false);
           g_gui.SelectBrush(g_gui.eraser);
           break;
+        case 9: // Prefab Creator
+          g_gui.SetFillBrushMode(false);
+          g_gui.SelectBrush(g_gui.prefab_creator_brush);
+          break;
       }
     }
     tool_wheel_open = false;
+    Refresh();
+    return;
+  }
+
+  if (isPasting()) {
+    int mouse_map_x, mouse_map_y;
+    ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+    editor.copybuffer.paste(editor, Position(mouse_map_x, mouse_map_y, floor));
+    EndPasting();
     Refresh();
     return;
   }
@@ -389,6 +405,7 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 
 			if (!event.ShiftDown() && !event.ControlDown()) {
 				editor.selection.clear();
+				markDirty();
 			}
 		}
 	}
@@ -432,6 +449,10 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 					}
 				}
 				editor.selection.finish(Selection::INTERNAL);
+				if (editor.selection.size() > 0) {
+					editor.copybuffer.copy(editor, floor);
+				}
+				markDirty();
 			}
 		} else {
 			// Drag select
@@ -466,6 +487,10 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 				}
 			}
 			editor.selection.finish(Selection::INTERNAL);
+			if (editor.selection.size() > 0) {
+				editor.copybuffer.copy(editor, floor);
+			}
+			markDirty();
 		}
 		dragging_draw = false;
 		rectangle_mode = false;
@@ -516,8 +541,30 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 		int dy = mouse_map_y - drag_start_map_y;
 		if (dx != 0 || dy != 0) {
 			editor.moveSelection(Position(dx, dy, 0));
+		} else {
+			// Single click on already selected tile: clear other selections
+			if (!event.ShiftDown() && !event.ControlDown()) {
+				Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+				if (tile) {
+					editor.selection.start(Selection::INTERNAL);
+					editor.selection.clear();
+					Item* top_item = tile->getTopItem();
+					if (top_item) {
+						editor.selection.add(tile, top_item);
+					} else if (tile->ground) {
+						editor.selection.add(tile, tile->ground);
+					} else {
+						editor.selection.add(tile);
+					}
+					editor.selection.finish(Selection::INTERNAL);
+					if (editor.selection.size() > 0) {
+						editor.copybuffer.copy(editor, floor);
+					}
+				}
+			}
 		}
 		dragging_selection = false;
+		markDirty();
 	}
 
 	dragging_draw = false;
@@ -538,6 +585,12 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 
   if (tool_wheel_open) {
     tool_wheel_open = false;
+    Refresh();
+    return;
+  }
+
+  if (isPasting()) {
+    EndPasting();
     Refresh();
     return;
   }
@@ -845,7 +898,17 @@ void MapCanvas::EnterDrawingMode() {
   Refresh();
 }
 
-bool MapCanvas::isPasting() const { return false; }
+void MapCanvas::StartPasting() {
+  g_gui.StartPasting();
+}
+
+void MapCanvas::EndPasting() {
+  g_gui.EndPasting();
+}
+
+bool MapCanvas::isPasting() const {
+  return g_gui.IsPasting();
+}
 
 #undef MAPCANVAS_EVENT_STUB
 

@@ -41,19 +41,6 @@
 #define GL_RGBA32F 0x8814
 #endif
 
-#include "../brushes/door_normal.xpm"
-#include "../brushes/door_normal_small.xpm"
-#include "../brushes/door_locked.xpm"
-#include "../brushes/door_locked_small.xpm"
-#include "../brushes/door_magic.xpm"
-#include "../brushes/door_magic_small.xpm"
-#include "../brushes/door_quest.xpm"
-#include "../brushes/door_quest_small.xpm"
-#include "../brushes/door_normal_alt.xpm"
-#include "../brushes/door_normal_alt_small.xpm"
-#include "../brushes/door_archway.xpm"
-#include "../brushes/door_archway_small.xpm"
-
 // All 133 template colors
 static uint32_t TemplateOutfitLookupTable[] = {
 	0xFFFFFF,
@@ -356,6 +343,24 @@ inline wxBitmap* _wxGetBitmapFromMemory(const unsigned char* data, int length) {
 	return newd wxBitmap(img, -1);
 }
 
+inline wxBitmap* LoadBitmapFromFile(const std::initializer_list<const char*>& paths) {
+	for (const char* path : paths) {
+		const wxString file(path);
+		if (!wxFileExists(file)) {
+			continue;
+		}
+
+		wxImage img;
+		if (!img.LoadFile(file, wxBITMAP_TYPE_PNG)) {
+			continue;
+		}
+
+		return newd wxBitmap(img, -1);
+	}
+
+	return nullptr;
+}
+
 bool GraphicManager::loadEditorSprites() {
 	// Unused graphics MIGHT be loaded here, but it's a neglectable loss
 	sprite_space[EDITOR_SPRITE_SELECTION_MARKER] = newd EditorSprite(
@@ -390,6 +395,7 @@ bool GraphicManager::loadEditorSprites() {
 		loadPNGFile(circular_7_small_png),
 		loadPNGFile(circular_7_png)
 	);
+	
 	sprite_space[EDITOR_SPRITE_BRUSH_SD_1x1] = newd EditorSprite(
 		loadPNGFile(rectangular_1_small_png),
 		loadPNGFile(rectangular_1_png)
@@ -469,29 +475,68 @@ bool GraphicManager::loadEditorSprites() {
 	}
 
 	sprite_space[EDITOR_SPRITE_DOOR_NORMAL] = newd EditorSprite(
-		newd wxBitmap(door_normal_small_xpm),
-		newd wxBitmap(door_normal_xpm)
+		loadPNGFile(door_normal_small_png),
+		loadPNGFile(door_normal_png)
 	);
 	sprite_space[EDITOR_SPRITE_DOOR_LOCKED] = newd EditorSprite(
-		newd wxBitmap(door_locked_small_xpm),
-		newd wxBitmap(door_locked_xpm)
+		loadPNGFile(door_locked_small_png),
+		loadPNGFile(door_locked_png)
 	);
 	sprite_space[EDITOR_SPRITE_DOOR_MAGIC] = newd EditorSprite(
-		newd wxBitmap(door_magic_small_xpm),
-		newd wxBitmap(door_magic_xpm)
+		loadPNGFile(door_magic_small_png),
+		loadPNGFile(door_magic_png)
 	);
 	sprite_space[EDITOR_SPRITE_DOOR_QUEST] = newd EditorSprite(
-		newd wxBitmap(door_quest_small_xpm),
-		newd wxBitmap(door_quest_xpm)
+		loadPNGFile(door_quest_small_png),
+		loadPNGFile(door_quest_png)
 	);
-	sprite_space[EDITOR_SPRITE_DOOR_NORMAL_ALT] = newd EditorSprite(
-		newd wxBitmap(door_normal_alt_small_xpm),
-		newd wxBitmap(door_normal_alt_xpm)
-	);
-	sprite_space[EDITOR_SPRITE_DOOR_ARCHWAY] = newd EditorSprite(
-		newd wxBitmap(door_archway_small_xpm),
-		newd wxBitmap(door_archway_xpm)
-	);
+	{
+		wxBitmap* door_alt_small = LoadBitmapFromFile({
+			"brushes/door_normal_alt_small.png",
+			"../brushes/door_normal_alt_small.png",
+			"Map Editor/brushes/door_normal_alt_small.png",
+			"../Map Editor/brushes/door_normal_alt_small.png"
+		});
+		wxBitmap* door_alt = LoadBitmapFromFile({
+			"brushes/door_normal_alt.png",
+			"../brushes/door_normal_alt.png",
+			"Map Editor/brushes/door_normal_alt.png",
+			"../Map Editor/brushes/door_normal_alt.png"
+		});
+
+		if (!door_alt_small) {
+			door_alt_small = loadPNGFile(door_normal_small_png);
+		}
+		if (!door_alt) {
+			door_alt = loadPNGFile(door_normal_png);
+		}
+
+		sprite_space[EDITOR_SPRITE_DOOR_NORMAL_ALT] = newd EditorSprite(door_alt_small, door_alt);
+	}
+
+	{
+		wxBitmap* door_archway_small = LoadBitmapFromFile({
+			"brushes/door_archway_small.png",
+			"../brushes/door_archway_small.png",
+			"Map Editor/brushes/door_archway_small.png",
+			"../Map Editor/brushes/door_archway_small.png"
+		});
+		wxBitmap* door_archway = LoadBitmapFromFile({
+			"brushes/door_archway.png",
+			"../brushes/door_archway.png",
+			"Map Editor/brushes/door_archway.png",
+			"../Map Editor/brushes/door_archway.png"
+		});
+
+		if (!door_archway_small) {
+			door_archway_small = loadPNGFile(door_normal_small_png);
+		}
+		if (!door_archway) {
+			door_archway = loadPNGFile(door_normal_png);
+		}
+
+		sprite_space[EDITOR_SPRITE_DOOR_ARCHWAY] = newd EditorSprite(door_archway_small, door_archway);
+	}
 	sprite_space[EDITOR_SPRITE_WINDOW_NORMAL] = newd EditorSprite(
 		loadPNGFile(window_normal_small_png),
 		loadPNGFile(window_normal_png)

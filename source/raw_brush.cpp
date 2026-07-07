@@ -99,3 +99,7 @@ void RAWBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 	}
 	tile->addItem(Item::Create(itemtype->id));
 }
+
+bool RAWBrush::isWall() const {
+	return itemtype && itemtype->isWall;
+}
