@@ -137,26 +137,7 @@ protected:
 	MapEditor(const MapEditor&);
 	MapEditor& operator=(const MapEditor&);
 };
-
-inline void MapEditor::draw(const Position& offset, bool alt) {
-	drawInternal(offset, alt, true);
-}
-inline void MapEditor::undraw(const Position& offset, bool alt) {
-	drawInternal(offset, alt, false);
-}
-inline void MapEditor::draw(const PositionVector& posvec, bool alt) {
-	drawInternal(posvec, alt, true);
-}
-inline void MapEditor::draw(const PositionVector& todraw, PositionVector& toborder, bool alt) {
-	drawInternal(todraw, toborder, alt, true);
-}
-inline void MapEditor::undraw(const PositionVector& posvec, bool alt) {
-	drawInternal(posvec, alt, false);
-}
-inline void MapEditor::undraw(const PositionVector& todraw, PositionVector& toborder, bool alt) {
-	drawInternal(todraw, toborder, alt, false);
-}
-
 typedef MapEditor Editor;
 
-#endif
+#endif // RME_EDITOR_H
+

@@ -1278,6 +1278,9 @@ void MapDrawer::DrawMap() {
       int nd_end_x = (end_x & ~3) + 4;
       int nd_end_y = (end_y & ~3) + 4;
 
+      bool translated = false;
+      bool client_states_active = false;
+
       for (int nd_map_x = nd_start_x; nd_map_x <= nd_end_x; nd_map_x += 4) {
         for (int nd_map_y = nd_start_y; nd_map_y <= nd_end_y; nd_map_y += 4) {
           QTreeNode *nd = editor.map.getLeaf(nd_map_x, nd_map_y);
@@ -1305,6 +1308,17 @@ void MapDrawer::DrawMap() {
 
               if (f->vbo_id == 0 && !options.dragging && !canvas->isPasting() &&
                   !only_colors) {
+                if (translated) {
+                  glPopMatrix();
+                  translated = false;
+                }
+                if (client_states_active) {
+                  glDisableClientState(GL_VERTEX_ARRAY);
+                  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+                  glDisableClientState(GL_COLOR_ARRAY);
+                  client_states_active = false;
+                }
+
                 glGenBuffers(1, &f->vbo_id);
                 f->last_rebuild_tick = current_vbo_revision;
 
@@ -1332,8 +1346,6 @@ void MapDrawer::DrawMap() {
 
                 if (!g_vbo_vertices.empty()) {
                   // [PERF] Removed: VBO rebuild logging causes stutter
-                  // LogErrorToFile(wxString::Format("VBO Rebuild: floor=%d, leaf=(%d, %d), vertices=%d",
-                  //   map_z, nd_map_x, nd_map_y, (int)g_vbo_vertices.size()).ToStdString());
                   auto *backend = g_gui.GetRenderBackend();
                   if (backend) {
                     backend->UpdateChunk(f->vbo_id, g_vbo_vertices);
@@ -1351,15 +1363,21 @@ void MapDrawer::DrawMap() {
 
               if (f->vbo_id != 0 && !only_colors) {
                 PROFILE_SCOPE("MapDrawer::DrawChunkVBO");
-                glPushMatrix();
-                glTranslatef(-view_scroll_x, -view_scroll_y, 0);
+                if (!translated) {
+                  glPushMatrix();
+                  glTranslatef(-view_scroll_x, -view_scroll_y, 0);
+                  translated = true;
+                }
 
                 glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
-                glEnableClientState(GL_VERTEX_ARRAY);
-                glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-                glEnableClientState(GL_COLOR_ARRAY);
+                if (!client_states_active) {
+                  glEnableClientState(GL_VERTEX_ARRAY);
+                  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+                  glEnableClientState(GL_COLOR_ARRAY);
+                  client_states_active = true;
+                }
 
-                 glVertexPointer(2, GL_FLOAT, sizeof(RME_Rendering::MapVertex),
+                glVertexPointer(2, GL_FLOAT, sizeof(RME_Rendering::MapVertex),
                                 (void *)0);
                 glTexCoordPointer(2, GL_FLOAT, sizeof(RME_Rendering::MapVertex),
                                   (void *)8);
@@ -1377,22 +1395,23 @@ void MapDrawer::DrawMap() {
                   if (instances.empty())
                     continue;
                   bindTexture(texId);
-                  // Dummy-Aufruf: In der finalen Shader-Pipeline wird hier
-                  // glDrawArraysInstanced genutzt
-                  // glDrawArraysInstanced(GL_QUADS, 0, 4,
-                  // (GLsizei)instances.size());
                 }
                 g_pending_instances.clear();
 
-                glDisableClientState(GL_VERTEX_ARRAY);
-                glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-                glDisableClientState(GL_COLOR_ARRAY);
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                glPopMatrix();
-
                 last_bound_texture = -1;
               } else {
+                if (translated) {
+                  glPopMatrix();
+                  translated = false;
+                }
+                if (client_states_active) {
+                  glDisableClientState(GL_VERTEX_ARRAY);
+                  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+                  glDisableClientState(GL_COLOR_ARRAY);
+                  client_states_active = false;
+                }
+
                 for (int map_x = 0; map_x < 4; ++map_x) {
                   for (int map_y = 0; map_y < 4; ++map_y) {
                     TileLocation *location = nd->getTile(map_x, map_y, map_z);
@@ -1401,11 +1420,13 @@ void MapDrawer::DrawMap() {
                 }
               }
 
-              for (int map_x = 0; map_x < 4; ++map_x) {
-                for (int map_y = 0; map_y < 4; ++map_y) {
-                  TileLocation *location = nd->getTile(map_x, map_y, map_z);
-                  if (location && options.isDrawLight()) {
-                    AddLight(location);
+              if (options.isDrawLight() && (!options.hide_items_when_zoomed || zoom <= 3.0f)) {
+                for (int map_x = 0; map_x < 4; ++map_x) {
+                  for (int map_y = 0; map_y < 4; ++map_y) {
+                    TileLocation *location = nd->getTile(map_x, map_y, map_z);
+                    if (location) {
+                      AddLight(location);
+                    }
                   }
                 }
               }
@@ -1416,6 +1437,17 @@ void MapDrawer::DrawMap() {
               editor.QueryNode(nd_map_x, nd_map_y, map_z > GROUND_LAYER);
               nd->setRequested(map_z > GROUND_LAYER, true);
             }
+            if (translated) {
+              glPopMatrix();
+              translated = false;
+            }
+            if (client_states_active) {
+              glDisableClientState(GL_VERTEX_ARRAY);
+              glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+              glDisableClientState(GL_COLOR_ARRAY);
+              client_states_active = false;
+            }
+
             int cy =
                 (nd_map_y)*TileSize - view_scroll_y - getFloorAdjustment(floor);
             int cx =
@@ -1430,6 +1462,17 @@ void MapDrawer::DrawMap() {
             glEnd();
           }
         }
+      }
+
+      if (translated) {
+        glPopMatrix();
+        translated = false;
+      }
+      if (client_states_active) {
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glDisableClientState(GL_COLOR_ARRAY);
+        client_states_active = false;
       }
     }
 
@@ -1505,7 +1548,7 @@ void MapDrawer::DrawMap() {
             }
 
             // Draw items on the tile
-            if (zoom <= 10.0 || !options.hide_items_when_zoomed) {
+            if (zoom <= 3.0 || !options.hide_items_when_zoomed) {
               ItemVector::iterator it;
               for (it = tile->items.begin(); it != tile->items.end(); it++) {
                 if ((*it)->isBorder()) {
@@ -1583,7 +1626,7 @@ void MapDrawer::DrawDraggingShadow() {
         }
 
         // save performance when moving large chunks unzoomed
-        if (zoom <= 3.0) {
+        if (zoom <= 3.0 || !options.hide_items_when_zoomed) {
           if (tile->creature && tile->creature->isSelected() &&
               options.show_creatures) {
             BlitCreature(draw_x, draw_y, tile->creature);
@@ -1603,7 +1646,7 @@ void MapDrawer::DrawHigherFloors() {
   glEnable(GL_TEXTURE_2D);
 
   // Draw "transparent higher floor"
-  if (floor != 8 && floor != 0 && options.transparent_floors) {
+  if (floor != 8 && floor != 0 && options.transparent_floors && zoom <= 3.0f) {
     int map_z = floor - 1;
     for (int map_x = start_x; map_x <= end_x; map_x++) {
       for (int map_y = start_y; map_y <= end_y; map_y++) {
@@ -1630,7 +1673,7 @@ void MapDrawer::DrawHigherFloors() {
                        96);
             }
           }
-          if (zoom <= 10.0 || !options.hide_items_when_zoomed) {
+          if (zoom <= 3.0 || !options.hide_items_when_zoomed) {
             ItemVector::iterator it;
             for (it = tile->items.begin(); it != tile->items.end(); it++) {
               BlitItem(draw_x, draw_y, tile, *it, false, 255, 255, 255, 96);
@@ -1807,7 +1850,7 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
 
   if (it.isPodium()) {
     Outfit outfit = podium->getOutfit();
-    if (!podium->hasShowOutfit()) {
+    if (!podium->hasShowPlatform() && !options.ingame) {
       if (podium->hasShowMount()) {
         outfit.lookType = outfit.lookMount;
         outfit.lookHead = outfit.lookMountHead;
@@ -2194,7 +2237,7 @@ void MapDrawer::DrawTile(TileLocation *location) {
   // end filters for ground tile
 
   if (!only_colors) {
-    if (zoom < 10.0 || !options.hide_items_when_zoomed) {
+    if (zoom < 3.0 || !options.hide_items_when_zoomed) {
       // items on tile
       for (ItemVector::iterator it = tile->items.begin();
            it != tile->items.end(); it++) {
@@ -2310,7 +2353,7 @@ void MapDrawer::AddLight(TileLocation *location) {
     }
   }
 
-  bool hidden = options.hide_items_when_zoomed && zoom > 10.f;
+  bool hidden = options.hide_items_when_zoomed && zoom > 3.0f;
   if (!hidden && !tile->items.empty()) {
     for (auto item : tile->items) {
       if (item->hasLight()) {

@@ -31,7 +31,7 @@ void MapDrawer::DrawTile(TileLocation* location) {
 		BlitItem(draw_x, draw_y, tile, tile->ground, false, r, g, b);
 	}
 
-	if (zoom < 10.0 || !options.hide_items_when_zoomed) {
+	if (zoom <= 3.0 || !options.hide_items_when_zoomed) {
 		for (Item* it : tile->items) {
 			BlitItem(draw_x, draw_y, tile, it, false, 255, 255, 255);
 		}

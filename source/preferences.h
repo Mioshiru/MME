@@ -98,6 +98,7 @@ public:
 	wxChoice* raw_palette_style_choice;
 
 	// Visuals & Themes
+	wxSlider* ui_scale_slider;
 	wxRadioBox* backend_radio;
 	wxRadioBox* theme_radio;
 	wxColourPickerCtrl* cursor_color_pick;

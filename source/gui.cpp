@@ -574,10 +574,10 @@ void GUI::OnWelcomeDialogAction(wxCommandEvent &event) {
 
 void GUI::UpdateMenubar() { root->UpdateMenubar(); }
 
-void GUI::SetScreenCenterPosition(Position position) {
+void GUI::SetScreenCenterPosition(Position position, bool smooth) {
   MapTab *mapTab = GetCurrentMapTab();
   if (mapTab) {
-    mapTab->SetScreenCenterPosition(position);
+    mapTab->SetScreenCenterPosition(position, smooth);
   }
 }
 

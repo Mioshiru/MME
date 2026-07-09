@@ -327,6 +327,7 @@ void Settings::IO(IOMode mode) {
 	Int(USE_LARGE_RAW_SIZEBAR, 1);
 	Int(USE_GUI_SELECTION_SHADOW, 0);
 	Int(SHOW_FPS, 0);
+	Int(UI_SCALE, 100);
 	Int(PALETTE_COL_COUNT, 8);
 	String(PALETTE_TERRAIN_STYLE, "large icons");
 	String(PALETTE_COLLECTION_STYLE, "large icons");

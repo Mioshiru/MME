@@ -310,6 +310,45 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 	ImGui::End();
 
+	// Render Brush Hover Preview Overlay
+	if (!screendragging && !boundbox_selection && g_gui.GetCurrentBrush() && !g_gui.IsSelectionMode()) {
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::SetNextWindowSize(io.DisplaySize);
+		ImGui::SetNextWindowBgAlpha(0.0f);
+		ImGuiWindowFlags preview_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoScrollbar |
+			ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground;
+		if (ImGui::Begin("##BrushHoverPreviewOverlay", nullptr, preview_flags)) {
+			int scroll_x = 0, scroll_y = 0;
+			if (GetParent()) {
+				static_cast<MapWindow*>(GetParent())->GetViewStart(&scroll_x, &scroll_y);
+			}
+			int map_x = last_cursor_map_x;
+			int map_y = last_cursor_map_y;
+			int size = g_gui.GetBrushSize();
+			BrushShape shape = g_gui.GetBrushShape();
+			ImVec2 pos = ImGui::GetWindowPos();
+			
+			if (shape == BRUSHSHAPE_SQUARE) {
+				double x1 = pos.x + ((map_x - size) * TileSize - scroll_x) / zoom;
+				double y1 = pos.y + ((map_y - size) * TileSize - scroll_y) / zoom;
+				double x2 = pos.x + ((map_x + size + 1) * TileSize - scroll_x) / zoom;
+				double y2 = pos.y + ((map_y + size + 1) * TileSize - scroll_y) / zoom;
+				
+				ImGui::GetWindowDrawList()->AddRectFilled(ImVec2((float)x1, (float)y1), ImVec2((float)x2, (float)y2), ImColor(60, 120, 220, 76), 4.0f);
+				ImGui::GetWindowDrawList()->AddRect(ImVec2((float)x1, (float)y1), ImVec2((float)x2, (float)y2), ImColor(180, 150, 50, 204), 4.0f, 0, 2.0f);
+			} else if (shape == BRUSHSHAPE_CIRCLE) {
+				double cx = pos.x + ((map_x + 0.5) * TileSize - scroll_x) / zoom;
+				double cy = pos.y + ((map_y + 0.5) * TileSize - scroll_y) / zoom;
+				double r = ((size + 0.5) * TileSize) / zoom;
+				
+				ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2((float)cx, (float)cy), (float)r, ImColor(60, 120, 220, 76), 32);
+				ImGui::GetWindowDrawList()->AddCircle(ImVec2((float)cx, (float)cy), (float)r, ImColor(180, 150, 50, 204), 32, 2.0f);
+			}
+			ImGui::End();
+		}
+	}
+
 	// Bulletproof Dockspace definition
 	// Overlay for FPS
 	if (g_settings.getBoolean(Config::SHOW_FPS)) {

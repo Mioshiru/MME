@@ -31,23 +31,41 @@ END_EVENT_TABLE()
 IMPLEMENT_DYNAMIC_CLASS(DCButton, wxPanel)
 
 DCButton::DCButton() :
-	wxPanel(nullptr, wxID_ANY, wxDefaultPosition, wxSize(36, 36)),
+	wxPanel(nullptr, wxID_ANY, wxDefaultPosition, wxDefaultSize),
 	type(DC_BTN_NORMAL),
 	state(false),
 	size(RENDER_SIZE_16x16),
 	sprite(nullptr),
 	overlay(nullptr) {
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+	int w = 36 * scale_percent / 100;
+	SetSize(w, w);
+	SetMinSize(wxSize(w, w));
 	SetSprite(0);
 }
 
 DCButton::DCButton(wxWindow* parent, wxWindowID id, wxPoint pos, int type, RenderSize sz, int sprite_id) :
-	wxPanel(parent, id, pos, (sz == RENDER_SIZE_64x64 ? wxSize(68, 68) : sz == RENDER_SIZE_32x32 ? wxSize(36, 36)
-																								 : wxSize(20, 20))),
+	wxPanel(parent, id, pos, wxDefaultSize),
 	type(type),
 	state(false),
 	size(sz),
 	sprite(nullptr),
 	overlay(nullptr) {
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+	int w = 20, h = 20;
+	if (sz == RENDER_SIZE_64x64) {
+		w = 68; h = 68;
+	} else if (sz == RENDER_SIZE_32x32) {
+		w = 36; h = 36;
+	}
+	w = w * scale_percent / 100;
+	h = h * scale_percent / 100;
+	SetSize(w, h);
+	SetMinSize(wxSize(w, h));
 	SetSprite(sprite_id);
 }
 
@@ -114,6 +132,10 @@ void DCButton::OnPaint(wxPaintEvent& event) {
 		shadow_pen.reset(newd wxPen(wxColor(0x40, 0x40, 0x40), 1, wxSOLID));
 	}
 
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+
 	int size_x = 20, size_y = 20;
 
 	if (size == RENDER_SIZE_16x16) {
@@ -122,7 +144,12 @@ void DCButton::OnPaint(wxPaintEvent& event) {
 	} else if (size == RENDER_SIZE_32x32) {
 		size_x = 36;
 		size_y = 36;
+	} else if (size == RENDER_SIZE_64x64) {
+		size_x = 68;
+		size_y = 68;
 	}
+	size_x = size_x * scale_percent / 100;
+	size_y = size_y * scale_percent / 100;
 
 	pdc.SetBrush(*wxBLACK);
 	pdc.DrawRectangle(0, 0, size_x, size_y);
@@ -138,7 +165,7 @@ void DCButton::OnPaint(wxPaintEvent& event) {
 		pdc.DrawLine(1, size_y - 2, size_x - 1, size_y - 2);
 		pdc.SetPen(*highlight_pen);
 		pdc.DrawLine(size_x - 1, 0, size_x - 1, size_y - 1);
-		pdc.DrawLine(0, size_y - 1, size_y, size_y - 1);
+		pdc.DrawLine(0, size_y - 1, size_x, size_y - 1);
 	} else {
 		pdc.SetPen(*highlight_pen);
 		pdc.DrawLine(0, 0, size_x - 1, 0);
@@ -151,26 +178,18 @@ void DCButton::OnPaint(wxPaintEvent& event) {
 		pdc.DrawLine(1, size_y - 2, size_x - 1, size_y - 2);
 		pdc.SetPen(*shadow_pen);
 		pdc.DrawLine(size_x - 1, 0, size_x - 1, size_y - 1);
-		pdc.DrawLine(0, size_y - 1, size_y, size_y - 1);
+		pdc.DrawLine(0, size_y - 1, size_x, size_y - 1);
 	}
 
 	if (sprite) {
-		if (size == RENDER_SIZE_16x16) {
-			// Draw the picture!
-			sprite->DrawTo(&pdc, SPRITE_SIZE_16x16, 2, 2);
+		int spr_w = (size == RENDER_SIZE_16x16 ? 16 : size == RENDER_SIZE_32x32 ? 32 : 64);
+		spr_w = spr_w * scale_percent / 100;
+		int offset = 2 * scale_percent / 100;
+		SpriteSize spr_sz = (size == RENDER_SIZE_16x16 ? SPRITE_SIZE_16x16 : SPRITE_SIZE_32x32);
 
-			if (overlay && type == DC_BTN_TOGGLE && GetValue()) {
-				overlay->DrawTo(&pdc, SPRITE_SIZE_16x16, 2, 2);
-			}
-		} else if (size == RENDER_SIZE_32x32) {
-			// Draw the picture!
-			sprite->DrawTo(&pdc, SPRITE_SIZE_32x32, 2, 2);
-
-			if (overlay && type == DC_BTN_TOGGLE && GetValue()) {
-				overlay->DrawTo(&pdc, SPRITE_SIZE_32x32, 2, 2);
-			}
-		} else if (size == RENDER_SIZE_64x64) {
-			////
+		sprite->DrawTo(&pdc, spr_sz, offset, offset, spr_w, spr_w);
+		if (overlay && type == DC_BTN_TOGGLE && GetValue()) {
+			overlay->DrawTo(&pdc, spr_sz, offset, offset, spr_w, spr_w);
 		}
 	}
 }

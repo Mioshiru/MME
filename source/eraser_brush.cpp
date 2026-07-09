@@ -46,6 +46,7 @@ bool EraserBrush::canDraw(BaseMap* map, const Position& position) const {
 }
 
 void EraserBrush::undraw(BaseMap* map, Tile* tile) {
+	tile->unsetMapFlags(TILESTATE_PROTECTIONZONE | TILESTATE_NOPVP | TILESTATE_NOLOGOUT | TILESTATE_PVPZONE);
 	for (ItemVector::iterator item_iter = tile->items.begin(); item_iter != tile->items.end();) {
 		Item* item = *item_iter;
 		if (item->isComplex() && g_settings.getInteger(Config::ERASER_LEAVE_UNIQUE)) {
@@ -69,6 +70,7 @@ void EraserBrush::undraw(BaseMap* map, Tile* tile) {
 }
 
 void EraserBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
+	tile->unsetMapFlags(TILESTATE_PROTECTIONZONE | TILESTATE_NOPVP | TILESTATE_NOLOGOUT | TILESTATE_PVPZONE);
 	for (ItemVector::iterator item_iter = tile->items.begin(); item_iter != tile->items.end();) {
 		Item* item = *item_iter;
 		if ((item->isComplex() || item->isBorder()) && g_settings.getInteger(Config::ERASER_LEAVE_UNIQUE)) {
@@ -90,3 +92,4 @@ void EraserBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 		}
 	}
 }
+

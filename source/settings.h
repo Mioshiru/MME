@@ -203,6 +203,7 @@ namespace Config {
 
 		AUTO_SAVE_ENABLED,  // Auto-Save on/off (0 or 1)
 		AUTO_SAVE_INTERVAL, // Auto-Save interval in minutes (5-40)
+		UI_SCALE,
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;

@@ -10,7 +10,7 @@ public:
 	InGamePreviewCanvas(wxWindow* parent, Editor& ed) : MapCanvas(parent, ed, nullptr), vx(0), vy(0) {
 		floor = 7; zoom = 1.0; drawer->getOptions().SetIngame(); drawer->getOptions().show_ingame_box = true;
 	}
-	void SetZoom(double v) override { zoom = std::clamp(v, 0.1, 25.0); Refresh(); }
+	void SetZoom(double v, int focus_x = -1, int focus_y = -1) override { zoom = std::clamp(v, 0.1, 25.0); Refresh(); }
 	void GetViewBox(int* sx, int* sy, int* sw, int* sh) const override { 
 		wxSize s = GetClientSize(); *sw = s.x; *sh = s.y; *sx = vx; *sy = vy; 
 	}

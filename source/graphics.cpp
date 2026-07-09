@@ -1096,7 +1096,14 @@ EditorSprite::~EditorSprite() {
 void EditorSprite::DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width, int height) {
 	wxBitmap* sp = bm[sz];
 	if (sp) {
-		dc->DrawBitmap(*sp, start_x, start_y, true);
+		int target_w = (width == -1) ? sp->GetWidth() : width;
+		int target_h = (height == -1) ? sp->GetHeight() : height;
+		if (sp->GetWidth() != target_w || sp->GetHeight() != target_h) {
+			wxMemoryDC mem_dc(*sp);
+			dc->StretchBlit(start_x, start_y, target_w, target_h, &mem_dc, 0, 0, sp->GetWidth(), sp->GetHeight(), wxCOPY, true);
+		} else {
+			dc->DrawBitmap(*sp, start_x, start_y, true);
+		}
 	}
 }
 
@@ -1265,7 +1272,14 @@ void GameSprite::DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int w
 	}
 	wxBitmap* sdc = getBitmap(sz);
 	if (sdc) {
-		dc->DrawBitmap(*sdc, start_x, start_y, true);
+		int bmp_w = sdc->GetWidth();
+		int bmp_h = sdc->GetHeight();
+		if (bmp_w != width || bmp_h != height) {
+			wxMemoryDC mem_dc(*sdc);
+			dc->StretchBlit(start_x, start_y, width, height, &mem_dc, 0, 0, bmp_w, bmp_h, wxCOPY, true);
+		} else {
+			dc->DrawBitmap(*sdc, start_x, start_y, true);
+		}
 	} else {
 		const wxBrush& b = dc->GetBrush();
 		dc->SetBrush(*wxRED_BRUSH);

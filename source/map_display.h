@@ -118,7 +118,7 @@ public:
   void SetFloor(int new_floor) { floor = new_floor; }
   int GetFloor() const { return floor; }
   double GetZoom() const { return zoom; }
-  virtual void SetZoom(double value);
+  virtual void SetZoom(double value, int focus_x = -1, int focus_y = -1);
   virtual void GetViewBox(int *view_scroll_x, int *view_scroll_y,
                           int *screensize_x, int *screensize_y) const;
 
@@ -219,8 +219,27 @@ protected:
   int minimap_start_y = 0;
   int minimap_span_w = 180;
   int minimap_span_h = 180;
-  unsigned int last_minimap_update_time = 0;
+   unsigned int last_minimap_update_time = 0;
   void UpdateMinimapTexture(); // This is a member of MapCanvas
+
+  // Kinetic Scrolling
+  bool is_kinetic_scrolling = false;
+  double kinetic_velocity_x = 0.0;
+  double kinetic_velocity_y = 0.0;
+  unsigned int last_drag_time = 0;
+  unsigned int last_kinetic_time = 0;
+  double drag_velocity_x = 0.0;
+  double drag_velocity_y = 0.0;
+  void UpdateKineticScroll();
+
+  // Smooth Zooming
+  bool is_smooth_zooming = false;
+  double target_zoom = 1.0;
+  int zoom_focus_x = -1;
+  int zoom_focus_y = -1;
+  void UpdateSmoothZoom();
+
+  bool IsAnimating() const;
 
   MapPopupMenu *popup_menu;
   AnimationTimer *animation_timer;
@@ -229,6 +248,7 @@ protected:
   friend class MapDrawer;
   friend class PaletteWindow;
   friend class MinimapPanel;
+  friend class AnimationTimer;
 
   DECLARE_EVENT_TABLE()
 };

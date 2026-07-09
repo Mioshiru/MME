@@ -66,8 +66,9 @@ public:
 
 	// Screen position.
 	Position GetScreenCenterPosition();
-	void SetScreenCenterPosition(const Position& position);
+	void SetScreenCenterPosition(const Position& position, bool smooth = false);
 	void GoToPreviousCenterPosition();
+	void UpdateSmoothScroll();
 
 	// Return the containing canvas
 	MapCanvas* GetCanvas() const {
@@ -94,6 +95,8 @@ protected:
 private:
 	ReplaceItemsDialog* replaceItemsDialog;
 	Position previous_position;
+	Position target_center_position;
+	bool is_smooth_scrolling = false;
 
 	friend class MainFrame;
 	friend class MapCanvas;

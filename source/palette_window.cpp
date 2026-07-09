@@ -48,20 +48,24 @@ public:
 	MinimapPanel(wxWindow* parent) :
 		wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(180, 255)) {
 		SetMinSize(wxSize(180, 255));
-		SetBackgroundColour(wxColor(10, 15, 25));
+		SetBackgroundColour(wxColor(10, 20, 35));
 		
 		// Dropdown for jumping to towns
 		town_choice = new wxChoice(this, wxID_ANY, wxPoint(5, 182), wxSize(170, 20));
+		town_choice->SetBackgroundColour(wxColour(10, 20, 35));
+		town_choice->SetForegroundColour(wxColour(180, 150, 50));
 		town_choice->Bind(wxEVT_CHOICE, &MinimapPanel::OnTownSelected, this);
 
 		// Checkbox for view box
 		view_box_chk = new wxCheckBox(this, wxID_ANY, "Show View Box", wxPoint(5, 207));
 		view_box_chk->SetValue(g_settings.getInteger(Config::MINIMAP_VIEW_BOX) != 0);
-		view_box_chk->SetForegroundColour(wxColor(180, 140, 50));
+		view_box_chk->SetForegroundColour(wxColor(180, 150, 50));
 		view_box_chk->Bind(wxEVT_CHECKBOX, &MinimapPanel::OnToggleViewBox, this);
 
 		// Button to dock back to canvas
 		dock_btn = new wxButton(this, wxID_ANY, "Dock to Canvas", wxPoint(5, 227), wxSize(170, 20));
+		dock_btn->SetBackgroundColour(wxColour(10, 20, 35));
+		dock_btn->SetForegroundColour(wxColour(180, 150, 50));
 		dock_btn->Bind(wxEVT_BUTTON, &MinimapPanel::OnDockToCanvas, this);
 
 		Bind(wxEVT_PAINT, &MinimapPanel::OnPaint, this);
@@ -231,7 +235,7 @@ public:
 		int click_map_x = canvas->minimap_start_x + (int)(rel_x * (float)std::max(1, canvas->minimap_span_w - 1));
 		int click_map_y = canvas->minimap_start_y + (int)(rel_y * (float)std::max(1, canvas->minimap_span_h - 1));
 
-		g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, canvas->floor));
+		g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, canvas->floor), true);
 		canvas->last_minimap_update_time = 0; // immediate update
 		canvas->Refresh();
 		Refresh();
@@ -314,34 +318,48 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	prefab_palette(nullptr),
 	minimap_panel(nullptr) {
 	SetMinSize(wxSize(225, 250));
+	SetBackgroundColour(wxColor(10, 20, 35));
 
 	// Create choicebook
 	choicebook = newd wxChoicebook(this, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(230, 250));
+	choicebook->SetBackgroundColour(wxColor(10, 20, 35));
+	if (auto* choice_ctrl = choicebook->GetChoiceCtrl()) {
+		choice_ctrl->SetBackgroundColour(wxColour(10, 20, 35));
+		choice_ctrl->SetForegroundColour(wxColour(180, 150, 50));
+	}
 
 	terrain_palette = static_cast<BrushPalettePanel*>(CreateTerrainPalette(choicebook, tilesets));
+	terrain_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(terrain_palette, terrain_palette->GetName());
 
 	doodad_palette = static_cast<BrushPalettePanel*>(CreateDoodadPalette(choicebook, tilesets));
+	doodad_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(doodad_palette, doodad_palette->GetName());
 
 	collection_palette = nullptr;
 
 	item_palette = static_cast<BrushPalettePanel*>(CreateItemPalette(choicebook, tilesets));
+	item_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(item_palette, item_palette->GetName());
 
 	house_palette = static_cast<HousePalettePanel*>(CreateHousePalette(choicebook, tilesets));
+	house_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(house_palette, house_palette->GetName());
 
 	waypoint_palette = static_cast<WaypointPalettePanel*>(CreateWaypointPalette(choicebook, tilesets));
+	waypoint_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(waypoint_palette, waypoint_palette->GetName());
 
 	creature_palette = static_cast<CreaturePalettePanel*>(CreateCreaturePalette(choicebook, tilesets));
+	creature_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(creature_palette, creature_palette->GetName());
 
 	raw_palette = static_cast<BrushPalettePanel*>(CreateRAWPalette(choicebook, tilesets));
+	raw_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(raw_palette, raw_palette->GetName());
 
 	prefab_palette = static_cast<PrefabPalettePanel*>(CreatePrefabPalette(choicebook));
+	prefab_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(prefab_palette, prefab_palette->GetName());
 
 	// Setup sizers

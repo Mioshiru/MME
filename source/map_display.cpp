@@ -38,6 +38,7 @@
 #include "live_socket.h"
 #include "map.h"
 #include "map_display.h"
+#include "map_window.h"
 #include "map_drawer.h"
 #include "old_properties_window.h"
 #include "palette_window.h"
@@ -621,23 +622,20 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 	last_click_map_y = mouse_map_y;
 	last_click_map_z = floor;
 
-  if (drawing && g_gui.IsFillBrushMode() && g_gui.GetCurrentBrush() != nullptr) {
-    PositionVector tilestodraw;
-    PositionVector tilestoborder;
-    getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, true);
-    editor.undraw(tilestodraw, tilestoborder, event.AltDown());
+  if (drawing && g_gui.GetCurrentBrush() != nullptr) {
+    g_gui.SetSelectionMode();
+    g_gui.SelectBrush(nullptr);
     CallAfter([this]() { Refresh(); });
     return;
   }
 
 	if (drawing) {
 		if (event.LeftIsDown()) {
+			g_gui.SetSelectionMode();
 			g_gui.SelectBrush(nullptr);
 		} else if (event.ShiftDown()) {
 			dragging_draw = true;
 			rectangle_mode = true;
-		} else if (g_gui.GetCurrentBrush() != nullptr) {
-			g_gui.SelectBrush(nullptr);
 		} else {
 			if (editor.selection.size() == 0) {
 				Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
@@ -748,6 +746,16 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 			map_win->GetViewStart(&scroll_x, &scroll_y);
 			map_win->Scroll(scroll_x - int(dx * zoom), scroll_y - int(dy * zoom));
 			
+			unsigned int current_time = wxGetLocalTimeMillis().GetValue();
+			unsigned int dt = current_time - last_drag_time;
+			if (dt > 0) {
+				double inst_vx = (double)(-dx * zoom) / (double)dt;
+				double inst_vy = (double)(-dy * zoom) / (double)dt;
+				drag_velocity_x = drag_velocity_x * 0.6 + inst_vx * 0.4;
+				drag_velocity_y = drag_velocity_y * 0.6 + inst_vy * 0.4;
+			}
+			last_drag_time = current_time;
+			
 			int client_w, client_h;
 			GetClientSize(&client_w, &client_h);
 			
@@ -837,6 +845,10 @@ void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
 		drag_start_x = event.GetX();
 		drag_start_y = event.GetY();
 		SetCursor(wxCursor(wxCURSOR_HAND));
+		is_kinetic_scrolling = false;
+		drag_velocity_x = 0.0;
+		drag_velocity_y = 0.0;
+		last_drag_time = wxGetLocalTimeMillis().GetValue();
 	}
 }
 
@@ -848,6 +860,13 @@ void MapCanvas::OnMouseCenterRelease(wxMouseEvent& event) {
 	if (screendragging) {
 		screendragging = false;
 		SetCursor(wxNullCursor);
+		double speed = std::sqrt(drag_velocity_x * drag_velocity_x + drag_velocity_y * drag_velocity_y);
+		if (speed > 0.05) {
+			is_kinetic_scrolling = true;
+			kinetic_velocity_x = drag_velocity_x;
+			kinetic_velocity_y = drag_velocity_y;
+			last_kinetic_time = wxGetLocalTimeMillis().GetValue();
+		}
 	}
 }
 void MapCanvas::OnWheel(wxMouseEvent& event) {
@@ -861,11 +880,17 @@ void MapCanvas::OnWheel(wxMouseEvent& event) {
     return;
   }
 
-  if (event.GetWheelRotation() > 0) {
-    SetZoom(zoom * 0.9);
-  } else if (event.GetWheelRotation() < 0) {
-    SetZoom(zoom * 1.1);
+  if (!is_smooth_zooming) {
+    target_zoom = zoom;
   }
+  if (event.GetWheelRotation() > 0) {
+    target_zoom = std::max(0.5, target_zoom * 0.85);
+  } else if (event.GetWheelRotation() < 0) {
+    target_zoom = std::min(7.5, target_zoom * 1.15);
+  }
+  zoom_focus_x = event.GetX();
+  zoom_focus_y = event.GetY();
+  is_smooth_zooming = true;
 }
 void MapCanvas::OnGainMouse(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
@@ -1035,7 +1060,7 @@ MapCanvas::GetProjectionMatrix() const {   // unique_ptr verwaltet dies jetzt
 RME::UI::UIToolbar *MapCanvas::GetUIToolbar() { return ui_toolbar.get(); }
 
 // Virtual implementation (base assumes parent is MapWindow)
-void MapCanvas::SetZoom(double value) {
+void MapCanvas::SetZoom(double value, int focus_x, int focus_y) {
   if (value < 0.5) {
     value = 0.5;
   }
@@ -1045,23 +1070,93 @@ void MapCanvas::SetZoom(double value) {
   }
 
   if (zoom != value) {
-    int center_x, center_y;
-    GetScreenCenter(&center_x, &center_y);
-
-    zoom = value;
-
-    // Unsafe cast if parent isn't MapWindow, but this is the base
-    // implementation
     if (GetParent()) {
-      static_cast<MapWindow *>(GetParent())
-          ->SetScreenCenterPosition(Position(center_x, center_y, floor));
+      int scroll_x, scroll_y;
+      static_cast<MapWindow *>(GetParent())->GetViewStart(&scroll_x, &scroll_y);
+
+      int fx = focus_x;
+      int fy = focus_y;
+      if (fx == -1 || fy == -1) {
+        int screen_w, screen_h;
+        GetSize(&screen_w, &screen_h);
+        fx = screen_w / 2;
+        fy = screen_h / 2;
+      }
+
+      double old_zoom = zoom;
+      zoom = value;
+
+      int new_scroll_x = (int)(scroll_x + fx * (old_zoom - zoom));
+      int new_scroll_y = (int)(scroll_y + fy * (old_zoom - zoom));
+
+      static_cast<MapWindow *>(GetParent())->Scroll(new_scroll_x, new_scroll_y, false);
+      ChangeFloor(floor);
+    } else {
+      zoom = value;
     }
 
     UpdatePositionStatus();
     UpdateZoomStatus();
+    last_minimap_update_time = 0;
     Refresh();
   }
 }
+
+void MapCanvas::UpdateKineticScroll() {
+  if (!is_kinetic_scrolling) return;
+
+  unsigned int current_time = wxGetLocalTimeMillis().GetValue();
+  unsigned int dt = current_time - last_kinetic_time;
+  if (dt == 0) return;
+
+  if (dt > 100) dt = 100;
+  last_kinetic_time = current_time;
+
+  MapWindow* map_win = static_cast<MapWindow*>(GetParent());
+  if (map_win) {
+    int scroll_x, scroll_y;
+    map_win->GetViewStart(&scroll_x, &scroll_y);
+
+    int dx = (int)std::round(kinetic_velocity_x * dt);
+    int dy = (int)std::round(kinetic_velocity_y * dt);
+
+    if (dx != 0 || dy != 0) {
+      map_win->Scroll(scroll_x + dx, scroll_y + dy, false);
+    }
+
+    double friction = std::pow(0.92, (double)dt / 16.0);
+    kinetic_velocity_x *= friction;
+    kinetic_velocity_y *= friction;
+
+    double speed = std::sqrt(kinetic_velocity_x * kinetic_velocity_x + kinetic_velocity_y * kinetic_velocity_y);
+    if (speed < 0.05) {
+      is_kinetic_scrolling = false;
+    }
+    Refresh();
+  } else {
+    is_kinetic_scrolling = false;
+  }
+}
+
+void MapCanvas::UpdateSmoothZoom() {
+  if (!is_smooth_zooming) return;
+
+  double zoom_diff = target_zoom - zoom;
+  if (std::abs(zoom_diff) < 0.005) {
+    SetZoom(target_zoom, zoom_focus_x, zoom_focus_y);
+    is_smooth_zooming = false;
+    return;
+  }
+
+  double next_zoom = zoom + zoom_diff * 0.20;
+  SetZoom(next_zoom, zoom_focus_x, zoom_focus_y);
+}
+
+bool MapCanvas::IsAnimating() const {
+  MapWindow* parent_win = static_cast<MapWindow*>(GetParent());
+  return is_kinetic_scrolling || is_smooth_zooming || (parent_win && parent_win->is_smooth_scrolling);
+}
+
 
 void MapCanvas::GetViewBox(int *view_scroll_x, int *view_scroll_y,
                            int *screensize_x, int *screensize_y) const {
@@ -1401,6 +1496,18 @@ AnimationTimer::~AnimationTimer() {
 };
 
 void AnimationTimer::Notify() {
+    if (map_canvas->GetParent()) {
+        static_cast<MapWindow*>(map_canvas->GetParent())->UpdateSmoothScroll();
+    }
+    
+    map_canvas->UpdateKineticScroll();
+    map_canvas->UpdateSmoothZoom();
+    
+    if (map_canvas->IsAnimating()) {
+        map_canvas->last_minimap_update_time = 0;
+        map_canvas->Refresh();
+    }
+
     // [PERF] Only redraw if explicitly marked dirty, or if animations are visible
     if (map_canvas->isDirty()) {
         map_canvas->clearDirty();

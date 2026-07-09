@@ -323,7 +323,7 @@ public:
 	}
 
 	// Centers current view on position
-	void SetScreenCenterPosition(Position pos);
+	void SetScreenCenterPosition(Position pos, bool smooth = false);
 	// Refresh the view canvas
 	void RefreshView();
 	// Fit all/specified current map view to map dimensions

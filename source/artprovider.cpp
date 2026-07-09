@@ -75,91 +75,103 @@ wxBitmap GetCachedFileBitmap(const wxArtID& id, const std::initializer_list<cons
 }
 }
 
-wxBitmap ArtProvider::CreateBitmap(const wxArtID& id, const wxArtClient& client, const wxSize& WXUNUSED(size)) {
+wxBitmap ArtProvider::CreateBitmap(const wxArtID& id, const wxArtClient& client, const wxSize& size) {
 	if (client != wxART_TOOLBAR) {
 		return wxNullBitmap;
 	}
 
+	wxBitmap bitmap = wxNullBitmap;
+
 	if (id == ART_CIRCULAR_1) {
-		return GetCachedPngBitmap(id, circular_1_png, sizeof(circular_1_png));
+		bitmap = GetCachedPngBitmap(id, circular_1_png, sizeof(circular_1_png));
 	} else if (id == ART_CIRCULAR_2) {
-		return GetCachedPngBitmap(id, circular_2_png, sizeof(circular_2_png));
+		bitmap = GetCachedPngBitmap(id, circular_2_png, sizeof(circular_2_png));
 	} else if (id == ART_CIRCULAR_3) {
-		return GetCachedPngBitmap(id, circular_3_png, sizeof(circular_3_png));
+		bitmap = GetCachedPngBitmap(id, circular_3_png, sizeof(circular_3_png));
 	} else if (id == ART_CIRCULAR_4) {
-		return GetCachedPngBitmap(id, circular_4_png, sizeof(circular_4_png));
+		bitmap = GetCachedPngBitmap(id, circular_4_png, sizeof(circular_4_png));
 	} else if (id == ART_CIRCULAR_5) {
-		return GetCachedPngBitmap(id, circular_5_png, sizeof(circular_5_png));
+		bitmap = GetCachedPngBitmap(id, circular_5_png, sizeof(circular_5_png));
 	} else if (id == ART_CIRCULAR_6) {
-		return GetCachedPngBitmap(id, circular_6_png, sizeof(circular_6_png));
+		bitmap = GetCachedPngBitmap(id, circular_6_png, sizeof(circular_6_png));
 	} else if (id == ART_CIRCULAR_7) {
-		return GetCachedPngBitmap(id, circular_7_png, sizeof(circular_7_png));
+		bitmap = GetCachedPngBitmap(id, circular_7_png, sizeof(circular_7_png));
+	} else if (id == ART_CIRCULAR) {
+		bitmap = GetCachedPngBitmap(id, circular_4_png, sizeof(circular_4_png));
 	} else if (id == ART_NOLOOUT_BRUSH) {
-		return GetCachedPngBitmap(id, no_logout_png, sizeof(no_logout_png));
+		bitmap = GetCachedPngBitmap(id, no_logout_png, sizeof(no_logout_png));
 	} else if (id == ART_NOPVP_BRUSH) {
-		return GetCachedPngBitmap(id, no_pvp_png, sizeof(no_pvp_png));
+		bitmap = GetCachedPngBitmap(id, no_pvp_png, sizeof(no_pvp_png));
 	} else if (id == ART_POSITION_GO) {
-		wxBitmap bitmap = GetCachedFileBitmap(id, {
+		wxBitmap file_bmp = GetCachedFileBitmap(id, {
 			"icons/position_go.png",
 			"../icons/position_go.png",
 			"Map Editor/icons/position_go.png",
 			"../Map Editor/icons/position_go.png"
 		});
-		if (bitmap.IsOk()) {
-			return bitmap;
+		if (file_bmp.IsOk()) {
+			bitmap = file_bmp;
 		}
-		return wxNullBitmap;
 	} else if (id == ART_PVP_BRUSH) {
-		return GetCachedPngBitmap(id, pvp_zone_png, sizeof(pvp_zone_png));
+		bitmap = GetCachedPngBitmap(id, pvp_zone_png, sizeof(pvp_zone_png));
 	} else if (id == ART_PZ_BRUSH) {
-		return GetCachedPngBitmap(id, protection_zone_png, sizeof(protection_zone_png));
+		bitmap = GetCachedPngBitmap(id, protection_zone_png, sizeof(protection_zone_png));
 	} else if (id == ART_RECTANGULAR) {
-		return GetCachedPngBitmap(id, rectangular_4_png, sizeof(rectangular_4_png));
+		bitmap = GetCachedPngBitmap(id, rectangular_4_png, sizeof(rectangular_4_png));
 	} else if (id == ART_RECTANGULAR_1) {
-		return GetCachedPngBitmap(id, rectangular_1_png, sizeof(rectangular_1_png));
+		bitmap = GetCachedPngBitmap(id, rectangular_1_png, sizeof(rectangular_1_png));
 	} else if (id == ART_RECTANGULAR_2) {
-		return GetCachedPngBitmap(id, rectangular_2_png, sizeof(rectangular_2_png));
+		bitmap = GetCachedPngBitmap(id, rectangular_2_png, sizeof(rectangular_2_png));
 	} else if (id == ART_RECTANGULAR_3) {
-		return GetCachedPngBitmap(id, rectangular_3_png, sizeof(rectangular_3_png));
+		bitmap = GetCachedPngBitmap(id, rectangular_3_png, sizeof(rectangular_3_png));
 	} else if (id == ART_RECTANGULAR_4) {
-		return GetCachedPngBitmap(id, rectangular_4_png, sizeof(rectangular_4_png));
+		bitmap = GetCachedPngBitmap(id, rectangular_4_png, sizeof(rectangular_4_png));
 	} else if (id == ART_RECTANGULAR_5) {
-		return GetCachedPngBitmap(id, rectangular_5_png, sizeof(rectangular_5_png));
+		bitmap = GetCachedPngBitmap(id, rectangular_5_png, sizeof(rectangular_5_png));
 	} else if (id == ART_RECTANGULAR_6) {
-		return GetCachedPngBitmap(id, rectangular_6_png, sizeof(rectangular_6_png));
+		bitmap = GetCachedPngBitmap(id, rectangular_6_png, sizeof(rectangular_6_png));
 	} else if (id == ART_RECTANGULAR_7) {
-		return GetCachedPngBitmap(id, rectangular_7_png, sizeof(rectangular_7_png));
+		bitmap = GetCachedPngBitmap(id, rectangular_7_png, sizeof(rectangular_7_png));
 	} else if (id == ART_DOOR_NORMAL_SMALL) {
-		return GetCachedPngBitmap(id, door_normal_small_png, sizeof(door_normal_small_png));
+		bitmap = GetCachedPngBitmap(id, door_normal_small_png, sizeof(door_normal_small_png));
 	} else if (id == ART_DOOR_LOCKED_SMALL) {
-		return GetCachedPngBitmap(id, door_locked_small_png, sizeof(door_locked_small_png));
+		bitmap = GetCachedPngBitmap(id, door_locked_small_png, sizeof(door_locked_small_png));
 	} else if (id == ART_DOOR_MAGIC_SMALL) {
-		return GetCachedPngBitmap(id, door_magic_small_png, sizeof(door_magic_small_png));
+		bitmap = GetCachedPngBitmap(id, door_magic_small_png, sizeof(door_magic_small_png));
 	} else if (id == ART_DOOR_QUEST_SMALL) {
-		return GetCachedPngBitmap(id, door_quest_small_png, sizeof(door_quest_small_png));
+		bitmap = GetCachedPngBitmap(id, door_quest_small_png, sizeof(door_quest_small_png));
 	} else if (id == ART_DOOR_NORMAL_ALT_SMALL) {
-		wxBitmap bitmap = GetCachedFileBitmap(id, {
+		wxBitmap file_bmp = GetCachedFileBitmap(id, {
 			"brushes/door_normal_alt_small.png",
 			"../brushes/door_normal_alt_small.png",
 			"Map Editor/brushes/door_normal_alt_small.png",
 			"../Map Editor/brushes/door_normal_alt_small.png"
 		});
-		if (bitmap.IsOk()) {
-			return bitmap;
+		if (file_bmp.IsOk()) {
+			bitmap = file_bmp;
+		} else {
+			bitmap = GetCachedPngBitmap(id, door_normal_small_png, sizeof(door_normal_small_png));
 		}
-		return GetCachedPngBitmap(id, door_normal_small_png, sizeof(door_normal_small_png));
 	} else if (id == ART_DOOR_ARCHWAY_SMALL) {
-		wxBitmap bitmap = GetCachedFileBitmap(id, {
+		wxBitmap file_bmp = GetCachedFileBitmap(id, {
 			"brushes/door_archway_small.png",
 			"../brushes/door_archway_small.png",
 			"Map Editor/brushes/door_archway_small.png",
 			"../Map Editor/brushes/door_archway_small.png"
 		});
-		if (bitmap.IsOk()) {
-			return bitmap;
+		if (file_bmp.IsOk()) {
+			bitmap = file_bmp;
+		} else {
+			bitmap = GetCachedPngBitmap(id, door_normal_small_png, sizeof(door_normal_small_png));
 		}
-		return GetCachedPngBitmap(id, door_normal_small_png, sizeof(door_normal_small_png));
 	}
 
-	return wxNullBitmap;
+	if (bitmap.IsOk() && size.IsFullySpecified() && size.GetWidth() > 0 && size.GetHeight() > 0) {
+		if (bitmap.GetWidth() != size.GetWidth() || bitmap.GetHeight() != size.GetHeight()) {
+			wxImage image = bitmap.ConvertToImage();
+			bitmap = wxBitmap(image.Scale(size.GetWidth(), size.GetHeight(), wxIMAGE_QUALITY_HIGH));
+		}
+	}
+
+	return bitmap;
 }

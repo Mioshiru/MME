@@ -2128,4 +2128,44 @@ void MapEditor::commitBorders() {
 	pending_borders.clear();
 }
 
+void MapEditor::draw(const Position& offset, bool alt) {
+	Brush* brush = g_gui.GetCurrentBrush();
+	bool dodraw = true;
+	if (alt && brush && !brush->isGround()) {
+		dodraw = false;
+	}
+	drawInternal(offset, alt, dodraw);
+}
+
+void MapEditor::undraw(const Position& offset, bool alt) {
+	drawInternal(offset, alt, false);
+}
+
+void MapEditor::draw(const PositionVector& posvec, bool alt) {
+	Brush* brush = g_gui.GetCurrentBrush();
+	bool dodraw = true;
+	if (alt && brush && !brush->isGround()) {
+		dodraw = false;
+	}
+	drawInternal(posvec, alt, dodraw);
+}
+
+void MapEditor::draw(const PositionVector& todraw, PositionVector& toborder, bool alt) {
+	Brush* brush = g_gui.GetCurrentBrush();
+	bool dodraw = true;
+	if (alt && brush && !brush->isGround()) {
+		dodraw = false;
+	}
+	drawInternal(todraw, toborder, alt, dodraw);
+}
+
+void MapEditor::undraw(const PositionVector& posvec, bool alt) {
+	drawInternal(posvec, alt, false);
+}
+
+void MapEditor::undraw(const PositionVector& todraw, PositionVector& toborder, bool alt) {
+	drawInternal(todraw, toborder, alt, false);
+}
+
+
 

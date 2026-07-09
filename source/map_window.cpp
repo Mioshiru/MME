@@ -127,8 +127,14 @@ Position MapWindow::GetScreenCenterPosition() {
   return Position(x, y, canvas->GetFloor());
 }
 
-void MapWindow::SetScreenCenterPosition(const Position &position) {
+void MapWindow::SetScreenCenterPosition(const Position &position, bool smooth) {
   if (position == Position()) {
+    return;
+  }
+
+  if (smooth) {
+    target_center_position = position;
+    is_smooth_scrolling = true;
     return;
   }
 
@@ -149,6 +155,31 @@ void MapWindow::SetScreenCenterPosition(const Position &position) {
 
   Scroll(x, y, true);
   canvas->ChangeFloor(position.z);
+}
+
+void MapWindow::UpdateSmoothScroll() {
+  if (!is_smooth_scrolling) return;
+
+  Position current = GetScreenCenterPosition();
+  if (std::abs(current.x - target_center_position.x) <= 1 &&
+      std::abs(current.y - target_center_position.y) <= 1) {
+    SetScreenCenterPosition(target_center_position, false);
+    is_smooth_scrolling = false;
+    return;
+  }
+
+  float speed = 0.15f;
+  int next_x = current.x + (int)std::round((float)(target_center_position.x - current.x) * speed);
+  int next_y = current.y + (int)std::round((float)(target_center_position.y - current.y) * speed);
+  
+  if (next_x == current.x && target_center_position.x != current.x) {
+    next_x += (target_center_position.x > current.x) ? 1 : -1;
+  }
+  if (next_y == current.y && target_center_position.y != current.y) {
+    next_y += (target_center_position.y > current.y) ? 1 : -1;
+  }
+
+  SetScreenCenterPosition(Position(next_x, next_y, target_center_position.z), false);
 }
 
 void MapWindow::GoToPreviousCenterPosition() {

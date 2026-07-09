@@ -1,75 +1,70 @@
-//////////////////////////////////////////////////////////////////////
-// This file is part of Remere's Map Editor
-//////////////////////////////////////////////////////////////////////
-// Remere's Map Editor is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Remere's Map Editor is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.
-//////////////////////////////////////////////////////////////////////
+#ifndef __PNG_HEADER_FILE_H__
+#define __PNG_HEADER_FILE_H__
+extern unsigned char bucket_png[1258];
+extern unsigned char bucket_small_png[597];
+extern unsigned char circular_1_png[204];
+extern unsigned char circular_1_small_png[155];
+extern unsigned char circular_2_png[269];
+extern unsigned char circular_2_small_png[178];
+extern unsigned char circular_3_png[350];
+extern unsigned char circular_3_small_png[200];
+extern unsigned char circular_4_png[399];
+extern unsigned char circular_4_small_png[219];
+extern unsigned char circular_5_png[514];
+extern unsigned char circular_5_small_png[286];
+extern unsigned char circular_6_png[529];
+extern unsigned char circular_6_small_png[280];
+extern unsigned char circular_7_png[600];
+extern unsigned char circular_7_small_png[320];
+extern unsigned char door_archway_png[893];
+extern unsigned char door_archway_small_png[477];
+extern unsigned char door_locked_png[984];
+extern unsigned char door_locked_small_png[572];
+extern unsigned char door_magic_png[891];
+extern unsigned char door_magic_small_png[494];
+extern unsigned char door_normal_png[807];
+extern unsigned char door_normal_alt_png[1078];
+extern unsigned char door_normal_alt_small_png[652];
+extern unsigned char door_normal_small_png[497];
+extern unsigned char door_quest_png[978];
+extern unsigned char door_quest_small_png[595];
+extern unsigned char eraser_png[1241];
+extern unsigned char eraser_small_png[556];
+extern unsigned char gem_edit_png[698];
+extern unsigned char gem_move_png[663];
+extern unsigned char no_logout_png[1287];
+extern unsigned char no_logout_small_png[675];
+extern unsigned char no_pvp_png[588];
+extern unsigned char no_pvp_small_png[415];
+extern unsigned char optional_border_png[419];
+extern unsigned char optional_border_small_png[350];
+extern unsigned char pointer_png[524];
+extern unsigned char pointer_small_png[380];
+extern unsigned char position_go_png[884];
+extern unsigned char position_go_small_png[473];
+extern unsigned char prefab_png[723];
+extern unsigned char prefab_small_png[598];
+extern unsigned char protection_zone_png[1115];
+extern unsigned char protection_zone_small_png[628];
+extern unsigned char pvp_zone_png[909];
+extern unsigned char pvp_zone_small_png[484];
+extern unsigned char rectangular_1_png[206];
+extern unsigned char rectangular_1_small_png[152];
+extern unsigned char rectangular_2_png[259];
+extern unsigned char rectangular_2_small_png[174];
+extern unsigned char rectangular_3_png[313];
+extern unsigned char rectangular_3_small_png[190];
+extern unsigned char rectangular_4_png[367];
+extern unsigned char rectangular_4_small_png[207];
+extern unsigned char rectangular_5_png[417];
+extern unsigned char rectangular_5_small_png[222];
+extern unsigned char rectangular_6_png[328];
+extern unsigned char rectangular_6_small_png[235];
+extern unsigned char rectangular_7_png[345];
+extern unsigned char rectangular_7_small_png[248];
+extern unsigned char window_hatch_png[854];
+extern unsigned char window_hatch_small_png[594];
+extern unsigned char window_normal_png[868];
+extern unsigned char window_normal_small_png[583];
 
-#ifndef RME_PNG_HEADER_FILE_H_
-#define RME_PNG_HEADER_FILE_H_
-
-extern unsigned char circular_1_png[453];
-extern unsigned char circular_1_small_png[253];
-extern unsigned char circular_2_png[643];
-extern unsigned char circular_2_small_png[318];
-extern unsigned char circular_3_png[796];
-extern unsigned char circular_3_small_png[398];
-extern unsigned char circular_4_png[1076];
-extern unsigned char circular_4_small_png[501];
-extern unsigned char circular_5_png[1230];
-extern unsigned char circular_5_small_png[600];
-extern unsigned char circular_6_png[1467];
-extern unsigned char circular_6_small_png[678];
-extern unsigned char circular_7_png[1563];
-extern unsigned char circular_7_small_png[740];
-extern unsigned char door_locked_png[752];
-extern unsigned char door_locked_small_png[552];
-extern unsigned char door_magic_png[761];
-extern unsigned char door_magic_small_png[552];
-extern unsigned char door_normal_png[748];
-extern unsigned char door_normal_small_png[552];
-extern unsigned char door_quest_png[764];
-extern unsigned char door_quest_small_png[552];
-extern unsigned char eraser_png[878];
-extern unsigned char eraser_small_png[667];
-extern unsigned char gem_edit_png[697];
-extern unsigned char gem_move_png[662];
-extern unsigned char no_logout_png[782];
-extern unsigned char no_logout_small_png[670];
-extern unsigned char no_pvp_png[726];
-extern unsigned char no_pvp_small_png[630];
-extern unsigned char optional_border_png[768];
-extern unsigned char optional_border_small_png[544];
-extern unsigned char protection_zone_png[961];
-extern unsigned char protection_zone_small_png[687];
-extern unsigned char pvp_zone_png[677];
-extern unsigned char pvp_zone_small_png[620];
-extern unsigned char rectangular_1_png[353];
-extern unsigned char rectangular_1_small_png[250];
-extern unsigned char rectangular_2_png[393];
-extern unsigned char rectangular_2_small_png[248];
-extern unsigned char rectangular_3_png[424];
-extern unsigned char rectangular_3_small_png[276];
-extern unsigned char rectangular_4_png[483];
-extern unsigned char rectangular_4_small_png[333];
-extern unsigned char rectangular_5_png[535];
-extern unsigned char rectangular_5_small_png[375];
-extern unsigned char rectangular_6_png[600];
-extern unsigned char rectangular_6_small_png[431];
-extern unsigned char rectangular_7_png[697];
-extern unsigned char rectangular_7_small_png[429];
-extern unsigned char window_hatch_png[910];
-extern unsigned char window_hatch_small_png[641];
-extern unsigned char window_normal_png[947];
-extern unsigned char window_normal_small_png[641];
-#endif //_RME_PNG_HEADER_FILE_H_
+#endif //__PNG_HEADER_FILE_H__

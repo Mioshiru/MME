@@ -24,8 +24,8 @@ void MapCanvas::UpdateMinimapTexture() {
 	int center_x, center_y;
 	GetScreenCenter(&center_x, &center_y);
 
-	int span_w = (int)(180.0f * minimap_zoom);
-	int span_h = (int)(180.0f * minimap_zoom);
+	int span_w = (int)(180.0f * minimap_zoom * (float)zoom);
+	int span_h = (int)(180.0f * minimap_zoom * (float)zoom);
 	minimap_span_w = span_w;
 	minimap_span_h = span_h;
 

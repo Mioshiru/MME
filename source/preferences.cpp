@@ -51,7 +51,8 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 	position_choice(nullptr),
 	autosave_enabled_chkbox(nullptr),
 	autosave_interval_slider(nullptr),
-	autosave_interval_label(nullptr) {
+	autosave_interval_label(nullptr),
+	ui_scale_slider(nullptr) {
     
     // RPG Design Apply
     auto& theme = RME::UI::StyleManager::GetTheme();
@@ -75,7 +76,7 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 
 	book->AddPage(CreateGeneralPage(), "General", !clientVersionSelected);
 	book->AddPage(CreateEditorPage(), "Editing");
-	book->AddPage(CreatePerformancePage(), "Performance");
+	book->AddPage(CreatePerformancePage(), "Graphic");
 	book->AddPage(CreateUIPage(), "Interface");
 	book->AddPage(CreateHotkeysPage(), "Hotkeys");
 
@@ -433,6 +434,16 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
     light_sizer->Add(light_intensity_slider, 1, wxEXPAND);
     visual_group->Add(light_sizer, 0, wxEXPAND | wxALL, 5);
 
+    wxBoxSizer* scale_sizer = newd wxBoxSizer(wxHORIZONTAL);
+    scale_sizer->Add(newd wxStaticText(performance_page, wxID_ANY, "UI / Icon Scale (%):"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    int cur_scale = g_settings.getInteger(Config::UI_SCALE);
+    if (cur_scale < 100) cur_scale = 100;
+    if (cur_scale > 200) cur_scale = 200;
+    ui_scale_slider = newd wxSlider(performance_page, wxID_ANY, cur_scale, 100, 200, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_LABELS);
+    ui_scale_slider->SetToolTip("Adjusts the size of the toolbar and palette icons (100% to 200%).");
+    scale_sizer->Add(ui_scale_slider, 1, wxEXPAND);
+    visual_group->Add(scale_sizer, 0, wxEXPAND | wxALL, 5);
+
     sizer->Add(visual_group, 0, wxEXPAND | wxALL, 5);
 
 
@@ -751,6 +762,17 @@ void PreferencesWindow::Apply() {
     g_settings.setInteger(Config::SHADER_AA_LEVEL, performance_aa_choice ? performance_aa_choice->GetSelection() : 0);
     g_settings.setInteger(Config::SHADER_CRT_STRENGTH, performance_crt_slider ? performance_crt_slider->GetValue() : 0);
     g_settings.setFloat(Config::SHADER_WATER_ANIM_SPEED, performance_water_slider ? performance_water_slider->GetValue() / 10.0f : 1.0f);
+
+	if (ui_scale_slider) {
+		int old_scale = g_settings.getInteger(Config::UI_SCALE);
+		if (old_scale < 100) old_scale = 100;
+		if (old_scale > 200) old_scale = 200;
+		int new_scale = ui_scale_slider->GetValue();
+		if (old_scale != new_scale) {
+			g_settings.setInteger(Config::UI_SCALE, new_scale);
+			must_restart = true;
+		}
+	}
 
 	// Screenshots
 	if (screenshot_directory_picker) {

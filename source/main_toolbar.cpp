@@ -68,7 +68,11 @@ inline wxBitmap* _wxGetBitmapFromMemory(const unsigned char* data, int length, c
 }
 
 MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
-	wxSize icon_size = FROM_DIP(parent, wxSize(16, 16));
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+	wxSize base_size(16 * scale_percent / 100, 16 * scale_percent / 100);
+	wxSize icon_size = FROM_DIP(parent, base_size);
 
 	wxBitmap* border_bitmap = loadPNGFileSized(optional_border_small_png, icon_size);
 	wxBitmap pointer_bitmap = LoadBitmapFromFileCandidates(icon_size, {
@@ -159,8 +163,10 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	for (int i = 0; i <= MAP_MAX_LAYER; ++i) {
 		z_levels.Add(wxString::Format("Floor %d", i));
 	}
-	z_choice = newd wxChoice(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(100, -1)), z_levels);
+	z_choice = newd wxChoice(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(75, -1)), z_levels);
 	z_choice->SetToolTip("Select Z-Level (Floor)");
+	z_choice->SetBackgroundColour(wxColour(10, 20, 35));
+	z_choice->SetForegroundColour(wxColour(180, 150, 50));
 	
 	position_toolbar->AddControl(z_choice);
 	position_toolbar->Realize();
@@ -324,7 +330,11 @@ void MainToolBar::UpdateBrushSize(BrushShape shape, int size) {
 
 		wxSize icon_size = sizes_toolbar->GetToolBitmapSize();
 		if (!icon_size.IsFullySpecified() || icon_size.GetWidth() <= 0 || icon_size.GetHeight() <= 0) {
-			icon_size = wxSize(16, 16);
+			int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+			if (scale_percent < 100) scale_percent = 100;
+			if (scale_percent > 200) scale_percent = 200;
+			wxSize base_size(16 * scale_percent / 100, 16 * scale_percent / 100);
+			icon_size = FROM_DIP(sizes_toolbar, base_size);
 		}
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_1, wxArtProvider::GetBitmap(ART_CIRCULAR_1, wxART_TOOLBAR, icon_size));
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_2, wxArtProvider::GetBitmap(ART_CIRCULAR_2, wxART_TOOLBAR, icon_size));
@@ -339,7 +349,11 @@ void MainToolBar::UpdateBrushSize(BrushShape shape, int size) {
 
 		wxSize icon_size = sizes_toolbar->GetToolBitmapSize();
 		if (!icon_size.IsFullySpecified() || icon_size.GetWidth() <= 0 || icon_size.GetHeight() <= 0) {
-			icon_size = wxSize(16, 16);
+			int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+			if (scale_percent < 100) scale_percent = 100;
+			if (scale_percent > 200) scale_percent = 200;
+			wxSize base_size(16 * scale_percent / 100, 16 * scale_percent / 100);
+			icon_size = FROM_DIP(sizes_toolbar, base_size);
 		}
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_1, wxArtProvider::GetBitmap(ART_RECTANGULAR_1, wxART_TOOLBAR, icon_size));
 		sizes_toolbar->SetToolBitmap(TOOLBAR_SIZES_2, wxArtProvider::GetBitmap(ART_RECTANGULAR_2, wxART_TOOLBAR, icon_size));

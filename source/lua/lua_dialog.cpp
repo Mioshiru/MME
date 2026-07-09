@@ -62,7 +62,7 @@ public:
 	}
 
 	// Overrides to decouple from MapWindow
-	void SetZoom(double value) override {
+	void SetZoom(double value, int focus_x = -1, int focus_y = -1) override {
 		if (value < 0.125) {
 			value = 0.125;
 		}
