@@ -52,7 +52,7 @@ bool Tileset::containsBrush(Brush* brush) const {
 }
 
 TilesetCategory* Tileset::getCategory(TilesetCategoryType type) {
-	ASSERT(type >= TILESET_UNKNOWN && type <= TILESET_HOUSE);
+	ASSERT(type >= TILESET_UNKNOWN && type <= TILESET_FAVORITE);
 	for (TilesetCategoryArray::iterator iter = categories.begin(); iter != categories.end(); ++iter) {
 		if ((*iter)->getType() == type) {
 			return *iter;
@@ -74,7 +74,7 @@ bool TilesetCategory::containsBrush(Brush* brush) const {
 }
 
 const TilesetCategory* Tileset::getCategory(TilesetCategoryType type) const {
-	ASSERT(type >= TILESET_UNKNOWN && type <= TILESET_HOUSE);
+	ASSERT(type >= TILESET_UNKNOWN && type <= TILESET_FAVORITE);
 	for (TilesetCategoryArray::const_iterator iter = categories.begin(); iter != categories.end(); ++iter) {
 		if ((*iter)->getType() == type) {
 			return *iter;
@@ -161,11 +161,11 @@ void Tileset::loadCategory(pugi::xml_node node, wxArrayString& warnings) {
 
 TilesetCategory::TilesetCategory(Tileset& parent, TilesetCategoryType type) :
 	type(type), tileset(parent) {
-	ASSERT(type >= TILESET_UNKNOWN && type <= TILESET_HOUSE);
+	ASSERT(type >= TILESET_UNKNOWN && type <= TILESET_FAVORITE);
 }
 
 TilesetCategory::~TilesetCategory() {
-	ASSERT(type >= TILESET_UNKNOWN && type <= TILESET_HOUSE);
+	ASSERT(type >= TILESET_UNKNOWN && type <= TILESET_FAVORITE);
 }
 
 bool TilesetCategory::isTrivial() const {

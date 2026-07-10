@@ -43,6 +43,7 @@ public:
 	Brush* brush;
 
 	void OnKey(wxKeyEvent& event);
+	void OnContextMenu(wxContextMenuEvent& event);
 
 	DECLARE_EVENT_TABLE()
 };

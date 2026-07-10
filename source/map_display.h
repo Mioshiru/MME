@@ -186,6 +186,8 @@ protected:
   int drag_start_x;
   int drag_start_y;
   int drag_start_z;
+  double drag_accum_x;
+  double drag_accum_y;
 
   int last_cursor_map_x;
   int last_cursor_map_y;

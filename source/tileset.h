@@ -40,6 +40,7 @@ enum TilesetCategoryType {
 	TILESET_RAW,
 	TILESET_WAYPOINT,
 	TILESET_PREFAB,
+	TILESET_FAVORITE,
 };
 
 class TilesetCategory {

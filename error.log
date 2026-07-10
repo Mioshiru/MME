@@ -1,14 +1,24 @@
-[2026-07-10 20:52:36] === AUI Panes Diagnostics ===
-[2026-07-10 20:52:36] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 511, 30), row=0, col=0
-[2026-07-10 20:52:36] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(511, 0, 173, 30), row=0, col=511
-[2026-07-10 20:52:36] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(684, 0, 0, 30), row=0, col=780
-[2026-07-10 20:52:36] =============================
-[2026-07-10 20:52:36] === AUI Panes Diagnostics ===
-[2026-07-10 20:52:36] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 511, 30), row=0, col=0
-[2026-07-10 20:52:36] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(511, 0, 269, 30), row=0, col=511
-[2026-07-10 20:52:36] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(780, 0, 85, 30), row=0, col=780
-[2026-07-10 20:52:36] Pane: name='81dfd9306a513f740000003d00000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 30, 1535, 838), row=0, col=0
-[2026-07-10 20:52:36] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
-[2026-07-10 20:52:36] =============================
-[2026-07-10 20:52:37] FATAL ERROR: Structured Exception (e.g. Access Violation/Crash) occurred in the application!
+[2026-07-10 22:21:21] === AUI Panes Diagnostics ===
+[2026-07-10 22:21:21] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 511, 30), row=0, col=0
+[2026-07-10 22:21:21] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(511, 0, 173, 30), row=0, col=511
+[2026-07-10 22:21:21] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(684, 0, 0, 30), row=0, col=780
+[2026-07-10 22:21:21] =============================
+[2026-07-10 22:21:21] === AUI Panes Diagnostics ===
+[2026-07-10 22:21:21] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 511, 30), row=0, col=0
+[2026-07-10 22:21:21] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(511, 0, 269, 30), row=0, col=511
+[2026-07-10 22:21:21] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(780, 0, 85, 30), row=0, col=780
+[2026-07-10 22:21:21] Pane: name='932f3aa06a5154410000002f00000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 30, 1535, 838), row=0, col=0
+[2026-07-10 22:21:21] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-07-10 22:21:21] =============================
+[2026-07-10 22:21:23] === AUI Panes Diagnostics ===
+[2026-07-10 22:21:23] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 511, 30), row=0, col=0
+[2026-07-10 22:21:23] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(511, 0, 269, 30), row=0, col=511
+[2026-07-10 22:21:23] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(780, 0, 85, 30), row=0, col=780
+[2026-07-10 22:21:23] Pane: name='932f3aa06a5154410000002f00000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(230, 30, 1305, 838), row=0, col=0
+[2026-07-10 22:21:23] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-07-10 22:21:23] Pane: name='443939106a2ea9170000581a00000007', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 47, 225, 821), row=0, col=0
+[2026-07-10 22:21:23] Pane: name='Tools', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=3
+[2026-07-10 22:21:23] Pane: name='Brush Size', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=4
+[2026-07-10 22:21:23] =============================
+[2026-07-10 22:21:29] FATAL ERROR: Structured Exception (e.g. Access Violation/Crash) occurred in the application!
 Active actions stack (last first):

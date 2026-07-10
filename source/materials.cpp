@@ -241,6 +241,11 @@ void Materials::createOtherTileset() {
 		tilesets["Others"] = others;
 	}
 
+	if (tilesets["Favorites"] == nullptr) {
+		tilesets["Favorites"] = newd Tileset(g_brushes, "Favorites");
+		tilesets["Favorites"]->getCategory(TILESET_FAVORITE);
+	}
+
 	if (tilesets["NPCs"] != nullptr) {
 		npc_tileset = tilesets["NPCs"];
 		npc_tileset->clear();

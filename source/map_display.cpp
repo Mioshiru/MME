@@ -741,10 +741,21 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 		int dy = cursor_y - drag_start_y;
 		
 		if (dx != 0 || dy != 0) {
+			double total_dx = dx * zoom + drag_accum_x;
+			double total_dy = dy * zoom + drag_accum_y;
+			
+			int idx = static_cast<int>(total_dx);
+			int idy = static_cast<int>(total_dy);
+			
 			MapWindow* map_win = static_cast<MapWindow*>(GetParent());
 			int scroll_x, scroll_y;
 			map_win->GetViewStart(&scroll_x, &scroll_y);
-			map_win->Scroll(scroll_x - int(dx * zoom), scroll_y - int(dy * zoom));
+			if (idx != 0 || idy != 0) {
+				map_win->Scroll(scroll_x - idx, scroll_y - idy);
+			}
+			
+			drag_accum_x = total_dx - idx;
+			drag_accum_y = total_dy - idy;
 			
 			unsigned int current_time = wxGetLocalTimeMillis().GetValue();
 			unsigned int dt = current_time - last_drag_time;
@@ -844,6 +855,8 @@ void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
 		screendragging = true;
 		drag_start_x = event.GetX();
 		drag_start_y = event.GetY();
+		drag_accum_x = 0.0;
+		drag_accum_y = 0.0;
 		SetCursor(wxCursor(wxCURSOR_HAND));
 		is_kinetic_scrolling = false;
 		drag_velocity_x = 0.0;
@@ -952,6 +965,7 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
       screenshot_buffer(nullptr),
 
       drag_start_x(-1), drag_start_y(-1), drag_start_z(-1),
+      drag_accum_x(0.0), drag_accum_y(0.0),
 
       last_cursor_map_x(-1), last_cursor_map_y(-1), last_cursor_map_z(-1),
 
@@ -1288,11 +1302,12 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
 
   if (fill) {
     Brush *brush = g_gui.GetCurrentBrush();
-    if (!brush || !brush->isGround()) {
+    if (!brush || (!brush->isGround() && !brush->isWall())) {
       return;
     }
 
-    GroundBrush *newBrush = brush->asGround();
+    bool is_wall = brush->isWall();
+    GroundBrush *newBrush = is_wall ? nullptr : brush->asGround();
     Position start(mouse_map_x, mouse_map_y, floor);
     if (start.x <= 0 || start.y <= 0 || start.x >= map_width || start.y >= map_height) {
       return;
@@ -1301,7 +1316,7 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     Tile *start_tile = editor.map.getTile(start);
     GroundBrush *oldBrush = start_tile ? start_tile->getGroundBrush() : nullptr;
 
-    if (oldBrush && oldBrush->getID() == newBrush->getID()) {
+    if (!is_wall && oldBrush && newBrush && oldBrush->getID() == newBrush->getID()) {
       return;
     }
 
@@ -1330,9 +1345,10 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     const uint32_t source_ground_id = oldBrush ? oldBrush->getID() : 0;
     std::queue<Position> queue;
     std::unordered_set<uint64_t> visited;
+    std::vector<Position> temp_tiles;
 
     queue.push(start);
-    while (!queue.empty() && tilestodraw->size() < max_fill_tiles) {
+    while (!queue.empty() && temp_tiles.size() < max_fill_tiles) {
       const Position current = queue.front();
       queue.pop();
 
@@ -1355,12 +1371,45 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
         continue;
       }
 
-      tilestodraw->push_back(current);
+      temp_tiles.push_back(current);
 
       queue.push(Position(current.x - 1, current.y, current.z));
       queue.push(Position(current.x + 1, current.y, current.z));
       queue.push(Position(current.x, current.y - 1, current.z));
       queue.push(Position(current.x, current.y + 1, current.z));
+    }
+
+    if (!is_wall) {
+      *tilestodraw = std::move(temp_tiles);
+    } else {
+      std::unordered_set<uint64_t> component_set;
+      component_set.reserve(temp_tiles.size());
+      for (const auto& pos : temp_tiles) {
+        component_set.insert(encode(pos.x, pos.y, pos.z));
+      }
+
+      for (const auto& pos : temp_tiles) {
+        bool is_boundary = false;
+        Position neighbors[] = {
+          Position(pos.x - 1, pos.y, pos.z),
+          Position(pos.x + 1, pos.y, pos.z),
+          Position(pos.x, pos.y - 1, pos.z),
+          Position(pos.x, pos.y + 1, pos.z)
+        };
+        for (const auto& neighbor : neighbors) {
+          if (neighbor.x <= 0 || neighbor.y <= 0 || neighbor.x >= map_width || neighbor.y >= map_height) {
+            is_boundary = true;
+            break;
+          }
+          if (component_set.find(encode(neighbor.x, neighbor.y, neighbor.z)) == component_set.end()) {
+            is_boundary = true;
+            break;
+          }
+        }
+        if (is_boundary) {
+          tilestodraw->push_back(pos);
+        }
+      }
     }
 
     if (tilestoborder && !tilestodraw->empty()) {

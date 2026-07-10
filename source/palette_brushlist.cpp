@@ -87,7 +87,7 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 
 	for (TilesetContainer::const_iterator iter = tilesets.begin(); iter != tilesets.end(); ++iter) {
 		const TilesetCategory* tcg = iter->second->getCategory(category);
-		if (tcg && tcg->size() > 0) {
+		if (tcg && (tcg->size() > 0 || (category == TILESET_FAVORITE && iter->second->name == "Favorites"))) {
 			BrushPanel* panel = newd BrushPanel(tmp_choicebook);
 			panel->AssignTileset(tcg);
 			tmp_choicebook->AddPage(panel, wxstr(iter->second->name));
@@ -426,6 +426,12 @@ void BrushPanel::InvalidateContents() {
 	sizer->Clear(true);
 	loaded = false;
 	brushbox = nullptr;
+	if (tileset) {
+		all_brushes = tileset->brushlist;
+		std::sort(all_brushes.begin(), all_brushes.end(), [](const Brush* a, const Brush* b) {
+			return a->getName() < b->getName();
+		});
+	}
 }
 
 void BrushPanel::LoadContents() {
@@ -528,7 +534,7 @@ EVT_TOGGLEBUTTON(wxID_ANY, BrushIconBox::OnClickBrushButton)
 END_EVENT_TABLE()
 
 BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes, RenderSize rsz) :
-	wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL),
+	wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxHSCROLL),
 	BrushBoxInterface(brushes),
 	icon_size(rsz) {
 	int width;
@@ -537,6 +543,7 @@ BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes,
 	} else {
 		width = max(g_settings.getInteger(Config::PALETTE_COL_COUNT) + 1, 1);
 	}
+	width = max(width, 4);
 
 	// Create buttons
 	wxSizer* stacksizer = newd wxBoxSizer(wxVERTICAL);
@@ -563,7 +570,14 @@ BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes,
 		stacksizer->Add(rowsizer);
 	}
 
-	SetScrollbars(20, 20, 8, item_counter / width, 0, 0);
+	int btn_size = (icon_size == RENDER_SIZE_32x32) ? 36 : 20;
+	int total_width_pixels = width * btn_size + 10;
+	int noUnitsX = (total_width_pixels + 19) / 20;
+	
+	int total_height_pixels = ((item_counter + width - 1) / width) * btn_size + 10;
+	int noUnitsY = (total_height_pixels + 19) / 20;
+
+	SetScrollbars(20, 20, noUnitsX, noUnitsY, 0, 0);
 	SetSizer(stacksizer);
 }
 

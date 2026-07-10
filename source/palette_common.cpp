@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "palette_common.h"
+#include "materials.h"
 #include "brush.h"
 #include "sprites.h"
 #include "gui.h"
@@ -25,6 +26,7 @@
 #include "application.h"
 #include "palette_waypoints.h"
 #include <wx/wrapsizer.h>
+#include "palette_window.h"
 
 // ============================================================================
 // Palette Panel
@@ -792,6 +794,7 @@ void BrushToolPanel::OnClickLockDoorCheckbox(wxCommandEvent& event) {
 
 BEGIN_EVENT_TABLE(BrushButton, ItemToggleButton)
 EVT_KEY_DOWN(BrushButton::OnKey)
+EVT_CONTEXT_MENU(BrushButton::OnContextMenu)
 END_EVENT_TABLE()
 
 BrushButton::BrushButton(wxWindow* parent, Brush* _brush, RenderSize sz, uint32_t id) :
@@ -818,6 +821,54 @@ BrushButton::~BrushButton() {
 
 void BrushButton::OnKey(wxKeyEvent& event) {
 	g_gui.AddPendingCanvasEvent(event);
+}
+
+void BrushButton::OnContextMenu(wxContextMenuEvent& event) {
+	if (!brush) return;
+	wxMenu menu;
+	Tileset* favs = g_materials.tilesets["Favorites"];
+	bool is_favorited = false;
+	if (favs) {
+		const TilesetCategory* cat = favs->getCategory(TILESET_FAVORITE);
+		if (cat && cat->containsBrush(brush)) {
+			is_favorited = true;
+		}
+	}
+	
+	if (is_favorited) {
+		menu.Append(10002, "Remove from Favorites");
+	} else {
+		menu.Append(10001, "Add to Favorites");
+	}
+	
+	Bind(wxEVT_MENU, [this](wxCommandEvent& ev) {
+		Tileset* favs = g_materials.tilesets["Favorites"];
+		if (favs) {
+			TilesetCategory* cat = favs->getCategory(TILESET_FAVORITE);
+			if (cat) {
+				if (ev.GetId() == 10001) {
+					if (!cat->containsBrush(this->brush)) {
+						cat->brushlist.push_back(this->brush);
+					}
+				} else if (ev.GetId() == 10002) {
+					auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), this->brush);
+					if (it != cat->brushlist.end()) {
+						cat->brushlist.erase(it);
+					}
+				}
+				PaletteWindow* pw = nullptr;
+				const wxWindow* w = this;
+				while ((w = w->GetParent()) && (pw = dynamic_cast<PaletteWindow*>(const_cast<wxWindow*>(w))) == nullptr)
+					;
+				if (pw) {
+					pw->InvalidateContents();
+					pw->LoadCurrentContents();
+				}
+			}
+		}
+	});
+
+	PopupMenu(&menu);
 }
 
 // ============================================================================

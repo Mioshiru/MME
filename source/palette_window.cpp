@@ -316,6 +316,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	waypoint_palette(nullptr),
 	raw_palette(nullptr),
 	prefab_palette(nullptr),
+	favorites_palette(nullptr),
 	minimap_panel(nullptr) {
 	SetMinSize(wxSize(225, 250));
 	SetBackgroundColour(wxColor(10, 20, 35));
@@ -361,6 +362,10 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	prefab_palette = static_cast<PrefabPalettePanel*>(CreatePrefabPalette(choicebook));
 	prefab_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(prefab_palette, prefab_palette->GetName());
+
+	favorites_palette = static_cast<BrushPalettePanel*>(CreateFavoritesPalette(choicebook, tilesets));
+	favorites_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	choicebook->AddPage(favorites_palette, "Favorites");
 
 	// Setup sizers
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
@@ -488,6 +493,12 @@ void PrefabPalettePanel::OnExportPrefab(wxCommandEvent& event) {
 
 PalettePanel* PaletteWindow::CreatePrefabPalette(wxWindow* parent) {
 	return newd PrefabPalettePanel(parent);
+}
+
+PalettePanel* PaletteWindow::CreateFavoritesPalette(wxWindow* parent, const TilesetContainer& tilesets) {
+	BrushPalettePanel* panel = newd BrushPalettePanel(parent, tilesets, TILESET_FAVORITE);
+	panel->SetListType(wxString("large icons"));
+	return panel;
 }
 
 PalettePanel* PaletteWindow::CreateTerrainPalette(wxWindow* parent, const TilesetContainer& tilesets) {

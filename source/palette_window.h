@@ -98,6 +98,7 @@ protected:
 	static PalettePanel* CreateWaypointPalette(wxWindow* parent, const TilesetContainer& tilesets);
 	static PalettePanel* CreateRAWPalette(wxWindow* parent, const TilesetContainer& tilesets);
 	static PalettePanel* CreatePrefabPalette(wxWindow* parent);
+	static PalettePanel* CreateFavoritesPalette(wxWindow* parent, const TilesetContainer& tilesets);
 
 	wxChoicebook* choicebook;
 
@@ -109,6 +110,7 @@ protected:
 	WaypointPalettePanel* waypoint_palette;
 	BrushPalettePanel* raw_palette;
 	PrefabPalettePanel* prefab_palette;
+	BrushPalettePanel* favorites_palette;
 
 public:
 	wxPanel* minimap_panel = nullptr;
