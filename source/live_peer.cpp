@@ -27,7 +27,8 @@
 
 LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket)
     : LiveSocket(), readMessage(), server(server), socket(std::move(socket)),
-      color(), id(0), clientId(0), connected(false) {
+      color(), latency(0), packetLoss(0), lastHeartbeat(0),
+      connectionStatus("Connecting"), id(0), clientId(0), connected(false) {
   ASSERT(server != nullptr);
 }
 
@@ -43,10 +44,12 @@ void LivePeer::close() { server->removeClient(id); }
 bool LivePeer::handleError(const boost::system::error_code &error) {
   if (error == boost::asio::error::eof ||
       error == boost::asio::error::connection_reset) {
+    connectionStatus = "Disconnected";
     logMessage(wxString() + getHostName() + ": disconnected.");
     close();
     return true;
   } else if (error == boost::asio::error::connection_aborted) {
+    connectionStatus = "Disconnected";
     logMessage(name + " have left the server.");
     return true;
   }
@@ -167,7 +170,16 @@ void LivePeer::parseEditorPacket(NetworkMessage message) {
     case PACKET_PING: {
       uint64_t timestamp = message.read<uint64_t>();
       uint32_t reported_latency = message.read<uint32_t>();
+      uint32_t reported_packet_loss = 0;
+      if (message.position < message.buffer.size()) {
+        reported_packet_loss = message.read<uint32_t>();
+      }
       g_gui.latencies[this] = reported_latency;
+      latency = reported_latency;
+      packetLoss = reported_packet_loss;
+      lastHeartbeat = wxGetLocalTimeMillis().GetValue();
+      connectionStatus = packetLoss > 20 ? "Unstable" : "Connected";
+      server->updateClientList();
 
       NetworkMessage out;
       out.write<uint8_t>(PACKET_PONG);
@@ -190,11 +202,15 @@ void LivePeer::parseHello(NetworkMessage &message) {
     return;
   }
 
+  connectionStatus = "Negotiating";
+
   uint32_t rmeVersion = message.read<uint32_t>();
   if (rmeVersion != __RME_VERSION_ID__) {
     NetworkMessage outMessage;
     outMessage.write<uint8_t>(PACKET_KICK);
-    outMessage.write<std::string>("Wrong editor version.");
+    outMessage.write<std::string>(
+        "Editor version mismatch. Host uses " + __RME_VERSION__ +
+        ", client uses version id " + i2s(rmeVersion) + ".");
 
     send(outMessage);
     close();
@@ -205,7 +221,10 @@ void LivePeer::parseHello(NetworkMessage &message) {
   if (netVersion != __LIVE_NET_VERSION__) {
     NetworkMessage outMessage;
     outMessage.write<uint8_t>(PACKET_KICK);
-    outMessage.write<std::string>("Wrong protocol version.");
+    outMessage.write<std::string>(
+        "Multiplayer protocol mismatch. Host uses protocol " +
+        i2s(__LIVE_NET_VERSION__) + ", client uses protocol " +
+        i2s(netVersion) + ".");
 
     send(outMessage);
     close();
@@ -224,6 +243,8 @@ void LivePeer::parseHello(NetworkMessage &message) {
       g_gui.GetCurrentVersionID()) {
     outMessage.write<uint8_t>(PACKET_CHANGE_CLIENT_VERSION);
     outMessage.write<uint32_t>(g_gui.GetCurrentVersionID());
+    ClientVersion* version = ClientVersion::get(g_gui.GetCurrentVersionID());
+    outMessage.write<std::string>(version ? version->getName() : std::string("Unknown"));
   } else {
     outMessage.write<uint8_t>(PACKET_ACCEPTED_CLIENT);
   }
@@ -237,6 +258,8 @@ void LivePeer::parseReady(NetworkMessage &message) {
   }
 
   connected = true;
+  connectionStatus = "Connected";
+  lastHeartbeat = wxGetLocalTimeMillis().GetValue();
 
   // Find free client id
   clientId = server->getFreeClientId();

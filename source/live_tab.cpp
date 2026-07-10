@@ -93,8 +93,8 @@ LiveLogTab::LiveLogTab(MapTabbook* aui, LiveSocket* server) :
 	left_pane->SetSizerAndFit(left_sizer);
 
 	// Setup right panel
-	user_list = newd myGrid(splitter, wxID_ANY, wxDefaultPosition, wxSize(280, 100));
-	user_list->CreateGrid(5, 3);
+	user_list = newd myGrid(splitter, wxID_ANY, wxDefaultPosition, wxSize(420, 100));
+	user_list->CreateGrid(5, 5);
 	user_list->DisableDragRowSize();
 	user_list->DisableDragColSize();
 	user_list->SetSelectionMode(wxGrid::wxGridSelectRows);
@@ -105,7 +105,11 @@ LiveLogTab::LiveLogTab(MapTabbook* aui, LiveSocket* server) :
 	user_list->SetColLabelValue(1, "#");
 	user_list->SetColSize(1, 36);
 	user_list->SetColLabelValue(2, "Name");
-	user_list->SetColSize(2, 200);
+	user_list->SetColSize(2, 150);
+	user_list->SetColLabelValue(3, "Ping");
+	user_list->SetColSize(3, 55);
+	user_list->SetColLabelValue(4, "State");
+	user_list->SetColSize(4, 130);
 
 	// user_list->GetGridWindow()->
 
@@ -210,6 +214,8 @@ void LiveLogTab::UpdateClientList(const std::unordered_map<uint32_t, LivePeer*>&
 		user_list->SetCellBackgroundColour(i, 0, peer->getUsedColor());
 		user_list->SetCellValue(i, 1, i2ws((peer->getClientId() >> 1) + 1));
 		user_list->SetCellValue(i, 2, peer->getName());
+		user_list->SetCellValue(i, 3, wxString::Format("%u ms", peer->getLatency()));
+		user_list->SetCellValue(i, 4, wxString::Format("%s | %u%% loss", peer->getConnectionStatus(), peer->getPacketLoss()));
 		++i;
 	}
 }

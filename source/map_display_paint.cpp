@@ -373,20 +373,21 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				ImGui::BeginTooltip();
 				for (auto& clientEntry : server->clients) {
 					LivePeer* peer = clientEntry.second;
-					uint32_t lat = g_gui.latencies[peer];
+					uint32_t lat = peer->getLatency();
 					ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
 					ImGui::Text("%s:", nstr(peer->getName()).c_str());
 					ImGui::SameLine();
-					ImGui::TextColored(col, " %d ms", lat);
+					ImGui::TextColored(col, " %d ms | %u%% loss | %s", lat, peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
 				}
 				ImGui::EndTooltip();
 			}
 		} else {
-			uint32_t lat = g_gui.latencies[editor.GetLiveClient()];
+			LiveClient* client = editor.GetLiveClient();
+			uint32_t lat = client->getLatency();
 			ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Latency: ");
+			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Connection: ");
 			ImGui::SameLine();
-			ImGui::TextColored(col, "%d ms", lat);
+			ImGui::TextColored(col, "%s | %d ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), lat, client->getPacketLoss());
 		}
 		ImGui::Separator();
 
@@ -897,4 +898,4 @@ void MapCanvas::LoadRadialTextures() {
 	radial_tex_ids[9] = ConvertBitmapToTexture(prefab_bmp);
 	
 	radial_textures_loaded = true;
-}
+}

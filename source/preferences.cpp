@@ -17,10 +17,16 @@
 
 #include "main.h"
 
+#include <boost/asio.hpp>
+
+#include <wx/clipbrd.h>
 #include <wx/collpane.h>
-#include <wx/url.h>
-#include <wx/sstream.h>
+#include <wx/hyperlink.h>
 #include <wx/listctrl.h>
+#include <wx/process.h>
+#include <wx/sstream.h>
+#include <wx/url.h>
+
 #include "style_manager.h"
 
 #include "settings.h"
@@ -29,9 +35,154 @@
 
 #include "gui.h"
 #include "ui_theme.h"
-
-#include <wx/hyperlink.h>
 #include "preferences.h"
+
+#ifdef __WINDOWS__
+#include <shellapi.h>
+#endif
+
+namespace {
+	constexpr int kDefaultMultiplayerPort = 3074;
+	const wxString kPortCheckerBaseUrl = "https://portchecker.io/api/";
+
+	bool CopyTextToClipboard(const wxString& text) {
+		if (!wxTheClipboard->Open()) {
+			return false;
+		}
+
+		const bool copied = wxTheClipboard->SetData(new wxTextDataObject(text));
+		wxTheClipboard->Close();
+		return copied;
+	}
+
+	bool FetchUrlText(const wxString& urlString, wxString& response, wxString& errorMessage) {
+		wxURL url(urlString);
+		if (url.GetError() != wxURL_NOERR) {
+			errorMessage = "Could not initialize the network request.";
+			return false;
+		}
+
+		std::unique_ptr<wxInputStream> stream(url.GetInputStream());
+		if (!stream || !stream->IsOk()) {
+			errorMessage = "Could not contact the network service.";
+			return false;
+		}
+
+		wxStringOutputStream output;
+		stream->Read(output);
+		response = output.GetString();
+		response.Trim(true);
+		response.Trim(false);
+		if (response.empty()) {
+			errorMessage = "The network service returned an empty response.";
+			return false;
+		}
+
+		return true;
+	}
+
+	bool GetExternalIpAddress(wxString& ipAddress, wxString& errorMessage) {
+		if (FetchUrlText(kPortCheckerBaseUrl + "me", ipAddress, errorMessage)) {
+			return true;
+		}
+
+		return FetchUrlText("https://api.ipify.org", ipAddress, errorMessage);
+	}
+
+	bool CheckPortReachableFromInternet(const wxString& host, int port, bool& isReachable, wxString& errorMessage) {
+		wxString response;
+		if (!FetchUrlText(kPortCheckerBaseUrl + host + "/" + wxString::Format("%d", port), response, errorMessage)) {
+			return false;
+		}
+
+		response.MakeLower();
+		if (response == "true") {
+			isReachable = true;
+			return true;
+		}
+		if (response == "false") {
+			isReachable = false;
+			return true;
+		}
+
+		errorMessage = "The port check service returned an unexpected response.";
+		return false;
+	}
+
+	bool TryStartTemporaryPortListener(int port, wxString& errorMessage, std::unique_ptr<boost::asio::io_context>& service, std::unique_ptr<boost::asio::ip::tcp::acceptor>& acceptor) {
+		try {
+			service = std::make_unique<boost::asio::io_context>();
+			acceptor = std::make_unique<boost::asio::ip::tcp::acceptor>(*service);
+			boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), static_cast<uint16_t>(port));
+			acceptor->open(endpoint.protocol());
+			acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+			acceptor->bind(endpoint);
+			acceptor->listen();
+			return true;
+		} catch (const std::exception& ex) {
+			errorMessage = wxString::Format("Could not listen on port %d: %s", port, ex.what());
+			acceptor.reset();
+			service.reset();
+			return false;
+		}
+	}
+
+	void ShowCopyableExternalIpDialog(wxWindow* parent, const wxString& ipAddress) {
+		wxDialog dialog(parent, wxID_ANY, "Host IP Address", wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+		auto* topSizer = new wxBoxSizer(wxVERTICAL);
+		topSizer->Add(new wxStaticText(&dialog, wxID_ANY, "Click the IP address to copy it to the clipboard."), 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 10);
+
+		auto* ipButton = new wxButton(&dialog, wxID_ANY, ipAddress, wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+		ipButton->SetToolTip("Copy external IP to clipboard.");
+		topSizer->Add(ipButton, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 10);
+
+		auto* statusText = new wxStaticText(&dialog, wxID_ANY, "");
+		topSizer->Add(statusText, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 10);
+
+		ipButton->Bind(wxEVT_BUTTON, [ipAddress, statusText](wxCommandEvent&) {
+			statusText->SetLabel(CopyTextToClipboard(ipAddress) ? "Copied to clipboard." : "Could not access the clipboard.");
+		});
+
+		if (wxSizer* buttonSizer = dialog.CreateSeparatedButtonSizer(wxOK)) {
+			topSizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 10);
+		}
+
+		dialog.SetSizerAndFit(topSizer);
+		dialog.CentreOnParent();
+		dialog.ShowModal();
+	}
+
+#ifdef __WINDOWS__
+	bool IsWindowsFirewallPortAllowed(int port) {
+		wxArrayString output;
+		wxArrayString errors;
+		const wxString command = wxString::Format(
+			"powershell -NoProfile -NonInteractive -Command \"$rule = Get-NetFirewallPortFilter -Protocol TCP -LocalPort %d -ErrorAction SilentlyContinue | Get-NetFirewallRule | Where-Object { $_.Enabled -eq 'True' -and $_.Direction -eq 'Inbound' -and $_.Action -eq 'Allow' } | Select-Object -First 1 -ExpandProperty DisplayName; if ($rule) { Write-Output $rule }\"",
+			port
+		);
+		const long exitCode = wxExecute(command, output, errors, wxEXEC_SYNC);
+		return exitCode == 0 && !output.empty() && !output[0].Trim().empty();
+	}
+
+	bool RequestWindowsFirewallPortRule(wxWindow* parent, int port) {
+		const wxString params = wxString::Format(
+			"advfirewall firewall add rule name=\"Remere's Map Editor Multiplayer %d\" dir=in action=allow protocol=TCP localport=%d profile=any",
+			port,
+			port
+		);
+
+		HINSTANCE result = ShellExecuteW(
+			reinterpret_cast<HWND>(parent ? parent->GetHandle() : nullptr),
+			L"runas",
+			L"netsh.exe",
+			params.wc_str(),
+			nullptr,
+			SW_SHOWNORMAL
+		);
+		return reinterpret_cast<INT_PTR>(result) > 32;
+	}
+#endif
+}
 
 BEGIN_EVENT_TABLE(PreferencesWindow, wxDialog)
 EVT_BUTTON(wxID_OK, PreferencesWindow::OnClickOK)
@@ -52,6 +203,7 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 	autosave_enabled_chkbox(nullptr),
 	autosave_interval_slider(nullptr),
 	autosave_interval_label(nullptr),
+	multiplayer_port_spin(nullptr),
 	ui_scale_slider(nullptr) {
     
     // RPG Design Apply
@@ -274,32 +426,81 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	wxStaticBoxSizer* net_box = new wxStaticBoxSizer(wxVERTICAL, general_page, "Multiplayer Configuration");
 	wxBoxSizer* port_sizer = new wxBoxSizer(wxHORIZONTAL);
 	port_sizer->Add(new wxStaticText(general_page, wxID_ANY, "Server Port:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-	wxSpinCtrl* port_ctrl = new wxSpinCtrl(general_page, wxID_ANY, i2ws(31313), wxDefaultPosition, wxSize(80, -1), wxSP_ARROW_KEYS, 1, 65535);
-	port_sizer->Add(port_ctrl, 0, wxRIGHT, 10);
+	multiplayer_port_spin = new wxSpinCtrl(
+		general_page,
+		wxID_ANY,
+		i2ws(g_settings.getInteger(Config::MULTIPLAYER_PORT)),
+		wxDefaultPosition,
+		wxSize(80, -1),
+		wxSP_ARROW_KEYS,
+		1,
+		65535,
+		g_settings.getInteger(Config::MULTIPLAYER_PORT)
+	);
+	port_sizer->Add(multiplayer_port_spin, 0, wxRIGHT, 10);
 	
 	wxButton* test_btn = new wxButton(general_page, wxID_ANY, "Test Connection");
-	test_btn->Bind(wxEVT_BUTTON, [this, port_ctrl](wxCommandEvent&) {
-		// Simulierter Port-Check
-		int port = port_ctrl->GetValue();
-		wxMessageBox("Port " + std::to_string(port) + " is not reachable from outside.\n\nCheck Portforwarding on your router/firewall.", 
-			"Connection Test", wxOK | wxICON_WARNING);
+	test_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		const int port = multiplayer_port_spin ? multiplayer_port_spin->GetValue() : kDefaultMultiplayerPort;
+
+#ifdef __WINDOWS__
+		if (!IsWindowsFirewallPortAllowed(port)) {
+			const int answer = wxMessageBox(
+				wxString::Format("Windows does not currently allow inbound TCP traffic on port %d.\n\nCreate the firewall rule now?", port),
+				"Windows Firewall",
+				wxYES_NO | wxICON_QUESTION,
+				this
+			);
+			if (answer == wxYES && !RequestWindowsFirewallPortRule(this, port)) {
+				wxMessageBox("The Windows firewall rule could not be created. Confirm the UAC prompt or create the rule manually.", "Windows Firewall", wxOK | wxICON_WARNING, this);
+				return;
+			}
+		}
+#endif
+
+		std::unique_ptr<boost::asio::io_context> service;
+		std::unique_ptr<boost::asio::ip::tcp::acceptor> acceptor;
+		wxString listenError;
+		if (!TryStartTemporaryPortListener(port, listenError, service, acceptor)) {
+			wxMessageBox(listenError + "\n\nClose any running host on this port or choose another port.", "Connection Test", wxOK | wxICON_ERROR, this);
+			return;
+		}
+
+		wxString externalIp;
+		wxString requestError;
+		if (!GetExternalIpAddress(externalIp, requestError)) {
+			wxMessageBox(requestError, "Connection Test", wxOK | wxICON_ERROR, this);
+			return;
+		}
+
+		bool isReachable = false;
+		if (!CheckPortReachableFromInternet(externalIp, port, isReachable, requestError)) {
+			wxMessageBox(requestError, "Connection Test", wxOK | wxICON_ERROR, this);
+			return;
+		}
+
+		wxMessageBox(
+			isReachable
+				? wxString::Format("Port %d is reachable from the internet.\n\nExternal IP: %s", port, externalIp)
+				: wxString::Format("Port %d is not reachable from the internet.\n\nExternal IP: %s\n\nCheck your router port forwarding, provider NAT and the Windows firewall rule.", port, externalIp),
+			"Connection Test",
+			isReachable ? (wxOK | wxICON_INFORMATION) : (wxOK | wxICON_WARNING),
+			this
+		);
 	});
 	port_sizer->Add(test_btn);
 
 	wxButton* ip_btn = new wxButton(general_page, wxID_ANY, "Show IP");
 	ip_btn->SetToolTip("Fetch your external IP address for hosting.");
 	ip_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-		wxURL url("http://api.ipify.org");
-		if (url.GetError() == wxURL_NOERR) {
-			std::unique_ptr<wxInputStream> in(url.GetInputStream());
-			if (in && in->IsOk()) {
-				wxStringOutputStream str_out;
-				in->Read(str_out);
-				wxMessageBox("Your external IP is: " + str_out.GetString() + "\n\nGive this to your friends to join your session.", "Host IP Address");
-				return;
-			}
+		wxString externalIp;
+		wxString errorMessage;
+		if (!GetExternalIpAddress(externalIp, errorMessage)) {
+			wxMessageBox(errorMessage, "Connection Error", wxOK | wxICON_ERROR, this);
+			return;
 		}
-		wxMessageBox("Could not fetch external IP. Please check manually at 'ipify.org'.", "Connection Error", wxOK | wxICON_ERROR);
+
+		ShowCopyableExternalIpDialog(this, externalIp);
 	});
 	port_sizer->Add(ip_btn, 0, wxLEFT, 5);
 
@@ -705,6 +906,7 @@ void PreferencesWindow::Apply() {
 	}
 	g_settings.setInteger(Config::USE_UPDATER, update_check_on_startup_chkbox->GetValue());
 	g_settings.setInteger(Config::ONLY_ONE_INSTANCE, only_one_instance_chkbox->GetValue());
+	g_settings.setInteger(Config::MULTIPLAYER_PORT, multiplayer_port_spin ? multiplayer_port_spin->GetValue() : kDefaultMultiplayerPort);
 	g_settings.setInteger(Config::UNDO_SIZE, undo_size_spin->GetValue());
 	g_settings.setInteger(Config::UNDO_MEM_SIZE, undo_mem_size_spin->GetValue());
 	g_settings.setInteger(Config::REPLACE_SIZE, replace_size_spin->GetValue());

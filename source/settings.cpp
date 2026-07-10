@@ -246,6 +246,7 @@ void Settings::IO(IOMode mode) {
 	section("Editor");
 	String(RECENT_FILES, "");
 	Int(WORKER_THREADS, 8); // Standardmäßig mehr Threads für QuadTree & Minimap
+	Int(MULTIPLAYER_PORT, 3074);
 	Int(MERGE_MOVE, 0);
 	Int(MERGE_PASTE, 0);
 	Int(UNDO_SIZE, 3); // Standardmäßig 3 Schritte

@@ -22,14 +22,19 @@
 #include "live_action.h"
 #include "editor.h"
 
+#include <chrono>
+#include <new>
+#include <thread>
 #include <wx/event.h>
 
 LiveClient::LiveClient() :
 	LiveSocket(),
 	readMessage(), queryNodeList(), currentOperation(),
-	resolver(nullptr), socket(nullptr), stopped(false) 
+	resolver(nullptr), socket(nullptr), mapEditor(nullptr), reconnectAddress(),
+	reconnectPort(0), latency(0), packetLossPercent(0), reconnectAttempts(0),
+	pingsSent(0), pingsMissed(0), lastPingTimestamp(0), waitingForPong(false),
+	reconnectScheduled(false), kickedByServer(false), connectionStatus("Disconnected"), stopped(false) 
 {
-    this->mapEditor = nullptr;
 }
 
 LiveClient::~LiveClient() {
@@ -37,6 +42,11 @@ LiveClient::~LiveClient() {
 }
 
 bool LiveClient::connect(const std::string& address, uint16_t port) {
+	reconnectAddress = address;
+	reconnectPort = port;
+	stopped = false;
+	connectionStatus = reconnectAttempts > 0 ? wxString::Format("Reconnecting (%u/3)", reconnectAttempts) : wxString("Connecting");
+
 	NetworkConnection& connection = NetworkConnection::getInstance();
 	if (!connection.start()) {
 		setLastError("The previous connection has not been terminated yet.");
@@ -48,13 +58,13 @@ bool LiveClient::connect(const std::string& address, uint16_t port) {
 		resolver = std::make_shared<boost::asio::ip::tcp::resolver>(service);
 	}
 
-	if (!socket) {
-		socket = std::make_shared<boost::asio::ip::tcp::socket>(service);
-	}
+	socket = std::make_shared<boost::asio::ip::tcp::socket>(service);
 
 	resolver->async_resolve(address, std::to_string(port), [this](const boost::system::error_code& error, boost::asio::ip::tcp::resolver::results_type results) -> void {
 		if (error) {
-			logMessage("Error: " + error.message());
+			if (!scheduleReconnect("Name resolution failed: " + wxstr(error.message()))) {
+				logMessage("Error: " + error.message());
+			}
 		} else {
 			tryConnect(results);
 		}
@@ -74,6 +84,8 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 		if (error) {
 			if (handleError(error)) {
 				//
+			} else if (scheduleReconnect(wxString::Format("Connection failed: %s", error.message()))) {
+				//
 			} else {
 				wxTheApp->CallAfter([this]() {
 					close();
@@ -88,6 +100,10 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 				});
 				return;
 			}
+			reconnectScheduled = false;
+			reconnectAttempts = 0;
+			connectionStatus = "Connected";
+			kickedByServer = false;
 			sendHello();
 			receiveHeader();
 		}
@@ -110,21 +126,83 @@ void LiveClient::close() {
 		log = nullptr;
 	}
 
+	connectionStatus = "Disconnected";
+	reconnectScheduled = false;
 	stopped = true;
 }
 
 bool LiveClient::handleError(const boost::system::error_code& error) {
 	if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset) {
 		wxTheApp->CallAfter([this]() {
-			log->Message(wxString() + getHostName() + ": disconnected.");
-			close();
+			if (!scheduleReconnect(wxString() + getHostName() + ": disconnected.")) {
+				if (log) {
+					log->Message(wxString() + getHostName() + ": disconnected.");
+				}
+				close();
+				g_gui.CloseLiveEditors(this);
+			}
 		});
 		return true;
 	} else if (error == boost::asio::error::connection_aborted) {
 		logMessage("You have left the server.");
+		connectionStatus = "Disconnected";
 		return true;
 	}
 	return false;
+}
+
+bool LiveClient::scheduleReconnect(const wxString& reason) {
+	if (kickedByServer || reconnectScheduled || reconnectAddress.empty()) {
+		return false;
+	}
+
+	if (reconnectAttempts >= 3) {
+		return false;
+	}
+
+	if (resolver) {
+		resolver->cancel();
+	}
+	if (socket && socket->is_open()) {
+		boost::system::error_code ignored;
+		socket->close(ignored);
+	}
+
+	reconnectScheduled = true;
+		connectionStatus = wxString::Format("Reconnecting (%u/3)", reconnectAttempts + 1);
+	if (log) {
+		log->Message(reason);
+		log->Message(connectionStatus + "...");
+	}
+
+	std::thread([this]() {
+		std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+		wxTheApp->CallAfter([this]() {
+			attemptReconnect();
+		});
+	}).detach();
+	return true;
+}
+
+void LiveClient::attemptReconnect() {
+	if (kickedByServer || stopped) {
+		return;
+	}
+
+	reconnectScheduled = false;
+		++reconnectAttempts;
+	resetConnectionMetrics();
+	connect(reconnectAddress, reconnectPort);
+}
+
+void LiveClient::resetConnectionMetrics() {
+	latency = 0;
+	packetLossPercent = 0;
+	pingsSent = 0;
+	pingsMissed = 0;
+	lastPingTimestamp = 0;
+	waitingForPong = false;
+	g_gui.latencies[this] = 0;
 }
 
 std::string LiveClient::getHostName() const {
@@ -230,11 +308,22 @@ void LiveClient::sendNodeRequests() {
 	static uint64_t last_ping_time = 0;
 	uint64_t now = wxGetLocalTimeMillis().GetValue();
 	if (now - last_ping_time > 2000) {
+		if (waitingForPong && lastPingTimestamp != 0 && now - lastPingTimestamp > 4000) {
+			++pingsMissed;
+			packetLossPercent = pingsSent == 0 ? 0 : (pingsMissed * 100U) / pingsSent;
+			connectionStatus = "Unstable";
+			waitingForPong = false;
+		}
+
 		NetworkMessage msg;
 		msg.write<uint8_t>(PACKET_PING);
 		msg.write<uint64_t>(now);
 		msg.write<uint32_t>(g_gui.latencies[this]);
+		msg.write<uint32_t>(packetLossPercent);
 		send(msg);
+		++pingsSent;
+		lastPingTimestamp = now;
+		waitingForPong = true;
 		last_ping_time = now;
 	}
 
@@ -346,7 +435,11 @@ void LiveClient::parsePacket(NetworkMessage message) {
 				break;
 			case PACKET_PONG: {
 				uint64_t timestamp = message.read<uint64_t>();
-				g_gui.latencies[this] = (uint32_t)(wxGetLocalTimeMillis().GetValue() - timestamp);
+				latency = (uint32_t)(wxGetLocalTimeMillis().GetValue() - timestamp);
+				g_gui.latencies[this] = latency;
+				packetLossPercent = pingsSent == 0 ? 0 : (pingsMissed * 100U) / pingsSent;
+				waitingForPong = false;
+				connectionStatus = packetLossPercent > 20 ? "Unstable" : "Connected";
 				break;
 			}
 			default: {
@@ -364,19 +457,32 @@ void LiveClient::parsePacket(NetworkMessage message) {
 }
 
 void LiveClient::parseHello(NetworkMessage& message) {
-	ASSERT(mapEditor == nullptr);
-	mapEditor = newd Editor(g_gui.copybuffer, this);
+	if (!mapEditor) {
+		mapEditor = newd Editor(g_gui.copybuffer, this);
+	} else {
+		mapEditor->selection.clear();
+		mapEditor->map.~Map();
+		new (&mapEditor->map) Map();
+	}
 
 	Map& map = mapEditor->map;
 	map.setName("Live Map - " + message.read<std::string>());
 	map.setWidth(message.read<uint16_t>());
 	map.setHeight(message.read<uint16_t>());
-	
-	createEditorWindow();
+	map.clearChanges();
+
+	if (reconnectAttempts == 0) {
+		createEditorWindow();
+	} else {
+		g_gui.RefreshView();
+		g_gui.UpdateMinimap();
+	}
 }
 
 void LiveClient::parseKick(NetworkMessage& message) {
 	const std::string& kickMessage = message.read<std::string>();
+	kickedByServer = true;
+	connectionStatus = "Disconnected";
 	close();
 
 	g_gui.PopupDialog("Disconnected", wxstr(kickMessage), wxOK);
@@ -388,6 +494,10 @@ void LiveClient::parseClientAccepted(NetworkMessage& message) {
 
 void LiveClient::parseChangeClientVersion(NetworkMessage& message) {
 	ClientVersionID clientVersion = static_cast<ClientVersionID>(message.read<uint32_t>());
+	wxString versionName = i2ws(clientVersion);
+	if (message.position < message.buffer.size()) {
+		versionName = wxstr(message.read<std::string>());
+	}
 	if (!g_gui.CloseAllEditors()) {
 		close();
 		return;
@@ -395,7 +505,14 @@ void LiveClient::parseChangeClientVersion(NetworkMessage& message) {
 
 	wxString error;
 	wxArrayString warnings;
-	g_gui.LoadVersion(clientVersion, error, warnings);
+	if (!g_gui.LoadVersion(clientVersion, error, warnings)) {
+		close();
+		g_gui.PopupDialog("Version Mismatch", "The host requires client version '" + versionName + "', but the assets could not be loaded.\n\n" + error, wxOK);
+		return;
+	}
+	if (!warnings.empty()) {
+		g_gui.ListDialog("Version Warnings", warnings);
+	}
 
 	sendReady();
 }

@@ -29,6 +29,9 @@
 #include "gui.h"
 
 #include <wx/chartype.h>
+#include <wx/clipbrd.h>
+#include <wx/sstream.h>
+#include <wx/url.h>
 
 #include "editor.h"
 #include "materials.h"
@@ -37,6 +40,72 @@
 #include "lua/lua_script_manager.h"
 #include "lua/lua_scripts_window.h"
 #include "otc_export.h"
+
+namespace {
+	bool CopyTextToClipboard(const wxString& text) {
+		if (!wxTheClipboard->Open()) {
+			return false;
+		}
+		bool copied = wxTheClipboard->SetData(new wxTextDataObject(text));
+		wxTheClipboard->Close();
+		return copied;
+	}
+
+	bool FetchUrlText(const wxString& urlString, wxString& response, wxString& errorMessage) {
+		wxURL url(urlString);
+		if (url.GetError() != wxURL_NOERR) {
+			errorMessage = "Could not initialize the network request.";
+			return false;
+		}
+		std::unique_ptr<wxInputStream> stream(url.GetInputStream());
+		if (!stream || !stream->IsOk()) {
+			errorMessage = "Could not contact the network service.";
+			return false;
+		}
+		wxStringOutputStream output;
+		stream->Read(output);
+		response = output.GetString();
+		response.Trim(true);
+		response.Trim(false);
+		return !response.empty();
+	}
+
+	bool GetExternalIpAddress(wxString& ipAddress, wxString& errorMessage) {
+		if (FetchUrlText("https://portchecker.io/api/me", ipAddress, errorMessage)) {
+			return true;
+		}
+		return FetchUrlText("https://api.ipify.org", ipAddress, errorMessage);
+	}
+
+	bool TryCreateWindowsUpnpMapping(int port, wxString& message) {
+#ifdef __WINDOWS__
+		wxArrayString output;
+		wxArrayString errors;
+		const wxString command = wxString::Format(
+			"powershell -NoProfile -NonInteractive -Command \"$ip = ([System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) | Where-Object { $_.AddressFamily -eq 'InterNetwork' -and -not $_.IPAddressToString.StartsWith('169.254.') } | Select-Object -First 1 -ExpandProperty IPAddressToString); if (-not $ip) { Write-Output 'No local IPv4 address found.'; exit 4 }; $nat = New-Object -ComObject HNetCfg.NATUPnP; $maps = $nat.StaticPortMappingCollection; if (-not $maps) { Write-Output 'UPnP is not available on this router.'; exit 2 }; $maps.Add(%d, 'TCP', %d, $ip, $true, 'Remere Map Editor'); Write-Output ('Mapped TCP %d to ' + $ip)\"",
+			port,
+			port,
+			port
+		);
+		long exitCode = wxExecute(command, output, errors, wxEXEC_SYNC);
+		if (exitCode == 0 && !output.empty()) {
+			message = output[0];
+			return true;
+		}
+		if (!output.empty()) {
+			message = output[0];
+		} else if (!errors.empty()) {
+			message = errors[0];
+		} else {
+			message = "UPnP port mapping failed.";
+		}
+		return false;
+#else
+		message = "Automatic router mapping is currently implemented only for Windows hosts.";
+		return false;
+#endif
+	}
+}
 
 BEGIN_EVENT_TABLE(MainMenuBar, wxEvtHandler)
 END_EVENT_TABLE()
@@ -1249,11 +1318,45 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 	gsizer->Add(hostname = newd wxTextCtrl(live_host_dlg, wxID_ANY, "RME Live Server"), 0, wxEXPAND);
 
 	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Port:"));
-	gsizer->Add(port = newd wxSpinCtrl(live_host_dlg, wxID_ANY, "31313", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, 31313), 0, wxEXPAND);
+	gsizer->Add(port = newd wxSpinCtrl(live_host_dlg, wxID_ANY, i2ws(g_settings.getInteger(Config::MULTIPLAYER_PORT)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, g_settings.getInteger(Config::MULTIPLAYER_PORT)), 0, wxEXPAND);
 	top_sizer->Add(gsizer, 0, wxALL, 20);
+
+	wxString versionLabel = g_gui.IsVersionLoaded() ? wxString::FromUTF8(g_gui.GetCurrentVersion().getName()) : wxString("No client version loaded");
+	top_sizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Host client version: " + versionLabel), 0, wxLEFT | wxRIGHT | wxBOTTOM, 20);
 
 	top_sizer->Add(allow_copy = newd wxCheckBox(live_host_dlg, wxID_ANY, "Allow copy & paste between maps."), 0, wxRIGHT | wxLEFT, 20);
 	allow_copy->SetToolTip("Allows remote clients to copy & paste from the hosted map to local maps.");
+
+	wxSizer* helper_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	auto* copy_invite_btn = newd wxButton(live_host_dlg, wxID_ANY, "Copy Invite");
+	auto* upnp_btn = newd wxButton(live_host_dlg, wxID_ANY, "Try Router Mapping");
+	helper_sizer->Add(copy_invite_btn, 1, wxRIGHT, 5);
+	helper_sizer->Add(upnp_btn, 1, wxLEFT, 5);
+	top_sizer->Add(helper_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 20);
+
+	copy_invite_btn->Bind(wxEVT_BUTTON, [live_host_dlg, port](wxCommandEvent&) {
+		wxString externalIp;
+		wxString errorMessage;
+		if (!GetExternalIpAddress(externalIp, errorMessage)) {
+			g_gui.PopupDialog(live_host_dlg, "Invite", errorMessage, wxOK);
+			return;
+		}
+		wxString invite = externalIp + ":" + wxString::Format("%d", port->GetValue());
+		if (!CopyTextToClipboard(invite)) {
+			g_gui.PopupDialog(live_host_dlg, "Invite", "Could not copy the invite to the clipboard.", wxOK);
+			return;
+		}
+		g_gui.PopupDialog(live_host_dlg, "Invite Copied", "Copied invite: " + invite, wxOK);
+	});
+
+	upnp_btn->Bind(wxEVT_BUTTON, [live_host_dlg, port](wxCommandEvent&) {
+		wxString result;
+		if (TryCreateWindowsUpnpMapping(port->GetValue(), result)) {
+			g_gui.PopupDialog(live_host_dlg, "Router Mapping", result, wxOK);
+		} else {
+			g_gui.PopupDialog(live_host_dlg, "Router Mapping", result, wxOK);
+		}
+	});
 
 	wxSizer* ok_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	ok_sizer->Add(newd wxButton(live_host_dlg, wxID_OK, "OK"), 1, wxCENTER);
@@ -1268,6 +1371,7 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 			LiveServer* liveServer = editor->StartLiveServer();
 			liveServer->setName(hostname->GetValue());
 			liveServer->setPort(port->GetValue());
+			g_settings.setInteger(Config::MULTIPLAYER_PORT, port->GetValue());
 
 			const wxString& error = liveServer->getLastError();
 			if (!error.empty()) {
@@ -1311,8 +1415,11 @@ void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
 	gsizer->Add(ip = newd wxTextCtrl(live_join_dlg, wxID_ANY, "localhost"), 0, wxEXPAND);
 
 	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Port:"));
-	gsizer->Add(port = newd wxSpinCtrl(live_join_dlg, wxID_ANY, "31313", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, 31313), 0, wxEXPAND);
+	gsizer->Add(port = newd wxSpinCtrl(live_join_dlg, wxID_ANY, i2ws(g_settings.getInteger(Config::MULTIPLAYER_PORT)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, g_settings.getInteger(Config::MULTIPLAYER_PORT)), 0, wxEXPAND);
 	top_sizer->Add(gsizer, 0, wxALL, 20);
+
+	wxString joinVersionLabel = g_gui.IsVersionLoaded() ? wxString::FromUTF8(g_gui.GetCurrentVersion().getName()) : wxString("Will auto-switch to the host version if available");
+	top_sizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Local client version: " + joinVersionLabel), 0, wxLEFT | wxRIGHT | wxBOTTOM, 20);
 
 	wxSizer* ok_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	ok_sizer->Add(newd wxButton(live_join_dlg, wxID_OK, "OK"), 1, wxRIGHT);
@@ -1341,6 +1448,8 @@ void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
 
 			const wxString& address = ip->GetValue();
 			int32_t portNumber = port->GetValue();
+			g_settings.setInteger(Config::MULTIPLAYER_PORT, portNumber);
+			g_gui.SetStatusText("Joining live session...");
 
 			liveClient->createLogWindow(g_gui.tabbook);
 			if (!liveClient->connect(nstr(address), portNumber)) {

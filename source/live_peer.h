@@ -43,6 +43,15 @@ public:
 	wxColor getUsedColor() const {
 		return color;
 	}
+	uint32_t getLatency() const {
+		return latency;
+	}
+	uint32_t getPacketLoss() const {
+		return packetLoss;
+	}
+	wxString getConnectionStatus() const {
+		return connectionStatus;
+	}
 	void setUsedColor(const wxColor& newColor) {
 		color = newColor;
 	}
@@ -79,6 +88,10 @@ protected:
 	boost::asio::ip::tcp::socket socket;
 
 	wxColor color;
+	uint32_t latency;
+	uint32_t packetLoss;
+	uint64_t lastHeartbeat;
+	wxString connectionStatus;
 
 	uint32_t id;
 	uint32_t clientId;

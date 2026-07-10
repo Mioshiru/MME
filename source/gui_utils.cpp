@@ -2,6 +2,7 @@
 #include "gui.h"
 #include "application.h"
 #include "editor.h"
+#include "live_client.h"
 #include "live_server.h"
 #include "loading_window.h"
 #include <imgui.h>
@@ -65,8 +66,8 @@ void GUI::SendChat(const std::string& text) {
 	if (ed && ed->IsLive()) {
 		if (ed->IsLiveServer()) ed->GetLiveServer()->broadcastChat("Host", wxstr(text));
 		else {
-			NetworkMessage msg; msg.write<uint8_t>(0x07); msg.write<std::string>(text);
-			ed->GetLive().send(msg); AddChatMessage("Me", text);
+            ed->GetLiveClient()->sendChat(wxstr(text));
+            AddChatMessage("Me", text);
 		}
 	}
 }

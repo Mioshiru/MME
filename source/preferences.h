@@ -56,6 +56,7 @@ public:
 	wxCheckBox* only_one_instance_chkbox;
 	wxCheckBox* show_welcome_dialog_chkbox;
 	wxCheckBox* enable_tileset_editing_chkbox;
+	wxSpinCtrl* multiplayer_port_spin;
 	wxSpinCtrl* undo_size_spin;
 	wxSpinCtrl* undo_mem_size_spin;
 	wxSpinCtrl* worker_threads_spin;

@@ -37,6 +37,15 @@ public:
 
 	void close();
 	bool handleError(const boost::system::error_code& error);
+	uint32_t getLatency() const {
+		return latency;
+	}
+	uint32_t getPacketLoss() const {
+		return packetLossPercent;
+	}
+	wxString getConnectionStatus() const {
+		return connectionStatus;
+	}
 
 	//
 	std::string getHostName() const;
@@ -75,6 +84,9 @@ protected:
 	void parseCursorUpdate(NetworkMessage& message);
 	void parseStartOperation(NetworkMessage& message);
 	void parseUpdateOperation(NetworkMessage& message);
+	bool scheduleReconnect(const wxString& reason);
+	void attemptReconnect();
+	void resetConnectionMetrics();
 
 	//
 	NetworkMessage readMessage;
@@ -86,6 +98,18 @@ protected:
 	std::shared_ptr<boost::asio::ip::tcp::socket> socket;
 
 	MapEditor* mapEditor;
+	std::string reconnectAddress;
+	uint16_t reconnectPort;
+	uint32_t latency;
+	uint32_t packetLossPercent;
+	uint32_t reconnectAttempts;
+	uint32_t pingsSent;
+	uint32_t pingsMissed;
+	uint64_t lastPingTimestamp;
+	bool waitingForPong;
+	bool reconnectScheduled;
+	bool kickedByServer;
+	wxString connectionStatus;
 
 	bool stopped;
 };
