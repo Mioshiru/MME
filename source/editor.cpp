@@ -192,7 +192,7 @@ void MapEditor::addAction(Action* action, int stacking_delay) {
 	g_gui.UpdateMenus();
 }
 
-bool MapEditor::saveMap(FileName filename, bool show_dialog) {
+bool MapEditor::saveMap(FileName filename, bool show_dialog, bool is_autosave) {
 	std::string savefile = filename.GetFullPath().mb_str(wxConvUTF8).data();
 	bool save_as = false;
 	bool save_otgz = false;
@@ -334,55 +334,11 @@ bool MapEditor::saveMap(FileName filename, bool show_dialog) {
 		}
 	}
 
-	// Move to permanent backup
-	if (!save_as && g_settings.getInteger(Config::ALWAYS_MAKE_BACKUP)) {
-		// Move temporary backups to their proper files
-		time_t t = time(nullptr);
-		tm* current_time = localtime(&t);
-		ASSERT(current_time);
-
-		std::ostringstream date;
-		date << (1900 + current_time->tm_year);
-		if (current_time->tm_mon < 9) {
-			date << "-"
-				 << "0" << current_time->tm_mon + 1;
-		} else {
-			date << "-" << current_time->tm_mon + 1;
-		}
-		date << "-" << current_time->tm_mday;
-		date << "-" << current_time->tm_hour;
-		date << "-" << current_time->tm_min;
-		date << "-" << current_time->tm_sec;
-
-		if (!backup_otbm.empty()) {
-			converter.SetFullName(wxstr(savefile));
-			std::string otbm_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_otbm.c_str(), std::string(otbm_filename + "." + date.str() + (save_otgz ? ".otgz" : ".otbm")).c_str());
-		}
-
-		if (!backup_house.empty()) {
-			converter.SetFullName(wxstr(map.housefile));
-			std::string house_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_house.c_str(), std::string(house_filename + "." + date.str() + ".xml").c_str());
-		}
-
-		if (!backup_spawn.empty()) {
-			converter.SetFullName(wxstr(map.spawnfile));
-			std::string spawn_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_spawn.c_str(), std::string(spawn_filename + "." + date.str() + ".xml").c_str());
-		}
-
-		if (!backup_waypoint.empty()) {
-			converter.SetFullName(wxstr(map.spawnfile));
-			std::string waypoint_filename = map_path + nstr(converter.GetName());
-			std::rename(backup_waypoint.c_str(), std::string(waypoint_filename + "." + date.str() + ".xml").c_str());
-		}
-	} else {
-		// Delete the temporary files
-		std::remove(backup_otbm.c_str());
-		std::remove(backup_house.c_str());
-		std::remove(backup_spawn.c_str());
-	}
+	// Delete the temporary files
+	std::remove(backup_otbm.c_str());
+	std::remove(backup_house.c_str());
+	std::remove(backup_spawn.c_str());
+	std::remove(backup_waypoint.c_str());
 
 	map.clearChanges();
 	return true;

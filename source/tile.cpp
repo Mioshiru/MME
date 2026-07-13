@@ -705,20 +705,13 @@ void Tile::deselectGround() {
 
 void Tile::setHouse(House* _house) {
 	house_id = (_house ? _house->getID() : 0);
-	if (house_id != 0) {
-		setPZ(true);
-	} else {
-		setPZ(false);
+	if (location && location->qtree_node) {
+		location->qtree_node->markDirty(location->getZ());
 	}
 }
 
 void Tile::setHouseID(uint32_t newHouseId) {
 	house_id = newHouseId;
-	if (house_id != 0) {
-		setPZ(true);
-	} else {
-		setPZ(false);
-	}
 	if (location && location->qtree_node) {
 		location->qtree_node->markDirty(location->getZ());
 	}	

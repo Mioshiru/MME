@@ -63,6 +63,10 @@ protected:
 	wxNotebook* notebook;
 	wxWindow* currentPanel;
 
+	wxSpinCtrl* action_id_field;
+	wxSpinCtrl* unique_id_field;
+	wxSpinCtrl* count_field;
+
 	DECLARE_EVENT_TABLE()
 };
 

@@ -360,10 +360,30 @@ void HousePalettePanel::OnListBoxChange(wxCommandEvent& event) {
 }
 
 void HousePalettePanel::OnListBoxDoubleClick(wxCommandEvent& event) {
-	House* house = reinterpret_cast<House*>(event.GetClientData());
-	// I find it extremly unlikely that one actually wants the exit at 0,0,0, so just treat it as the null value
-	if (house && house->getExit() != Position(0, 0, 0)) {
-		g_gui.SetScreenCenterPosition(house->getExit());
+	if (!house_list || house_list->GetCount() == 0 || !town_choice) {
+		return;
+	}
+	if (map == nullptr) {
+		return;
+	}
+	int selection = house_list->GetSelection();
+	if (selection == wxNOT_FOUND || (size_t)selection >= house_list->GetCount()) {
+		return;
+	}
+	House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
+	if (house) {
+		wxDialog* d = newd EditHouseDialog(g_gui.root, map, house);
+		int ret = d->ShowModal();
+		if (ret == 1) {
+			// Something changed, change name of house
+			house_list->SetString(selection, wxstr(house->getDescription()));
+			house_list->Sort();
+			map->doChange();
+
+			// refresh house list for town
+			SelectTown(town_choice->GetSelection());
+		}
+		d->Destroy();
 	}
 }
 

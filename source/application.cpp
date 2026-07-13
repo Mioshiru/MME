@@ -735,6 +735,7 @@ void MainFrame::OnActivate(wxActivateEvent &event) {
     if (g_gui.IsAnyEditorOpen()) {
       MapTab* tab = g_gui.GetCurrentMapTab();
       if (tab && tab->canvas) {
+        tab->canvas->SetFocus();
         tab->canvas->Refresh(false);
       }
     }
@@ -755,7 +756,7 @@ void MainFrame::OnAutoSaveTimer(wxTimerEvent& /*event*/) {
   if (mapTab) {
     Editor* editor = mapTab->GetEditor();
     if (editor && editor->map.hasChanged() && editor->map.hasFile()) {
-      editor->saveMap(FileName(), false);
+      editor->saveMap(FileName(), false, true);
       g_gui.UpdateTitle();
     }
   }

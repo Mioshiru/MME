@@ -46,6 +46,9 @@ END_EVENT_TABLE()
 
 PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile* tile_parent, Item* item, wxPoint pos) :
 	ObjectPropertiesWindowBase(parent, "Item Properties", map, tile_parent, item, pos),
+	action_id_field(nullptr),
+	unique_id_field(nullptr),
+	count_field(nullptr),
 	currentPanel(nullptr) {
 	ASSERT(edit_item);
 	notebook = newd wxNotebook(this, wxID_ANY, wxDefaultPosition, wxSize(600, 300));
@@ -91,38 +94,57 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "\"" + wxstr(edit_item->getName()) + "\""));
 
 	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Action ID"));
-	wxSpinCtrl* action_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getActionID()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getActionID());
+	action_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getActionID()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getActionID());
 	gridsizer->Add(action_id_field, wxSizerFlags(1).Expand());
 
 	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Unique ID"));
-	wxSpinCtrl* unique_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getUniqueID()), wxDefaultPosition, wxSize(-1, 20), wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getUniqueID());
+	unique_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getUniqueID()), wxDefaultPosition, wxSize(-1, 20), wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getUniqueID());
 	gridsizer->Add(unique_id_field, wxSizerFlags(1).Expand());
 
-	Town* clicked_town = nullptr;
-	if (edit_tile && edit_map) {
-		Position click_pos = edit_tile->getPosition();
-		for (const auto& pair : edit_map->towns) {
-			if (pair.second->getTemplePosition() == click_pos) {
-				clicked_town = pair.second;
-				break;
+	if (edit_item->isStackable() || edit_item->isCharged() || edit_item->isFluidContainer() || edit_item->isSplash()) {
+		int max_count = 100;
+		if (edit_item->isFluidContainer() || edit_item->isSplash()) {
+			max_count = 250;
+		} else if (edit_item->isCharged()) {
+			max_count = 65500;
+		}
+		gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Count/Subtype"));
+		count_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getCount()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, max_count, edit_item->getCount());
+		if (edit_item->isHangable()) {
+			count_field->Enable(false);
+		}
+		gridsizer->Add(count_field, wxSizerFlags(1).Expand());
+	} else {
+		count_field = nullptr;
+	}
+
+	if (edit_item->isGroundTile() && !edit_item->hasProperty(BLOCKSOLID)) {
+		Town* clicked_town = nullptr;
+		if (edit_tile && edit_map) {
+			Position click_pos = edit_tile->getPosition();
+			for (const auto& pair : edit_map->towns) {
+				if (pair.second->getTemplePosition() == click_pos) {
+					clicked_town = pair.second;
+					break;
+				}
 			}
 		}
+
+		wxString town_text_val = "None";
+		if (clicked_town) {
+			town_text_val = wxString::Format("%d - %s", clicked_town->getID(), wxstr(clicked_town->getName()));
+		}
+
+		gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Town"));
+
+		wxSizer* town_sizer = newd wxBoxSizer(wxHORIZONTAL);
+		wxStaticText* town_lbl = newd wxStaticText(panel, wxID_ANY, town_text_val);
+		town_sizer->Add(town_lbl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+		wxButton* town_btn = newd wxButton(panel, ITEM_PROPERTIES_TOWN_BTN, "Edit Towns...");
+		town_sizer->Add(town_btn, 0, wxALIGN_CENTER_VERTICAL);
+
+		gridsizer->Add(town_sizer, wxSizerFlags(0));
 	}
-
-	wxString town_text_val = "None";
-	if (clicked_town) {
-		town_text_val = wxString::Format("%d - %s", clicked_town->getID(), wxstr(clicked_town->getName()));
-	}
-
-	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Town"));
-
-	wxSizer* town_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	wxStaticText* town_lbl = newd wxStaticText(panel, wxID_ANY, town_text_val);
-	town_sizer->Add(town_lbl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
-	wxButton* town_btn = newd wxButton(panel, ITEM_PROPERTIES_TOWN_BTN, "Edit Towns...");
-	town_sizer->Add(town_btn, 0, wxALIGN_CENTER_VERTICAL);
-
-	gridsizer->Add(town_sizer, wxSizerFlags(0));
 
 	panel->SetSizerAndFit(gridsizer);
 
@@ -283,7 +305,15 @@ void PropertiesWindow::OnNotebookPageChanged(wxNotebookEvent& evt) {
 }
 
 void PropertiesWindow::saveGeneralPanel() {
-	////
+	if (action_id_field) {
+		edit_item->setActionID(action_id_field->GetValue());
+	}
+	if (unique_id_field) {
+		edit_item->setUniqueID(unique_id_field->GetValue());
+	}
+	if (count_field && (edit_item->isStackable() || edit_item->isCharged() || edit_item->isFluidContainer() || edit_item->isSplash())) {
+		edit_item->setSubtype(count_field->GetValue());
+	}
 }
 
 void PropertiesWindow::saveContainerPanel() {
@@ -338,6 +368,7 @@ void PropertiesWindow::OnGridValueChanged(wxGridEvent& event) {
 }
 
 void PropertiesWindow::OnClickOK(wxCommandEvent&) {
+	saveGeneralPanel();
 	saveAttributesPanel();
 	EndModal(1);
 }

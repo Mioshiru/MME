@@ -43,10 +43,7 @@ public:
 		return true;
 	}
 
-	// You can always draw house tiles!
-	virtual bool canDraw(BaseMap* map, const Position& position) const {
-		return true;
-	}
+	virtual bool canDraw(BaseMap* map, const Position& position) const;
 	// Draw the shit!
 	virtual void draw(BaseMap* map, Tile* tile, void* parameter);
 	// Undraw the shit!

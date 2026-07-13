@@ -44,7 +44,7 @@ uint32_t HouseExitBrush::getHouseID() const {
 
 bool HouseExitBrush::canDraw(BaseMap* map, const Position& position) const {
 	Tile* tile = map->getTile(position);
-	if (!tile || !tile->hasGround()) {
+	if (!tile || !tile->hasGround() || tile->isHouseTile()) {
 		return false;
 	}
 	return true;

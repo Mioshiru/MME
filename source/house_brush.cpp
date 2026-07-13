@@ -46,10 +46,20 @@ uint32_t HouseBrush::getHouseID() const {
 	return 0;
 }
 
-void HouseBrush::undraw(BaseMap* map, Tile* tile) {
-	if (tile->isHouseTile()) {
-		tile->setPZ(false);
+bool HouseBrush::canDraw(BaseMap* map, const Position& position) const {
+	Tile* tile = map->getTile(position);
+	if (!tile || !tile->hasGround()) {
+		return false;
 	}
+	for (ItemVector::const_iterator it = tile->items.begin(); it != tile->items.end(); ++it) {
+		if ((*it)->isWall() || (*it)->isDoor()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void HouseBrush::undraw(BaseMap* map, Tile* tile) {
 	tile->setHouse(nullptr);
 	if (g_settings.getInteger(Config::AUTO_ASSIGN_DOORID)) {
 		// Is there a door? If so, remove any door id it has
@@ -67,7 +77,6 @@ void HouseBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 	ASSERT(draw_house);
 	uint32_t old_house_id = tile->getHouseID();
 	tile->setHouse(draw_house);
-	tile->setPZ(true);
 	if (g_settings.getInteger(Config::HOUSE_BRUSH_REMOVE_ITEMS)) {
 		// Remove loose items
 		for (ItemVector::iterator it = tile->items.begin();

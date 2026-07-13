@@ -69,7 +69,7 @@ public: // Functions
 	void SendNodeRequests();
 
 	// Map handling
-	bool saveMap(FileName filename, bool show_dialog) override; // "" means default filename
+	bool saveMap(FileName filename, bool show_dialog, bool is_autosave = false) override; // "" means default filename
 
 	uint16_t getMapWidth() const {
 		return map.width;

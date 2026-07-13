@@ -7,7 +7,7 @@ class Position;
 class IEditorIO {
 public:
     virtual ~IEditorIO() = default;
-    virtual bool saveMap(FileName filename, bool show_dialog) = 0;
+    virtual bool saveMap(FileName filename, bool show_dialog, bool is_autosave = false) = 0;
     virtual bool exportMiniMap(FileName filename, int floor, bool displaydialog) = 0;
 };
 

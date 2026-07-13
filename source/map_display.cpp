@@ -290,6 +290,14 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
       map_window->ScrollRelative(0, pan_step);
       Refresh();
       return;
+    case WXK_PAGEUP:
+      g_gui.ChangeFloor(std::max(0, floor - 1));
+      Refresh();
+      return;
+    case WXK_PAGEDOWN:
+      g_gui.ChangeFloor(std::min(MAP_MAX_LAYER, floor + 1));
+      Refresh();
+      return;
     default:
       event.Skip();
       return;
