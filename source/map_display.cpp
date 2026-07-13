@@ -1702,51 +1702,48 @@ void MapCanvas::UpdateMinimapTexture() {
   int center_x, center_y;
   GetScreenCenter(&center_x, &center_y);
 
-  int start_x = center_x - 90;
-  int start_y = center_y - 90;
+  int span_w = (int)(180.0f * minimap_zoom);
+  int span_h = (int)(180.0f * minimap_zoom);
+  int map_width = editor.map.getWidth();
+  int map_height = editor.map.getHeight();
 
-  if (start_x < 0) {
-    start_x = 0;
-  } else if (start_x + 180 > editor.map.getWidth()) {
-    start_x = editor.map.getWidth() - 180;
-  }
-  if (start_y < 0) {
-    start_y = 0;
-  } else if (start_y + 180 > editor.map.getHeight()) {
-    start_y = editor.map.getHeight() - 180;
+  int start_x;
+  if (span_w >= map_width) {
+    start_x = (map_width - span_w) / 2;
+  } else {
+    start_x = std::max(0, std::min(center_x - span_w / 2, map_width - span_w));
   }
 
-  start_x = std::max(start_x, 0);
-  start_y = std::max(start_y, 0);
-  int end_x = std::min(start_x + 180, editor.map.getWidth());
-  int end_y = std::min(start_y + 180, editor.map.getHeight());
+  int start_y;
+  if (span_h >= map_height) {
+    start_y = (map_height - span_h) / 2;
+  } else {
+    start_y = std::max(0, std::min(center_y - span_h / 2, map_height - span_h));
+  }
 
   minimap_start_x = start_x;
   minimap_start_y = start_y;
-  minimap_span_w = std::max(1, end_x - start_x);
-  minimap_span_h = std::max(1, end_y - start_y);
+  minimap_span_w = std::max(1, span_w);
+  minimap_span_h = std::max(1, span_h);
 
   static uint8_t tex_data[180 * 180 * 3];
   memset(tex_data, 0, sizeof(tex_data));
 
   if (g_gui.IsRenderingEnabled()) {
-    for (int y = start_y; y < end_y; ++y) {
-      int window_y = y - start_y;
-      if (window_y < 0 || window_y >= 180)
-        continue;
-      for (int x = start_x; x < end_x; ++x) {
-        int window_x = x - start_x;
-        if (window_x < 0 || window_x >= 180)
-          continue;
-
-        Tile *tile = editor.map.getTile(x, y, floor);
-        if (tile) {
-          uint8_t color_idx = tile->getMiniMapColor();
-          if (color_idx) {
-            int idx = (window_y * 180 + window_x) * 3;
-            tex_data[idx] = minimap_color[color_idx].red;
-            tex_data[idx + 1] = minimap_color[color_idx].green;
-            tex_data[idx + 2] = minimap_color[color_idx].blue;
+    for (int window_y = 0; window_y < 180; ++window_y) {
+      for (int window_x = 0; window_x < 180; ++window_x) {
+        int x = start_x + (int)(window_x * ((double)span_w / 180.0));
+        int y = start_y + (int)(window_y * ((double)span_h / 180.0));
+        if (x >= 0 && x < map_width && y >= 0 && y < map_height) {
+          Tile *tile = editor.map.getTile(x, y, floor);
+          if (tile) {
+            uint8_t color_idx = tile->getMiniMapColor();
+            if (color_idx) {
+              int idx = (window_y * 180 + window_x) * 3;
+              tex_data[idx] = minimap_color[color_idx].red;
+              tex_data[idx + 1] = minimap_color[color_idx].green;
+              tex_data[idx + 2] = minimap_color[color_idx].blue;
+            }
           }
         }
       }

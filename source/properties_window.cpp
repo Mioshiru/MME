@@ -30,6 +30,8 @@
 #include "container_properties_window.h"
 
 #include <wx/grid.h>
+#include <wx/textctrl.h>
+#include <wx/msgdlg.h>
 
 BEGIN_EVENT_TABLE(PropertiesWindow, wxDialog)
 EVT_BUTTON(wxID_OK, PropertiesWindow::OnClickOK)
@@ -49,6 +51,7 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 	action_id_field(nullptr),
 	unique_id_field(nullptr),
 	count_field(nullptr),
+	waypoint_name_field(nullptr),
 	currentPanel(nullptr) {
 	ASSERT(edit_item);
 	notebook = newd wxNotebook(this, wxID_ANY, wxDefaultPosition, wxSize(600, 300));
@@ -58,6 +61,9 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 		notebook->AddPage(createContainerPanel(notebook), "Contents");
 	}
 	notebook->AddPage(createAttributesPanel(notebook), "Advanced");
+	if (edit_tile) {
+		notebook->AddPage(createWaypointPanel(notebook), "Waypoint");
+	}
 
 	wxSizer* topSizer = newd wxBoxSizer(wxVERTICAL);
 	topSizer->Add(notebook, wxSizerFlags(1).DoubleBorder());
@@ -368,8 +374,12 @@ void PropertiesWindow::OnGridValueChanged(wxGridEvent& event) {
 }
 
 void PropertiesWindow::OnClickOK(wxCommandEvent&) {
+	if (!validateWaypointPanel()) {
+		return;
+	}
 	saveGeneralPanel();
 	saveAttributesPanel();
+	saveWaypointPanel();
 	EndModal(1);
 }
 
@@ -431,4 +441,92 @@ void PropertiesWindow::OnClickTown(wxCommandEvent&) {
 
 void PropertiesWindow::OnClickCancel(wxCommandEvent&) {
 	EndModal(0);
+}
+
+wxWindow* PropertiesWindow::createWaypointPanel(wxWindow* parent) {
+	wxPanel* panel = newd wxPanel(parent, ITEM_PROPERTIES_WAYPOINT_TAB);
+	wxFlexGridSizer* gridsizer = newd wxFlexGridSizer(2, 10, 10);
+	gridsizer->AddGrowableCol(1);
+
+	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Create Waypoint"));
+	gridsizer->AddSpacer(0);
+
+	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Waypoint Name:"));
+	
+	std::string current_wp_name = "";
+	if (edit_tile && edit_map) {
+		Map* mutable_map = const_cast<Map*>(edit_map);
+		Tile* mutable_tile = const_cast<Tile*>(edit_tile);
+		Waypoint* wp = mutable_map->waypoints.getWaypoint(mutable_tile->getLocation());
+		if (wp) {
+			current_wp_name = wp->name;
+		}
+	}
+
+	waypoint_name_field = newd wxTextCtrl(panel, wxID_ANY, wxstr(current_wp_name));
+	gridsizer->Add(waypoint_name_field, wxSizerFlags(1).Expand());
+
+	panel->SetSizerAndFit(gridsizer);
+	return panel;
+}
+
+bool PropertiesWindow::validateWaypointPanel() {
+	if (!edit_tile || !edit_map || !waypoint_name_field) return true;
+
+	std::string new_name = nstr(waypoint_name_field->GetValue());
+	new_name.erase(0, new_name.find_first_not_of(" \t\r\n"));
+	new_name.erase(new_name.find_last_not_of(" \t\r\n") + 1);
+
+	if (new_name.empty()) return true;
+
+	Map* mutable_map = const_cast<Map*>(edit_map);
+	Tile* mutable_tile = const_cast<Tile*>(edit_tile);
+	Waypoint* current_wp = mutable_map->waypoints.getWaypoint(mutable_tile->getLocation());
+	Waypoint* existing_wp = mutable_map->waypoints.getWaypoint(new_name);
+
+	if (existing_wp && (!current_wp || current_wp->name != new_name)) {
+		wxMessageBox("There already is a waypoint with this name.", "Error", wxOK | wxICON_ERROR, this);
+		return false;
+	}
+	return true;
+}
+
+void PropertiesWindow::saveWaypointPanel() {
+	if (!edit_tile || !edit_map || !waypoint_name_field) return;
+
+	std::string new_name = nstr(waypoint_name_field->GetValue());
+	new_name.erase(0, new_name.find_first_not_of(" \t\r\n"));
+	new_name.erase(new_name.find_last_not_of(" \t\r\n") + 1);
+
+	Map* mutable_map = const_cast<Map*>(edit_map);
+	Tile* mutable_tile = const_cast<Tile*>(edit_tile);
+	Waypoint* current_wp = mutable_map->waypoints.getWaypoint(mutable_tile->getLocation());
+
+	if (current_wp) {
+		if (new_name.empty()) {
+			// User cleared the name, remove the waypoint
+			if (mutable_map->getTile(current_wp->pos)) {
+				mutable_map->getTileL(current_wp->pos)->decreaseWaypointCount();
+			}
+			mutable_map->waypoints.removeWaypoint(current_wp->name);
+			g_gui.RefreshPalettes();
+		} else if (current_wp->name != new_name) {
+			// Rename the waypoint
+			if (mutable_map->getTile(current_wp->pos)) {
+				mutable_map->getTileL(current_wp->pos)->decreaseWaypointCount();
+			}
+			std::string old_name = current_wp->name;
+			mutable_map->waypoints.removeWaypoint(old_name);
+
+			Waypoint* nwp = newd Waypoint(new_name, edit_tile->getPosition());
+			mutable_map->waypoints.addWaypoint(nwp);
+			g_gui.RefreshPalettes();
+		}
+	} else {
+		if (!new_name.empty()) {
+			Waypoint* nwp = newd Waypoint(new_name, edit_tile->getPosition());
+			mutable_map->waypoints.addWaypoint(nwp);
+			g_gui.RefreshPalettes();
+		}
+	}
 }

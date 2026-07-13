@@ -59,6 +59,12 @@ protected:
 	void saveAttributesPanel();
 	void SetGridValue(wxGrid* grid, int rowIndex, std::string name, const ItemAttribute& attr);
 
+	// Waypoint pane
+	wxTextCtrl* waypoint_name_field;
+	wxWindow* createWaypointPanel(wxWindow* parent);
+	void saveWaypointPanel();
+	bool validateWaypointPanel();
+
 protected:
 	wxNotebook* notebook;
 	wxWindow* currentPanel;
