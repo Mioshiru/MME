@@ -2385,33 +2385,49 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
         BlitSpriteType(draw_x, draw_y, SPRITE_WAYPOINT, 64, 64, 255);
       }
 
-      // house exit (blue splash)
+      // house exit (black background with "E" text)
       if (tile->isHouseExit() && options.show_houses) {
         bool is_current = tile->hasHouseExit(current_house_id);
         int r = 64, g = is_current ? 255 : 64, b = 255;
-        GameSprite* spr = g_items[SPRITE_HOUSE_EXIT].sprite;
-        if (spr) {
-          BlitSpriteType(draw_x, draw_y, spr, r, g, b);
-        } else {
-          glDisable(GL_TEXTURE_2D);
-          glColor4ub(r, g, b, 80);
-          glBegin(GL_QUADS);
-          glVertex2i(draw_x, draw_y);
-          glVertex2i(draw_x + TileSize, draw_y);
-          glVertex2i(draw_x + TileSize, draw_y + TileSize);
-          glVertex2i(draw_x, draw_y + TileSize);
-          glEnd();
+        glDisable(GL_TEXTURE_2D);
+        
+        // Semi-transparent black background
+        glColor4ub(0, 0, 0, 160);
+        glBegin(GL_QUADS);
+        glVertex2i(draw_x, draw_y);
+        glVertex2i(draw_x + TileSize, draw_y);
+        glVertex2i(draw_x + TileSize, draw_y + TileSize);
+        glVertex2i(draw_x, draw_y + TileSize);
+        glEnd();
 
-          glLineWidth(2.0f);
-          glColor4ub(r, g, b, 255);
-          glBegin(GL_LINE_LOOP);
-          glVertex2i(draw_x, draw_y);
-          glVertex2i(draw_x + TileSize, draw_y);
-          glVertex2i(draw_x + TileSize, draw_y + TileSize);
-          glVertex2i(draw_x, draw_y + TileSize);
-          glEnd();
-          glEnable(GL_TEXTURE_2D);
-        }
+        // Cyan/blue border
+        glLineWidth(2.0f);
+        glColor4ub(r, g, b, 255);
+        glBegin(GL_LINE_LOOP);
+        glVertex2i(draw_x + 1, draw_y + 1);
+        glVertex2i(draw_x + TileSize - 1, draw_y + 1);
+        glVertex2i(draw_x + TileSize - 1, draw_y + TileSize - 1);
+        glVertex2i(draw_x + 1, draw_y + TileSize - 1);
+        glEnd();
+
+        // White 'E' in center
+        glColor4ub(255, 255, 255, 255);
+        glBegin(GL_LINES);
+        // Vertical stem of E
+        glVertex2i(draw_x + 11, draw_y + 8);
+        glVertex2i(draw_x + 11, draw_y + 24);
+        // Top horizontal bar
+        glVertex2i(draw_x + 11, draw_y + 8);
+        glVertex2i(draw_x + 21, draw_y + 8);
+        // Middle horizontal bar
+        glVertex2i(draw_x + 11, draw_y + 16);
+        glVertex2i(draw_x + 19, draw_y + 16);
+        // Bottom horizontal bar
+        glVertex2i(draw_x + 11, draw_y + 24);
+        glVertex2i(draw_x + 21, draw_y + 24);
+        glEnd();
+
+        glEnable(GL_TEXTURE_2D);
       }
 
       // town temple (gray flag)

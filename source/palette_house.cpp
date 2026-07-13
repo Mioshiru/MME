@@ -180,7 +180,7 @@ bool HousePalettePanel::SelectBrush(const Brush* whatbrush) {
 				}
 			}
 		}
-	} else if (whatbrush->isSpawn()) {
+	} else if (whatbrush->isHouseExit()) {
 		SelectExitBrush();
 	}
 	return false;

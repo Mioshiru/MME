@@ -71,9 +71,7 @@ bool GUI::NewMap(const wxString& target_dir) {
 }
 
 void GUI::OpenMap() {
-	wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_LOAD_FILE_WILDCARD_OTGZ : MAP_LOAD_FILE_WILDCARD;
-	wxFileDialog dialog(root, "Open map file", wxEmptyString, wxEmptyString, wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-	if (dialog.ShowModal() == wxID_OK) LoadMap(dialog.GetPath());
+	ShowWelcomeDialog(root->GetIcon());
 }
 
 bool GUI::LoadMap(const FileName& fileName) {

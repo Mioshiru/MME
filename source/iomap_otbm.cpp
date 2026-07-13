@@ -1658,8 +1658,14 @@ bool IOMapOTBM::saveMap(Map& map, NodeFileWriteHandle& f) {
 }
 
 bool IOMapOTBM::saveSpawns(Map& map, const FileName& dir) {
-	wxString filepath = dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
-	filepath += wxString(map.spawnfile.c_str(), wxConvUTF8);
+	wxFileName fn;
+	fn.Assign(wxstr(map.spawnfile));
+	wxString filepath;
+	if (fn.IsAbsolute()) {
+		filepath = fn.GetFullPath();
+	} else {
+		filepath = dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME) + fn.GetFullName();
+	}
 
 	// Create the XML file
 	pugi::xml_document doc;
@@ -1734,8 +1740,14 @@ bool IOMapOTBM::saveSpawns(Map& map, pugi::xml_document& doc) {
 }
 
 bool IOMapOTBM::saveHouses(Map& map, const FileName& dir) {
-	wxString filepath = dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
-	filepath += wxString(map.housefile.c_str(), wxConvUTF8);
+	wxFileName fn;
+	fn.Assign(wxstr(map.housefile));
+	wxString filepath;
+	if (fn.IsAbsolute()) {
+		filepath = fn.GetFullPath();
+	} else {
+		filepath = dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME) + fn.GetFullName();
+	}
 
 	// Create the XML file
 	pugi::xml_document doc;
@@ -1783,8 +1795,14 @@ bool IOMapOTBM::saveHouses(Map& map, pugi::xml_document& doc) {
 }
 
 bool IOMapOTBM::saveWaypoints(Map& map, const FileName& dir) {
-	wxString filepath = dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
-	filepath += wxString(map.waypointfile.c_str(), wxConvUTF8);
+	wxFileName fn;
+	fn.Assign(wxstr(map.waypointfile));
+	wxString filepath;
+	if (fn.IsAbsolute()) {
+		filepath = fn.GetFullPath();
+	} else {
+		filepath = dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME) + fn.GetFullName();
+	}
 
 	// Create the XML file
 	pugi::xml_document doc;
