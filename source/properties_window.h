@@ -35,6 +35,7 @@ public:
 	void OnClickCancel(wxCommandEvent&);
 	void OnClickAddAttribute(wxCommandEvent&);
 	void OnClickRemoveAttribute(wxCommandEvent&);
+	void OnClickTown(wxCommandEvent&);
 
 	void OnResize(wxSizeEvent&);
 	void OnNotebookPageChanged(wxNotebookEvent&);

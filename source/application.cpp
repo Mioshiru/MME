@@ -118,6 +118,7 @@ EVT_ON_UPDATE_MENUS(wxID_ANY, MainFrame::OnUpdateMenus)
 
 // Idle event handler
 EVT_IDLE(MainFrame::OnIdle)
+EVT_ACTIVATE(MainFrame::OnActivate)
 EVT_TIMER(wxID_ANY, MainFrame::OnAutoSaveTimer)
 END_EVENT_TABLE()
 
@@ -727,6 +728,19 @@ void MainFrame::OnIdle(wxIdleEvent &event) {
       event.RequestMore(true);
     }
   }
+}
+
+void MainFrame::OnActivate(wxActivateEvent &event) {
+  if (event.GetActive()) {
+    if (g_gui.IsAnyEditorOpen()) {
+      MapTab* tab = g_gui.GetCurrentMapTab();
+      if (tab && tab->canvas) {
+        tab->canvas->Refresh(false);
+      }
+    }
+    wxWakeUpIdle();
+  }
+  event.Skip();
 }
 
 void MainFrame::OnAutoSaveTimer(wxTimerEvent& /*event*/) {

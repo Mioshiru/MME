@@ -583,6 +583,7 @@ BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes,
 
 	// Create buttons
 	wxSizer* stacksizer = newd wxBoxSizer(wxVERTICAL);
+	stacksizer->AddSpacer(5);
 	wxSizer* rowsizer = nullptr;
 	int item_counter = 0;
 	for (BrushVector::const_iterator iter = all_brushes.begin(); iter != all_brushes.end(); ++iter) {
@@ -598,12 +599,12 @@ BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes,
 		brush_buttons.push_back(bb);
 
 		if (item_counter % width == 0) { // newd row
-			stacksizer->Add(rowsizer);
+			stacksizer->Add(rowsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
 			rowsizer = nullptr;
 		}
 	}
 	if (rowsizer) {
-		stacksizer->Add(rowsizer);
+		stacksizer->Add(rowsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
 	}
 
 	int btn_size = (icon_size == RENDER_SIZE_32x32) ? 36 : 20;
@@ -701,6 +702,7 @@ void BrushIconBox::Filter(const wxString& query) {
 		stacksizer = newd wxBoxSizer(wxVERTICAL);
 		SetSizer(stacksizer);
 	}
+	stacksizer->AddSpacer(5);
 
 	int width;
 	if (icon_size == RENDER_SIZE_32x32) {
@@ -735,12 +737,12 @@ void BrushIconBox::Filter(const wxString& query) {
 		rowsizer->Add(bb);
 
 		if (item_counter % width == 0) {
-			stacksizer->Add(rowsizer);
+			stacksizer->Add(rowsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
 			rowsizer = nullptr;
 		}
 	}
 	if (rowsizer) {
-		stacksizer->Add(rowsizer);
+		stacksizer->Add(rowsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
 	}
 
 	stacksizer->Layout();

@@ -18,6 +18,11 @@
 #include "main.h"
 
 #include "properties_window.h"
+#include "tile.h"
+#include "map.h"
+#include "town.h"
+#include "editor.h"
+#include "gui.h"
 
 #include "gui_ids.h"
 #include "complexitem.h"
@@ -32,6 +37,7 @@ EVT_BUTTON(wxID_CANCEL, PropertiesWindow::OnClickCancel)
 
 EVT_BUTTON(ITEM_PROPERTIES_ADD_ATTRIBUTE, PropertiesWindow::OnClickAddAttribute)
 EVT_BUTTON(ITEM_PROPERTIES_REMOVE_ATTRIBUTE, PropertiesWindow::OnClickRemoveAttribute)
+EVT_BUTTON(ITEM_PROPERTIES_TOWN_BTN, PropertiesWindow::OnClickTown)
 
 EVT_NOTEBOOK_PAGE_CHANGED(wxID_ANY, PropertiesWindow::OnNotebookPageChanged)
 
@@ -91,6 +97,10 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Unique ID"));
 	wxSpinCtrl* unique_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getUniqueID()), wxDefaultPosition, wxSize(-1, 20), wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getUniqueID());
 	gridsizer->Add(unique_id_field, wxSizerFlags(1).Expand());
+
+	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Town"));
+	wxButton* town_btn = newd wxButton(panel, ITEM_PROPERTIES_TOWN_BTN, "Town...");
+	gridsizer->Add(town_btn, wxSizerFlags(0));
 
 	panel->SetSizerAndFit(gridsizer);
 
@@ -324,6 +334,45 @@ void PropertiesWindow::OnClickRemoveAttribute(wxCommandEvent&) {
 
 	int rowIndex = rowIndexes[0];
 	attributesGrid->DeleteRows(rowIndex, 1);
+}
+
+void PropertiesWindow::OnClickTown(wxCommandEvent&) {
+	if (!edit_tile) return;
+	Position click_pos = edit_tile->getPosition();
+
+	Town* clicked_town = nullptr;
+	for (const auto& pair : edit_map->towns) {
+		if (pair.second->getTemplePosition() == click_pos) {
+			clicked_town = pair.second;
+			break;
+		}
+	}
+
+	if (!clicked_town) {
+		uint32_t max_id = 0;
+		for (const auto& pair : edit_map->towns) {
+			if (pair.second->getID() > max_id) {
+				max_id = pair.second->getID();
+			}
+		}
+		Map* map = const_cast<Map*>(edit_map);
+		clicked_town = newd Town(max_id + 1);
+		clicked_town->setName("Unnamed Town");
+		clicked_town->setTemplePosition(click_pos);
+		map->towns.addTown(clicked_town);
+		Tile* tile = map->getOrCreateTile(click_pos);
+		if (tile) {
+			tile->getLocation()->increaseTownCount();
+		}
+	} else {
+		clicked_town->setTemplePosition(click_pos);
+	}
+
+	if (g_gui.GetCurrentEditor()) {
+		wxDialog* town_dialog = newd EditTownsDialog(this, *g_gui.GetCurrentEditor(), clicked_town->getID());
+		town_dialog->ShowModal();
+		town_dialog->Destroy();
+	}
 }
 
 void PropertiesWindow::OnClickCancel(wxCommandEvent&) {

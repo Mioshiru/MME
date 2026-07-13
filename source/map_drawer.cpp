@@ -2387,10 +2387,30 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
 
       // house exit (blue splash)
       if (tile->isHouseExit() && options.show_houses) {
-        if (tile->hasHouseExit(current_house_id)) {
-          BlitSpriteType(draw_x, draw_y, SPRITE_HOUSE_EXIT, 64, 255, 255);
+        bool is_current = tile->hasHouseExit(current_house_id);
+        int r = 64, g = is_current ? 255 : 64, b = 255;
+        GameSprite* spr = g_items[SPRITE_HOUSE_EXIT].sprite;
+        if (spr) {
+          BlitSpriteType(draw_x, draw_y, spr, r, g, b);
         } else {
-          BlitSpriteType(draw_x, draw_y, SPRITE_HOUSE_EXIT, 64, 64, 255);
+          glDisable(GL_TEXTURE_2D);
+          glColor4ub(r, g, b, 80);
+          glBegin(GL_QUADS);
+          glVertex2i(draw_x, draw_y);
+          glVertex2i(draw_x + TileSize, draw_y);
+          glVertex2i(draw_x + TileSize, draw_y + TileSize);
+          glVertex2i(draw_x, draw_y + TileSize);
+          glEnd();
+
+          glLineWidth(2.0f);
+          glColor4ub(r, g, b, 255);
+          glBegin(GL_LINE_LOOP);
+          glVertex2i(draw_x, draw_y);
+          glVertex2i(draw_x + TileSize, draw_y);
+          glVertex2i(draw_x + TileSize, draw_y + TileSize);
+          glVertex2i(draw_x, draw_y + TileSize);
+          glEnd();
+          glEnable(GL_TEXTURE_2D);
         }
       }
 

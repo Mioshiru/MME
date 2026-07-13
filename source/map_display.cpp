@@ -25,6 +25,8 @@
 #include <wx/filefn.h>
 #include <wx/stdpaths.h>
 #include <wx/wfstream.h>
+#include <wx/app.h>
+#include <wx/toplevel.h>
 
 #include "application.h"
 #include "browse_tile_window.h"
@@ -118,6 +120,8 @@ EVT_MENU(MAP_POPUP_MENU_SELECT_HOUSE_BRUSH, MapCanvas::OnSelectHouseBrush)
 EVT_MENU(MAP_POPUP_MENU_MOVE_TO_TILESET, MapCanvas::OnSelectMoveTo)
 // ----
 EVT_MENU(MAP_POPUP_MENU_PROPERTIES, MapCanvas::OnProperties)
+EVT_MENU(MAP_POPUP_MENU_CREATE_TOWN, MapCanvas::OnCreateTown)
+EVT_MENU(MAP_POPUP_MENU_EDIT_TOWN, MapCanvas::OnEditTown)
 // ----
 EVT_MENU(MAP_POPUP_MENU_BROWSE_TILE, MapCanvas::OnBrowseTile)
 EVT_MENU_RANGE(MAP_POPUP_MENU_SCRIPT_FIRST, MAP_POPUP_MENU_SCRIPT_LAST,
@@ -242,6 +246,28 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     editor.destroySelection();
     Refresh();
     return;
+  }
+
+  if (!event.ControlDown() && (event.GetKeyCode() == 'R' || event.GetKeyCode() == 'r' || event.GetKeyCode() == 'Z' || event.GetKeyCode() == 'z')) {
+    if (editor.selection.size() > 0) {
+      wxCommandEvent dummy;
+      OnRotateItem(dummy);
+      return;
+    } else {
+      Brush* brush = g_gui.GetCurrentBrush();
+      if (brush && brush->isRaw()) {
+        RAWBrush* raw_brush = static_cast<RAWBrush*>(brush);
+        const ItemType& itemtype = g_items[raw_brush->getItemID()];
+        if (itemtype.rotateTo != 0) {
+          const ItemType& rotated_type = g_items[itemtype.rotateTo];
+          if (rotated_type.raw_brush) {
+            g_gui.SelectBrush(rotated_type.raw_brush);
+            Refresh();
+            return;
+          }
+        }
+      }
+    }
   }
 
   MapWindow* map_window = static_cast<MapWindow*>(GetParent());
@@ -641,11 +667,10 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 	last_click_map_y = mouse_map_y;
 	last_click_map_z = floor;
 
-  if (drawing && g_gui.GetCurrentBrush() != nullptr) {
+  if (!g_gui.IsSelectionMode() || g_gui.GetCurrentBrush() != nullptr) {
     g_gui.SetSelectionMode();
     g_gui.SelectBrush(nullptr);
     CallAfter([this]() { Refresh(); });
-    return;
   }
 
 	if (drawing) {
@@ -1606,12 +1631,24 @@ void AnimationTimer::Notify() {
         map_canvas->Refresh();
     }
 
-    // [PERF] Only redraw if explicitly marked dirty, or if animations are visible
-    if (map_canvas->isDirty()) {
-        map_canvas->clearDirty();
-        map_canvas->Refresh();
-    } else if (g_settings.getBoolean(Config::SHOW_PREVIEW)) {
-        map_canvas->Refresh();
+    bool is_active = true;
+    wxWindow* top = wxTheApp->GetTopWindow();
+    if (top) {
+        wxTopLevelWindow* tlw = wxDynamicCast(top, wxTopLevelWindow);
+        if (tlw) {
+            is_active = tlw->IsActive() && !tlw->IsIconized();
+        }
+    }
+
+    if (is_active) {
+        map_canvas->Refresh(false);
+    } else {
+        if (map_canvas->isDirty()) {
+            map_canvas->clearDirty();
+            map_canvas->Refresh(false);
+        } else if (g_settings.getBoolean(Config::SHOW_PREVIEW)) {
+            map_canvas->Refresh(false);
+        }
     }
 }
 

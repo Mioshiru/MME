@@ -319,7 +319,7 @@ protected:
  */
 class EditTownsDialog : public wxDialog {
 public:
-	EditTownsDialog(wxWindow* parent, Editor& editor);
+	EditTownsDialog(wxWindow* parent, Editor& editor, uint32_t select_town_id = 0);
 	virtual ~EditTownsDialog();
 
 	void OnListBoxChange(wxCommandEvent&);

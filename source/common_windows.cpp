@@ -1205,7 +1205,7 @@ EVT_BUTTON(wxID_OK, EditTownsDialog::OnClickOK)
 EVT_BUTTON(wxID_CANCEL, EditTownsDialog::OnClickCancel)
 END_EVENT_TABLE()
 
-EditTownsDialog::EditTownsDialog(wxWindow* parent, Editor& editor) :
+EditTownsDialog::EditTownsDialog(wxWindow* parent, Editor& editor, uint32_t select_town_id) :
 	wxDialog(parent, wxID_ANY, "Towns", wxDefaultPosition, wxSize(280, 330)),
 	editor(editor) {
 
@@ -1265,7 +1265,18 @@ EditTownsDialog::EditTownsDialog(wxWindow* parent, Editor& editor) :
 
 	SetSizerAndFit(sizer);
 	Centre(wxBOTH);
-	BuildListBox(true);
+
+	BuildListBox(select_town_id == 0);
+	if (select_town_id != 0) {
+		int i = 0;
+		for (std::vector<Town*>::iterator town_iter = town_list.begin(); town_iter != town_list.end(); ++town_iter) {
+			if ((*town_iter)->getID() == select_town_id) {
+				UpdateSelection(i);
+				break;
+			}
+			++i;
+		}
+	}
 }
 
 EditTownsDialog::~EditTownsDialog() {

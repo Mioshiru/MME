@@ -128,7 +128,7 @@ Position MapWindow::GetScreenCenterPosition() {
 }
 
 void MapWindow::SetScreenCenterPosition(const Position &position, bool smooth) {
-  if (position == Position()) {
+  if (!position.isValid()) {
     return;
   }
 
@@ -155,6 +155,7 @@ void MapWindow::SetScreenCenterPosition(const Position &position, bool smooth) {
 
   Scroll(x, y, true);
   canvas->ChangeFloor(position.z);
+  canvas->Update();
 }
 
 void MapWindow::UpdateSmoothScroll() {

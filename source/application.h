@@ -100,6 +100,7 @@ public:
 	void OnUpdateMenus(wxCommandEvent& event);
 	void UpdateFloorMenu();
 	void OnIdle(wxIdleEvent& event);
+	void OnActivate(wxActivateEvent& event);
 	void OnExit(wxCloseEvent& event);
 	void OnAutoSaveTimer(wxTimerEvent& event);
 	void RestartAutoSaveTimer();

@@ -469,6 +469,13 @@ void GUI::DestroyLoadBar() {
 }
 
 void GUI::ShowWelcomeDialog(const wxBitmap &icon) {
+  if (welcomeDialog != nullptr) {
+    welcomeDialog->Unbind(wxEVT_CLOSE_WINDOW, &GUI::OnWelcomeDialogClosed, this);
+    welcomeDialog->Unbind(WELCOME_DIALOG_ACTION, &GUI::OnWelcomeDialogAction, this);
+    welcomeDialog->Hide();
+    wxTheApp->ScheduleForDestruction(welcomeDialog);
+    welcomeDialog = nullptr;
+  }
   std::vector<wxString> recent_files = root->GetRecentFiles();
   // Clear the sub-title version description text as requested by the user, and
   // use wider dialog size to fit sizer cleanly

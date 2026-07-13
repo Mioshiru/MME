@@ -6,6 +6,7 @@
 #include "tileset_window.h"
 #include "old_properties_window.h"
 #include "properties_window.h"
+#include "common_windows.h"
 #include "lua/lua_script_manager.h"
 #include "doodad_brush.h"
 #include "house_brush.h"
@@ -352,6 +353,39 @@ void MapPopupMenu::Update() {
 					AppendSeparator();
 					Append(MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
 				}
+
+				Town* clicked_town = nullptr;
+				Position click_pos = tile->getPosition();
+				for (const auto& pair : editor.map.towns) {
+					if (pair.second->getTemplePosition() == click_pos) {
+						clicked_town = pair.second;
+						break;
+					}
+				}
+
+				AppendSeparator();
+				if (clicked_town) {
+					Append(MAP_POPUP_MENU_EDIT_TOWN, "Edit Town", "Edit this town");
+				} else {
+					Append(MAP_POPUP_MENU_CREATE_TOWN, "Create Town", "Create a town here");
+				}
+			}
+
+			bool rotatable_items_selected = false;
+			if (editor.selection.size() > 1) {
+				for (Tile* tile : editor.selection.getTiles()) {
+					ItemVector selected_items = tile->getSelectedItems();
+					for (Item* item : selected_items) {
+						if (item->isRoteable()) {
+							rotatable_items_selected = true;
+							break;
+						}
+					}
+					if (rotatable_items_selected) break;
+				}
+			}
+			if (rotatable_items_selected) {
+				Append(MAP_POPUP_MENU_ROTATE, "&Rotate items", "Rotate the selected items");
 			}
 
 			AppendSeparator();
@@ -450,15 +484,61 @@ void MapCanvas::OnCopyName(wxCommandEvent& WXUNUSED(event)) {}
 void MapCanvas::OnBrowseTile(wxCommandEvent& WXUNUSED(event)) {}
 void MapCanvas::OnGotoDestination(wxCommandEvent& WXUNUSED(event)) {}
 void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event)) {
-	if (editor.selection.size() == 0) {
+	BatchAction* batch = editor.actionQueue->createBatch(ACTION_DRAW);
+	Action* action = editor.actionQueue->createAction(batch);
+	bool rotated_any = false;
+
+	if (editor.selection.size() > 0) {
+		for (Tile* tile : editor.selection.getTiles()) {
+			ItemVector selected_items = tile->getSelectedItems();
+			if (selected_items.empty()) {
+				if (tile->ground && tile->ground->isRoteable()) {
+					selected_items.push_back(tile->ground);
+				} else {
+					Item* top = tile->getTopItem();
+					if (top && top->isRoteable()) {
+						selected_items.push_back(top);
+					}
+				}
+			}
+
+			Tile* new_tile = nullptr;
+			for (Item* item : selected_items) {
+				if (item->isRoteable()) {
+					ItemType& it = g_items[item->getID()];
+					if (it.rotateTo != 0) {
+						if (!new_tile) {
+							new_tile = tile->deepCopy(editor.map);
+						}
+						Item* new_item = nullptr;
+						if (item == tile->ground) {
+							new_item = new_tile->ground;
+						} else {
+							for (size_t i = 0; i < tile->items.size() && i < new_tile->items.size(); ++i) {
+								if (tile->items[i] == item) {
+									new_item = new_tile->items[i];
+									break;
+								}
+							}
+						}
+						if (new_item) {
+							new_item->setID(it.rotateTo);
+							rotated_any = true;
+						}
+					}
+				}
+			}
+			if (new_tile) {
+				action->addChange(newd Change(new_tile));
+			}
+		}
+	} else {
 		Tile* tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 		if (tile && (!tile->empty() || tile->ground)) {
 			Item* top = tile->getTopItem();
 			if (top && top->isRoteable()) {
 				ItemType& it = g_items[top->getID()];
 				if (it.rotateTo != 0) {
-					BatchAction* batch = editor.actionQueue->createBatch(ACTION_DRAW);
-					Action* action = editor.actionQueue->createAction(batch);
 					Tile* new_tile = tile->deepCopy(editor.map);
 					Item* new_top = nullptr;
 					if (top == tile->ground) new_top = new_tile->ground;
@@ -469,14 +549,21 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event)) {
 					}
 					if (new_top) {
 						new_top->setID(it.rotateTo);
+						rotated_any = true;
 					}
 					action->addChange(newd Change(new_tile));
-					batch->addAndCommitAction(action);
-					editor.addBatch(batch, 2);
-					Refresh();
 				}
 			}
 		}
+	}
+
+	if (rotated_any) {
+		batch->addAndCommitAction(action);
+		editor.addBatch(batch, 2);
+		Refresh();
+	} else {
+		delete action;
+		delete batch;
 	}
 }
 void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event)) {
@@ -635,5 +722,44 @@ void MapCanvas::OnSelectCollectionBrush(wxCommandEvent& WXUNUSED(event)) {
 	if (!top) top = tile->ground;
 	if (top && g_items[top->getID()].collection_brush) {
 		g_gui.SelectBrush(g_items[top->getID()].collection_brush, TILESET_COLLECTION);
+	}
+}
+
+void MapCanvas::OnCreateTown(wxCommandEvent& WXUNUSED(event)) {
+	Position click_pos(last_click_map_x, last_click_map_y, floor);
+	uint32_t max_id = 0;
+	for (const auto& pair : editor.map.towns) {
+		if (pair.second->getID() > max_id) {
+			max_id = pair.second->getID();
+		}
+	}
+	Town* new_town = newd Town(max_id + 1);
+	new_town->setName("Unnamed Town");
+	new_town->setTemplePosition(click_pos);
+	editor.map.towns.addTown(new_town);
+	Tile* tile = editor.map.getOrCreateTile(click_pos);
+	if (tile) {
+		tile->getLocation()->increaseTownCount();
+	}
+
+	wxDialog* town_dialog = newd EditTownsDialog(static_cast<wxWindow*>(GetParent()), editor, new_town->getID());
+	town_dialog->ShowModal();
+	town_dialog->Destroy();
+}
+
+void MapCanvas::OnEditTown(wxCommandEvent& WXUNUSED(event)) {
+	Position click_pos(last_click_map_x, last_click_map_y, floor);
+	Town* clicked_town = nullptr;
+	for (const auto& pair : editor.map.towns) {
+		if (pair.second->getTemplePosition() == click_pos) {
+			clicked_town = pair.second;
+			break;
+		}
+	}
+	if (clicked_town) {
+		clicked_town->setTemplePosition(click_pos);
+		wxDialog* town_dialog = newd EditTownsDialog(static_cast<wxWindow*>(GetParent()), editor, clicked_town->getID());
+		town_dialog->ShowModal();
+		town_dialog->Destroy();
 	}
 }
