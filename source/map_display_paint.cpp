@@ -171,9 +171,9 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 	SetCurrent(*g_gui.GetGLContext(this));
 
-// Hardcode VSync to off for absolute maximum performance
+// Enable VSync for smooth, tear-free rendering (butterweich)
 #ifdef __WINDOWS__
-SetVSync(false);
+SetVSync(true);
 #endif
 
 	static bool auto_scaled = false;
@@ -350,17 +350,18 @@ SetVSync(false);
 			BrushShape shape = g_gui.GetBrushShape();
 			ImVec2 pos = ImGui::GetWindowPos();
 			
+			int offset = (floor <= 7) ? (7 - floor) * TileSize : 0;
 			if (shape == BRUSHSHAPE_SQUARE) {
-				double x1 = pos.x + ((map_x - size) * TileSize - scroll_x) / zoom;
-				double y1 = pos.y + ((map_y - size) * TileSize - scroll_y) / zoom;
-				double x2 = pos.x + ((map_x + size + 1) * TileSize - scroll_x) / zoom;
-				double y2 = pos.y + ((map_y + size + 1) * TileSize - scroll_y) / zoom;
+				double x1 = pos.x + (((map_x - size) * TileSize - scroll_x) - offset) / zoom;
+				double y1 = pos.y + (((map_y - size) * TileSize - scroll_y) - offset) / zoom;
+				double x2 = pos.x + (((map_x + size + 1) * TileSize - scroll_x) - offset) / zoom;
+				double y2 = pos.y + (((map_y + size + 1) * TileSize - scroll_y) - offset) / zoom;
 				
 				ImGui::GetWindowDrawList()->AddRectFilled(ImVec2((float)x1, (float)y1), ImVec2((float)x2, (float)y2), ImColor(60, 120, 220, 76), 4.0f);
 				ImGui::GetWindowDrawList()->AddRect(ImVec2((float)x1, (float)y1), ImVec2((float)x2, (float)y2), ImColor(180, 150, 50, 204), 4.0f, 0, 2.0f);
 			} else if (shape == BRUSHSHAPE_CIRCLE) {
-				double cx = pos.x + ((map_x + 0.5) * TileSize - scroll_x) / zoom;
-				double cy = pos.y + ((map_y + 0.5) * TileSize - scroll_y) / zoom;
+				double cx = pos.x + (((map_x + 0.5) * TileSize - scroll_x) - offset) / zoom;
+				double cy = pos.y + (((map_y + 0.5) * TileSize - scroll_y) - offset) / zoom;
 				double r = ((size + 0.5) * TileSize) / zoom;
 				
 				ImGui::GetWindowDrawList()->AddCircleFilled(ImVec2((float)cx, (float)cy), (float)r, ImColor(60, 120, 220, 76), 32);
