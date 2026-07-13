@@ -144,14 +144,26 @@ public:
     // REDUX RENDERING DATA
     uint32_t vbo_id = 0;
     std::vector<RenderBatch> batches;
+    std::vector<uint8_t> vertices; // Store bytes because we forward declare or don't include map_drawer.h
     bool is_empty = true;
+    bool is_water_only = false;
     bool has_opaque_ground = false;
+    bool has_animations = false;
     uint64_t last_rebuild_tick = 0;
 };
 
 // This is not a QuadTree, but a HexTree (16 child nodes to every node), so the name is abit misleading
 class QTreeNode {
 public:
+	struct VisibleNode {
+		QTreeNode *node;
+		int map_x;
+		int map_y;
+	};
+	void getVisibleLeaves(int node_x, int node_y, int level,
+	                      int clip_min_x, int clip_min_y, int clip_max_x, int clip_max_y,
+	                      std::vector<VisibleNode>& out_nodes);
+
 	QTreeNode(BaseMap& map);
 	virtual ~QTreeNode();
 

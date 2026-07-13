@@ -99,6 +99,7 @@ Item* transformItem(Item* old_item, uint16_t new_id, Tile* parent) {
 		return nullptr;
 	}
 
+
 	old_item->setID(new_id);
 	// Through the magic of deepCopy, this will now be a pointer to an item of the correct type.
 	Item* new_item = old_item->deepCopy();
@@ -113,10 +114,10 @@ Item* transformItem(Item* old_item, uint16_t new_id, Tile* parent) {
 		std::queue<Container*> containers;
 		for (ItemVector::iterator item_iter = parent->items.begin(); item_iter != parent->items.end(); ++item_iter) {
 			if (*item_iter == old_item) {
-				delete old_item;
-				item_iter = parent->items.erase(item_iter);
-				parent->items.insert(item_iter, new_item);
-				return new_item;
+			delete old_item;
+			item_iter = parent->items.erase(item_iter);
+			parent->items.insert(item_iter, new_item);
+			return new_item;
 			}
 
 			Container* c = dynamic_cast<Container*>(*item_iter);
@@ -136,7 +137,7 @@ Item* transformItem(Item* old_item, uint16_t new_id, Tile* parent) {
 				}
 
 				if (i == old_item) {
-					// Found it!
+						// Found it!
 					item_iter = v.erase(item_iter);
 					v.insert(item_iter, new_item);
 					return new_item;
@@ -356,10 +357,6 @@ DoorBrush* Item::getDoorBrush() const {
 		}
 		case WALL_DOOR_MAGIC: {
 			door_brush = g_gui.magic_door_brush;
-			break;
-		}
-		case WALL_DOOR_NORMAL_ALT: {
-			door_brush = g_gui.normal_door_alt_brush;
 			break;
 		}
 		case WALL_ARCHWAY: {

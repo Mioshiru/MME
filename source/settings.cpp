@@ -351,7 +351,7 @@ void Settings::IO(IOMode mode) {
 	Int(SHADER_CRT_STRENGTH, 0); // 0-100
 	Int(SHADER_AA_LEVEL, 0);     // 0: Off, 1: FXAA Low, 2: FXAA High
 	Float(SHADER_WATER_ANIM_SPEED, 1.0f);
-	Int(V_SYNC, 1);
+	Int(V_SYNC, 0);
 	Int(UI_TOOLBAR_X, 0);
 	Int(UI_TOOLBAR_Y, 0);
 

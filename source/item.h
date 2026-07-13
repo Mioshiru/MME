@@ -253,6 +253,9 @@ public:
 	bool isGroundTile() const {
 		return g_items[id].isGroundTile();
 	}
+	bool isContainer() const {
+		return g_items[id].isContainer();
+	}
 	bool isSplash() const {
 		return g_items[id].isSplash();
 	}

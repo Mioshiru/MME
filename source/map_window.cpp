@@ -202,8 +202,20 @@ void MapWindow::Scroll(int x, int y, bool center) {
     y -= int((windowSizeY * zoom) / 2.0);
   }
 
-  x = std::max(0, std::min(x, map_w_pixels - thumb_x));
-  y = std::max(0, std::min(y, map_h_pixels - thumb_y));
+  int max_x = map_w_pixels - thumb_x;
+  int max_y = map_h_pixels - thumb_y;
+
+  if (max_x > 0) {
+    x = std::max(0, std::min(x, max_x));
+  } else {
+    x = std::max(max_x, std::min(x, 0));
+  }
+
+  if (max_y > 0) {
+    y = std::max(0, std::min(y, max_y));
+  } else {
+    y = std::max(max_y, std::min(y, 0));
+  }
 
   hScroll->SetScrollbar(x, thumb_x, map_w_pixels, thumb_x);
   vScroll->SetScrollbar(y, thumb_y, map_h_pixels, thumb_y);

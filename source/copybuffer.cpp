@@ -70,22 +70,22 @@ void CopyBuffer::copy(Editor& editor, int floor) {
 		TileLocation* newlocation = tiles->createTileL(tile->getX(), tile->getY(), tile->getZ());
 		Tile* copied_tile = tiles->allocator(newlocation);
 
-		if (tile->ground && tile->ground->isSelected()) {
+		if (tile->ground) {
 			copied_tile->house_id = tile->house_id;
 			copied_tile->setMapFlags(tile->getMapFlags());
+			copied_tile->addItem(tile->ground->deepCopy());
+			++item_count;
 		}
 
-		ItemVector tile_selection = tile->getSelectedItems();
-		for (ItemVector::iterator iit = tile_selection.begin(); iit != tile_selection.end(); ++iit) {
+		for (ItemVector::iterator iit = tile->items.begin(); iit != tile->items.end(); ++iit) {
 			++item_count;
-			// Copy items to copybuffer
 			copied_tile->addItem((*iit)->deepCopy());
 		}
 
-		if (tile->creature && tile->creature->isSelected()) {
+		if (tile->creature) {
 			copied_tile->creature = tile->creature->deepCopy();
 		}
-		if (tile->spawn && tile->spawn->isSelected()) {
+		if (tile->spawn) {
 			copied_tile->spawn = tile->spawn->deepCopy();
 		}
 
@@ -130,26 +130,28 @@ void CopyBuffer::cut(Editor& editor, int floor) {
 		Tile* newtile = tile->deepCopy(editor.map);
 		Tile* copied_tile = tiles->allocator(tile->getLocation());
 
-		if (tile->ground && tile->ground->isSelected()) {
+		if (newtile->ground) {
 			copied_tile->house_id = newtile->house_id;
 			newtile->house_id = 0;
 			copied_tile->setMapFlags(tile->getMapFlags());
 			newtile->setMapFlags(TILESTATE_NONE);
+			copied_tile->addItem(newtile->ground);
+			newtile->ground = nullptr;
+			item_count++;
 		}
 
-		ItemVector tile_selection = newtile->popSelectedItems();
-		for (ItemVector::iterator iit = tile_selection.begin(); iit != tile_selection.end(); ++iit) {
+		for (ItemVector::iterator iit = newtile->items.begin(); iit != newtile->items.end(); ++iit) {
 			item_count++;
-			// Add items to copybuffer
 			copied_tile->addItem(*iit);
 		}
+		newtile->items.clear();
 
-		if (newtile->creature && newtile->creature->isSelected()) {
+		if (newtile->creature) {
 			copied_tile->creature = newtile->creature;
 			newtile->creature = nullptr;
 		}
 
-		if (newtile->spawn && newtile->spawn->isSelected()) {
+		if (newtile->spawn) {
 			copied_tile->spawn = newtile->spawn;
 			newtile->spawn = nullptr;
 		}

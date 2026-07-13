@@ -75,7 +75,6 @@ void Brushes::init() {
 	addBrush(g_gui.quest_door_brush = newd DoorBrush(WALL_DOOR_QUEST));
 	addBrush(g_gui.hatch_door_brush = newd DoorBrush(WALL_HATCH_WINDOW));
 	addBrush(g_gui.archway_door_brush = newd DoorBrush(WALL_ARCHWAY));
-	addBrush(g_gui.normal_door_alt_brush = newd DoorBrush(WALL_DOOR_NORMAL_ALT));
 	addBrush(g_gui.window_door_brush = newd DoorBrush(WALL_WINDOW));
 	addBrush(g_gui.house_brush = newd HouseBrush());
 	addBrush(g_gui.house_exit_brush = newd HouseExitBrush());
@@ -496,7 +495,7 @@ void DoorBrush::switchDoor(Item* item) {
 			ASSERT(it.id != 0);
 
 			if (it.isOpen == new_open) {
-				if (!new_open || dt.locked == prefLocked) {
+				if (dt.locked == prefLocked) {
 					item->setID(dt.id);
 					return;
 				} else {
@@ -589,6 +588,7 @@ void DoorBrush::undraw(BaseMap* map, Tile* tile) {
 }
 
 void DoorBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
+	Position pos = tile->getPosition();
 	for (ItemVector::iterator item_iter = tile->items.begin(); item_iter != tile->items.end();) {
 		Item* item = *item_iter;
 		if (!item->isWall()) {

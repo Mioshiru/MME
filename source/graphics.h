@@ -59,7 +59,7 @@ public:
 	Sprite() { }
 	virtual ~Sprite() { }
 
-	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1) = 0;
+	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1, bool count100 = false) = 0;
 	virtual void unloadDC() = 0;
 
 private:
@@ -72,7 +72,7 @@ public:
 	EditorSprite(wxBitmap* b16x16, wxBitmap* b32x32);
 	virtual ~EditorSprite();
 
-	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1);
+	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1, bool count100 = false);
 	virtual void unloadDC();
 
 protected:
@@ -87,7 +87,7 @@ public:
 	int getIndex(int width, int height, int layer, int pattern_x, int pattern_y, int pattern_z, int frame) const;
 	GLuint getHardwareID(int _x, int _y, int _layer, int _subtype, int _pattern_x, int _pattern_y, int _pattern_z, int _frame);
 	GLuint getHardwareID(int _x, int _y, int _dir, int _addon, int _pattern_z, const Outfit& _outfit, int _frame); // CreatureDatabase
-	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1);
+	virtual void DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width = -1, int height = -1, bool count100 = false);
 
 	virtual void unloadDC();
 
@@ -109,7 +109,7 @@ protected:
 	class NormalImage;
 	class TemplateImage;
 
-	wxBitmap* getBitmap(SpriteSize size);
+	wxBitmap* getBitmap(SpriteSize size, bool count100 = false);
 	TemplateImage* getTemplateImage(int sprite_index, const Outfit& outfit);
 
 	class Image {
@@ -182,6 +182,7 @@ protected:
 
 	uint32_t id;
 	wxBitmap* bm[SPRITE_SIZE_COUNT];
+	wxBitmap* bm_100[SPRITE_SIZE_COUNT];
 
 public:
 	// GameSprite info

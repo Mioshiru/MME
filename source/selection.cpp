@@ -23,6 +23,7 @@
 #include "item.h"
 #include "editor.h"
 #include "gui.h"
+#include "map_region.h"
 #include "lua/lua_script_manager.h"
 
 Selection::Selection(Editor& editor) :
@@ -214,9 +215,14 @@ void Selection::clear() {
 			new_tile->deselect();
 			subsession->addChange(newd Change(new_tile));
 		}
+		tiles.clear();
 	} else {
 		for (TileSet::iterator it = tiles.begin(); it != tiles.end(); it++) {
 			(*it)->deselect();
+			(*it)->update();
+			if ((*it)->getLocation() && (*it)->getLocation()->qtree_node) {
+				(*it)->getLocation()->qtree_node->markDirty((*it)->getLocation()->getZ());
+			}
 		}
 		tiles.clear();
 	}

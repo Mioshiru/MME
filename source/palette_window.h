@@ -71,6 +71,7 @@ public:
 	PaletteType GetSelectedPage() const;
 	BrushPalettePanel* collection_palette;
 	void InvalidatePrefabPalette();
+	wxTextCtrl* GetSearchBox() const { return search_box; }
 
 	// Custom Event handlers (something has changed?)
 	// Finds the brush pointed to by whatbrush and selects it as the current brush (also changes page)
@@ -84,6 +85,7 @@ public:
 	// wxWidgets Event Handlers
 	void OnSwitchingPage(wxChoicebookEvent& event);
 	void OnPageChanged(wxChoicebookEvent& event);
+	void OnSearchTextChanged(wxCommandEvent& event);
 	// Forward key events to the parent window (The Map Window)
 	void OnKey(wxKeyEvent& event);
 	void OnClose(wxCloseEvent&);
@@ -101,6 +103,8 @@ protected:
 	static PalettePanel* CreateFavoritesPalette(wxWindow* parent, const TilesetContainer& tilesets);
 
 	wxChoicebook* choicebook;
+	wxChoice* palette_choice;
+	wxTextCtrl* search_box;
 
 	BrushPalettePanel* terrain_palette;
 	BrushPalettePanel* doodad_palette;

@@ -173,8 +173,13 @@ void Action::commit(DirtyList* dirty_list) {
 				newtile->update();
 
 				// std::cout << "\tSwitched tile at " << pos.x << ";" << pos.y << ";" << pos.z << " from " << (void*)oldtile << " to " << *data <<  std::endl;
+				if (oldtile && oldtile->isSelected()) {
+					editor.selection.removeInternal(oldtile);
+				}
 				if (newtile->isSelected()) {
 					editor.selection.addInternal(newtile);
+				} else {
+					editor.selection.removeInternal(newtile);
 				}
 
 				if (oldtile) {

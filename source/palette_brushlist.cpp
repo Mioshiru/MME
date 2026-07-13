@@ -35,7 +35,6 @@ EVT_BUTTON(wxID_NEW, BrushPalettePanel::OnClickAddTileset)
 EVT_CHOICEBOOK_PAGE_CHANGING(wxID_ANY, BrushPalettePanel::OnSwitchingPage)
 EVT_CHOICEBOOK_PAGE_CHANGED(wxID_ANY, BrushPalettePanel::OnPageChanged)
 EVT_CHOICE(PALETTE_TILESET_CHOICE, BrushPalettePanel::OnTilesetChoice)
-EVT_TEXT(PALETTE_SEARCH_BOX, BrushPalettePanel::OnSearchTextChanged)
 END_EVENT_TABLE()
 
 BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& tilesets, TilesetCategoryType category, wxWindowID id) :
@@ -43,30 +42,18 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 	palette_type(category),
 	choicebook(nullptr),
 	size_panel(nullptr),
-	tileset_choice(nullptr),
-	search_box(nullptr),
-	search_panel(nullptr) {
+	tileset_choice(nullptr) {
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
 	// Create the tileset panel
-	wxSizer* ts_sizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Tileset");
+	wxStaticBox* ts_box = new wxStaticBox(this, wxID_ANY, "Tileset");
+	wxSizer* ts_sizer = newd wxStaticBoxSizer(ts_box, wxVERTICAL);
 	tileset_choice = newd wxChoice(this, PALETTE_TILESET_CHOICE);
-	search_box = newd wxTextCtrl(this, PALETTE_SEARCH_BOX, "", wxDefaultPosition, wxDefaultSize, 0);
-	search_box->SetHint("Search brushes...");
-	search_box->Bind(wxEVT_CHAR_HOOK, [](wxKeyEvent& event) {
-		if (event.GetKeyCode() == WXK_ESCAPE) {
-			event.Skip(); // Let escape bubble up
-		} else {
-			event.DoAllowNextEvent(); // Allow text input, but block accelerators
-		}
-	});
-
 	ts_sizer->Add(tileset_choice, 0, wxEXPAND | wxBOTTOM, 5);
-	ts_sizer->Add(search_box, 0, wxEXPAND | wxBOTTOM, 5);
 
 	wxChoicebook* tmp_choicebook = newd wxChoicebook(this, wxID_ANY, wxDefaultPosition, wxSize(180, 250));
 	ts_sizer->Add(tmp_choicebook, 1, wxEXPAND);
-	topsizer->Add(ts_sizer, 1, wxEXPAND);
+	topsizer->Add(ts_sizer, 1, wxEXPAND | wxALL, 5);
 
 	if (g_settings.getBoolean(Config::SHOW_TILESET_EDITOR)) {
 		wxSizer* tmpsizer = newd wxBoxSizer(wxHORIZONTAL);
@@ -79,12 +66,6 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 		topsizer->Add(tmpsizer, 0, wxCENTER, 10);
 	}
 
-	search_panel = newd BrushPanel(this);
-	ts_sizer->Add(search_panel, 1, wxEXPAND);
-	search_panel->Hide();
-	
-	std::vector<Brush*> global_brushes;
-
 	for (TilesetContainer::const_iterator iter = tilesets.begin(); iter != tilesets.end(); ++iter) {
 		const TilesetCategory* tcg = iter->second->getCategory(category);
 		if (tcg && (tcg->size() > 0 || (category == TILESET_FAVORITE && iter->second->name == "Favorites"))) {
@@ -92,14 +73,8 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 			panel->AssignTileset(tcg);
 			tmp_choicebook->AddPage(panel, wxstr(iter->second->name));
 			tileset_choice->Append(wxstr(iter->second->name));
-			if (tcg->size() > 0) {
-				for(Brush* b : tcg->brushlist) {
-					global_brushes.push_back(b);
-				}
-			}
 		}
 	}
-	search_panel->AssignBrushes(global_brushes);
 
 	if (tileset_choice->GetCount() > 0) {
 		int caveIdx = tileset_choice->FindString("Cave");
@@ -127,7 +102,6 @@ void BrushPalettePanel::InvalidateContents() {
 		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
 		panel->InvalidateContents();
 	}
-	if (search_panel) search_panel->InvalidateContents();
 	PalettePanel::InvalidateContents();
 }
 
@@ -145,7 +119,6 @@ void BrushPalettePanel::LoadAllContents() {
 		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
 		panel->LoadContents();
 	}
-	if (search_panel) search_panel->LoadContents();
 	PalettePanel::LoadAllContents();
 }
 
@@ -161,7 +134,6 @@ void BrushPalettePanel::SetListType(BrushListType ltype) {
 		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
 		panel->SetListType(ltype);
 	}
-	if (search_panel) search_panel->SetListType(ltype);
 }
 
 void BrushPalettePanel::SetListType(wxString ltype) {
@@ -172,7 +144,6 @@ void BrushPalettePanel::SetListType(wxString ltype) {
 		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
 		panel->SetListType(ltype);
 	}
-	if (search_panel) search_panel->SetListType(ltype);
 }
 
 Brush* BrushPalettePanel::GetSelectedBrush() const {
@@ -284,28 +255,93 @@ void BrushPalettePanel::OnPageChanged(wxChoicebookEvent& event) {
 void BrushPalettePanel::OnTilesetChoice(wxCommandEvent& event) {
 	int sel = event.GetSelection();
 	if (sel != wxNOT_FOUND && choicebook) {
-		choicebook->SetSelection(sel);
-		if (search_box) {
-			search_box->SetValue("");
+		PaletteWindow* pw = GetParentPalette();
+		if (pw && pw->GetSearchBox()) {
+			pw->GetSearchBox()->ChangeValue("");
 		}
+		for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {
+			BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(i));
+			if (panel) {
+				panel->Filter("");
+			}
+		}
+		choicebook->SetSelection(sel);
 	}
 }
 
-void BrushPalettePanel::OnSearchTextChanged(wxCommandEvent& event) {
+void BrushPalettePanel::DoSearch(const wxString& query) {
 	if (!choicebook) return;
-	wxString query = event.GetString();
+
 	if (query.IsEmpty()) {
-		search_panel->Hide();
-		choicebook->Show();
-		tileset_choice->Show();
-		Layout();
+		for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {
+			BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(i));
+			if (panel) {
+				panel->Filter("");
+			}
+		}
+		BrushPanel* active_panel = dynamic_cast<BrushPanel*>(choicebook->GetCurrentPage());
+		if (active_panel) {
+			active_panel->SelectFirstBrush();
+		}
+		return;
+	}
+
+	wxString lower_query = query.Lower();
+
+	int current_sel = choicebook->GetSelection();
+	BrushPanel* target_panel = nullptr;
+	Brush* target_brush = nullptr;
+	int target_page_idx = -1;
+
+	// Check current page first
+	if (current_sel != wxNOT_FOUND) {
+		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(current_sel));
+		if (panel) {
+			for (Brush* brush : panel->GetBrushes()) {
+				if (wxstr(brush->getName()).Lower().Contains(lower_query)) {
+					target_panel = panel;
+					target_brush = brush;
+					target_page_idx = current_sel;
+					break;
+				}
+			}
+		}
+	}
+
+	// If not found on current page, check other pages
+	if (!target_brush) {
+		for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {
+			if ((int)i == current_sel) continue;
+			BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(i));
+			if (panel) {
+				for (Brush* brush : panel->GetBrushes()) {
+					if (wxstr(brush->getName()).Lower().Contains(lower_query)) {
+						target_panel = panel;
+						target_brush = brush;
+						target_page_idx = i;
+						break;
+					}
+				}
+			}
+			if (target_brush) break;
+		}
+	}
+
+	if (target_brush && target_panel) {
+		if (target_page_idx != current_sel) {
+			choicebook->SetSelection(target_page_idx);
+			if (tileset_choice) {
+				tileset_choice->SetSelection(target_page_idx);
+			}
+		}
+		target_panel->Filter(query);
+		target_panel->SelectBrush(target_brush);
+		g_gui.SelectBrush(target_brush, GetType());
 	} else {
-		choicebook->Hide();
-		tileset_choice->Hide();
-		search_panel->Show();
-		search_panel->LoadContents(); // Ensure it's loaded when shown
-		search_panel->Filter(query);
-		Layout();
+		BrushPanel* active_panel = dynamic_cast<BrushPanel*>(choicebook->GetCurrentPage());
+		if (active_panel) {
+			active_panel->Filter(query);
+		}
 	}
 }
 
@@ -803,7 +839,7 @@ void BrushListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const {
 		spr = g_gui.gfx.getSprite(look_id);
 	}
 	if (spr) {
-		spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
+		spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetHeight(), rect.GetHeight());
 	}
 	if (IsSelected(n)) {
 		dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT));

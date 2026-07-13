@@ -1090,17 +1090,23 @@ EditorSprite::EditorSprite(wxBitmap* b16x16, wxBitmap* b32x32) {
 }
 
 EditorSprite::~EditorSprite() {
-	unloadDC();
+	delete bm[SPRITE_SIZE_16x16];
+	delete bm[SPRITE_SIZE_32x32];
 }
 
-void EditorSprite::DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width, int height) {
+void EditorSprite::DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width, int height, bool count100) {
 	wxBitmap* sp = bm[sz];
 	if (sp) {
 		int target_w = (width == -1) ? sp->GetWidth() : width;
 		int target_h = (height == -1) ? sp->GetHeight() : height;
 		if (sp->GetWidth() != target_w || sp->GetHeight() != target_h) {
 			wxMemoryDC mem_dc(*sp);
-			dc->StretchBlit(start_x, start_y, target_w, target_h, &mem_dc, 0, 0, sp->GetWidth(), sp->GetHeight(), wxCOPY, true);
+			float scale = std::min((float)target_w / sp->GetWidth(), (float)target_h / sp->GetHeight());
+			int w = std::max(1, (int)(sp->GetWidth() * scale));
+			int h = std::max(1, (int)(sp->GetHeight() * scale));
+			int offset_x = (target_w - w) / 2;
+			int offset_y = (target_h - h) / 2;
+			dc->StretchBlit(start_x + offset_x, start_y + offset_y, w, h, &mem_dc, 0, 0, sp->GetWidth(), sp->GetHeight(), wxCOPY, true);
 		} else {
 			dc->DrawBitmap(*sp, start_x, start_y, true);
 		}
@@ -1131,10 +1137,15 @@ GameSprite::GameSprite() :
 	minimap_color(0) {
 	bm[SPRITE_SIZE_16x16] = nullptr;
 	bm[SPRITE_SIZE_32x32] = nullptr;
+	bm_100[SPRITE_SIZE_16x16] = nullptr;
+	bm_100[SPRITE_SIZE_32x32] = nullptr;
 }
 
 GameSprite::~GameSprite() {
-	unloadDC();
+	delete bm[SPRITE_SIZE_16x16];
+	delete bm[SPRITE_SIZE_32x32];
+	delete bm_100[SPRITE_SIZE_16x16];
+	delete bm_100[SPRITE_SIZE_32x32];
 	for (std::list<TemplateImage*>::iterator iter = instanced_templates.begin(); iter != instanced_templates.end(); ++iter) {
 		delete *iter;
 	}
@@ -1222,10 +1233,12 @@ GLuint GameSprite::getHardwareID(int _x, int _y, int _dir, int _addon, int _patt
 	return spriteList[v]->getHardwareID();
 }
 
-wxBitmap* GameSprite::getBitmap(SpriteSize size) {
+wxBitmap* GameSprite::getBitmap(SpriteSize size, bool count100) {
 	ASSERT(size == SPRITE_SIZE_16x16 || size == SPRITE_SIZE_32x32);
+	
+	wxBitmap*& target_bm = count100 ? bm_100[size] : bm[size];
 
-	if (!bm[size]) {
+	if (!target_bm) {
 		ASSERT(width >= 1 && height >= 1);
 
 		const int bgshade = g_settings.getInteger(Config::ICON_BACKGROUND);
@@ -1234,10 +1247,18 @@ wxBitmap* GameSprite::getBitmap(SpriteSize size) {
 		wxImage image(image_size, image_size);
 		image.Clear(bgshade);
 
+		int px = 0, py = 0;
+		if (count100) {
+			px = 7 % std::max<int>(1, pattern_x);
+			py = (7 / std::max<int>(1, pattern_x)) % std::max<int>(1, pattern_y);
+			px = std::min(px, (int)pattern_x - 1);
+			py = std::min(py, (int)pattern_y - 1);
+		}
+
 		for (uint8_t l = 0; l < layers; l++) {
 			for (uint8_t w = 0; w < width; w++) {
 				for (uint8_t h = 0; h < height; h++) {
-					const int i = getIndex(w, h, l, 0, 0, 0, 0);
+					const int i = getIndex(w, h, l, px, py, 0, 0);
 					uint8_t* data = spriteList[i]->getRGBData();
 					if (data) {
 						wxImage img(SPRITE_PIXELS, SPRITE_PIXELS, data, true);
@@ -1256,27 +1277,32 @@ wxBitmap* GameSprite::getBitmap(SpriteSize size) {
 			image.Rescale(new_size, new_size);
 		}
 
-		bm[size] = newd wxBitmap(image);
+		target_bm = newd wxBitmap(image);
 		g_gui.gfx.addSpriteToCleanup(this);
 		image.Destroy();
 	}
-	return bm[size];
+	return target_bm;
 }
 
-void GameSprite::DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width, int height) {
+void GameSprite::DrawTo(wxDC* dc, SpriteSize sz, int start_x, int start_y, int width, int height, bool count100) {
 	if (width == -1) {
 		width = sz == SPRITE_SIZE_32x32 ? 32 : 16;
 	}
 	if (height == -1) {
 		height = sz == SPRITE_SIZE_32x32 ? 32 : 16;
 	}
-	wxBitmap* sdc = getBitmap(sz);
+	wxBitmap* sdc = getBitmap(sz, count100);
 	if (sdc) {
 		int bmp_w = sdc->GetWidth();
 		int bmp_h = sdc->GetHeight();
 		if (bmp_w != width || bmp_h != height) {
 			wxMemoryDC mem_dc(*sdc);
-			dc->StretchBlit(start_x, start_y, width, height, &mem_dc, 0, 0, bmp_w, bmp_h, wxCOPY, true);
+			float scale = std::min((float)width / bmp_w, (float)height / bmp_h);
+			int w = std::max(1, (int)(bmp_w * scale));
+			int h = std::max(1, (int)(bmp_h * scale));
+			int offset_x = (width - w) / 2;
+			int offset_y = (height - h) / 2;
+			dc->StretchBlit(start_x + offset_x, start_y + offset_y, w, h, &mem_dc, 0, 0, bmp_w, bmp_h, wxCOPY, true);
 		} else {
 			dc->DrawBitmap(*sdc, start_x, start_y, true);
 		}
@@ -1293,6 +1319,11 @@ void GameSprite::unloadDC() {
 	delete bm[SPRITE_SIZE_32x32];
 	bm[SPRITE_SIZE_16x16] = nullptr;
 	bm[SPRITE_SIZE_32x32] = nullptr;
+
+	delete bm_100[SPRITE_SIZE_16x16];
+	delete bm_100[SPRITE_SIZE_32x32];
+	bm_100[SPRITE_SIZE_16x16] = nullptr;
+	bm_100[SPRITE_SIZE_32x32] = nullptr;
 }
 
 GameSprite::Image::Image() :

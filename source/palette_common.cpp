@@ -402,7 +402,6 @@ EVT_TOGGLEBUTTON(PALETTE_TERRAIN_MAGIC_DOOR, BrushToolPanel::OnClickMagicDoorBut
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_QUEST_DOOR, BrushToolPanel::OnClickQuestDoorButton)
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_HATCH_DOOR, BrushToolPanel::OnClickHatchDoorButton)
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_WINDOW_DOOR, BrushToolPanel::OnClickWindowDoorButton)
-EVT_TOGGLEBUTTON(PALETTE_TERRAIN_NORMAL_ALT_DOOR, BrushToolPanel::OnClickNormalAltDoorButton)
 
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_PZ_TOOL, BrushToolPanel::OnClickPZBrushButton)
 EVT_TOGGLEBUTTON(PALETTE_TERRAIN_NOPVP_TOOL, BrushToolPanel::OnClickNOPVPBrushButton)
@@ -425,7 +424,6 @@ BrushToolPanel::BrushToolPanel(wxWindow* parent) :
 	questDoorButton(nullptr),
 	hatchDoorButton(nullptr),
 	windowDoorButton(nullptr),
-	normalDoorAltButton(nullptr),
 	pzBrushButton(nullptr),
 	nopvpBrushButton(nullptr),
 	nologBrushButton(nullptr),
@@ -443,7 +441,7 @@ void BrushToolPanel::InvalidateContents() {
 		DestroyChildren();
 		SetSizer(nullptr);
 
-		optionalBorderButton = eraserButton = normalDoorButton = lockedDoorButton = magicDoorButton = questDoorButton = hatchDoorButton = windowDoorButton = normalDoorAltButton = pzBrushButton = nopvpBrushButton = nologBrushButton = pvpzoneBrushButton = prefabCreatorButton = nullptr;
+		optionalBorderButton = eraserButton = normalDoorButton = lockedDoorButton = magicDoorButton = questDoorButton = hatchDoorButton = windowDoorButton = pzBrushButton = nopvpBrushButton = nologBrushButton = pvpzoneBrushButton = prefabCreatorButton = nullptr;
 
 		loaded = false;
 	}
@@ -513,10 +511,6 @@ void BrushToolPanel::LoadAllContents() {
 	size_sizer->Add(windowDoorButton = newd BrushButton(this, g_gui.window_door_brush, render_size, PALETTE_TERRAIN_WINDOW_DOOR));
 	windowDoorButton->SetToolTip("Window Tool");
 
-	ASSERT(g_gui.normal_door_alt_brush);
-	size_sizer->Add(normalDoorAltButton = newd BrushButton(this, g_gui.normal_door_alt_brush, render_size, PALETTE_TERRAIN_NORMAL_ALT_DOOR));
-	normalDoorAltButton->SetToolTip("Normal Door (alt)");
-
 	size_sizer->AddSpacer(large_icons ? 42 : 24);
 
 	wxSizer* checkbox_sub_sizer = newd wxBoxSizer(wxVERTICAL);
@@ -576,7 +570,6 @@ void BrushToolPanel::DeselectAll() {
 		questDoorButton->SetValue(false);
 		hatchDoorButton->SetValue(false);
 		windowDoorButton->SetValue(false);
-		normalDoorAltButton->SetValue(false);
 		pzBrushButton->SetValue(false);
 		nopvpBrushButton->SetValue(false);
 		nologBrushButton->SetValue(false);
@@ -609,9 +602,6 @@ Brush* BrushToolPanel::GetSelectedBrush() const {
 	}
 	if (windowDoorButton->GetValue()) {
 		return g_gui.window_door_brush;
-	}
-	if (normalDoorAltButton->GetValue()) {
-		return g_gui.normal_door_alt_brush;
 	}
 	if (pzBrushButton->GetValue()) {
 		return g_gui.pz_brush;
@@ -649,8 +639,6 @@ bool BrushToolPanel::SelectBrush(const Brush* whatbrush) {
 		button = hatchDoorButton;
 	} else if (whatbrush == g_gui.window_door_brush) {
 		button = windowDoorButton;
-	} else if (whatbrush == g_gui.normal_door_alt_brush) {
-		button = normalDoorAltButton;
 	} else if (whatbrush == g_gui.pz_brush) {
 		button = pzBrushButton;
 	} else if (whatbrush == g_gui.rook_brush) {
@@ -729,14 +717,6 @@ void BrushToolPanel::OnClickHatchDoorButton(wxCommandEvent& event) {
 void BrushToolPanel::OnClickWindowDoorButton(wxCommandEvent& event) {
 	g_gui.ActivatePalette(GetParentPalette());
 	g_gui.SelectBrush(g_gui.window_door_brush);
-
-	// read checkbox settings
-	g_gui.SetDoorLocked(lockDoorCheckbox->GetValue());
-}
-
-void BrushToolPanel::OnClickNormalAltDoorButton(wxCommandEvent& event) {
-	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SelectBrush(g_gui.normal_door_alt_brush);
 
 	// read checkbox settings
 	g_gui.SetDoorLocked(lockDoorCheckbox->GetValue());

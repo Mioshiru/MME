@@ -280,3 +280,27 @@ void QTreeNode::clearTile(int x, int y, int z) {
 	delete tmp->tile;
 	tmp->tile = map.allocator(tmp);
 }
+
+void QTreeNode::getVisibleLeaves(int node_x, int node_y, int level,
+                                 int clip_min_x, int clip_min_y, int clip_max_x, int clip_max_y,
+                                 std::vector<VisibleNode>& out_nodes) {
+  int size = 1 << (2 * (6 - level) + 2);
+  if (node_x + size <= clip_min_x || node_x > clip_max_x ||
+      node_y + size <= clip_min_y || node_y > clip_max_y) {
+    return;
+  }
+
+  if (isLeaf) {
+    out_nodes.push_back({this, node_x, node_y});
+    return;
+  }
+
+  int child_size = size / 4;
+  for (int i = 0; i < 16; ++i) {
+    if (child[i]) {
+      int cx = node_x + (i & 3) * child_size;
+      int cy = node_y + (i >> 2) * child_size;
+      child[i]->getVisibleLeaves(cx, cy, level + 1, clip_min_x, clip_min_y, clip_max_x, clip_max_y, out_nodes);
+    }
+  }
+}

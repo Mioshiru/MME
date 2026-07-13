@@ -200,8 +200,8 @@ PaletteWindow *GUI::CreatePalette() {
                                     .Layer(1)
                                     .Position(static_cast<int>(palettes.size() + 1))
                                     .CloseButton(true)
-                                    .BestSize(230, 450)
-                                    .MinSize(wxSize(180, 200))
+                                    .BestSize(255, 450)
+                                    .MinSize(wxSize(255, 200))
                                     .Show(true));
 
   // NOTE: Collections Palette / Tileset panel intentionally removed.
@@ -350,6 +350,11 @@ void GUI::SelectPalettePage(PaletteType pt) {
 
   ShowPalette();
   p->SelectPage(pt);
+  
+  if (pt != TILESET_TERRAIN) {
+    SetBrushSize(0);
+  }
+  
   aui_manager->Update();
   SelectBrushInternal(p->GetSelectedBrush());
 }
@@ -480,6 +485,8 @@ void GUI::FinishWelcomeDialog() {
   if (welcomeDialog != nullptr) {
     welcomeDialog->Hide();
     root->Show();
+    root->Update();
+    wxYield();
     wxTheApp->ScheduleForDestruction(welcomeDialog);
     welcomeDialog = nullptr;
   }
@@ -893,6 +900,11 @@ void GUI::SetFillBrushMode(bool enabled) {
 }
 
 void GUI::SetBrushSizeInternal(int nz) {
+  PaletteWindow *p = GetPalette();
+  if (p && p->GetSelectedPage() != TILESET_TERRAIN) {
+    nz = 0;
+  }
+
   if (nz != brush_size && current_brush && current_brush->isDoodad() &&
       !current_brush->oneSizeFitsAll()) {
     brush_size = nz;
@@ -914,6 +926,14 @@ void GUI::SetBrushSize(int nz) {
   }
 
   root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
+
+  if (current_brush) {
+    if (GetPalette()) {
+      SelectBrush(current_brush, GetPalette()->GetSelectedPage());
+    } else {
+      SelectBrush(current_brush);
+    }
+  }
 }
 
 void GUI::SetBrushVariation(int nz) {
@@ -943,6 +963,14 @@ void GUI::SetBrushShape(BrushShape bs) {
   }
 
   root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
+
+  if (current_brush) {
+    if (GetPalette()) {
+      SelectBrush(current_brush, GetPalette()->GetSelectedPage());
+    } else {
+      SelectBrush(current_brush);
+    }
+  }
 }
 
 void GUI::SetBrushThickness(bool on, int x, int y) {
@@ -1104,7 +1132,9 @@ bool GUI::SelectBrush(const Brush *whatbrush, PaletteType primary) {
   }
 
   if (!found) {
-    return false;
+    if (whatbrush != nullptr) {
+      return false;
+    }
   }
 
   SelectBrushInternal(const_cast<Brush *>(whatbrush));

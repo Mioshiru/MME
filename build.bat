@@ -27,7 +27,7 @@ set "BUILD_DIR=!PROJECT_ROOT!\build"
 set "ERROR_FILE=!PROJECT_ROOT!\compiler_error_latest.md"
 set "INSTALL_DIR=!BUILD_DIR!"
 set "LOG_FILE=%TEMP%\mme_build.log"
-set "TOTAL_STEPS=6"
+set "TOTAL_STEPS=5"
 
 REM --- Check if log file is accessible ---
 type nul > "!LOG_FILE!" 2>nul || (
@@ -39,7 +39,7 @@ if exist "!ERROR_FILE!" del /f /q "!ERROR_FILE!"
 
 echo.
 echo %BOLD%%CYAN%========================================================%RESET%
-echo %BOLD%%CYAN%   Mios Map Editor Build Script (FULL HYBRID MODE)%RESET%
+echo %BOLD%%CYAN%   Mios Map Editor Build Script%RESET%
 echo %BOLD%%CYAN%========================================================%RESET%
 echo.
 
@@ -81,71 +81,6 @@ if exist "!VCVARS!" (
 where cl >nul 2>&1 || ( echo   %RED%ERROR: cl.exe not available after VS environment setup.%RESET% & pause & exit /b 1 )
 echo   %GREEN%Environment OK%RESET%
 
-REM --- STEP 2: .NET Core Remake Application Build ---
-set /a "STEP+=1"
-echo.
-echo %%BOLD%%[%%STEP%%/%%TOTAL_STEPS%%] Compiling .NET Remake Application...%%RESET%%
-
-set "CS_PROJ=!PROJECT_ROOT!\MapEditor\src\MapEditor.App\MapEditor.App.csproj"
-if not exist "!CS_PROJ!" (
-    echo   %%RED%%ERROR: MapEditor.App.csproj not found at expected path!%%RESET%%
-    set "FAIL_REASON=.NET Project Path Verification"
-    goto :handle_error
-)
-
-set "LOCAL_DOTNET=!PROJECT_ROOT!\tools\.dotnet"
-set "DOTNET_EXE=!LOCAL_DOTNET!\dotnet.exe"
-set "USE_LOCAL_DOTNET=0"
-
-REM Check if system dotnet is available and is version 8
-dotnet --version >nul 2>&1
-if !ERRORLEVEL! neq 0 (
-    set "USE_LOCAL_DOTNET=1"
-) else (
-    for /f "tokens=1 delims=." %%v in ('dotnet --version') do (
-        if "%%v" neq "8" (
-            set "USE_LOCAL_DOTNET=1"
-        )
-    )
-)
-
-REM If local dotnet already exists, use it
-if exist "!DOTNET_EXE!" (
-    set "USE_LOCAL_DOTNET=0"
-)
-
-if !USE_LOCAL_DOTNET! equ 1 (
-    echo   .NET 8.0 SDK not found. Installing locally to !LOCAL_DOTNET!...
-    if not exist "!PROJECT_ROOT!\tools" mkdir "!PROJECT_ROOT!\tools" >nul 2>&1
-    
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile '!PROJECT_ROOT!\tools\dotnet-install.ps1'" >> "!LOG_FILE!" 2>&1
-    if !ERRORLEVEL! neq 0 (
-        echo   %%RED%%ERROR: Failed to download .NET installation script!%%RESET%%
-        set "FAIL_REASON=.NET SDK Script Download"
-        goto :handle_error
-    )
-    
-    powershell -NoProfile -ExecutionPolicy Bypass -File "!PROJECT_ROOT!\tools\dotnet-install.ps1" -Channel 8.0 -InstallDir "!LOCAL_DOTNET!" -NoPath >> "!LOG_FILE!" 2>&1
-    if !ERRORLEVEL! neq 0 (
-        echo   %%RED%%ERROR: Failed to install local .NET 8.0 SDK!%%RESET%%
-        set "FAIL_REASON=.NET SDK Installation"
-        goto :handle_error
-    )
-    
-    del "!PROJECT_ROOT!\tools\dotnet-install.ps1" >nul 2>&1
-)
-
-if exist "!DOTNET_EXE!" (
-    echo   Injecting local .NET environment paths...
-    set "DOTNET_ROOT=!LOCAL_DOTNET!"
-    set "PATH=!LOCAL_DOTNET!;!PATH!"
-)
-
-REM Executing compilation with SDK environment context
-dotnet build "!CS_PROJ!" /p:Configuration=Release /p:Platform="Any CPU" /clp:ErrorsOnly >> "!LOG_FILE!" 2>&1
-
-if !ERRORLEVEL! neq 0 ( set "FAIL_REASON=.NET Compilation" & goto :handle_error )
-echo   %%GREEN%%.NET Build OK%%RESET%%
 
 REM --- STEP 3: Dependencies & Tools ---
 set /a "STEP+=1"

@@ -1151,7 +1151,7 @@ void MapEditor::moveSelection(Position offset) {
 		const Position old_pos = tile->getPosition();
 		Position new_pos;
 
-		new_pos = old_pos - offset;
+		new_pos = old_pos + offset;
 
 		if (new_pos.z < 0 && new_pos.z > MAP_MAX_LAYER) {
 			delete tile;
@@ -1828,6 +1828,52 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		} else {
 			addBatch(batch, 2);
 		}
+	} else if (brush->isDoor()) {
+		// NOTE: isDoor() must be checked BEFORE isWall() because DoorBrush::isWall() returns true.
+		// If isWall() is checked first, door brushes incorrectly enter the wall code path
+		// which cleans walls instead of placing the door/window variant.
+		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
+		Action* action = actionQueue->createAction(batch);
+		DoorBrush* door_brush = brush->asDoor();
+
+		// Loop is kind of redundant since there will only ever be one index.
+		for (PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
+			TileLocation* location = map.createTileL(*it);
+			Tile* tile = location->get();
+			if (tile) {
+				Tile* new_tile = tile->deepCopy(map);
+				if (dodraw) {
+					door_brush->draw(&map, new_tile, &alt);
+				} else {
+					door_brush->undraw(&map, new_tile);
+				}
+				action->addChange(newd Change(new_tile));
+			} else if (dodraw) {
+				Tile* new_tile = map.allocator(location);
+				door_brush->draw(&map, new_tile, &alt);
+				action->addChange(newd Change(new_tile));
+			}
+		}
+
+		// Commit changes to map
+		batch->addAndCommitAction(action);
+
+		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+			// Do borders!
+			action = actionQueue->createAction(batch);
+			for (PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
+				Tile* tile = map.getTile(*it);
+				if (tile) {
+					Tile* new_tile = tile->deepCopy(map);
+					new_tile->wallize(&map);
+					// if(*tile == *new_tile) delete new_tile;
+					action->addChange(newd Change(new_tile));
+				}
+			}
+			batch->addAndCommitAction(action);
+		}
+
+		addBatch(batch, 2);
 	} else if (brush->isWall()) {
 		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
 		Action* action = actionQueue->createAction(batch);
@@ -1909,53 +1955,6 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		} else {
 			actionQueue->addBatch(batch, 2);
 		}
-	} else if (brush->isDoor()) {
-		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
-		Action* action = actionQueue->createAction(batch);
-		DoorBrush* door_brush = brush->asDoor();
-
-		// Loop is kind of redundant since there will only ever be one index.
-		for (PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
-			TileLocation* location = map.createTileL(*it);
-			Tile* tile = location->get();
-			if (tile) {
-				Tile* new_tile = tile->deepCopy(map);
-				// Wall cleaning is exempt from automagic
-				if (brush->isWall()) {
-					new_tile->cleanWalls(brush->asWall());
-				}
-				if (dodraw) {
-					door_brush->draw(&map, new_tile, &alt);
-				} else {
-					door_brush->undraw(&map, new_tile);
-				}
-				action->addChange(newd Change(new_tile));
-			} else if (dodraw) {
-				Tile* new_tile = map.allocator(location);
-				door_brush->draw(&map, new_tile, &alt);
-				action->addChange(newd Change(new_tile));
-			}
-		}
-
-		// Commit changes to map
-		batch->addAndCommitAction(action);
-
-		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-			// Do borders!
-			action = actionQueue->createAction(batch);
-			for (PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-				Tile* tile = map.getTile(*it);
-				if (tile) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->wallize(&map);
-					// if(*tile == *new_tile) delete new_tile;
-					action->addChange(newd Change(new_tile));
-				}
-			}
-			batch->addAndCommitAction(action);
-		}
-
-		addBatch(batch, 2);
 	} else if (brush->isDoodad()) {
 		if (dodraw) {
 			for (PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {

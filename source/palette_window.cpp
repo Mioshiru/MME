@@ -300,12 +300,12 @@ BEGIN_EVENT_TABLE(PaletteWindow, wxPanel)
 EVT_CHOICEBOOK_PAGE_CHANGING(PALETTE_CHOICEBOOK, PaletteWindow::OnSwitchingPage)
 EVT_CHOICEBOOK_PAGE_CHANGED(PALETTE_CHOICEBOOK, PaletteWindow::OnPageChanged)
 EVT_CLOSE(PaletteWindow::OnClose)
-
+EVT_TEXT(PALETTE_SEARCH_BOX, PaletteWindow::OnSearchTextChanged)
 EVT_KEY_DOWN(PaletteWindow::OnKey)
 END_EVENT_TABLE()
 
 PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets) :
-	wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(230, 250)),
+	wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(255, 250)),
 	choicebook(nullptr),
 	terrain_palette(nullptr),
 	doodad_palette(nullptr),
@@ -317,16 +317,30 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	raw_palette(nullptr),
 	prefab_palette(nullptr),
 	favorites_palette(nullptr),
-	minimap_panel(nullptr) {
-	SetMinSize(wxSize(225, 250));
+	minimap_panel(nullptr),
+	palette_choice(nullptr),
+	search_box(nullptr) {
+	SetMinSize(wxSize(255, 250));
 	SetBackgroundColour(wxColor(10, 20, 35));
 
-	// Create choicebook
-	choicebook = newd wxChoicebook(this, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(230, 250));
+	palette_choice = newd wxChoice(this, wxID_ANY);
+	palette_choice->SetBackgroundColour(wxColour(10, 20, 35));
+	palette_choice->SetForegroundColour(wxColour(180, 150, 50));
+
+	search_box = newd wxTextCtrl(this, PALETTE_SEARCH_BOX, "", wxDefaultPosition, wxDefaultSize, 0);
+	search_box->SetHint("Search brushes...");
+	search_box->Bind(wxEVT_CHAR_HOOK, [](wxKeyEvent& event) {
+		if (event.GetKeyCode() == WXK_ESCAPE) {
+			event.Skip();
+		} else {
+			event.DoAllowNextEvent();
+		}
+	});
+
+	choicebook = newd wxChoicebook(this, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(255, 250));
 	choicebook->SetBackgroundColour(wxColor(10, 20, 35));
 	if (auto* choice_ctrl = choicebook->GetChoiceCtrl()) {
-		choice_ctrl->SetBackgroundColour(wxColour(10, 20, 35));
-		choice_ctrl->SetForegroundColour(wxColour(180, 150, 50));
+		choice_ctrl->Hide();
 	}
 
 	terrain_palette = static_cast<BrushPalettePanel*>(CreateTerrainPalette(choicebook, tilesets));
@@ -369,8 +383,22 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 
 	// Setup sizers
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
-	choicebook->SetMinSize(wxSize(225, 300));
+	sizer->Add(palette_choice, 0, wxEXPAND | wxALL, 5);
+	sizer->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+
+	choicebook->SetMinSize(wxSize(255, 300));
 	sizer->Add(choicebook, 1, wxEXPAND);
+
+	for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {
+		palette_choice->Append(choicebook->GetPageText(i));
+	}
+	palette_choice->SetSelection(0);
+	palette_choice->Bind(wxEVT_CHOICE, [this](wxCommandEvent& event) {
+		choicebook->SetSelection(palette_choice->GetSelection());
+		if (search_box) {
+			search_box->SetValue("");
+		}
+	});
 
 	minimap_panel = new MinimapPanel(this);
 	sizer->Add(minimap_panel, 0, wxALIGN_CENTER | wxALL, 10);
@@ -799,7 +827,22 @@ void PaletteWindow::OnPageChanged(wxChoicebookEvent& event) {
 	if (!choicebook) {
 		return;
 	}
+	if (palette_choice) {
+		palette_choice->SetSelection(event.GetSelection());
+	}
+	if (search_box) {
+		search_box->SetValue("");
+	}
 	g_gui.SelectBrush();
+}
+
+void PaletteWindow::OnSearchTextChanged(wxCommandEvent& event) {
+	if (!choicebook) return;
+	wxString query = search_box->GetValue();
+	wxWindow* page = choicebook->GetCurrentPage();
+	if (auto* brush_page = dynamic_cast<BrushPalettePanel*>(page)) {
+		brush_page->DoSearch(query);
+	}
 }
 
 void PaletteWindow::OnUpdateBrushSize(BrushShape shape, int size) {

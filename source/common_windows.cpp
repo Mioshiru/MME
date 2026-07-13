@@ -1043,8 +1043,13 @@ void FindDialogListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 		} else {
 			spr = g_gui.gfx.getSprite(look_id);
 		}
+		bool count100 = false;
+		if (look_id > 0 && g_items.typeExists(look_id) && g_items[look_id].stackable) {
+			count100 = true;
+		}
+
 		if (spr) {
-			spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
+			spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), 32, 32, count100);
 		}
 
 		if (IsSelected(n)) {
@@ -1057,7 +1062,14 @@ void FindDialogListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 			dc.SetTextForeground(wxColor(0x00, 0x00, 0x00));
 		}
 
-		dc.DrawText(wxstr(brushlist[n]->getName()), rect.GetX() + 40, rect.GetY() + 6);
+		std::string name = brushlist[n]->getName();
+		std::string id_prefix = std::to_string(look_id) + " - ";
+		if (name.rfind(id_prefix, 0) == 0) {
+			name = name.substr(id_prefix.length());
+		}
+
+		wxString display_str = wxString::Format("- %d - %s", look_id, wxstr(name));
+		dc.DrawText(display_str, rect.GetX() + 40, rect.GetY() + 6);
 	}
 }
 

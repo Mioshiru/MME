@@ -649,37 +649,6 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 
 
 
-	wxStaticBoxSizer* tuning_group = new wxStaticBoxSizer(wxVERTICAL, performance_page, "Tuning");
-	performance_vsync_chkbox = newd wxCheckBox(performance_page, wxID_ANY, "Vertical Sync");
-	performance_vsync_chkbox->SetValue(g_settings.getBoolean(Config::V_SYNC));
-	tuning_group->Add(performance_vsync_chkbox, 0, wxALL, 5);
-
-	performance_multimonitor_chkbox = newd wxCheckBox(performance_page, wxID_ANY, "Multi-display workspace");
-	performance_multimonitor_chkbox->SetValue(g_settings.getBoolean(Config::MULTI_MONITOR_WORKSPACE));
-	tuning_group->Add(performance_multimonitor_chkbox, 0, wxALL, 5);
-
-	wxFlexGridSizer* grid = newd wxFlexGridSizer(2, 10, 10);
-	grid->AddGrowableCol(1);
-	grid->Add(newd wxStaticText(performance_page, wxID_ANY, "Worker threads:"), 0, wxALIGN_CENTER_VERTICAL);
-	performance_worker_threads_slider = newd wxSlider(performance_page, wxID_ANY, g_settings.getInteger(Config::WORKER_THREADS), 1, 16);
-	grid->Add(performance_worker_threads_slider, 0, wxEXPAND);
-	grid->Add(newd wxStaticText(performance_page, wxID_ANY, "Anti-aliasing:"), 0, wxALIGN_CENTER_VERTICAL);
-	performance_aa_choice = newd wxChoice(performance_page, wxID_ANY);
-	performance_aa_choice->Append("Off");
-	performance_aa_choice->Append("Low");
-	performance_aa_choice->Append("High");
-	performance_aa_choice->SetSelection(g_settings.getInteger(Config::SHADER_AA_LEVEL));
-	grid->Add(performance_aa_choice, 0, wxEXPAND);
-	grid->Add(newd wxStaticText(performance_page, wxID_ANY, "CRT strength:"), 0, wxALIGN_CENTER_VERTICAL);
-	performance_crt_slider = newd wxSlider(performance_page, wxID_ANY, g_settings.getInteger(Config::SHADER_CRT_STRENGTH), 0, 100);
-	grid->Add(performance_crt_slider, 0, wxEXPAND);
-	grid->Add(newd wxStaticText(performance_page, wxID_ANY, "Water speed:"), 0, wxALIGN_CENTER_VERTICAL);
-	performance_water_slider = newd wxSlider(performance_page, wxID_ANY, int(g_settings.getFloat(Config::SHADER_WATER_ANIM_SPEED) * 10), 0, 50);
-	grid->Add(performance_water_slider, 0, wxEXPAND);
-	tuning_group->Add(grid, 0, wxALL | wxEXPAND, 5);
-	sizer->Add(tuning_group, 0, wxEXPAND | wxALL, 5);
-
-
 	performance_page->SetSizerAndFit(sizer);
 	return performance_page;
 }
@@ -958,12 +927,6 @@ void PreferencesWindow::Apply() {
 	// 	g_settings.setInteger(Config::RENDER_BACKEND, backend_radio->GetSelection());
 	// 	must_restart = true;
 	// }
-    g_settings.setInteger(Config::V_SYNC, performance_vsync_chkbox ? performance_vsync_chkbox->GetValue() : 0);
-    g_settings.setInteger(Config::MULTI_MONITOR_WORKSPACE, performance_multimonitor_chkbox ? performance_multimonitor_chkbox->GetValue() : 0);
-    g_settings.setInteger(Config::WORKER_THREADS, performance_worker_threads_slider ? performance_worker_threads_slider->GetValue() : 4);
-    g_settings.setInteger(Config::SHADER_AA_LEVEL, performance_aa_choice ? performance_aa_choice->GetSelection() : 0);
-    g_settings.setInteger(Config::SHADER_CRT_STRENGTH, performance_crt_slider ? performance_crt_slider->GetValue() : 0);
-    g_settings.setFloat(Config::SHADER_WATER_ANIM_SPEED, performance_water_slider ? performance_water_slider->GetValue() / 10.0f : 1.0f);
 
 	if (ui_scale_slider) {
 		int old_scale = g_settings.getInteger(Config::UI_SCALE);

@@ -16,6 +16,55 @@
 #include "raw_brush.h"
 #include "carpet_brush.h"
 #include "table_brush.h"
+#include "brush.h"
+#include "complexitem.h"
+
+static uint16_t getContainerSwitchID(Item* item) {
+	if (!item || item->getID() == 0) return 0;
+	
+	const ItemType& it = g_items.getItemType(item->getID());
+	std::string name = it.name;
+	for (auto &c : name) {
+		c = std::tolower(c);
+	}
+	
+	// Check if it's a container/chest/locker/safe
+	bool is_chest = (name.find("chest") != std::string::npos ||
+	                 name.find("box") != std::string::npos ||
+	                 name.find("trunk") != std::string::npos ||
+	                 name.find("safe") != std::string::npos ||
+	                 name.find("locker") != std::string::npos ||
+	                 it.isContainer());
+	                 
+	if (!is_chest) return 0;
+	
+	if (name.find("open") != std::string::npos) {
+		// It's open, try to close it (ID - 1)
+		uint16_t closed_id = item->getID() - 1;
+		if (closed_id > 0) {
+			const ItemType& closed_it = g_items.getItemType(closed_id);
+			std::string closed_name = closed_it.name;
+			for (auto &c : closed_name) {
+				c = std::tolower(c);
+			}
+			if (closed_name.find("open") == std::string::npos) {
+				return closed_id;
+			}
+		}
+	} else {
+		// It's closed, try to open it (ID + 1)
+		uint16_t open_id = item->getID() + 1;
+		const ItemType& open_it = g_items.getItemType(open_id);
+		std::string open_name = open_it.name;
+		for (auto &c : open_name) {
+			c = std::tolower(c);
+		}
+		if (open_name.find("open") != std::string::npos) {
+			return open_id;
+		}
+	}
+	return 0;
+}
 
 void MapCanvas::OnSelectCreatureBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
@@ -256,6 +305,16 @@ void MapPopupMenu::Update() {
 					Append(MAP_POPUP_MENU_SELECT_DOOR_BRUSH, "Select Doorbrush", "Use this door brush");
 				}
 
+				bool can_use = false;
+				if (topSelectedItem) {
+					if (topSelectedItem->isBrushDoor() || getContainerSwitchID(topSelectedItem) != 0 || topSelectedItem->isContainer()) {
+						can_use = true;
+					}
+				}
+				if (can_use) {
+					Append(MAP_POPUP_MENU_SWITCH_DOOR, "Use", "Interact with this item");
+				}
+
 				if (tile->hasGround() && tile->getGroundBrush() && tile->getGroundBrush()->visibleInPalette()) {
 					Append(MAP_POPUP_MENU_SELECT_GROUND_BRUSH, "Select Groundbrush", "Uses the current item as a groundbrush");
 				}
@@ -420,7 +479,92 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event)) {
 		}
 	}
 }
-void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event)) {
+	Tile* tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
+	if (!tile) return;
+
+	Item* target_item = nullptr;
+	bool is_container_only = false;
+	for (Item* item : tile->items) {
+		if (item->isContainer()) {
+			target_item = item;
+			is_container_only = true;
+			break;
+		}
+	}
+	if (!target_item) {
+		for (Item* item : tile->items) {
+			if (getContainerSwitchID(item) != 0) {
+				target_item = item;
+				is_container_only = false;
+				break;
+			}
+		}
+	}
+	if (!target_item) {
+		for (Item* item : tile->items) {
+			if (item->isBrushDoor()) {
+				target_item = item;
+				is_container_only = false;
+				break;
+			}
+		}
+	}
+	if (!target_item && tile->ground) {
+		if (tile->ground->isContainer()) {
+			target_item = tile->ground;
+			is_container_only = true;
+		} else if (getContainerSwitchID(tile->ground) != 0 || tile->ground->isBrushDoor()) {
+			target_item = tile->ground;
+			is_container_only = false;
+		}
+	}
+
+	if (is_container_only) {
+		// Just open properties window
+		wxCommandEvent empty_event;
+		OnProperties(empty_event);
+		return;
+	}
+
+	if (target_item) {
+		Tile* new_tile = tile->deepCopy(editor.map);
+		Item* new_item = nullptr;
+		if (target_item == tile->ground) {
+			new_item = new_tile->ground;
+		} else {
+			for (size_t i = 0; i < tile->items.size(); ++i) {
+				if (tile->items[i] == target_item) {
+					new_item = new_tile->items[i];
+					break;
+				}
+			}
+		}
+
+		if (new_item) {
+			uint16_t container_switch_id = getContainerSwitchID(new_item);
+			if (container_switch_id != 0) {
+				new_item->setID(container_switch_id);
+			} else if (new_item->isBrushDoor()) {
+				DoorBrush::switchDoor(new_item);
+			}
+
+			new_tile->deselect();
+
+			Action* action = editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
+			action->addChange(newd Change(new_tile));
+			editor.addAction(action);
+			
+			editor.selection.start(Selection::INTERNAL);
+			editor.selection.clear();
+			editor.selection.finish(Selection::INTERNAL);
+			
+			Refresh();
+		} else {
+			delete new_tile;
+		}
+	}
+}
 void MapCanvas::OnSelectRAWBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) return;

@@ -719,6 +719,14 @@ void MainFrame::OnIdle(wxIdleEvent &event) {
   if (g_gui.async_loader) {
     g_gui.async_loader->update();
   }
+  // Continuously render for maximum frame rate
+  if (g_gui.IsAnyEditorOpen()) {
+    MapTab* tab = g_gui.GetCurrentMapTab();
+    if (tab && tab->canvas) {
+      tab->canvas->Refresh();
+      event.RequestMore(true);
+    }
+  }
 }
 
 void MainFrame::OnAutoSaveTimer(wxTimerEvent& /*event*/) {

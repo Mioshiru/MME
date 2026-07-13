@@ -397,6 +397,7 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 			dragging_selection = true;
 			drag_start_map_x = mouse_map_x;
 			drag_start_map_y = mouse_map_y;
+			drag_start_map_z = floor;
 		} else {
 			rubber_band_mode = true;
 			rubber_start_x = cursor_x;
@@ -440,13 +441,19 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 				if (event.ControlDown() && is_selected) {
 					editor.selection.remove(tile);
 				} else if (!is_selected || event.ControlDown()) {
-					Item* top_item = tile->getTopItem();
-					if (top_item) {
-						editor.selection.add(tile, top_item);
-					} else if (tile->ground) {
-						editor.selection.add(tile, tile->ground);
+					if (tile->spawn && g_settings.getInteger(Config::SHOW_SPAWNS)) {
+						editor.selection.add(tile, tile->spawn);
+					} else if (tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
+						editor.selection.add(tile, tile->creature);
 					} else {
-						editor.selection.add(tile);
+						Item* top_item = tile->getTopItem();
+						if (top_item) {
+							editor.selection.add(tile, top_item);
+						} else if (tile->ground) {
+							editor.selection.add(tile, tile->ground);
+						} else {
+							editor.selection.add(tile);
+						}
 					}
 				}
 				editor.selection.finish(Selection::INTERNAL);
@@ -466,6 +473,11 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 			int x2 = std::max(start_map_x, end_map_x);
 			int y1 = std::min(start_map_y, end_map_y);
 			int y2 = std::max(start_map_y, end_map_y);
+
+			if (!event.ShiftDown() && !event.ControlDown()) {
+				x2 = x1;
+				y2 = y1;
+			}
 			
 			editor.selection.start(Selection::INTERNAL);
 			for (int y = y1; y <= y2; ++y) {
@@ -540,8 +552,9 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 		
 		int dx = mouse_map_x - drag_start_map_x;
 		int dy = mouse_map_y - drag_start_map_y;
-		if (dx != 0 || dy != 0) {
-			editor.moveSelection(Position(dx, dy, 0));
+		int dz = floor - drag_start_map_z;
+		if (dx != 0 || dy != 0 || dz != 0) {
+			editor.moveSelection(Position(dx, dy, dz));
 		} else {
 			// Single click on already selected tile: clear other selections
 			if (!event.ShiftDown() && !event.ControlDown()) {
@@ -549,13 +562,19 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 				if (tile) {
 					editor.selection.start(Selection::INTERNAL);
 					editor.selection.clear();
-					Item* top_item = tile->getTopItem();
-					if (top_item) {
-						editor.selection.add(tile, top_item);
-					} else if (tile->ground) {
-						editor.selection.add(tile, tile->ground);
+					if (tile->spawn && g_settings.getInteger(Config::SHOW_SPAWNS)) {
+						editor.selection.add(tile, tile->spawn);
+					} else if (tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
+						editor.selection.add(tile, tile->creature);
 					} else {
-						editor.selection.add(tile);
+						Item* top_item = tile->getTopItem();
+						if (top_item) {
+							editor.selection.add(tile, top_item);
+						} else if (tile->ground) {
+							editor.selection.add(tile, tile->ground);
+						} else {
+							editor.selection.add(tile);
+						}
 					}
 					editor.selection.finish(Selection::INTERNAL);
 					if (editor.selection.size() > 0) {
@@ -641,11 +660,17 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 				Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
 				if (tile) {
 					editor.selection.start(Selection::INTERNAL);
-					Item* top_item = tile->getTopItem();
-					if (top_item) {
-						editor.selection.add(tile, top_item);
-					} else if (tile->ground) {
-						editor.selection.add(tile, tile->ground);
+					if (tile->spawn && g_settings.getInteger(Config::SHOW_SPAWNS)) {
+						editor.selection.add(tile, tile->spawn);
+					} else if (tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
+						editor.selection.add(tile, tile->creature);
+					} else {
+						Item* top_item = tile->getTopItem();
+						if (top_item) {
+							editor.selection.add(tile, top_item);
+						} else if (tile->ground) {
+							editor.selection.add(tile, tile->ground);
+						}
 					}
 					editor.selection.finish(Selection::INTERNAL);
 				}
@@ -658,11 +683,17 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 			Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
 			if (tile) {
 				editor.selection.start(Selection::INTERNAL);
-				Item* top_item = tile->getTopItem();
-				if (top_item) {
-					editor.selection.add(tile, top_item);
-				} else if (tile->ground) {
-					editor.selection.add(tile, tile->ground);
+				if (tile->spawn && g_settings.getInteger(Config::SHOW_SPAWNS)) {
+					editor.selection.add(tile, tile->spawn);
+				} else if (tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
+					editor.selection.add(tile, tile->creature);
+				} else {
+					Item* top_item = tile->getTopItem();
+					if (top_item) {
+						editor.selection.add(tile, top_item);
+					} else if (tile->ground) {
+						editor.selection.add(tile, tile->ground);
+					}
 				}
 				editor.selection.finish(Selection::INTERNAL);
 			}
@@ -741,21 +772,10 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 		int dy = cursor_y - drag_start_y;
 		
 		if (dx != 0 || dy != 0) {
-			double total_dx = dx * zoom + drag_accum_x;
-			double total_dy = dy * zoom + drag_accum_y;
-			
-			int idx = static_cast<int>(total_dx);
-			int idy = static_cast<int>(total_dy);
-			
 			MapWindow* map_win = static_cast<MapWindow*>(GetParent());
 			int scroll_x, scroll_y;
 			map_win->GetViewStart(&scroll_x, &scroll_y);
-			if (idx != 0 || idy != 0) {
-				map_win->Scroll(scroll_x - idx, scroll_y - idy);
-			}
-			
-			drag_accum_x = total_dx - idx;
-			drag_accum_y = total_dy - idy;
+			map_win->Scroll(scroll_x - int(dx * zoom), scroll_y - int(dy * zoom));
 			
 			unsigned int current_time = wxGetLocalTimeMillis().GetValue();
 			unsigned int dt = current_time - last_drag_time;
@@ -843,7 +863,30 @@ void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event) {
   if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
     return;
   }
-  event.Skip();
+  
+  int mouse_map_x, mouse_map_y;
+  ScreenToMap(event.GetX(), event.GetY(), &mouse_map_x, &mouse_map_y);
+  Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+  if (tile) {
+    bool has_spawn = (tile->spawn != nullptr && g_settings.getInteger(Config::SHOW_SPAWNS));
+    bool has_creature = (tile->creature != nullptr && g_settings.getInteger(Config::SHOW_CREATURES));
+    Item* top_item = tile->getTopItem();
+    if (top_item == tile->ground) {
+      top_item = nullptr;
+    }
+    
+    if (has_spawn || has_creature || top_item) {
+      editor.selection.start(Selection::INTERNAL);
+      editor.selection.clear();
+      editor.selection.finish(Selection::INTERNAL);
+      
+      last_click_map_x = mouse_map_x;
+      last_click_map_y = mouse_map_y;
+      
+      wxCommandEvent dummy;
+      OnProperties(dummy);
+    }
+  }
 }
 
 void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
@@ -855,8 +898,6 @@ void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
 		screendragging = true;
 		drag_start_x = event.GetX();
 		drag_start_y = event.GetY();
-		drag_accum_x = 0.0;
-		drag_accum_y = 0.0;
 		SetCursor(wxCursor(wxCURSOR_HAND));
 		is_kinetic_scrolling = false;
 		drag_velocity_x = 0.0;
@@ -957,7 +998,7 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
     : wxGLCanvas(parent, wxID_ANY, attriblist, wxDefaultPosition, wxDefaultSize,
                  wxWANTS_CHARS),
       editor(editor_ref), floor(GROUND_LAYER), zoom(1.0), cursor_x(-1),
-      cursor_y(-1), dragging(false), boundbox_selection(false), dragging_selection(false), drag_start_map_x(-1), drag_start_map_y(-1),
+      cursor_y(-1), dragging(false), boundbox_selection(false), dragging_selection(false), drag_start_map_x(-1), drag_start_map_y(-1), drag_start_map_z(-1),
       screendragging(false), drawing(false), dragging_draw(false),
       replace_dragging(false), rectangle_mode(false),
       rubber_band_mode(false), rubber_start_x(-1), rubber_start_y(-1), rubber_end_x(-1), rubber_end_y(-1),
@@ -965,7 +1006,6 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
       screenshot_buffer(nullptr),
 
       drag_start_x(-1), drag_start_y(-1), drag_start_z(-1),
-      drag_accum_x(0.0), drag_accum_y(0.0),
 
       last_cursor_map_x(-1), last_cursor_map_y(-1), last_cursor_map_z(-1),
 
@@ -1380,7 +1420,11 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     }
 
     if (!is_wall) {
-      *tilestodraw = std::move(temp_tiles);
+      if (tilestodraw->empty()) {
+        *tilestodraw = std::move(temp_tiles);
+      } else {
+        tilestodraw->insert(tilestodraw->end(), temp_tiles.begin(), temp_tiles.end());
+      }
     } else {
       std::unordered_set<uint64_t> component_set;
       component_set.reserve(temp_tiles.size());
@@ -1437,6 +1481,9 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     }
 
   } else {
+    Brush *brush = g_gui.GetCurrentBrush();
+    bool is_wall = brush && brush->isWall();
+
     for (int y = -g_gui.GetBrushSize() - 1; y <= g_gui.GetBrushSize() + 1;
          y++) {
       for (int x = -g_gui.GetBrushSize() - 1; x <= g_gui.GetBrushSize() + 1;
@@ -1451,7 +1498,9 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
           if (x >= -g_gui.GetBrushSize() && x <= g_gui.GetBrushSize() &&
               y >= -g_gui.GetBrushSize() && y <= g_gui.GetBrushSize()) {
             if (tilestodraw) {
-              tilestodraw->push_back(Position(tx, ty, floor));
+              if (!is_wall || (x == -g_gui.GetBrushSize() || x == g_gui.GetBrushSize() || y == -g_gui.GetBrushSize() || y == g_gui.GetBrushSize())) {
+                tilestodraw->push_back(Position(tx, ty, floor));
+              }
             }
           }
           if (std::abs(x) - g_gui.GetBrushSize() < 2 &&
@@ -1561,7 +1610,7 @@ void AnimationTimer::Notify() {
     if (map_canvas->isDirty()) {
         map_canvas->clearDirty();
         map_canvas->Refresh();
-    } else if (g_settings.getBoolean(Config::SHOW_PREVIEW) && map_canvas->GetZoom() <= 2.0) {
+    } else if (g_settings.getBoolean(Config::SHOW_PREVIEW)) {
         map_canvas->Refresh();
     }
 }
@@ -1665,4 +1714,21 @@ void MapCanvas::UpdateMinimapTexture() {
   glBindTexture(GL_TEXTURE_2D, minimap_tex_id);
   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 180, 180, GL_RGB, GL_UNSIGNED_BYTE,
                   tex_data);
+}
+
+void MapCanvas::OnIdle(wxIdleEvent& event) {
+  static auto last_frame_time = std::chrono::steady_clock::now();
+  auto now = std::chrono::steady_clock::now();
+  double dt = std::chrono::duration<double>(now - last_frame_time).count();
+
+  bool wants_continuous = true;
+
+  if (wants_continuous) {
+    if (isDirty()) {
+      clearDirty();
+    }
+    Refresh(false);
+    last_frame_time = std::chrono::steady_clock::now();
+    event.RequestMore(true);
+  }
 }

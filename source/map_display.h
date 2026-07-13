@@ -18,6 +18,7 @@
 #ifndef RME_DISPLAY_WINDOW_H_
 #define RME_DISPLAY_WINDOW_H_
 
+#include <wx/event.h>
 #include "action.h"
 #include "creature.h"
 #include "tile.h"
@@ -40,6 +41,7 @@ public:
   // All events
   void OnPaint(wxPaintEvent &event);
   void OnEraseBackground(wxEraseEvent &event) {}
+  void OnIdle(wxIdleEvent &event);
 
   void OnMouseMove(wxMouseEvent &event);
   void OnMouseLeftRelease(wxMouseEvent &event);
@@ -166,6 +168,7 @@ protected:
   bool dragging_selection;
   int drag_start_map_x;
   int drag_start_map_y;
+  int drag_start_map_z;
   bool screendragging;
   bool isPasting() const;
   bool drawing;
@@ -239,6 +242,8 @@ protected:
   double target_zoom = 1.0;
   int zoom_focus_x = -1;
   int zoom_focus_y = -1;
+  int zoom_focus_map_x = -1;
+  int zoom_focus_map_y = -1;
   void UpdateSmoothZoom();
 
   bool IsAnimating() const;

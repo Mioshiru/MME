@@ -57,6 +57,10 @@ protected:
 	wxSpinCtrl* y_field;
 	wxSpinCtrl* z_field;
 
+	// spawn properties
+	wxSpinCtrl* spawn_interval_field;
+	wxCheckBox* apply_to_all_monsters;
+
 	// podium
 	wxCheckBox* show_outfit;
 	wxCheckBox* show_mount;

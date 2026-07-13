@@ -548,6 +548,7 @@ bool Map::addSpawn(Tile* tile) {
 				}
 			}
 		}
+		spawns.addSpawn(tile);
 		g_luaScripts.emit("spawnChange", "add", tile);
 		return true;
 	}

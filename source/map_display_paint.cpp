@@ -14,6 +14,7 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <thread>
+#include <chrono>
 #include <time.h>
 #include <wx/wfstream.h>
 #include <wx/log.h>
@@ -84,12 +85,15 @@ typedef BOOL(WINAPI* PFNWGLSWAPINTERVALEXTPROC)(int interval);
 static void SetVSync(bool enabled) {
 	static PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
 	static bool resolved = false;
+	static int current_interval = -1;
 	if (!resolved) {
 		wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
 		resolved = true;
 	}
-	if (wglSwapIntervalEXT) {
-		wglSwapIntervalEXT(enabled ? 1 : 0);
+	int target_interval = enabled ? 1 : 0;
+	if (wglSwapIntervalEXT && current_interval != target_interval) {
+		wglSwapIntervalEXT(target_interval);
+		current_interval = target_interval;
 	}
 }
 #endif
@@ -145,15 +149,31 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	PerformanceLogger::BeginFrame();
 	wxPaintDC dc(this); // Must always be created in EVT_PAINT to validate the region
 	if (!drawer) {
-		// drawer not yet initialized (very early paint event before constructor
-		// completes). Skip rendering but keep the DC alive to avoid infinite repaints.
 		PerformanceLogger::EndFrame();
 		return;
 	}
+
+	// Update physics with high-precision std::chrono dt
+	static auto last_time = std::chrono::high_resolution_clock::now();
+	auto current_time = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> elapsed = current_time - last_time;
+	double dt = elapsed.count();
+	if (dt <= 0.0 || dt > 0.1) {
+		dt = 1.0 / 60.0;
+	}
+	last_time = current_time;
+
+	if (GetParent()) {
+		static_cast<MapWindow*>(GetParent())->UpdateSmoothScroll();
+	}
+	UpdateKineticScroll();
+	UpdateSmoothZoom();
+
 	SetCurrent(*g_gui.GetGLContext(this));
 
+// Hardcode VSync to off for absolute maximum performance
 #ifdef __WINDOWS__
-	SetVSync(g_settings.getBoolean(Config::V_SYNC));
+SetVSync(false);
 #endif
 
 	static bool auto_scaled = false;
@@ -288,12 +308,13 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	int w, h;
 	GetClientSize(&w, &h);
 	io.DisplaySize = ImVec2((float)w, (float)h);
-	static wxLongLong lastTime = wxGetLocalTimeMillis();
-	wxLongLong currentTime = wxGetLocalTimeMillis();
-	float deltaTime = (currentTime - lastTime).ToLong() / 1000.0f;
+	static auto imgui_last_time = std::chrono::high_resolution_clock::now();
+	auto imgui_current_time = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<float> imgui_elapsed = imgui_current_time - imgui_last_time;
+	float deltaTime = imgui_elapsed.count();
 	if (deltaTime <= 0.0f) deltaTime = 0.00001f;
 	io.DeltaTime = deltaTime;
-	lastTime = currentTime;
+	imgui_last_time = imgui_current_time;
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui::NewFrame();
@@ -725,6 +746,8 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	editor.SendNodeRequests();
 	
 	g_gui.RefreshMinimapPanel();
+	
+	
 	PerformanceLogger::EndFrame();
 }
 

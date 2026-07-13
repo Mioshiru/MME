@@ -55,7 +55,9 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	depot_id_field(nullptr),
 	splash_type_field(nullptr),
 	text_field(nullptr),
-	description_field(nullptr) {
+	description_field(nullptr),
+	spawn_interval_field(nullptr),
+	apply_to_all_monsters(nullptr) {
 	ASSERT(edit_item);
 
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
@@ -488,7 +490,9 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	depot_id_field(nullptr),
 	splash_type_field(nullptr),
 	text_field(nullptr),
-	description_field(nullptr) {
+	description_field(nullptr),
+	spawn_interval_field(nullptr),
+	apply_to_all_monsters(nullptr) {
 	ASSERT(edit_creature);
 
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
@@ -539,7 +543,9 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	depot_id_field(nullptr),
 	splash_type_field(nullptr),
 	text_field(nullptr),
-	description_field(nullptr) {
+	description_field(nullptr),
+	spawn_interval_field(nullptr),
+	apply_to_all_monsters(nullptr) {
 	ASSERT(edit_spawn);
 
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
@@ -554,6 +560,14 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	count_field = newd wxSpinCtrl(this, wxID_ANY, i2ws(edit_spawn->getSize()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, g_settings.getInteger(Config::MAX_SPAWN_RADIUS), edit_spawn->getSize());
 	// count_field->SetSelection(-1, -1);
 	subsizer->Add(count_field, wxSizerFlags(1).Expand());
+
+	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn interval"));
+	spawn_interval_field = newd wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 86400, 60);
+	subsizer->Add(spawn_interval_field, wxSizerFlags(1).Expand());
+
+	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Apply to all monsters"));
+	apply_to_all_monsters = newd wxCheckBox(this, wxID_ANY, "");
+	subsizer->Add(apply_to_all_monsters, wxSizerFlags(1).Expand());
 
 	boxsizer->Add(subsizer, wxSizerFlags(1).Expand());
 
@@ -859,6 +873,24 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 	} else if (edit_spawn) {
 		int new_spawnsize = count_field->GetValue();
 		edit_spawn->setSize(new_spawnsize);
+
+		if (apply_to_all_monsters && apply_to_all_monsters->IsChecked()) {
+			int interval = spawn_interval_field->GetValue();
+			Position spawn_pos = edit_tile->getPosition();
+			int radius = new_spawnsize;
+			
+			for (int y = spawn_pos.y - radius; y <= spawn_pos.y + radius; ++y) {
+				for (int x = spawn_pos.x - radius; x <= spawn_pos.x + radius; ++x) {
+					Tile* tile = const_cast<Map*>(edit_map)->getTile(x, y, spawn_pos.z);
+					if (tile && tile->creature) {
+						tile->creature->setSpawnTime(interval);
+						if (tile->getLocation() && tile->getLocation()->qtree_node) {
+							tile->getLocation()->qtree_node->markDirty(spawn_pos.z);
+						}
+					}
+				}
+			}
+		}
 	}
 	EndModal(1);
 }

@@ -40,6 +40,7 @@ void GUI::LoadPerspective() {
 
         wxAuiPaneInfo &info = aui_manager->GetPane(palette);
         aui_manager->LoadPaneInfo(wxstr(name), info);
+        info.MinSize(wxSize(255, 200)); // Enforce correct min size even if old layout was loaded
 
         if (info.IsFloatable()) {
           bool offscreen = true;

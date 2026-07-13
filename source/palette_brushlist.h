@@ -143,6 +143,7 @@ public:
 	Brush* GetSelectedBrush() const;
 	// Select the brush in the parameter, this only changes the look of the panel
 	bool SelectBrush(const Brush* whatbrush);
+	const std::vector<Brush*>& GetBrushes() const { return all_brushes; }
 
 	// Called when the window is about to be displayed
 	void OnSwitchIn();
@@ -178,6 +179,7 @@ public:
 	void LoadAllContents();
 
 	PaletteType GetType() const;
+	void DoSearch(const wxString& query);
 
 	// Sets the display type (list or icons)
 	void SetListType(BrushListType ltype);
@@ -207,8 +209,6 @@ protected:
 	BrushSizePanel* size_panel;
 	std::map<wxWindow*, Brush*> remembered_brushes;
 	wxChoice* tileset_choice;
-	wxTextCtrl* search_box;
-	BrushPanel* search_panel;
 
 	DECLARE_EVENT_TABLE();
 };
