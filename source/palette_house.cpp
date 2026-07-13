@@ -398,6 +398,7 @@ void HousePalettePanel::OnClickAddHouse(wxCommandEvent& event) {
 	}
 
 	map->houses.addHouse(new_house);
+	map->doChange();
 	house_list->Append(wxstr(new_house->getDescription()), new_house);
 	SelectHouse(house_list->FindString(wxstr(new_house->getDescription())));
 	g_gui.SelectBrush();
@@ -423,6 +424,7 @@ void HousePalettePanel::OnClickEditHouse(wxCommandEvent& event) {
 			// Something changed, change name of house
 			house_list->SetString(selection, wxstr(house->getDescription()));
 			house_list->Sort();
+			map->doChange();
 
 			// refresh house list for town
 			SelectTown(town_choice->GetSelection());
@@ -440,6 +442,7 @@ void HousePalettePanel::OnClickRemoveHouse(wxCommandEvent& event) {
 	if (selection != wxNOT_FOUND && (size_t)selection < house_list->GetCount()) {
 		House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
 		map->houses.removeHouse(house);
+		map->doChange();
 		house_list->Delete(selection);
 		refresh_timer.Start(300, true);
 

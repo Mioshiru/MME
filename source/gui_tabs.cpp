@@ -15,7 +15,16 @@ void GUI::SaveCurrentMap(FileName filename, bool showdialog) {
 	if (mapTab) {
 		Editor* editor = mapTab->GetEditor();
 		if (editor) {
-			editor->saveMap(filename, showdialog);
+			FileName fn = filename;
+			if (!fn.IsOk() && !editor->map.hasFile()) {
+				wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_LOAD_FILE_WILDCARD_OTGZ : MAP_LOAD_FILE_WILDCARD;
+				wxFileDialog dlg(root, "Save Map As...", "", "", wildcard, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+				if (dlg.ShowModal() != wxID_OK) {
+					return;
+				}
+				fn = FileName(dlg.GetPath());
+			}
+			editor->saveMap(fn, showdialog);
 			const std::string& fname = editor->map.getFilename();
 			const Position& position = mapTab->GetScreenCenterPosition();
 			std::ostringstream stream; stream << position;

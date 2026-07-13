@@ -98,9 +98,31 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 	wxSpinCtrl* unique_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getUniqueID()), wxDefaultPosition, wxSize(-1, 20), wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getUniqueID());
 	gridsizer->Add(unique_id_field, wxSizerFlags(1).Expand());
 
+	Town* clicked_town = nullptr;
+	if (edit_tile && edit_map) {
+		Position click_pos = edit_tile->getPosition();
+		for (const auto& pair : edit_map->towns) {
+			if (pair.second->getTemplePosition() == click_pos) {
+				clicked_town = pair.second;
+				break;
+			}
+		}
+	}
+
+	wxString town_text_val = "None";
+	if (clicked_town) {
+		town_text_val = wxString::Format("%d - %s", clicked_town->getID(), wxstr(clicked_town->getName()));
+	}
+
 	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Town"));
-	wxButton* town_btn = newd wxButton(panel, ITEM_PROPERTIES_TOWN_BTN, "Town...");
-	gridsizer->Add(town_btn, wxSizerFlags(0));
+
+	wxSizer* town_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	wxStaticText* town_lbl = newd wxStaticText(panel, wxID_ANY, town_text_val);
+	town_sizer->Add(town_lbl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+	wxButton* town_btn = newd wxButton(panel, ITEM_PROPERTIES_TOWN_BTN, "Edit Towns...");
+	town_sizer->Add(town_btn, 0, wxALIGN_CENTER_VERTICAL);
+
+	gridsizer->Add(town_sizer, wxSizerFlags(0));
 
 	panel->SetSizerAndFit(gridsizer);
 
@@ -364,6 +386,7 @@ void PropertiesWindow::OnClickTown(wxCommandEvent&) {
 		if (tile) {
 			tile->getLocation()->increaseTownCount();
 		}
+		map->doChange();
 	} else {
 		clicked_town->setTemplePosition(click_pos);
 	}

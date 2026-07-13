@@ -134,6 +134,12 @@ int Tile::size() const {
 			++sz;
 		}
 	}
+	if (mapflags != 0) {
+		++sz;
+	}
+	if (house_id != 0) {
+		++sz;
+	}
 	return sz;
 }
 

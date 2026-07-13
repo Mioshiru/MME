@@ -870,7 +870,7 @@ void MainMenuBar::OnOpenRecent(wxCommandEvent& event) {
 }
 
 void MainMenuBar::OnOpen(wxCommandEvent& WXUNUSED(event)) {
-	g_gui.OpenMap();
+	g_gui.ShowWelcomeDialog(wxNullBitmap);
 }
 
 void MainMenuBar::OnClose(wxCommandEvent& WXUNUSED(event)) {

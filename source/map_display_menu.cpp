@@ -741,6 +741,7 @@ void MapCanvas::OnCreateTown(wxCommandEvent& WXUNUSED(event)) {
 	if (tile) {
 		tile->getLocation()->increaseTownCount();
 	}
+	editor.map.doChange();
 
 	wxDialog* town_dialog = newd EditTownsDialog(static_cast<wxWindow*>(GetParent()), editor, new_town->getID());
 	town_dialog->ShowModal();

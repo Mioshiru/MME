@@ -205,23 +205,21 @@ bool MapEditor::saveMap(FileName filename, bool show_dialog) {
 		save_as = c1 != c2;
 	}
 
-	// If not named yet, propagate the file name to the auxilliary files
-	if (map.unnamed) {
-		FileName _name(filename);
-		_name.SetExt("xml");
-
-		_name.SetName(filename.GetName() + "-spawn");
-		map.spawnfile = nstr(_name.GetFullName());
-		_name.SetName(filename.GetName() + "-house");
-		map.housefile = nstr(_name.GetFullName());
-
-		map.unnamed = false;
-	}
-
 	// File object to convert between local paths etc.
 	FileName converter;
 	converter.Assign(wxstr(savefile));
 	std::string map_path = nstr(converter.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME));
+
+	// Propagate the file name to the auxilliary files
+	if (save_as || map.filename.empty() || map.spawnfile.empty() || map.spawnfile.find("NewWorld") != std::string::npos || map.spawnfile.find("unnamed") != std::string::npos) {
+		FileName _name(converter);
+		_name.SetExt("xml");
+
+		_name.SetName(converter.GetName() + "-spawn");
+		map.spawnfile = nstr(_name.GetFullName());
+		_name.SetName(converter.GetName() + "-house");
+		map.housefile = nstr(_name.GetFullName());
+	}
 
 	// Make temporary backups
 	// converter.Assign(wxstr(savefile));
@@ -1954,6 +1952,32 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 			addAction(snapshot_action, 2);
 		} else {
 			actionQueue->addBatch(batch, 2);
+		}
+	} else if (brush->isHouseExit()) {
+		HouseExitBrush* house_exit_brush = brush->asHouseExit();
+		House* house = map.houses.getHouse(house_exit_brush->getHouseID());
+		if (house && tilestodraw.size() > 0) {
+			Position pos = tilestodraw.front();
+			if (house_exit_brush->canDraw(&map, pos)) {
+				BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
+				Action* action = actionQueue->createAction(batch);
+				action->addChange(Change::Create(house, pos));
+				batch->addAndCommitAction(action);
+				addBatch(batch, 2);
+			}
+		}
+	} else if (brush->isWaypoint()) {
+		WaypointBrush* waypoint_brush = brush->asWaypoint();
+		Waypoint* waypoint = map.waypoints.getWaypoint(waypoint_brush->getWaypoint());
+		if (waypoint && tilestodraw.size() > 0) {
+			Position pos = tilestodraw.front();
+			if (waypoint_brush->canDraw(&map, pos) && waypoint->pos != pos) {
+				BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
+				Action* action = actionQueue->createAction(batch);
+				action->addChange(Change::Create(waypoint, pos));
+				batch->addAndCommitAction(action);
+				addBatch(batch, 2);
+			}
 		}
 	} else if (brush->isDoodad()) {
 		if (dodraw) {
