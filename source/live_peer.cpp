@@ -97,11 +97,13 @@ void LivePeer::receive(uint32_t packetSize) {
               wxString() + getHostName() + ": Could not receive packet[size: " +
               std::to_string(bytesReceived) + "], disconnecting client.");
         } else {
-          wxTheApp->CallAfter([this]() {
+          NetworkMessage msg = std::move(readMessage);
+          readMessage.clear();
+          wxTheApp->CallAfter([this, msg = std::move(msg)]() mutable {
             if (connected) {
-              parseEditorPacket(std::move(readMessage));
+              parseEditorPacket(msg);
             } else {
-              parseLoginPacket(std::move(readMessage));
+              parseLoginPacket(msg);
             }
             receiveHeader();
           });
@@ -233,6 +235,7 @@ void LivePeer::parseHello(NetworkMessage &message) {
 
   uint32_t clientVersion = message.read<uint32_t>();
   std::string nickname = message.read<std::string>();
+  std::string password = message.read<std::string>();
 
   name = wxString(nickname.c_str(), wxConvUTF8);
   g_gui.SetStatusText(name + " joined the session!");

@@ -237,8 +237,10 @@ void LiveClient::receive(uint32_t packetSize) {
 		} else if (bytesReceived < readMessage.buffer.size() - 4) {
 			logMessage(wxString() + getHostName() + ": Could not receive packet[size: " + std::to_string(bytesReceived) + "], disconnecting client.");
 		} else {
-			wxTheApp->CallAfter([this]() {
-				parsePacket(std::move(readMessage));
+			NetworkMessage msg = std::move(readMessage);
+			readMessage.clear();
+			wxTheApp->CallAfter([this, msg = std::move(msg)]() mutable {
+				parsePacket(msg);
 				receiveHeader();
 			});
 		}
