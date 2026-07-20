@@ -54,6 +54,7 @@ public:
 
   void OnKeyDown(wxKeyEvent &event);
   void OnKeyUp(wxKeyEvent &event);
+  void OnChar(wxKeyEvent &event);
   void OnWheel(wxMouseEvent &event);
   void OnGainMouse(wxMouseEvent &event);
   void OnLoseMouse(wxMouseEvent &event);

@@ -64,8 +64,10 @@ void GUI::SendChat(const std::string& text) {
 	if (text.empty()) return;
 	Editor* ed = GetCurrentEditor();
 	if (ed && ed->IsLive()) {
-		if (ed->IsLiveServer()) ed->GetLiveServer()->broadcastChat("Host", wxstr(text));
-		else {
+		if (ed->IsLiveServer()) {
+			ed->GetLiveServer()->broadcastChat("Host", wxstr(text));
+			AddChatMessage("Host", text);
+		} else {
             ed->GetLiveClient()->sendChat(wxstr(text));
             AddChatMessage("Me", text);
 		}

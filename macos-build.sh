@@ -113,6 +113,8 @@ fi
 
 cmake -G "${GENERATOR}" -S "${PROJECT_ROOT}" -B "${BUILD_DIR}" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DVCPKG_BUILD_TYPE=release \
+    -DVCPKG_INSTALLED_DIR="${PROJECT_ROOT}/.vcpkg_cache" \
     -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
     -DVCPKG_TARGET_TRIPLET="${TRIPLET}" \
     -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" >> "${LOG_FILE}" 2>&1
@@ -161,6 +163,10 @@ for D in data brushes scripts extensions icons; do
     fi
 done
 mkdir -p "${BUILD_DIR}/Saves"
+
+# Clean build metadata & development artifacts from Release folder
+rm -rf "${BUILD_DIR}/CMakeFiles" "${BUILD_DIR}/vcpkg_installed" "${BUILD_DIR}/rme.dir" "${BUILD_DIR}/ALL_BUILD.dir" "${BUILD_DIR}/ZERO_CHECK.dir" "${BUILD_DIR}/.ninja_deps" "${BUILD_DIR}/.ninja_log" "${BUILD_DIR}/build.ninja" "${BUILD_DIR}/rules.ninja" "${BUILD_DIR}/CMakeCache.txt" "${BUILD_DIR}/cmake_install.cmake" "${BUILD_DIR}/vcpkg-manifest-install.log"
+find "${BUILD_DIR}" -type f \( -name "*.o" -o -name "*.a" -o -name "*.log" \) -delete 2>/dev/null || true
 
 echo -e "  ${GREEN}Deployment OK${RESET}"
 

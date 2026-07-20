@@ -118,6 +118,7 @@ bool GUI::LoadVersion(ClientVersionID version, wxString& error, wxArrayString& w
 }
 
 bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings) {
+	ScopedAction action("GUI::LoadDataFiles");
 	FileName data_path = getLoadedVersion()->getDataPath();
 	FileName client_path = getLoadedVersion()->getClientPath();
 	FileName extension_path = GetExtensionsDirectory();
@@ -167,6 +168,7 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings) {
 }
 
 void GUI::UnloadVersion() {
+	ScopedAction action("GUI::UnloadVersion");
 	UnnamedRenderingLock();
 	DestroyPalettes();
 	gfx.clear();
@@ -185,9 +187,11 @@ void GUI::UnloadVersion() {
 		g_brushes.clear();
 		g_items.clear();
 		gfx.clear();
-		FileName cdb = getLoadedVersion()->getLocalDataPath();
-		cdb.SetFullName("creatures.xml");
-		g_creatures.saveToXML(cdb);
+		if (ClientVersion* cv = getLoadedVersion()) {
+			FileName cdb = cv->getLocalDataPath();
+			cdb.SetFullName("creatures.xml");
+			g_creatures.saveToXML(cdb);
+		}
 		g_creatures.clear();
 		loaded_version = CLIENT_VERSION_NONE;
 	}

@@ -1939,10 +1939,8 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		if (dodraw) {
 			for (PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
 				drawInternal(*it, alt, dodraw);
-				if (tilestodraw.size() > 1) {
-					g_gui.FillDoodadPreviewBuffer();
-				}
 			}
+			g_gui.FillDoodadPreviewBuffer();
 		} else {
 			BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
 			Action* action = actionQueue->createAction(batch);

@@ -120,6 +120,7 @@
 		</menu>
 		<menu name="Overlays &amp; Filters">
 			<item name="Show tooltips" action="SHOW_TOOLTIPS" help="Show tooltips."/>
+			<item name="Show text bubbles" action="SHOW_TEXT_BUBBLES" help="Show text bubbles for teleport destinations, sign texts, and item attributes."/>
 			<item name="Show grid" action="SHOW_GRID" help="Shows a grid over all items."/>
 			<item name="Grid intensity: subtle" action="GRID_INTENSITY_SUBTLE" help="Low-contrast grid for reduced eye strain."/>
 			<item name="Grid intensity: visible" action="GRID_INTENSITY_VISIBLE" help="Stronger grid visibility while keeping a dark theme."/>
@@ -158,6 +159,12 @@
 		<separator/>
 		<item name="Properties..." hotkey="Ctrl+P" action="MAP_PROPERTIES" help="Show and change the map properties."/>
 		<item name="Statistics" hotkey="F8" action="MAP_STATISTICS" help="Show map statistics."/>
+	</menu>
+
+	<menu name="Multiplayer">
+		<item name="Join" action="LIVE_JOIN" help="Join an existing live multiplayer session."/>
+		<item name="Host" action="LIVE_START" help="Host a live multiplayer session."/>
+		<item name="Help" action="LIVE_HELP" help="How to host a multiplayer session."/>
 	</menu>
 
 	<menu name="Tools">

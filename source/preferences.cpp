@@ -27,6 +27,8 @@
 #include <wx/sstream.h>
 #include <wx/url.h>
 
+#include <cpr/cpr.h>
+
 #include "style_manager.h"
 
 #include "settings.h"
@@ -56,29 +58,20 @@ namespace {
 	}
 
 	bool FetchUrlText(const wxString& urlString, wxString& response, wxString& errorMessage) {
-		wxURL url(urlString);
-		if (url.GetError() != wxURL_NOERR) {
-			errorMessage = "Could not initialize the network request.";
-			return false;
+		std::string url = urlString.ToStdString();
+		auto r = cpr::Get(cpr::Url{url}, cpr::Timeout{5000});
+		if (r.status_code == 200) {
+			response = wxString::FromUTF8(r.text.c_str());
+			response.Trim(true);
+			response.Trim(false);
+			if (response.empty()) {
+				errorMessage = "The network service returned an empty response.";
+				return false;
+			}
+			return true;
 		}
-
-		std::unique_ptr<wxInputStream> stream(url.GetInputStream());
-		if (!stream || !stream->IsOk()) {
-			errorMessage = "Could not contact the network service.";
-			return false;
-		}
-
-		wxStringOutputStream output;
-		stream->Read(output);
-		response = output.GetString();
-		response.Trim(true);
-		response.Trim(false);
-		if (response.empty()) {
-			errorMessage = "The network service returned an empty response.";
-			return false;
-		}
-
-		return true;
+		errorMessage = wxString::Format("Network error (code %d): %s", r.status_code, r.error.message);
+		return false;
 	}
 
 	bool GetExternalIpAddress(wxString& ipAddress, wxString& errorMessage) {

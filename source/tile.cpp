@@ -264,6 +264,19 @@ void Tile::addItem(Item* item) {
 		return;
 	}
 
+	if (!item->isStackable()) {
+		bool item_fc = g_items[item->getID()].isFloorChange();
+		for (ItemVector::iterator iter = items.begin(); iter != items.end();) {
+			bool iter_fc = g_items[(*iter)->getID()].isFloorChange();
+			if (*iter != item && ((*iter)->getID() == item->getID() || (item_fc && iter_fc))) {
+				delete *iter;
+				iter = items.erase(iter);
+			} else {
+				++iter;
+			}
+		}
+	}
+
 	ItemVector::iterator it;
 
 	uint16_t gid = item->getGroundEquivalent();

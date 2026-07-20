@@ -1,0 +1,17 @@
+x64-windows/
+x64-windows/include/
+x64-windows/include/mgnlibs/
+x64-windows/include/mgnlibs/app.h
+x64-windows/include/mgnlibs/assetsys.h
+x64-windows/include/mgnlibs/hashtable.h
+x64-windows/include/mgnlibs/http.h
+x64-windows/include/mgnlibs/ini.h
+x64-windows/include/mgnlibs/rnd.h
+x64-windows/include/mgnlibs/strpool.h
+x64-windows/include/mgnlibs/sysfont.h
+x64-windows/include/mgnlibs/thread.h
+x64-windows/share/
+x64-windows/share/mgnlibs/
+x64-windows/share/mgnlibs/copyright
+x64-windows/share/mgnlibs/vcpkg.spdx.json
+x64-windows/share/mgnlibs/vcpkg_abi_info.txt

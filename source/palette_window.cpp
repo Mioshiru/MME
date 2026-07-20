@@ -320,7 +320,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	minimap_panel(nullptr),
 	palette_choice(nullptr),
 	search_box(nullptr) {
-	SetMinSize(wxSize(255, 250));
+	SetMinSize(wxSize(170, 250));
 	SetBackgroundColour(wxColor(10, 20, 35));
 
 	palette_choice = newd wxChoice(this, wxID_ANY);
@@ -611,7 +611,9 @@ void PaletteWindow::LoadCurrentContents() {
 		return;
 	}
 	PalettePanel* panel = dynamic_cast<PalettePanel*>(choicebook->GetCurrentPage());
-	panel->LoadCurrentContents();
+	if (panel) {
+		panel->LoadCurrentContents();
+	}
 	Fit();
 	Refresh();
 	Update();

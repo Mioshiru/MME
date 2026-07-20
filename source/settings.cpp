@@ -227,6 +227,7 @@ void Settings::IO(IOMode mode) {
 	Int(SHOW_HOUSES, 1);
 	Int(SHOW_BLOCKING, 0);
 	Int(SHOW_TOOLTIPS, 1);
+	Int(SHOW_TEXT_BUBBLES, 1);
 	Int(SHOW_ONLY_TILEFLAGS, 0);
 	Int(SHOW_ONLY_MODIFIED_TILES, 0);
 	Int(SHOW_PREVIEW, 1);
@@ -247,6 +248,8 @@ void Settings::IO(IOMode mode) {
 	String(RECENT_FILES, "");
 	Int(WORKER_THREADS, 8); // Standardmäßig mehr Threads für QuadTree & Minimap
 	Int(MULTIPLAYER_PORT, 3074);
+	String(MULTIPLAYER_FAVORITES, "");
+	String(MULTIPLAYER_NAME, "Player");
 	Int(MERGE_MOVE, 0);
 	Int(MERGE_PASTE, 0);
 	Int(UNDO_SIZE, 3); // Standardmäßig 3 Schritte
@@ -344,7 +347,7 @@ void Settings::IO(IOMode mode) {
 	Int(WINDOW_HEIGHT, 500);
 	Int(WINDOW_WIDTH, 700);
 	Int(WINDOW_MAXIMIZED, 0);
-	Int(WELCOME_DIALOG, 0);
+	Int(WELCOME_DIALOG, 1);
 	Int(RENDER_BACKEND, 0); 
 	Int(UI_THEME, 0);
 	// Shader & Gaming Options

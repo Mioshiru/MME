@@ -7,6 +7,7 @@
 #include <wx/display.h>
 
 void GUI::LoadPerspective() {
+  ScopedAction action("GUI::LoadPerspective");
   if (!IsVersionLoaded()) {
     if (g_settings.getInteger(Config::WINDOW_MAXIMIZED)) {
       root->Maximize();

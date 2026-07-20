@@ -118,6 +118,7 @@ namespace MenuBar {
 		SHOW_HOUSES,
 		SHOW_PATHING,
 		SHOW_TOOLTIPS,
+		SHOW_TEXT_BUBBLES,
 		SHOW_PREVIEW,
 		SHOW_FPS,
 		SHOW_WALL_HOOKS,
@@ -129,6 +130,7 @@ namespace MenuBar {
 		LIVE_START,
 		LIVE_JOIN,
 		LIVE_CLOSE,
+		LIVE_HELP,
 		SELECT_TERRAIN,
 		SELECT_DOODAD,
 		SELECT_ITEM,
@@ -280,6 +282,7 @@ public:
 	// Network menu
 	void OnJoinLive(wxCommandEvent& event);
 	void OnCloseLive(wxCommandEvent& event);
+	void OnHelpLive(wxCommandEvent& event);
 
 	// Window Menu
 	void OnMinimapWindow(wxCommandEvent& event);

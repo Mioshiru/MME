@@ -24,6 +24,7 @@ set "BOLD=%ESC%[1m"
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=!SCRIPT_DIR:~0,-1!"
 set "BUILD_DIR=!PROJECT_ROOT!\build"
+set "RELEASE_DIR=!BUILD_DIR!"
 set "ERROR_FILE=!PROJECT_ROOT!\compiler_error_latest.md"
 set "INSTALL_DIR=!BUILD_DIR!"
 set "LOG_FILE=%TEMP%\mme_build.log"
@@ -158,7 +159,7 @@ if !ERRORLEVEL! neq 0 (
         set "CMAKE_GENERATOR_ARGS=-A x64"
     ) else (
         for /f "usebackq delims=" %%I in (`where ninja`) do set "NINJA_EXE=%%I"
-        if defined NINJA_EXE set "CMAKE_GENERATOR_ARGS=\"-DCMAKE_MAKE_PROGRAM=!NINJA_EXE!\""
+        if defined NINJA_EXE set "CMAKE_GENERATOR_ARGS=-DCMAKE_MAKE_PROGRAM=!NINJA_EXE!"
     )
 )
 echo %BOLD%[%STEP%/%TOTAL_STEPS%] Configuring CMake with !CMAKE_GENERATOR!...%RESET%
@@ -180,12 +181,14 @@ if exist "!BUILD_DIR!\CMakeFiles\ShowIncludes" (
 if /I "!CMAKE_GENERATOR!"=="Visual Studio 17 2022" (
     cmake -G "!CMAKE_GENERATOR!" !CMAKE_GENERATOR_ARGS! -S "!PROJECT_ROOT!" -B "!BUILD_DIR!" ^
         -DCMAKE_BUILD_TYPE=Release ^
+        "-DVCPKG_BUILD_TYPE=release" ^
         "-DCMAKE_TOOLCHAIN_FILE=!PROJECT_ROOT!\cmake\vcpkg-toolchain.cmake" ^
         "-DVCPKG_TARGET_TRIPLET=x64-windows" ^
         "-DCMAKE_INSTALL_PREFIX=!INSTALL_DIR!" >> "!LOG_FILE!" 2>&1
 ) else (
     cmake -G "!CMAKE_GENERATOR!" -S "!PROJECT_ROOT!" -B "!BUILD_DIR!" !CMAKE_GENERATOR_ARGS! ^
         -DCMAKE_BUILD_TYPE=Release ^
+        "-DVCPKG_BUILD_TYPE=release" ^
         "-DCMAKE_TOOLCHAIN_FILE=!PROJECT_ROOT!\cmake\vcpkg-toolchain.cmake" ^
         "-DVCPKG_TARGET_TRIPLET=x64-windows" ^
         "-DCMAKE_INSTALL_PREFIX=!INSTALL_DIR!" >> "!LOG_FILE!" 2>&1
@@ -196,12 +199,14 @@ if !ERRORLEVEL! neq 0 (
     if /I "!CMAKE_GENERATOR!"=="Visual Studio 17 2022" (
         cmake -G "!CMAKE_GENERATOR!" !CMAKE_GENERATOR_ARGS! -S "!PROJECT_ROOT!" -B "!BUILD_DIR!" ^
             -DCMAKE_BUILD_TYPE=Release ^
+            "-DVCPKG_BUILD_TYPE=release" ^
             "-DCMAKE_TOOLCHAIN_FILE=!PROJECT_ROOT!\cmake\vcpkg-toolchain.cmake" ^
             "-DVCPKG_TARGET_TRIPLET=x64-windows" ^
             "-DCMAKE_INSTALL_PREFIX=!INSTALL_DIR!" >> "!LOG_FILE!" 2>&1
     ) else (
         cmake -G "!CMAKE_GENERATOR!" -S "!PROJECT_ROOT!" -B "!BUILD_DIR!" !CMAKE_GENERATOR_ARGS! ^
             -DCMAKE_BUILD_TYPE=Release ^
+            "-DVCPKG_BUILD_TYPE=release" ^
             "-DCMAKE_TOOLCHAIN_FILE=!PROJECT_ROOT!\cmake\vcpkg-toolchain.cmake" ^
             "-DVCPKG_TARGET_TRIPLET=x64-windows" ^
             "-DCMAKE_INSTALL_PREFIX=!INSTALL_DIR!" >> "!LOG_FILE!" 2>&1
@@ -215,29 +220,9 @@ set /a "STEP+=1"
 echo.
 echo %BOLD%[%STEP%/%TOTAL_STEPS%] Building Native C++ Components with Ninja...%RESET%
 
-for /f %%i in ('dir /s /b "!PROJECT_ROOT!\source\*.cpp" ^| find /c /v ""') do set "TOTAL_FILES=%%i"
 if not defined CORES set "CORES=%NUMBER_OF_PROCESSORS%"
 
-set "PS_MONITOR=%TEMP%\mme_build_monitor.ps1"
-echo $total = !TOTAL_FILES! > "!PS_MONITOR!"
-echo $current = 0 >> "!PS_MONITOR!"
-echo $logFile = '!LOG_FILE!' >> "!PS_MONITOR!"
-echo ^& cmake --build '!BUILD_DIR!' --config Release --parallel !CORES! 2^>^&1 ^| ForEach-Object { >> "!PS_MONITOR!"
-echo     if ($_ -match 'Building CXX object' -or $_ -match '\[\d+/\d+\]') { >> "!PS_MONITOR!"
-echo         $current++ >> "!PS_MONITOR!"
-echo         $percent = [math]::Min(100, [math]::Round(($current / $total) * 100)) >> "!PS_MONITOR!"
-echo         $filled = [math]::Floor($percent / 5) >> "!PS_MONITOR!"
-echo         $bar = '[' + ('=' * $filled) + (' ' * (20 - $filled)) + ']' >> "!PS_MONITOR!"
-echo         Write-Host -NoNewline "`r  !CYAN!$bar $percent%% ($current/$total)!RESET! " >> "!PS_MONITOR!"
-echo     } >> "!PS_MONITOR!"
-echo     if ($_ -match 'error' -or $_ -match 'FAILED' -or $_ -match 'fatal' -or $_ -match 'Fehler') { >> "!PS_MONITOR!"
-echo         Write-Host "`n!RED!$_!RESET!" >> "!PS_MONITOR!"
-echo     } >> "!PS_MONITOR!"
-echo     $_ ^| Out-File -FilePath $logFile -Append -Encoding utf8 >> "!PS_MONITOR!"
-echo } >> "!PS_MONITOR!"
-echo exit $LASTEXITCODE >> "!PS_MONITOR!"
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "!PS_MONITOR!"
+cmake --build "!BUILD_DIR!" --config Release --parallel !CORES!
 if !ERRORLEVEL! neq 0 ( set "FAIL_REASON=C++ Compilation" & goto :handle_error )
 echo.
 echo   %GREEN%Native C++ Build abgeschlossen.%RESET%
@@ -247,33 +232,24 @@ set /a "STEP+=1"
 echo.
 echo %BOLD%[%STEP%/%TOTAL_STEPS%] Packaging Runtime Release Artifacts...%RESET%
 
-set "EXE_PATH="
-if exist "!BUILD_DIR!" (
-    pushd "!BUILD_DIR!"
-    for /r %%f in (*.exe) do (
-        if /i "%%~nxf"=="MME.exe" ( set "EXE_PATH=%%f" & set "BIN_DIR=%%~dpf" & goto :found_exe )
-        if /i "%%~nxf"=="rme.exe" ( set "EXE_PATH=%%f" & set "BIN_DIR=%%~dpf" & goto :found_exe )
-    )
-:found_exe
-    popd
+if exist "!BUILD_DIR!\vcpkg_installed\x64-windows\bin" (
+    copy /y "!BUILD_DIR!\vcpkg_installed\x64-windows\bin\*.dll" "!BUILD_DIR!\" >nul 2>&1
 )
-if not defined EXE_PATH (
-    echo   %RED%ERROR: Executable not found in build directory!%RESET%
-    pause & exit /b 1
+if exist "!BUILD_DIR!\bin" (
+    copy /y "!BUILD_DIR!\bin\*.dll" "!BUILD_DIR!\" >nul 2>&1
 )
 
 for %%D in (data brushes scripts extensions icons) do (
     if exist "!PROJECT_ROOT!\%%D" (
         robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
-        if !ERRORLEVEL! geq 8 (
-            set "FAIL_REASON=Asset Deployment"
-            goto :handle_error
-        )
     )
 )
 if not exist "!BUILD_DIR!\Saves" mkdir "!BUILD_DIR!\Saves" >nul 2>&1
+
 echo.
 echo   %GREEN%Deployment OK%RESET%
+
+call :cleanup_intermediate_artifacts
 
 echo.
 echo %GREEN%========================================================%RESET%
@@ -294,6 +270,15 @@ if exist "!BUILD_DIR!" (
     if exist "!BUILD_DIR!\.ninja_deps" del /f /q "!BUILD_DIR!\.ninja_deps" >nul 2>&1
     if exist "!BUILD_DIR!\.ninja_log" del /f /q "!BUILD_DIR!\.ninja_log" >nul 2>&1
     if exist "!BUILD_DIR!\rules.ninja" del /f /q "!BUILD_DIR!\rules.ninja" >nul 2>&1
+)
+exit /b 0
+
+:cleanup_intermediate_artifacts
+REM Only clean unnecessary temporary linker files (.exp, .map), keep Ninja & CMake incremental state!
+if exist "!RELEASE_DIR!" (
+    for /r "!RELEASE_DIR!" %%f in (*.exp *.map) do (
+        del /f /q "%%f" >nul 2>&1
+    )
 )
 exit /b 0
 

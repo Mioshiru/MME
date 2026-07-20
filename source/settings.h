@@ -54,6 +54,7 @@ namespace Config {
 		SHOW_ITEMS,
 		SHOW_BLOCKING,
 		SHOW_TOOLTIPS,
+		SHOW_TEXT_BUBBLES,
 		SHOW_PREVIEW,
 		SHOW_WALL_HOOKS,
 		SHOW_AS_MINIMAP,
@@ -204,6 +205,8 @@ namespace Config {
 		AUTO_SAVE_ENABLED,  // Auto-Save on/off (0 or 1)
 		AUTO_SAVE_INTERVAL, // Auto-Save interval in minutes (5-40)
 		MULTIPLAYER_PORT,
+		MULTIPLAYER_FAVORITES,
+		MULTIPLAYER_NAME,
 		UI_SCALE,
 		LAST,
 	};

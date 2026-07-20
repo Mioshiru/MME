@@ -131,7 +131,7 @@ EditorTab* GUI::GetCurrentTab() {
 }
 
 bool GUI::IsEditorOpen() const {
-	return tabbook && tabbook->GetTabCount() > 0;
+	return GetCurrentMapTab() != nullptr;
 }
 
 EditorTab* GUI::GetTab(int idx) {
@@ -197,7 +197,7 @@ wxGLContext* GUI::GetGLContext(wxGLCanvas* win) {
 	return OGLContext;
 }
 
-double GUI::GetCurrentZoom() {
+double GUI::GetCurrentZoom() const {
 	MapTab* mapTab = GetCurrentMapTab();
 	if (mapTab && mapTab->GetCanvas()) {
 		return mapTab->GetCanvas()->GetZoom();

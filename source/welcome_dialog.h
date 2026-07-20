@@ -97,4 +97,38 @@ private:
 	bool m_is_hover;
 };
 
+class wxSpinCtrl;
+class wxChoice;
+
+class JoinMultiplayerDialog : public wxDialog {
+public:
+	JoinMultiplayerDialog(wxWindow* parent);
+
+	wxString GetHostIP() const;
+	int GetHostPort() const;
+	wxString GetPlayerName() const;
+
+private:
+	void LoadFavorites();
+	void SaveFavorites();
+	void OnFavoriteSelected(wxCommandEvent& event);
+	void OnAddFavorite(wxCommandEvent& event);
+	void OnRemoveFavorite(wxCommandEvent& event);
+
+	wxTextCtrl* m_name_ctrl;
+	wxTextCtrl* m_ip_ctrl;
+	wxSpinCtrl* m_port_ctrl;
+	wxChoice* m_favorites_choice;
+	wxButton* m_add_fav_btn;
+	wxButton* m_rem_fav_btn;
+
+	struct FavoriteEntry {
+		wxString label;
+		wxString ip;
+		int port;
+		wxString name;
+	};
+	std::vector<FavoriteEntry> m_favorites;
+};
+
 #endif // WELCOME_DIALOG_H

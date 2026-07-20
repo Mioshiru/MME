@@ -130,9 +130,9 @@ void ReplaceItemsListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t index)
 	if (sprite1 && sprite2) {
 		int x = rect.GetX();
 		int y = rect.GetY();
-		sprite1->DrawTo(&dc, SPRITE_SIZE_32x32, x + 4, y + 4, rect.GetWidth(), rect.GetHeight());
+		sprite1->DrawTo(&dc, SPRITE_SIZE_32x32, x + 4, y + 4, rect.GetWidth(), rect.GetHeight(), type1.stackable);
 		dc.DrawBitmap(m_arrow_bitmap, x + 38, y + 10, true);
-		sprite2->DrawTo(&dc, SPRITE_SIZE_32x32, x + 56, y + 4, rect.GetWidth(), rect.GetHeight());
+		sprite2->DrawTo(&dc, SPRITE_SIZE_32x32, x + 56, y + 4, rect.GetWidth(), rect.GetHeight(), type2.stackable);
 		dc.DrawText(wxString::Format("Replace: %d With: %d", item.replaceId, item.withId), x + 104, y + 10);
 
 		if (item.complete) {

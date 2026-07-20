@@ -17,6 +17,12 @@
 
 #include "main.h"
 
+#include <boost/asio.hpp>
+#include <cpr/cpr.h>
+#include <thread>
+#include <algorithm>
+
+
 #include "main_menubar.h"
 #include "application.h"
 #include "preferences.h"
@@ -31,6 +37,8 @@
 #include <wx/chartype.h>
 #include <wx/clipbrd.h>
 #include <wx/sstream.h>
+#include <wx/stdpaths.h>
+#include <wx/timer.h>
 #include <wx/url.h>
 
 #include "editor.h"
@@ -52,59 +60,58 @@ namespace {
 	}
 
 	bool FetchUrlText(const wxString& urlString, wxString& response, wxString& errorMessage) {
-		wxURL url(urlString);
-		if (url.GetError() != wxURL_NOERR) {
-			errorMessage = "Could not initialize the network request.";
+		std::string url = urlString.ToStdString();
+		auto r = cpr::Get(cpr::Url{url}, cpr::Timeout{5000});
+		if (r.status_code == 200) {
+			response = wxString::FromUTF8(r.text.c_str());
+			response.Trim(true);
+			response.Trim(false);
+			return !response.empty();
+		}
+		errorMessage = wxString::Format("Network error (code %d): %s", r.status_code, r.error.message);
+		return false;
+	}
+
+	bool IsValidIPv4(const wxString& ipStr) {
+		try {
+			boost::system::error_code ec;
+			auto addr = boost::asio::ip::make_address_v4(ipStr.ToStdString(), ec);
+			return !ec;
+		} catch (...) {
 			return false;
 		}
-		std::unique_ptr<wxInputStream> stream(url.GetInputStream());
-		if (!stream || !stream->IsOk()) {
-			errorMessage = "Could not contact the network service.";
-			return false;
-		}
-		wxStringOutputStream output;
-		stream->Read(output);
-		response = output.GetString();
-		response.Trim(true);
-		response.Trim(false);
-		return !response.empty();
 	}
 
 	bool GetExternalIpAddress(wxString& ipAddress, wxString& errorMessage) {
-		if (FetchUrlText("https://portchecker.io/api/me", ipAddress, errorMessage)) {
+		wxString temp;
+		if (FetchUrlText("https://api4.ipify.org", temp, errorMessage) && IsValidIPv4(temp)) {
+			ipAddress = temp;
 			return true;
 		}
-		return FetchUrlText("https://api.ipify.org", ipAddress, errorMessage);
+		if (FetchUrlText("https://ipv4.icanhazip.com", temp, errorMessage) && IsValidIPv4(temp)) {
+			ipAddress = temp;
+			return true;
+		}
+		if (FetchUrlText("https://v4.ident.me", temp, errorMessage) && IsValidIPv4(temp)) {
+			ipAddress = temp;
+			return true;
+		}
+		if (FetchUrlText("https://portchecker.io/api/me", temp, errorMessage) && IsValidIPv4(temp)) {
+			ipAddress = temp;
+			return true;
+		}
+		return false;
 	}
 
-	bool TryCreateWindowsUpnpMapping(int port, wxString& message) {
-#ifdef __WINDOWS__
-		wxArrayString output;
-		wxArrayString errors;
-		const wxString command = wxString::Format(
-			"powershell -NoProfile -NonInteractive -Command \"$ip = ([System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) | Where-Object { $_.AddressFamily -eq 'InterNetwork' -and -not $_.IPAddressToString.StartsWith('169.254.') } | Select-Object -First 1 -ExpandProperty IPAddressToString); if (-not $ip) { Write-Output 'No local IPv4 address found.'; exit 4 }; $nat = New-Object -ComObject HNetCfg.NATUPnP; $maps = $nat.StaticPortMappingCollection; if (-not $maps) { Write-Output 'UPnP is not available on this router.'; exit 2 }; $maps.Add(%d, 'TCP', %d, $ip, $true, 'Remere Map Editor'); Write-Output ('Mapped TCP %d to ' + $ip)\"",
-			port,
-			port,
-			port
-		);
-		long exitCode = wxExecute(command, output, errors, wxEXEC_SYNC);
-		if (exitCode == 0 && !output.empty()) {
-			message = output[0];
-			return true;
-		}
-		if (!output.empty()) {
-			message = output[0];
-		} else if (!errors.empty()) {
-			message = errors[0];
-		} else {
-			message = "UPnP port mapping failed.";
-		}
-		return false;
-#else
-		message = "Automatic router mapping is currently implemented only for Windows hosts.";
-		return false;
-#endif
-	}
+
+
+
+
+
+
+
+
+
 }
 
 BEGIN_EVENT_TABLE(MainMenuBar, wxEvtHandler)
@@ -224,6 +231,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(SHOW_HOUSES, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_PATHING, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_TOOLTIPS, wxITEM_CHECK, OnChangeViewSettings);
+	MAKE_ACTION(SHOW_TEXT_BUBBLES, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_PREVIEW, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_FPS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_WALL_HOOKS, wxITEM_CHECK, OnChangeViewSettings);
@@ -239,6 +247,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(LIVE_START, wxITEM_NORMAL, OnStartLive); // Intern verknüpft mit "Host"
 	MAKE_ACTION(LIVE_JOIN, wxITEM_NORMAL, OnJoinLive);   // Intern verknüpft mit "Join"
 	MAKE_ACTION(LIVE_CLOSE, wxITEM_NORMAL, OnCloseLive); // Intern verknüpft mit "Disconnect"
+	MAKE_ACTION(LIVE_HELP, wxITEM_NORMAL, OnHelpLive);
 
 	MAKE_ACTION(SELECT_TERRAIN, wxITEM_NORMAL, OnSelectTerrainPalette);
 	MAKE_ACTION(SELECT_DOODAD, wxITEM_NORMAL, OnSelectDoodadPalette);
@@ -428,7 +437,7 @@ void MainMenuBar::Update() {
 	bool is_local = has_map && !is_live;
 
 	EnableItem(CLOSE, is_local);
-	EnableItem(SAVE, is_host);
+	EnableItem(SAVE, has_map);
 	EnableItem(GENERATE_MAP, false);
 
 	EnableItem(IMPORT_MAP, is_local);
@@ -505,6 +514,7 @@ void MainMenuBar::Update() {
 	EnableItem(LIVE_START, is_local);
 	EnableItem(LIVE_JOIN, loaded);
 	EnableItem(LIVE_CLOSE, is_live);
+	EnableItem(LIVE_HELP, true);
 
 	UpdateFloorMenu();
 }
@@ -568,6 +578,7 @@ void MainMenuBar::LoadValues() {
 	CheckItem(SHOW_HOUSES, g_settings.getBoolean(Config::SHOW_HOUSES));
 	CheckItem(SHOW_PATHING, g_settings.getBoolean(Config::SHOW_BLOCKING));
 	CheckItem(SHOW_TOOLTIPS, g_settings.getBoolean(Config::SHOW_TOOLTIPS));
+	CheckItem(SHOW_TEXT_BUBBLES, g_settings.getBoolean(Config::SHOW_TEXT_BUBBLES));
 	CheckItem(SHOW_PREVIEW, g_settings.getBoolean(Config::SHOW_PREVIEW));
 	CheckItem(SHOW_FPS, g_settings.getBoolean(Config::SHOW_FPS));
 	CheckItem(SHOW_WALL_HOOKS, g_settings.getBoolean(Config::SHOW_WALL_HOOKS));
@@ -1179,12 +1190,12 @@ void MainMenuBar::OnMinimapWindow(wxCommandEvent& WXUNUSED(event)) {
 
 void MainMenuBar::OnZoomIn(wxCommandEvent& event) {
 	double zoom = g_gui.GetCurrentZoom();
-	g_gui.SetCurrentZoom(zoom - 0.1);
+	g_gui.SetCurrentZoom(zoom / 1.1);
 }
 
 void MainMenuBar::OnZoomOut(wxCommandEvent& event) {
 	double zoom = g_gui.GetCurrentZoom();
-	g_gui.SetCurrentZoom(zoom + 0.1);
+	g_gui.SetCurrentZoom(zoom * 1.1);
 }
 
 void MainMenuBar::OnZoomNormal(wxCommandEvent& event) {
@@ -1225,6 +1236,7 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event) {
 	g_settings.setInteger(Config::HIGHLIGHT_LOCKED_DOORS, IsItemChecked(MenuBar::HIGHLIGHT_LOCKED_DOORS));
 	g_settings.setInteger(Config::SHOW_BLOCKING, IsItemChecked(MenuBar::SHOW_PATHING));
 	g_settings.setInteger(Config::SHOW_TOOLTIPS, IsItemChecked(MenuBar::SHOW_TOOLTIPS));
+	g_settings.setInteger(Config::SHOW_TEXT_BUBBLES, IsItemChecked(MenuBar::SHOW_TEXT_BUBBLES));
 	g_settings.setInteger(Config::SHOW_PREVIEW, IsItemChecked(MenuBar::SHOW_PREVIEW));
 	g_settings.setInteger(Config::SHOW_FPS, IsItemChecked(MenuBar::SHOW_FPS));
 	g_settings.setInteger(Config::SHOW_WALL_HOOKS, IsItemChecked(MenuBar::SHOW_WALL_HOOKS));
@@ -1329,12 +1341,10 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 
 	wxSizer* helper_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	auto* copy_invite_btn = newd wxButton(live_host_dlg, wxID_ANY, "Copy Invite");
-	auto* upnp_btn = newd wxButton(live_host_dlg, wxID_ANY, "Try Router Mapping");
 	helper_sizer->Add(copy_invite_btn, 1, wxRIGHT, 5);
-	helper_sizer->Add(upnp_btn, 1, wxLEFT, 5);
 	top_sizer->Add(helper_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 20);
 
-	copy_invite_btn->Bind(wxEVT_BUTTON, [live_host_dlg, port](wxCommandEvent&) {
+	copy_invite_btn->Bind(wxEVT_BUTTON, [live_host_dlg, port, copy_invite_btn](wxCommandEvent&) {
 		wxString externalIp;
 		wxString errorMessage;
 		if (!GetExternalIpAddress(externalIp, errorMessage)) {
@@ -1346,20 +1356,15 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 			g_gui.PopupDialog(live_host_dlg, "Invite", "Could not copy the invite to the clipboard.", wxOK);
 			return;
 		}
-		g_gui.PopupDialog(live_host_dlg, "Invite Copied", "Copied invite: " + invite, wxOK);
-	});
-
-	upnp_btn->Bind(wxEVT_BUTTON, [live_host_dlg, port](wxCommandEvent&) {
-		wxString result;
-		if (TryCreateWindowsUpnpMapping(port->GetValue(), result)) {
-			g_gui.PopupDialog(live_host_dlg, "Router Mapping", result, wxOK);
-		} else {
-			g_gui.PopupDialog(live_host_dlg, "Router Mapping", result, wxOK);
-		}
+		copy_invite_btn->SetLabel("Copied!");
+		copy_invite_btn->Disable();
 	});
 
 	wxSizer* ok_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	ok_sizer->Add(newd wxButton(live_host_dlg, wxID_OK, "OK"), 1, wxCENTER);
+	auto* ok_button = newd wxButton(live_host_dlg, wxID_OK, "Start Host");
+	ok_button->SetToolTip("Start Live Server");
+
+	ok_sizer->Add(ok_button, 1, wxCENTER);
 	ok_sizer->Add(newd wxButton(live_host_dlg, wxID_CANCEL, "Cancel"), wxCENTER, 1);
 	top_sizer->Add(ok_sizer, 0, wxCENTER | wxALL, 20);
 
@@ -1473,6 +1478,19 @@ void MainMenuBar::OnCloseLive(wxCommandEvent& event) {
 	}
 
 	Update();
+}
+
+void MainMenuBar::OnHelpLive(wxCommandEvent& event) {
+	wxString helpText = 
+		"To Host a Multiplayer Session:\n\n"
+		"1. Open the map you want to edit with others.\n"
+		"2. Go to File -> Live Multiplayer -> Host Server...\n"
+		"3. Enter a Server Name and Port (default is 7171).\n"
+		"4. (Optional) Click 'Try Router Mapping' to open the port automatically using UPnP.\n"
+		"5. Click 'OK' to start hosting.\n"
+		"6. Click 'Copy Invite' to share your IP and port with others.\n\n"
+		"Other users can then join by selecting 'Join Server...' and entering your invite address.";
+	g_gui.PopupDialog("How to Host", helpText, wxOK);
 }
 
 // ============================================================================

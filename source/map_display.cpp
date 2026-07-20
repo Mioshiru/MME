@@ -72,6 +72,7 @@
 BEGIN_EVENT_TABLE(MapCanvas, wxGLCanvas)
 EVT_KEY_DOWN(MapCanvas::OnKeyDown)
 EVT_KEY_UP(MapCanvas::OnKeyUp)
+EVT_CHAR(MapCanvas::OnChar)
 
 // Mouse events
 EVT_MOTION(MapCanvas::OnMouseMove)
@@ -204,7 +205,39 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     return;
   }
 
-  if (tool_wheel_open && event.GetKeyCode() == WXK_ESCAPE) {
+	if (ImGui::GetCurrentContext() && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantTextInput)) {
+		ImGuiIO& io = ImGui::GetIO();
+		int key = event.GetKeyCode();
+		if (key == WXK_BACK) { io.AddKeyEvent(ImGuiKey_Backspace, true); io.AddKeyEvent(ImGuiKey_Backspace, false); }
+		else if (key == WXK_RETURN || key == WXK_NUMPAD_ENTER) { io.AddKeyEvent(ImGuiKey_Enter, true); io.AddKeyEvent(ImGuiKey_Enter, false); }
+		else if (key == WXK_LEFT) { io.AddKeyEvent(ImGuiKey_LeftArrow, true); io.AddKeyEvent(ImGuiKey_LeftArrow, false); }
+		else if (key == WXK_RIGHT) { io.AddKeyEvent(ImGuiKey_RightArrow, true); io.AddKeyEvent(ImGuiKey_RightArrow, false); }
+		else if (key == WXK_HOME) { io.AddKeyEvent(ImGuiKey_Home, true); io.AddKeyEvent(ImGuiKey_Home, false); }
+		else if (key == WXK_END) { io.AddKeyEvent(ImGuiKey_End, true); io.AddKeyEvent(ImGuiKey_End, false); }
+		else if (key == WXK_DELETE) { io.AddKeyEvent(ImGuiKey_Delete, true); io.AddKeyEvent(ImGuiKey_Delete, false); }
+		else if (key == WXK_ESCAPE) { ImGui::SetWindowFocus(nullptr); }
+		event.Skip();
+		Refresh();
+		return;
+	}
+
+	if (event.GetKeyCode() == WXK_TAB) {
+		if (g_gui.IsFillBrushMode()) {
+			g_gui.SetFillBrushMode(false);
+			g_gui.SetSelectionMode();
+			g_gui.SetStatusText("Mode: Selection");
+		} else if (g_gui.IsSelectionMode()) {
+			g_gui.SetDrawingMode();
+			g_gui.SetStatusText("Mode: Drawing");
+		} else {
+			g_gui.SetFillBrushMode(true);
+			g_gui.SetStatusText("Mode: Fill Brush");
+		}
+		Refresh();
+		return;
+	}
+
+	if (tool_wheel_open && event.GetKeyCode() == WXK_ESCAPE) {
     tool_wheel_open = false;
     Refresh();
     return;
@@ -270,11 +303,76 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     }
   }
 
+  if (!event.ControlDown() && !event.AltDown()) {
+    int key = event.GetKeyCode();
+    if (key == '1' || key == WXK_NUMPAD1) {
+      g_gui.SetBrushSize(0);
+      Refresh();
+      return;
+    } else if (key == '2' || key == WXK_NUMPAD2) {
+      g_gui.SetBrushSize(1);
+      Refresh();
+      return;
+    } else if (key == '3' || key == WXK_NUMPAD3) {
+      g_gui.SetBrushSize(2);
+      Refresh();
+      return;
+    } else if (key == '4' || key == WXK_NUMPAD4) {
+      g_gui.SetBrushSize(4);
+      Refresh();
+      return;
+    } else if (key == '5' || key == WXK_NUMPAD5) {
+      g_gui.SetBrushSize(6);
+      Refresh();
+      return;
+    } else if (key == '6' || key == WXK_NUMPAD6) {
+      g_gui.SetBrushSize(8);
+      Refresh();
+      return;
+    } else if (key == '7' || key == WXK_NUMPAD7) {
+      g_gui.SetBrushSize(11);
+      Refresh();
+      return;
+    }
+  }
+
   MapWindow* map_window = static_cast<MapWindow*>(GetParent());
   constexpr int pan_step = 96;
 
-  switch (event.GetKeyCode()) {
-    case 'A':
+	switch (event.GetKeyCode()) {
+		case WXK_TAB: {
+			bool is_selection = g_gui.IsSelectionMode();
+			bool is_eraser = (g_gui.GetCurrentBrush() == g_gui.eraser);
+			bool is_bucket = g_gui.IsFillBrushMode();
+
+			if (is_selection) {
+				// Selection -> Pencil
+				g_gui.SetFillBrushMode(false);
+				g_gui.SetDrawingMode();
+				if (g_gui.GetCurrentBrush() == g_gui.eraser) {
+					g_gui.SelectBrush(nullptr);
+				}
+			} else if (is_eraser) {
+				// Eraser -> Selection
+				g_gui.SetFillBrushMode(false);
+				g_gui.SetSelectionMode();
+			} else if (is_bucket) {
+				// Bucket -> Eraser
+				g_gui.SetFillBrushMode(false);
+				g_gui.SetDrawingMode();
+				g_gui.SelectBrush(g_gui.eraser);
+			} else {
+				// Pencil -> Bucket
+				g_gui.SetDrawingMode();
+				g_gui.SetFillBrushMode(true);
+				if (g_gui.GetCurrentBrush() == g_gui.eraser) {
+					g_gui.SelectBrush(nullptr);
+				}
+			}
+			Refresh();
+			return;
+		}
+		case 'A':
       map_window->ScrollRelative(-pan_step, 0);
       Refresh();
       return;
@@ -308,11 +406,25 @@ void MapCanvas::OnKeyUp(wxKeyEvent& event) {
   event.Skip();
 }
 
+void MapCanvas::OnChar(wxKeyEvent& event) {
+  if (ImGui::GetCurrentContext() && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantTextInput)) {
+    ImGuiIO& io = ImGui::GetIO();
+    wxChar uc = event.GetUnicodeKey();
+    if (uc >= 32 && uc < 0x10FFFF) {
+      io.AddInputCharacter((unsigned int)uc);
+    }
+    Refresh();
+    return;
+  }
+  event.Skip();
+}
+
 void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
 	SyncImGuiMouseState(event);
   if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+    Refresh();
     return;
   }
 
@@ -416,12 +528,20 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
       PositionVector tilestodraw;
       PositionVector tilestoborder;
       getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, true);
-      editor.draw(tilestodraw, tilestoborder, event.AltDown());
+      if (event.AltDown()) {
+        editor.undraw(tilestodraw, tilestoborder, false);
+      } else {
+        editor.draw(tilestodraw, tilestoborder, false);
+      }
     } else if (!rectangle_mode) {
 			PositionVector tilestodraw;
 			PositionVector tilestoborder;
 			getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, false);
-			editor.draw(tilestodraw, tilestoborder, event.AltDown());
+			if (event.AltDown()) {
+				editor.undraw(tilestodraw, tilestoborder, false);
+			} else {
+				editor.draw(tilestodraw, tilestoborder, false);
+			}
 		}
 	} else {
 		Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
@@ -574,7 +694,11 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 					tilestoborder.push_back(pos);
 				}
 			}
-			editor.draw(tilestodraw, tilestoborder, event.AltDown());
+			if (event.AltDown()) {
+				editor.undraw(tilestodraw, tilestoborder, false);
+			} else {
+				editor.draw(tilestodraw, tilestoborder, false);
+			}
 		}
 	}
 	
@@ -882,7 +1006,11 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 			}
 			
 			if (event.LeftIsDown()) {
-				editor.draw(tilestodraw, tilestoborder, event.AltDown());
+				if (event.AltDown()) {
+					editor.undraw(tilestodraw, tilestoborder, false);
+				} else {
+					editor.draw(tilestodraw, tilestoborder, false);
+				}
 			} else if (event.RightIsDown()) {
 				editor.undraw(tilestodraw, tilestoborder, event.AltDown());
 			}
@@ -1393,15 +1521,12 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
       return;
     }
 
-    int scroll_x = 0, scroll_y = 0;
-    int client_w = 0, client_h = 0;
-    GetViewBox(&scroll_x, &scroll_y, &client_w, &client_h);
-    int min_x = std::max(1, scroll_x / TileSize);
-    int min_y = std::max(1, scroll_y / TileSize);
-    int max_x = std::min(map_width - 1, int((scroll_x + client_w * zoom) / TileSize) + 1);
-    int max_y = std::min(map_height - 1, int((scroll_y + client_h * zoom) / TileSize) + 1);
+    int min_x = 1;
+    int min_y = 1;
+    int max_x = map_width - 1;
+    int max_y = map_height - 1;
 
-    size_t max_fill_tiles = (max_x - min_x + 1) * (max_y - min_y + 1);
+    size_t max_fill_tiles = 100000;
 
     auto encode = [](int x, int y, int z) -> uint64_t {
       return (static_cast<uint64_t>(z) << 48) |
@@ -1410,12 +1535,14 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     };
 
     auto get_ground_id = [](Tile *tile) -> uint32_t {
-      GroundBrush *brush = tile ? tile->getGroundBrush() : nullptr;
-      return brush ? brush->getID() : 0;
+      if (!tile) return 0;
+      if (tile->getGroundBrush()) return tile->getGroundBrush()->getID();
+      if (tile->ground) return tile->ground->getID();
+      return 0;
     };
 
-    const bool fill_empty = (oldBrush == nullptr);
-    const uint32_t source_ground_id = oldBrush ? oldBrush->getID() : 0;
+    const bool fill_empty = (start_tile == nullptr || start_tile->ground == nullptr);
+    const uint32_t source_ground_id = get_ground_id(start_tile);
     std::queue<Position> queue;
     std::unordered_set<uint64_t> visited;
     std::vector<Position> temp_tiles;
@@ -1436,11 +1563,13 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
       }
 
       Tile *tile = editor.map.getTile(current);
+      bool tile_has_ground = (tile != nullptr && tile->ground != nullptr);
+
       if (fill_empty) {
-        if (tile != nullptr) {
+        if (tile_has_ground) {
           continue;
         }
-      } else if (!tile || get_ground_id(tile) != source_ground_id) {
+      } else if (!tile_has_ground || get_ground_id(tile) != source_ground_id) {
         continue;
       }
 

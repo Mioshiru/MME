@@ -517,7 +517,33 @@ void GUI::OnWelcomeDialogAction(wxCommandEvent &event) {
     wxArrayString choices;
     std::vector<ClientVersionID> version_ids;
 
-    for (ClientVersion *version : ClientVersion::getAllVisible()) {
+    ClientVersionList versions = ClientVersion::getAllVisible();
+    std::sort(versions.begin(), versions.end(), [](const ClientVersion* a, const ClientVersion* b) {
+      auto splitVersion = [](const std::string& name) -> std::vector<int> {
+        std::vector<int> parts;
+        size_t start = name.find_first_of("0123456789");
+        if (start == std::string::npos) return parts;
+        std::string current_num;
+        for (char c : name.substr(start)) {
+          if (isdigit(c)) {
+            current_num += c;
+          } else if (c == '.') {
+            if (!current_num.empty()) {
+              parts.push_back(std::stoi(current_num));
+              current_num.clear();
+            }
+          } else {
+            break;
+          }
+        }
+        if (!current_num.empty()) {
+          parts.push_back(std::stoi(current_num));
+        }
+        return parts;
+      };
+      return splitVersion(a->getName()) > splitVersion(b->getName());
+    });
+    for (ClientVersion *version : versions) {
       if (version != nullptr) {
         // Skip auto-detected versions
         if (version->getName().rfind("Auto", 0) == 0) {
@@ -699,7 +725,9 @@ bool GUI::DoRedo() {
   return false;
 }
 
-int GUI::GetCurrentFloor() {
+
+
+int GUI::GetCurrentFloor() const {
   MapTab *tab = GetCurrentMapTab();
   ASSERT(tab);
   return tab->GetCanvas()->GetFloor();

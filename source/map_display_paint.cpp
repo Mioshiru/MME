@@ -5,6 +5,8 @@
 #include "gui.h"
 #include "editor.h"
 #include "settings.h"
+#include "complexitem.h"
+#include "creature.h"
 #include "performance_logger.h"
 #include "live_server.h"
 #include "live_socket.h"
@@ -434,8 +436,11 @@ SetVSync(true);
 		// Input field
 		static char chat_input[256] = "";
 		bool reclaim_focus = false;
-		ImGuiInputTextFlags input_flags = ImGuiInputTextFlags_EnterReturnsTrue;
-		if (ImGui::InputText("##ChatInput", chat_input, IM_ARRAYSIZE(chat_input), input_flags)) {
+		ImGui::PushItemWidth(-1.0f);
+		if (ImGui::IsWindowAppearing()) {
+			ImGui::SetKeyboardFocusHere();
+		}
+		if (ImGui::InputText("##ChatInput", chat_input, IM_ARRAYSIZE(chat_input), ImGuiInputTextFlags_EnterReturnsTrue)) {
 			std::string t = chat_input;
 			if (!t.empty()) {
 				g_gui.SendChat(t);
@@ -443,10 +448,9 @@ SetVSync(true);
 			}
 			reclaim_focus = true;
 		}
+		ImGui::PopItemWidth();
 		
-		// Auto-focus on window appearance or message send
-		ImGui::SetItemDefaultFocus();
-		if (reclaim_focus || ImGui::IsWindowAppearing()) {
+		if (reclaim_focus) {
 			ImGui::SetKeyboardFocusHere(-1);
 		}
 
@@ -505,8 +509,84 @@ SetVSync(true);
 			ImVec2 pos = ImGui::GetCursorScreenPos();
 			ImGui::Image((void*)(intptr_t)minimap_tex_id, avail);
 
-			// Handle mouse click and drag to reposition viewport
-			if ((ImGui::IsItemHovered() || ImGui::IsItemActive()) && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+			// Draw compass, zoom, and floor overlay buttons on top of the minimap image
+			int center_map_x, center_map_y;
+			GetScreenCenter(&center_map_x, &center_map_y);
+
+			auto draw_button = [&](ImVec2 b_pos, const char* label, std::function<void()> action) {
+				ImGui::SetCursorScreenPos(b_pos);
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(20.0f/255.0f, 22.0f/255.0f, 28.0f/255.0f, 0.85f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(180.0f/255.0f, 140.0f/255.0f, 50.0f/255.0f, 0.85f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(180.0f/255.0f, 140.0f/255.0f, 50.0f/255.0f, 1.0f));
+				ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(180.0f/255.0f, 140.0f/255.0f, 50.0f/255.0f, 0.85f));
+				ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+
+				if (ImGui::Button(label, ImVec2(20, 20))) {
+					action();
+					last_minimap_update_time = 0;
+					Refresh();
+				}
+
+				ImGui::PopStyleVar(2);
+				ImGui::PopStyleColor(4);
+			};
+
+			// North
+			draw_button(ImVec2(pos.x + 90 - 10, pos.y + 4), "N", [&](){
+				g_gui.SetScreenCenterPosition(Position(center_map_x, center_map_y - 10, floor));
+			});
+			// South
+			draw_button(ImVec2(pos.x + 90 - 10, pos.y + 180 - 24), "S", [&](){
+				g_gui.SetScreenCenterPosition(Position(center_map_x, center_map_y + 10, floor));
+			});
+			// West
+			draw_button(ImVec2(pos.x + 4, pos.y + 90 - 10), "W", [&](){
+				g_gui.SetScreenCenterPosition(Position(center_map_x - 10, center_map_y, floor));
+			});
+			// East
+			draw_button(ImVec2(pos.x + 180 - 24, pos.y + 90 - 10), "E", [&](){
+				g_gui.SetScreenCenterPosition(Position(center_map_x + 10, center_map_y, floor));
+			});
+
+			// Zoom In (+)
+			draw_button(ImVec2(pos.x + 180 - 46, pos.y + 180 - 24), "+", [&](){
+				minimap_zoom /= 1.2f;
+				float max_zoom = std::max(4.0f, (float)std::max(editor.map.getWidth(), editor.map.getHeight()) / 180.0f);
+				minimap_zoom = std::clamp(minimap_zoom, 0.25f, max_zoom);
+				minimap_span_w = (int)(180.0f * minimap_zoom);
+				minimap_span_h = (int)(180.0f * minimap_zoom);
+			});
+			// Zoom Out (-)
+			draw_button(ImVec2(pos.x + 180 - 24, pos.y + 180 - 24), "-", [&](){
+				minimap_zoom *= 1.2f;
+				float max_zoom = std::max(4.0f, (float)std::max(editor.map.getWidth(), editor.map.getHeight()) / 180.0f);
+				minimap_zoom = std::clamp(minimap_zoom, 0.25f, max_zoom);
+				minimap_span_w = (int)(180.0f * minimap_zoom);
+				minimap_span_h = (int)(180.0f * minimap_zoom);
+			});
+
+			// Floor Up (U)
+			draw_button(ImVec2(pos.x + 4, pos.y + 180 - 46), "U", [&](){
+				if (floor > 0) {
+					floor--;
+				}
+			});
+			// Floor Down (D)
+			draw_button(ImVec2(pos.x + 4, pos.y + 180 - 24), "D", [&](){
+				if (floor < 15) {
+					floor++;
+				}
+			});
+
+			// Reset cursor position below minimap image for coordinates/controls
+			ImGui::SetCursorScreenPos(ImVec2(pos.x, pos.y + 184));
+			ImGui::Text("X: %d Y: %d Z: %d", center_map_x, center_map_y, floor);
+
+			// Handle mouse click and drag to reposition viewport on the main minimap area
+			ImGui::SetCursorScreenPos(pos);
+			ImGui::Dummy(avail);
+			if (ImGui::IsItemHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
 				ImVec2 mouse_pos = ImGui::GetMousePos();
 				float rel_x = (mouse_pos.x - pos.x) / avail.x;
 				float rel_y = (mouse_pos.y - pos.y) / avail.y;
@@ -729,6 +809,159 @@ SetVSync(true);
 		ImDrawList* draw_list = ImGui::GetForegroundDrawList();
 		draw_list->AddRectFilled(p_min, p_max, IM_COL32(255, 215, 0, 45));
 		draw_list->AddRect(p_min, p_max, IM_COL32(255, 215, 0, 220), 0.0f, 0, 1.5f);
+	}
+
+	// Rendering stacked speech bubbles / tooltips for sign texts, teleport destinations, creature names, action/unique IDs
+	if (g_settings.getBoolean(Config::SHOW_TEXT_BUBBLES) && g_gui.IsRenderingEnabled()) {
+		ImGuiIO& io = ImGui::GetIO();
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::SetNextWindowSize(io.DisplaySize);
+		ImGui::SetNextWindowBgAlpha(0.0f);
+		ImGuiWindowFlags tooltip_overlay_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoScrollbar |
+			ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground;
+		if (ImGui::Begin("##MapTooltipBubbleOverlay", nullptr, tooltip_overlay_flags)) {
+			int scroll_x = 0, scroll_y = 0;
+			if (GetParent()) {
+				static_cast<MapWindow*>(GetParent())->GetViewStart(&scroll_x, &scroll_y);
+			}
+			ImVec2 win_pos = ImGui::GetWindowPos();
+			int offset = (floor <= 7) ? (7 - floor) * TileSize : 0;
+			int w, h;
+			GetClientSize(&w, &h);
+
+			int start_map_x = (scroll_x + offset) / TileSize - 1;
+			int start_map_y = (scroll_y + offset) / TileSize - 1;
+			int end_map_x = start_map_x + (int)(w * zoom) / TileSize + 3;
+			int end_map_y = start_map_y + (int)(h * zoom) / TileSize + 3;
+
+			start_map_x = std::max(0, start_map_x);
+			start_map_y = std::max(0, start_map_y);
+			end_map_x = std::min(editor.map.getWidth(), end_map_x);
+			end_map_y = std::min(editor.map.getHeight(), end_map_y);
+
+			for (int y = start_map_y; y < end_map_y; ++y) {
+				for (int x = start_map_x; x < end_map_x; ++x) {
+					Tile* tile = editor.map.getTile(x, y, floor);
+					if (!tile) continue;
+
+					struct BubbleData {
+						std::string header;
+						std::string content;
+						ImVec4 header_color;
+						ImVec4 border_color;
+					};
+					std::vector<BubbleData> bubbles;
+
+					// 1. Sign / Book texts
+					auto check_item_text = [&](Item* item) {
+						if (item) {
+							std::string text = item->getText();
+							if (!text.empty()) {
+								bubbles.push_back({ "Text", text, ImVec4(0.85f, 0.75f, 0.45f, 1.0f), ImVec4(0.7f, 0.55f, 0.2f, 1.0f) });
+							}
+						}
+					};
+					check_item_text(tile->ground);
+					for (Item* item : tile->items) {
+						check_item_text(item);
+					}
+
+					// 2. Teleport Destination
+					for (Item* item : tile->items) {
+						if (item) {
+							if (Teleport* tp = dynamic_cast<Teleport*>(item)) {
+								const Position& dest = tp->getDestination();
+								std::string dest_str = std::to_string(dest.x) + ", " + std::to_string(dest.y) + ", " + std::to_string(dest.z);
+								bubbles.push_back({ "Destination", dest_str, ImVec4(0.8f, 0.5f, 0.9f, 1.0f), ImVec4(0.6f, 0.3f, 0.7f, 1.0f) });
+							}
+						}
+					}
+
+					// 3. Action ID / Unique ID
+					auto check_item_ids = [&](Item* item) {
+						if (item) {
+							uint16_t aid = item->getActionID();
+							uint16_t uid = item->getUniqueID();
+							if (aid > 0 || uid > 0) {
+								std::string aid_str = aid > 0 ? "Action ID: " + std::to_string(aid) : "";
+								std::string uid_str = uid > 0 ? "Unique ID: " + std::to_string(uid) : "";
+								std::string content = aid_str + (aid > 0 && uid > 0 ? "\n" : "") + uid_str;
+								bubbles.push_back({ "Attributes", content, ImVec4(0.9f, 0.6f, 0.4f, 1.0f), ImVec4(0.7f, 0.45f, 0.25f, 1.0f) });
+							}
+						}
+					};
+					check_item_ids(tile->ground);
+					for (Item* item : tile->items) {
+						check_item_ids(item);
+					}
+
+					// 4. Placed NPC / Monster name
+					if (tile->creature) {
+						bubbles.push_back({ "", tile->creature->getName(), ImVec4(0.6f, 0.8f, 1.0f, 1.0f), ImVec4(0.3f, 0.6f, 0.8f, 1.0f) });
+					}
+
+					if (bubbles.empty()) continue;
+
+					// Compute screen position of the tile
+					double tile_screen_x = win_pos.x + (((x * TileSize) - scroll_x) - offset) / zoom;
+					double tile_screen_y = win_pos.y + (((y * TileSize) - scroll_y) - offset) / zoom;
+					
+					// Draw stacked bubbles starting above the tile
+					float bubble_y = (float)tile_screen_y - 4.0f;
+					float bubble_x = (float)tile_screen_x + (TileSize / 2.0f) / (float)zoom;
+
+					ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+					for (const auto& bubble : bubbles) {
+						std::string text_to_draw = bubble.content;
+						ImVec2 text_size = ImGui::CalcTextSize(text_to_draw.c_str());
+						
+						float header_height = 0.0f;
+						ImVec2 header_size(0, 0);
+						if (!bubble.header.empty()) {
+							header_size = ImGui::CalcTextSize(bubble.header.c_str());
+							header_height = header_size.y + 4.0f;
+						}
+
+						float box_w = std::max(text_size.x, header_size.x) + 12.0f;
+						float box_h = text_size.y + header_height + 8.0f;
+
+						float box_x1 = bubble_x - box_w / 2.0f;
+						float box_y1 = bubble_y - box_h;
+						float box_x2 = bubble_x + box_w / 2.0f;
+						float box_y2 = bubble_y;
+
+						// Draw shadow
+						draw_list->AddRectFilled(ImVec2(box_x1 + 2.0f, box_y1 + 2.0f), ImVec2(box_x2 + 2.0f, box_y2 + 2.0f), IM_COL32(0, 0, 0, 120), 4.0f);
+
+						// Draw translucent background (glassmorphic dark look)
+						draw_list->AddRectFilled(ImVec2(box_x1, box_y1), ImVec2(box_x2, box_y2), IM_COL32(20, 22, 28, 225), 4.0f);
+
+						// Draw border
+						ImU32 border_col = IM_COL32((int)(bubble.border_color.x * 255), (int)(bubble.border_color.y * 255), (int)(bubble.border_color.z * 255), 255);
+						draw_list->AddRect(ImVec2(box_x1, box_y1), ImVec2(box_x2, box_y2), border_col, 4.0f, 0, 1.0f);
+
+						// Draw header if present
+						float current_y = box_y1 + 4.0f;
+						if (!bubble.header.empty()) {
+							ImU32 header_col = IM_COL32((int)(bubble.header_color.x * 255), (int)(bubble.header_color.y * 255), (int)(bubble.header_color.z * 255), 255);
+							draw_list->AddText(ImVec2(box_x1 + 6.0f, current_y), header_col, bubble.header.c_str());
+							
+							// Draw separator line under header
+							draw_list->AddLine(ImVec2(box_x1 + 4.0f, current_y + header_size.y + 1.0f), ImVec2(box_x2 - 4.0f, current_y + header_size.y + 1.0f), border_col, 0.8f);
+							current_y += header_height;
+						}
+
+						// Draw body text
+						draw_list->AddText(ImVec2(box_x1 + 6.0f, current_y), IM_COL32(240, 240, 240, 255), text_to_draw.c_str());
+
+						bubble_y -= box_h + 4.0f;
+					}
+				}
+			}
+			ImGui::End();
+		}
 	}
 
 	ImGui::Render();

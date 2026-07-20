@@ -61,7 +61,8 @@ void BrowseTileListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 
 	Sprite* sprite = g_gui.gfx.getSprite(item->getClientID());
 	if (sprite) {
-		sprite->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight());
+		bool count100 = (item && item->isStackable());
+		sprite->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetWidth(), rect.GetHeight(), count100);
 	}
 
 	if (IsSelected(n)) {

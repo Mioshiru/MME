@@ -16,7 +16,7 @@ find_package(glm CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
 
 if(NOT CMAKE_BUILD_TYPE)
-	set(CMAKE_BUILD_TYPE RelWithDebInfo)
+	set(CMAKE_BUILD_TYPE Release)
 endif()
 
 # Force SOL2 compatibility and definitions globally
@@ -201,7 +201,6 @@ if(MSVC)
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED ON
         LINKER_LANGUAGE CXX
-        LINK_FLAGS "/MAP"
     )
     target_compile_options(rme PRIVATE /permissive- /Zc:__cplusplus /Zc:inline)
 else()

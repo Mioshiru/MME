@@ -25,6 +25,10 @@
 #include <wx/dir.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
+#include <wx/spinctrl.h>
+#include <wx/choice.h>
+#include <wx/tokenzr.h>
+#include "live_client.h"
 wxDEFINE_EVENT(WELCOME_DIALOG_ACTION, wxCommandEvent);
 wxDEFINE_EVENT(WELCOME_DIALOG_DELETE_RECENT, wxCommandEvent);
 
@@ -212,6 +216,31 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent& event) {
 			g_settings.setInteger(Config::CHECK_SIGNATURES, old_check_sigs);
 
 			m_welcome_dialog_panel->updateInputs();
+		} else if (button->GetAction() == wxID_MORE) {
+			JoinMultiplayerDialog dlg(this);
+			if (dlg.ShowModal() == wxID_OK) {
+				wxString ip = dlg.GetHostIP();
+				int port = dlg.GetHostPort();
+				wxString name = dlg.GetPlayerName();
+
+				if (name.empty()) name = "User";
+				g_settings.setString(Config::MULTIPLAYER_NAME, nstr(name));
+				g_settings.setInteger(Config::MULTIPLAYER_PORT, port);
+
+				LiveClient* liveClient = newd LiveClient();
+				liveClient->setName(name);
+
+				EndModal(wxID_CANCEL);
+
+				wxTheApp->CallAfter([liveClient, ip, port]() {
+					g_gui.SetStatusText("Joining live session...");
+					liveClient->createLogWindow(g_gui.tabbook);
+					if (!liveClient->connect(nstr(ip), port)) {
+						g_gui.PopupDialog("Connection Error", liveClient->getLastError(), wxOK);
+						delete liveClient;
+					}
+				});
+			}
 		} else {
 			wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
 			if (button->GetAction() == wxID_OPEN) {
@@ -317,8 +346,13 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	preferences_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
 	bottomSizer->Add(preferences_button, 0, wxALIGN_CENTER_VERTICAL);
 
+	bottomSizer->AddSpacer(FROM_DIP(this, 15));
 
-	bottomSizer->AddSpacer(FROM_DIP(this, 30));
+	wxSize mp_button_size = FROM_DIP(this, wxSize(180, 48));
+	auto* join_mp_button = newd WelcomeDialogButton(this, wxDefaultPosition, mp_button_size, button_base_colour, "Join Multiplayer");
+	join_mp_button->SetAction(wxID_MORE);
+	join_mp_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+	bottomSizer->Add(join_mp_button, 0, wxALIGN_CENTER_VERTICAL);
 
 	// Removed checkbox
 
@@ -524,5 +558,163 @@ void RecentItem::OnMouseEnter(const wxMouseEvent& event) {
 void RecentItem::OnMouseLeave(const wxMouseEvent& event) {
 	m_is_hover = false;
 	Refresh();
+}
+
+enum {
+	ID_FAVORITES_CHOICE = wxID_HIGHEST + 200,
+	ID_ADD_FAVORITE,
+	ID_REMOVE_FAVORITE
+};
+
+JoinMultiplayerDialog::JoinMultiplayerDialog(wxWindow* parent) :
+	wxDialog(parent, wxID_ANY, "Join Multiplayer Session", wxDefaultPosition, wxSize(420, 360), wxDEFAULT_DIALOG_STYLE) {
+	CentreOnParent();
+
+	wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
+
+	wxFlexGridSizer* grid_sizer = new wxFlexGridSizer(3, 2, 10, 10);
+	grid_sizer->AddGrowableCol(1, 1);
+
+	// Nickname
+	grid_sizer->Add(new wxStaticText(this, wxID_ANY, "Player Name:"), 0, wxALIGN_CENTER_VERTICAL);
+	wxString saved_name = g_settings.getString(Config::MULTIPLAYER_NAME);
+	if (saved_name.empty()) saved_name = "Player";
+	m_name_ctrl = new wxTextCtrl(this, wxID_ANY, saved_name);
+	grid_sizer->Add(m_name_ctrl, 1, wxEXPAND);
+
+	// IP Address
+	grid_sizer->Add(new wxStaticText(this, wxID_ANY, "Host IP:"), 0, wxALIGN_CENTER_VERTICAL);
+	m_ip_ctrl = new wxTextCtrl(this, wxID_ANY, "127.0.0.1");
+	grid_sizer->Add(m_ip_ctrl, 1, wxEXPAND);
+
+	// Port
+	grid_sizer->Add(new wxStaticText(this, wxID_ANY, "Host Port:"), 0, wxALIGN_CENTER_VERTICAL);
+	int default_port = g_settings.getInteger(Config::MULTIPLAYER_PORT);
+	if (default_port <= 0) default_port = 3074;
+	m_port_ctrl = new wxSpinCtrl(this, wxID_ANY, wxString::Format("%d", default_port), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, default_port);
+	grid_sizer->Add(m_port_ctrl, 1, wxEXPAND);
+
+	main_sizer->Add(grid_sizer, 0, wxEXPAND | wxALL, 15);
+
+	// Favorites static box
+	wxStaticBoxSizer* fav_box = new wxStaticBoxSizer(wxVERTICAL, this, "Saved Favorites");
+
+	m_favorites_choice = new wxChoice(fav_box->GetStaticBox(), ID_FAVORITES_CHOICE);
+	fav_box->Add(m_favorites_choice, 0, wxEXPAND | wxBOTTOM, 8);
+
+	wxBoxSizer* fav_btn_sizer = new wxBoxSizer(wxHORIZONTAL);
+	m_add_fav_btn = new wxButton(fav_box->GetStaticBox(), ID_ADD_FAVORITE, "Add Current to Favs");
+	m_rem_fav_btn = new wxButton(fav_box->GetStaticBox(), ID_REMOVE_FAVORITE, "Remove Fav");
+	fav_btn_sizer->Add(m_add_fav_btn, 1, wxRIGHT, 5);
+	fav_btn_sizer->Add(m_rem_fav_btn, 1, wxLEFT, 5);
+	fav_box->Add(fav_btn_sizer, 0, wxEXPAND);
+
+	main_sizer->Add(fav_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
+
+	// Dialog buttons
+	wxSizer* button_sizer = CreateButtonSizer(wxOK | wxCANCEL);
+	main_sizer->Add(button_sizer, 0, wxALIGN_RIGHT | wxALL, 15);
+
+	SetSizerAndFit(main_sizer);
+
+	// Bindings
+	m_favorites_choice->Bind(wxEVT_CHOICE, &JoinMultiplayerDialog::OnFavoriteSelected, this);
+	m_add_fav_btn->Bind(wxEVT_BUTTON, &JoinMultiplayerDialog::OnAddFavorite, this);
+	m_rem_fav_btn->Bind(wxEVT_BUTTON, &JoinMultiplayerDialog::OnRemoveFavorite, this);
+
+	LoadFavorites();
+}
+
+wxString JoinMultiplayerDialog::GetHostIP() const {
+	return m_ip_ctrl->GetValue().Trim();
+}
+
+int JoinMultiplayerDialog::GetHostPort() const {
+	return m_port_ctrl->GetValue();
+}
+
+wxString JoinMultiplayerDialog::GetPlayerName() const {
+	return m_name_ctrl->GetValue().Trim();
+}
+
+void JoinMultiplayerDialog::LoadFavorites() {
+	m_favorites.clear();
+	m_favorites_choice->Clear();
+	m_favorites_choice->Append("-- Select Favorite --");
+
+	wxString fav_str = g_settings.getString(Config::MULTIPLAYER_FAVORITES);
+	wxStringTokenizer tokens(fav_str, ";");
+	while (tokens.HasMoreTokens()) {
+		wxString token = tokens.GetNextToken();
+		wxStringTokenizer parts(token, "|");
+		if (parts.CountTokens() >= 3) {
+			FavoriteEntry entry;
+			entry.label = parts.GetNextToken();
+			entry.ip = parts.GetNextToken();
+			entry.port = wxAtoi(parts.GetNextToken());
+			if (parts.HasMoreTokens()) {
+				entry.name = parts.GetNextToken();
+			}
+			m_favorites.push_back(entry);
+			m_favorites_choice->Append(wxString::Format("%s (%s:%d)", entry.label, entry.ip, entry.port));
+		}
+	}
+	m_favorites_choice->SetSelection(0);
+}
+
+void JoinMultiplayerDialog::SaveFavorites() {
+	wxString fav_str;
+	for (size_t i = 0; i < m_favorites.size(); ++i) {
+		if (i > 0) fav_str += ";";
+		fav_str += wxString::Format("%s|%s|%d|%s", m_favorites[i].label, m_favorites[i].ip, m_favorites[i].port, m_favorites[i].name);
+	}
+	g_settings.setString(Config::MULTIPLAYER_FAVORITES, nstr(fav_str));
+}
+
+void JoinMultiplayerDialog::OnFavoriteSelected(wxCommandEvent& event) {
+	int sel = m_favorites_choice->GetSelection();
+	if (sel > 0 && sel - 1 < (int)m_favorites.size()) {
+		const FavoriteEntry& entry = m_favorites[sel - 1];
+		m_ip_ctrl->SetValue(entry.ip);
+		m_port_ctrl->SetValue(entry.port);
+		if (!entry.name.empty()) {
+			m_name_ctrl->SetValue(entry.name);
+		}
+	}
+}
+
+void JoinMultiplayerDialog::OnAddFavorite(wxCommandEvent& event) {
+	wxString ip = GetHostIP();
+	int port = GetHostPort();
+	wxString name = GetPlayerName();
+
+	if (ip.empty()) {
+		wxMessageBox("Please enter a valid Host IP.", "Error", wxOK | wxICON_ERROR, this);
+		return;
+	}
+
+	wxTextEntryDialog dlg(this, "Enter a label for this favorite:", "Add Favorite", wxString::Format("%s:%d", ip, port));
+	if (dlg.ShowModal() == wxID_OK) {
+		FavoriteEntry entry;
+		entry.label = dlg.GetValue().Trim();
+		if (entry.label.empty()) entry.label = wxString::Format("%s:%d", ip, port);
+		entry.ip = ip;
+		entry.port = port;
+		entry.name = name;
+
+		m_favorites.push_back(entry);
+		SaveFavorites();
+		LoadFavorites();
+		m_favorites_choice->SetSelection(m_favorites.size());
+	}
+}
+
+void JoinMultiplayerDialog::OnRemoveFavorite(wxCommandEvent& event) {
+	int sel = m_favorites_choice->GetSelection();
+	if (sel > 0 && sel - 1 < (int)m_favorites.size()) {
+		m_favorites.erase(m_favorites.begin() + (sel - 1));
+		SaveFavorites();
+		LoadFavorites();
+	}
 }
 

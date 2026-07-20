@@ -24,6 +24,7 @@
 #include "add_item_window.h"
 #include "materials.h"
 #include <wx/settings.h>
+#include <wx/wrapsizer.h>
 
 // ============================================================================
 // Brush Palette Panel
@@ -459,6 +460,7 @@ void BrushPanel::Filter(const wxString& query) {
 }
 
 void BrushPanel::InvalidateContents() {
+	Freeze();
 	sizer->Clear(true);
 	loaded = false;
 	brushbox = nullptr;
@@ -468,12 +470,14 @@ void BrushPanel::InvalidateContents() {
 			return a->getName() < b->getName();
 		});
 	}
+	Thaw();
 }
 
 void BrushPanel::LoadContents() {
 	if (loaded) {
 		return;
 	}
+	Freeze();
 	loaded = true;
 	switch (list_type) {
 		case BRUSHLIST_LARGE_ICONS:
@@ -496,6 +500,7 @@ void BrushPanel::LoadContents() {
 	} else {
 		brushbox->SelectFirstBrush();
 	}
+	Thaw();
 }
 
 void BrushPanel::SelectFirstBrush() {
@@ -570,52 +575,22 @@ EVT_TOGGLEBUTTON(wxID_ANY, BrushIconBox::OnClickBrushButton)
 END_EVENT_TABLE()
 
 BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes, RenderSize rsz) :
-	wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxHSCROLL),
+	wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL),
 	BrushBoxInterface(brushes),
 	icon_size(rsz) {
-	int width;
-	if (icon_size == RENDER_SIZE_32x32) {
-		width = max(g_settings.getInteger(Config::PALETTE_COL_COUNT) / 2 + 1, 1);
-	} else {
-		width = max(g_settings.getInteger(Config::PALETTE_COL_COUNT) + 1, 1);
-	}
-	width = max(width, 4);
 
-	// Create buttons
-	wxSizer* stacksizer = newd wxBoxSizer(wxVERTICAL);
-	stacksizer->AddSpacer(5);
-	wxSizer* rowsizer = nullptr;
-	int item_counter = 0;
+	wxWrapSizer* wrapsizer = newd wxWrapSizer(wxHORIZONTAL);
+
 	for (BrushVector::const_iterator iter = all_brushes.begin(); iter != all_brushes.end(); ++iter) {
 		ASSERT(*iter);
-		++item_counter;
-
-		if (!rowsizer) {
-			rowsizer = newd wxBoxSizer(wxHORIZONTAL);
-		}
-
 		BrushButton* bb = newd BrushButton(this, *iter, rsz);
-		rowsizer->Add(bb);
 		brush_buttons.push_back(bb);
-
-		if (item_counter % width == 0) { // newd row
-			stacksizer->Add(rowsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
-			rowsizer = nullptr;
-		}
-	}
-	if (rowsizer) {
-		stacksizer->Add(rowsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
+		wrapsizer->Add(bb, 0, wxALL, 1);
 	}
 
-	int btn_size = (icon_size == RENDER_SIZE_32x32) ? 36 : 20;
-	int total_width_pixels = width * btn_size + 10;
-	int noUnitsX = (total_width_pixels + 19) / 20;
-	
-	int total_height_pixels = ((item_counter + width - 1) / width) * btn_size + 10;
-	int noUnitsY = (total_height_pixels + 19) / 20;
-
-	SetScrollbars(20, 20, noUnitsX, noUnitsY, 0, 0);
-	SetSizer(stacksizer);
+	SetSizer(wrapsizer);
+	SetScrollRate(0, 20);
+	FitInside();
 }
 
 BrushIconBox::~BrushIconBox() {
@@ -695,31 +670,14 @@ void BrushIconBox::EnsureVisible(size_t n) {
 }
 
 void BrushIconBox::Filter(const wxString& query) {
-	wxSizer* stacksizer = GetSizer();
-	if (stacksizer) {
-		stacksizer->Clear(false);
-	} else {
-		stacksizer = newd wxBoxSizer(wxVERTICAL);
-		SetSizer(stacksizer);
-	}
-	stacksizer->AddSpacer(5);
-
-	int width;
-	if (icon_size == RENDER_SIZE_32x32) {
-		width = max(g_settings.getInteger(Config::PALETTE_COL_COUNT) / 2 + 1, 1);
-	} else {
-		width = max(g_settings.getInteger(Config::PALETTE_COL_COUNT) + 1, 1);
-	}
-
 	wxString lower_query = query.Lower();
 	visible_brushes.clear();
 
-	std::vector<BrushButton*> visible_buttons;
+	Freeze();
 	for (BrushButton* bb : brush_buttons) {
 		wxString brush_name = wxstr(bb->brush->getName());
 		if (lower_query.IsEmpty() || brush_name.Lower().Contains(lower_query)) {
 			bb->Show(true);
-			visible_buttons.push_back(bb);
 			visible_brushes.push_back(bb->brush);
 		} else {
 			bb->Show(false);
@@ -727,34 +685,10 @@ void BrushIconBox::Filter(const wxString& query) {
 		}
 	}
 
-	wxSizer* rowsizer = nullptr;
-	int item_counter = 0;
-	for (BrushButton* bb : visible_buttons) {
-		++item_counter;
-		if (!rowsizer) {
-			rowsizer = newd wxBoxSizer(wxHORIZONTAL);
-		}
-		rowsizer->Add(bb);
-
-		if (item_counter % width == 0) {
-			stacksizer->Add(rowsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
-			rowsizer = nullptr;
-		}
-	}
-	if (rowsizer) {
-		stacksizer->Add(rowsizer, 0, wxLEFT | wxRIGHT | wxBOTTOM, 5);
-	}
-
-	stacksizer->Layout();
-	SetScrollbars(20, 20, 8, std::max(1, item_counter / width), 0, 0);
+	Layout();
 	FitInside();
-
-	if (visible_buttons.size() > 0) {
-		Brush* current_sel = GetSelectedBrush();
-		if (!current_sel) {
-			SelectFirstBrush();
-		}
-	}
+	Thaw();
+	SelectFirstBrush();
 }
 
 void BrushIconBox::OnClickBrushButton(wxCommandEvent& event) {
@@ -840,8 +774,9 @@ void BrushListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const {
 	} else {
 		spr = g_gui.gfx.getSprite(look_id);
 	}
+	bool count100 = (look_id > 0 && g_items.typeExists(look_id) && g_items[look_id].stackable);
 	if (spr) {
-		spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetHeight(), rect.GetHeight());
+		spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetHeight(), rect.GetHeight(), count100);
 	}
 	if (IsSelected(n)) {
 		dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT));

@@ -239,23 +239,23 @@ public:
 	SearchResultWindow* ShowSearchWindow();
 	void HideSearchWindow();
 
-	int GetCurrentFloor();
+	[[nodiscard]] int GetCurrentFloor() const;
 	void ChangeFloor(int newfloor);
 
-	double GetCurrentZoom();
+	[[nodiscard]] double GetCurrentZoom() const;
 	void SetCurrentZoom(double zoom);
 
 	void SwitchMode();
 	void SetSelectionMode();
 	void SetDrawingMode();
 	void SetFillBrushMode(bool enabled);
-	bool IsFillBrushMode() const {
+	[[nodiscard]] bool IsFillBrushMode() const {
 		return fill_brush_mode;
 	}
-	bool IsSelectionMode() const {
+	[[nodiscard]] bool IsSelectionMode() const {
 		return mode == SELECTION_MODE;
 	}
-	bool IsDrawingMode() const {
+	[[nodiscard]] bool IsDrawingMode() const {
 		return mode == DRAWING_MODE;
 	}
 
