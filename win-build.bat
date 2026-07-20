@@ -24,7 +24,7 @@ set "BOLD=%ESC%[1m"
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=!SCRIPT_DIR:~0,-1!"
 set "BUILD_DIR=!PROJECT_ROOT!\build"
-set "RELEASE_DIR=!BUILD_DIR!"
+set "RELEASE_DIR=!PROJECT_ROOT!\dist"
 set "ERROR_FILE=!PROJECT_ROOT!\compiler_error_latest.md"
 set "INSTALL_DIR=!BUILD_DIR!"
 set "LOG_FILE=%TEMP%\mme_build.log"
@@ -232,19 +232,31 @@ set /a "STEP+=1"
 echo.
 echo %BOLD%[%STEP%/%TOTAL_STEPS%] Packaging Runtime Release Artifacts...%RESET%
 
+if not exist "!RELEASE_DIR!" mkdir "!RELEASE_DIR!" >nul 2>&1
+
+REM 1. Copy DLLs to both BUILD_DIR (for dev testing) and RELEASE_DIR (for distribution)
 if exist "!BUILD_DIR!\vcpkg_installed\x64-windows\bin" (
     copy /y "!BUILD_DIR!\vcpkg_installed\x64-windows\bin\*.dll" "!BUILD_DIR!\" >nul 2>&1
+    copy /y "!BUILD_DIR!\vcpkg_installed\x64-windows\bin\*.dll" "!RELEASE_DIR!\" >nul 2>&1
 )
 if exist "!BUILD_DIR!\bin" (
     copy /y "!BUILD_DIR!\bin\*.dll" "!BUILD_DIR!\" >nul 2>&1
+    copy /y "!BUILD_DIR!\bin\*.dll" "!RELEASE_DIR!\" >nul 2>&1
 )
 
+REM 2. Copy Executable to RELEASE_DIR
+if exist "!BUILD_DIR!\MME.exe" copy /y "!BUILD_DIR!\MME.exe" "!RELEASE_DIR!\" >nul 2>&1
+if exist "!BUILD_DIR!\Release\MME.exe" copy /y "!BUILD_DIR!\Release\MME.exe" "!RELEASE_DIR!\" >nul 2>&1
+
+REM 3. Copy Asset Folders to both BUILD_DIR and RELEASE_DIR
 for %%D in (data brushes scripts extensions icons) do (
     if exist "!PROJECT_ROOT!\%%D" (
         robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+        robocopy "!PROJECT_ROOT!\%%D" "!RELEASE_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
     )
 )
 if not exist "!BUILD_DIR!\Saves" mkdir "!BUILD_DIR!\Saves" >nul 2>&1
+if not exist "!RELEASE_DIR!\Saves" mkdir "!RELEASE_DIR!\Saves" >nul 2>&1
 
 echo.
 echo   %GREEN%Deployment OK%RESET%
@@ -253,8 +265,9 @@ call :cleanup_intermediate_artifacts
 
 echo.
 echo %GREEN%========================================================%RESET%
-echo   Build Successful! Integrated hybrid binary pack location:
-echo   !BUILD_DIR!
+echo   Build Successful!
+echo   - Dev Incremental Cache : !BUILD_DIR!
+echo   - Clean Release Package  : !RELEASE_DIR!
 echo %GREEN%========================================================%RESET%
 echo.
 pause
