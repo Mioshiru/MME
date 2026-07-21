@@ -8,7 +8,7 @@
 #include <wx/spinctrl.h>
 #include <wx/slider.h>
 
-class Editor;
+#include "editor.h"
 
 class ProceduralGeneratorDialog : public wxDialog {
 public:

@@ -69,35 +69,30 @@ void MapDiffDialog::OnClickCompare(wxCommandEvent& WXUNUSED(event)) {
 	addedPositions.clear();
 	removedPositions.clear();
 
-	IOMapOTBM otbm;
+	MapVersion ver(MAP_OTBM_2, CLIENT_VERSION_NONE);
+	IOMapOTBM::getVersionInfo(fn.GetFullPath(), ver);
+	IOMapOTBM otbm(ver);
 	Map refMap;
 	otbm.loadMap(refMap, fn.GetFullPath());
 
 	Map& curMap = editor.map;
+	int maxW = std::max(curMap.getWidth(), refMap.getWidth());
+	int maxH = std::max(curMap.getHeight(), refMap.getHeight());
+
 	for (int z = 0; z < 16; ++z) {
-		for (int y = 0; y < std::max(curMap.getHeight(), refMap.getHeight()); y += 4) {
-			for (int x = 0; x < std::max(curMap.getWidth(), refMap.getWidth()); x += 4) {
-				QTreeNode* curLeaf = curMap.getLeaf(x, y);
-				QTreeNode* refLeaf = refMap.getLeaf(x, y);
+		for (int y = 0; y < maxH; ++y) {
+			for (int x = 0; x < maxW; ++x) {
+				Tile* curTile = curMap.getTile(x, y, z);
+				Tile* refTile = refMap.getTile(x, y, z);
 
-				Floor* curFloor = curLeaf ? curLeaf->getFloor(z) : nullptr;
-				Floor* refFloor = refLeaf ? refLeaf->getFloor(z) : nullptr;
-
-				for (int ty = 0; ty < 4; ++ty) {
-					for (int tx = 0; tx < 4; ++tx) {
-						Tile* curTile = curFloor ? curFloor->getTile(tx, ty) : nullptr;
-						Tile* refTile = refFloor ? refFloor->getTile(tx, ty) : nullptr;
-
-						Position pos(x + tx, y + ty, z);
-						if (curTile && !refTile) {
-							addedPositions.insert(pos);
-						} else if (!curTile && refTile) {
-							removedPositions.insert(pos);
-						} else if (curTile && refTile) {
-							if (curTile->size() != refTile->size()) {
-								addedPositions.insert(pos);
-							}
-						}
+				Position pos(x, y, z);
+				if (curTile && !refTile) {
+					addedPositions.insert(pos);
+				} else if (!curTile && refTile) {
+					removedPositions.insert(pos);
+				} else if (curTile && refTile) {
+					if (curTile->size() != refTile->size()) {
+						addedPositions.insert(pos);
 					}
 				}
 			}

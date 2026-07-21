@@ -85,6 +85,8 @@ public:
 	void setFollowClientId(uint32_t id) { followClientId = id; }
 	UserStatus getLocalStatus() const { return localStatus; }
 	void updateActivity();
+	void checkInactivity();
+	void touchActivity();
 
 	// Flags a node as queried and stores it, need to call SendNodeRequest to send it to server
 	void queryNode(int32_t ndx, int32_t ndy, bool underground);

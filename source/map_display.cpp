@@ -35,6 +35,7 @@
 #include "copybuffer.h"
 #include "graphics.h"
 #include "gui.h"
+#include "live_client.h"
 #include "live_peer.h"
 #include "live_server.h"
 #include "live_socket.h"
@@ -1895,13 +1896,7 @@ void MapCanvas::OnIdle(wxIdleEvent& event) {
   double dt = std::chrono::duration<double>(now - last_frame_time).count();
 
   if (editor.IsLiveClient()) {
-    auto client = editor.GetLiveClient();
-    if (client->getLocalStatus() == USER_STATUS_ACTIVE) {
-      uint64_t now_ms = wxGetLocalTimeMillis().GetValue();
-      if (client->lastUserActivityTime > 0 && (now_ms - client->lastUserActivityTime > 300000)) {
-        client->sendStatusUpdate(USER_STATUS_AFK);
-      }
-    }
+    editor.GetLiveClient()->checkInactivity();
   }
 
   bool wants_continuous = true;

@@ -20,6 +20,7 @@
 #include "live_client.h"
 #include "live_tab.h"
 #include "live_action.h"
+#include "map_tab.h"
 #include "editor.h"
 
 #include <chrono>
@@ -584,8 +585,13 @@ void LiveClient::parseClientAccepted(NetworkMessage& message) {
 	sendReady();
 
 	// Resync active map view nodes on reconnect
-	int map_x, map_y;
-	g_gui.GetScreenCenterPosition(&map_x, &map_y);
+	int map_x = 0, map_y = 0;
+	MapTab* activeTab = dynamic_cast<MapTab*>(g_gui.GetCurrentTab());
+	if (activeTab) {
+		Position centerPos = activeTab->GetScreenCenterPosition();
+		map_x = centerPos.x;
+		map_y = centerPos.y;
+	}
 	int min_ndx = std::max(0, (map_x - 100) / 4);
 	int max_ndx = (map_x + 100) / 4;
 	int min_ndy = std::max(0, (map_y - 100) / 4);
@@ -669,7 +675,7 @@ void LiveClient::parseCursorUpdate(NetworkMessage& message) {
 	cursors[cursor.id] = cursor;
 
 	if (followClientId != 0 && cursor.id == followClientId) {
-		g_gui.ScrollTo(cursor.pos);
+		g_gui.SetScreenCenterPosition(cursor.pos);
 	}
 }
 
@@ -797,6 +803,22 @@ void LiveClient::parseAddAnnotation(NetworkMessage& message) {
 	uint8_t b = message.read<uint8_t>();
 	annotation.color = wxColor(r, g, b, 255);
 	mapAnnotations[annotation.id] = annotation;
+}
+
+void LiveClient::touchActivity() {
+	lastUserActivityTime = wxGetLocalTimeMillis().GetValue();
+	if (localStatus == USER_STATUS_AFK) {
+		sendStatusUpdate(USER_STATUS_ACTIVE);
+	}
+}
+
+void LiveClient::checkInactivity() {
+	if (localStatus == USER_STATUS_ACTIVE) {
+		uint64_t now_ms = wxGetLocalTimeMillis().GetValue();
+		if (lastUserActivityTime > 0 && (now_ms - lastUserActivityTime > 300000)) {
+			sendStatusUpdate(USER_STATUS_AFK);
+		}
+	}
 }
 
 void LiveClient::parseRemoveAnnotation(NetworkMessage& message) {

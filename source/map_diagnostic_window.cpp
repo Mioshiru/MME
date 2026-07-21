@@ -63,60 +63,50 @@ void MapDiagnosticDialog::runDiagnostics() {
 
 	Map& map = editor.map;
 	for (int z = 0; z < 16; ++z) {
-		for (int y = 0; y < map.getHeight(); y += 4) {
-			for (int x = 0; x < map.getWidth(); x += 4) {
-				QTreeNode* node = map.getLeaf(x, y);
-				if (!node) continue;
+		for (int y = 0; y < map.getHeight(); ++y) {
+			for (int x = 0; x < map.getWidth(); ++x) {
+				Tile* tile = map.getTile(x, y, z);
+				if (!tile) continue;
 
-				Floor* f = node->getFloor(z);
-				if (!f) continue;
+				Position pos = tile->getPosition();
 
-				for (int ty = 0; ty < 4; ++ty) {
-					for (int tx = 0; tx < 4; ++tx) {
-						Tile* tile = f->getTile(tx, ty);
-						if (!tile) continue;
+				// Check 1: Orphan Spawn
+				if (tile->spawn && !tile->hasGround()) {
+					DiagnosticIssue issue;
+					issue.pos = pos;
+					issue.category = "Orphan Spawn";
+					issue.description = "Spawn befindet sich auf keinem begehbaren Boden!";
+					issues.push_back(issue);
+				}
 
-						Position pos = tile->getPosition();
-
-						// Check 1: Orphan Spawn
-						if (tile->spawn && !tile->hasGround()) {
-							DiagnosticIssue issue;
-							issue.pos = pos;
-							issue.category = "Orphan Spawn";
-							issue.description = "Spawn befindet sich auf keinem begehbaren Boden!";
-							issues.push_back(issue);
-						}
-
-						// Check 2: Floating Walls without Ground
-						bool hasWall = false;
-						for (Item* item : tile->items) {
-							if (item && item->isWall()) {
-								hasWall = true;
+				// Check 2: Floating Walls without Ground & UniqueIDs
+				bool hasWall = false;
+				for (Item* item : tile->items) {
+					if (item && item->isWall()) {
+						hasWall = true;
+					}
+					if (item) {
+						uint32_t uid = item->getUniqueID();
+						if (uid != 0) {
+							if (usedUids.find(uid) != usedUids.end()) {
+								DiagnosticIssue issue;
+								issue.pos = pos;
+								issue.category = "Duplicate UID";
+								issue.description = wxString::Format("UniqueID %d ist mehrfach vergeben!", uid);
+								issues.push_back(issue);
+							} else {
+								usedUids.insert(uid);
 							}
-							if (item) {
-								uint32_t uid = item->getUniqueID();
-								if (uid != 0) {
-									if (usedUids.find(uid) != usedUids.end()) {
-										DiagnosticIssue issue;
-										issue.pos = pos;
-										issue.category = "Duplicate UID";
-										issue.description = wxString::Format("UniqueID %d ist mehrfach vergeben!", uid);
-										issues.push_back(issue);
-									} else {
-										usedUids.insert(uid);
-									}
-								}
-							}
-						}
-
-						if (hasWall && !tile->hasGround()) {
-							DiagnosticIssue issue;
-							issue.pos = pos;
-							issue.category = "Floating Wall";
-							issue.description = "Wandsegment ohne Ground-Tile darunter!";
-							issues.push_back(issue);
 						}
 					}
+				}
+
+				if (hasWall && !tile->hasGround()) {
+					DiagnosticIssue issue;
+					issue.pos = pos;
+					issue.category = "Floating Wall";
+					issue.description = "Wandsegment ohne Ground-Tile darunter!";
+					issues.push_back(issue);
 				}
 			}
 		}
@@ -138,7 +128,7 @@ void MapDiagnosticDialog::OnClickScan(wxCommandEvent& WXUNUSED(event)) {
 void MapDiagnosticDialog::OnItemSelect(wxListEvent& event) {
 	long idx = event.GetIndex();
 	if (idx >= 0 && idx < (long)issues.size()) {
-		g_gui.ScrollTo(issues[idx].pos);
+		g_gui.SetScreenCenterPosition(issues[idx].pos);
 	}
 }
 

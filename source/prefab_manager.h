@@ -7,7 +7,7 @@
 #include <wx/listbox.h>
 #include <map>
 
-class Editor;
+#include "editor.h"
 
 class PrefabManager {
 public:

@@ -79,6 +79,11 @@ PrefabLibraryDialog::PrefabLibraryDialog(wxWindow* parent, Editor& editor) :
 PrefabLibraryDialog::~PrefabLibraryDialog() {
 }
 
+#include "tile.h"
+#include "item.h"
+#include "creature.h"
+#include "spawn.h"
+
 void PrefabLibraryDialog::OnClickSaveCurrentSelection(wxCommandEvent& WXUNUSED(event)) {
 	if (editor.selection.size() == 0) {
 		wxMessageBox("Bitte wählen Sie zuerst einen Bereich auf der Karte aus!", "Keine Auswahl", wxOK | wxICON_INFORMATION);
@@ -90,7 +95,7 @@ void PrefabLibraryDialog::OnClickSaveCurrentSelection(wxCommandEvent& WXUNUSED(e
 		wxString name = nameDialog.GetValue();
 		if (!name.IsEmpty()) {
 			CopyBuffer* buf = newd CopyBuffer();
-			buf->copyFrom(editor, editor.selection);
+			buf->copy(editor, g_gui.GetCurrentFloor());
 			PrefabManager::getInstance().addPrefab(name, buf);
 
 			prefabListBox->Append(name);
@@ -108,9 +113,30 @@ void PrefabLibraryDialog::OnClickPastePrefab(wxCommandEvent& WXUNUSED(event)) {
 
 	wxString name = prefabListBox->GetString(sel);
 	CopyBuffer* buf = PrefabManager::getInstance().getPrefab(name);
-	if (buf) {
-		g_gui.copybuffer->copyFrom(*buf);
-		g_gui.StartPasting();
+	if (buf && buf->GetTileCount() > 0) {
+		editor.copybuffer.clear();
+		BaseMap& dest = editor.copybuffer.getBufferMap();
+		for (MapIterator it = buf->getBufferMap().begin(); it != buf->getBufferMap().end(); ++it) {
+			TileLocation* loc = *it;
+			if (!loc) continue;
+			Tile* srcTile = loc->get();
+			if (!srcTile) continue;
+
+			TileLocation* newloc = dest.createTileL(srcTile->getPosition());
+			Tile* destTile = dest.allocator(newloc);
+			if (srcTile->ground) {
+				destTile->house_id = srcTile->house_id;
+				destTile->setMapFlags(srcTile->getMapFlags());
+				destTile->addItem(srcTile->ground->deepCopy());
+			}
+			for (Item* item : srcTile->items) {
+				if (item) destTile->addItem(item->deepCopy());
+			}
+			if (srcTile->creature) destTile->creature = srcTile->creature->deepCopy();
+			if (srcTile->spawn) destTile->spawn = srcTile->spawn->deepCopy();
+		}
+
+		g_gui.PreparePaste();
 		g_gui.SetStatusText("Prefab '" + name + "' bereit zum Platzieren.");
 		EndModal(wxID_OK);
 	}

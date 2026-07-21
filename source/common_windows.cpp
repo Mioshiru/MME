@@ -1195,22 +1195,24 @@ ObjectPropertiesWindowBase::~ObjectPropertiesWindowBase() {
 }
 
 void ObjectPropertiesWindowBase::acquireLock() {
-	if (!edit_tile) return;
+	if (!edit_tile || !g_gui.GetCurrentEditor()) return;
 	Position pos = edit_tile->getPosition();
-	if (g_gui.GetEditor().IsLiveClient()) {
-		g_gui.GetEditor().GetLiveClient()->requestLock(pos);
-	} else if (g_gui.GetEditor().IsLiveServer()) {
-		g_gui.GetEditor().GetLiveServer()->requestLock(0, pos, g_gui.GetEditor().GetLiveServer()->getName(), *wxGREEN);
+	Editor* editor = g_gui.GetCurrentEditor();
+	if (editor->IsLiveClient()) {
+		editor->GetLiveClient()->requestLock(pos);
+	} else if (editor->IsLiveServer()) {
+		editor->GetLiveServer()->requestLock(0, pos, editor->GetLiveServer()->getName(), *wxGREEN);
 	}
 }
 
 void ObjectPropertiesWindowBase::releaseLock() {
-	if (!edit_tile) return;
+	if (!edit_tile || !g_gui.GetCurrentEditor()) return;
 	Position pos = edit_tile->getPosition();
-	if (g_gui.GetEditor().IsLiveClient()) {
-		g_gui.GetEditor().GetLiveClient()->sendUnlock(pos);
-	} else if (g_gui.GetEditor().IsLiveServer()) {
-		g_gui.GetEditor().GetLiveServer()->unlock(0, pos);
+	Editor* editor = g_gui.GetCurrentEditor();
+	if (editor->IsLiveClient()) {
+		editor->GetLiveClient()->sendUnlock(pos);
+	} else if (editor->IsLiveServer()) {
+		editor->GetLiveServer()->unlock(0, pos);
 	}
 }
 

@@ -1,6 +1,7 @@
 #include "procedural_generator_window.h"
 #include "editor.h"
 #include "gui.h"
+#include "map_tab.h"
 #include "ground_brush.h"
 #include "doodad_brush.h"
 #include "raw_brush.h"
@@ -92,8 +93,13 @@ void ProceduralGeneratorDialog::OnClickGenerate(wxCommandEvent& WXUNUSED(event))
 	noise.SetSeed(seedSpin->GetValue());
 	noise.SetFrequency((float)frequencySpin->GetValue());
 
-	int map_x, map_y;
-	g_gui.GetScreenCenterPosition(&map_x, &map_y);
+	int map_x = 0, map_y = 0;
+	MapTab* activeTab = dynamic_cast<MapTab*>(g_gui.GetCurrentTab());
+	if (activeTab) {
+		Position centerPos = activeTab->GetScreenCenterPosition();
+		map_x = centerPos.x;
+		map_y = centerPos.y;
+	}
 	int floor = g_gui.GetCurrentFloor();
 
 	int min_x = std::max(0, map_x - 30);
@@ -105,8 +111,8 @@ void ProceduralGeneratorDialog::OnClickGenerate(wxCommandEvent& WXUNUSED(event))
 
 	Action* action = editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
 
-	GroundBrush* dirtBrush = g_brushes.getGroundBrush("dirt");
-	GroundBrush* grassBrush = g_brushes.getGroundBrush("grass");
+	GroundBrush* dirtBrush = dynamic_cast<GroundBrush*>(g_brushes.getBrush("dirt"));
+	GroundBrush* grassBrush = dynamic_cast<GroundBrush*>(g_brushes.getBrush("grass"));
 
 	for (int y = min_y; y <= max_y; ++y) {
 		for (int x = min_x; x <= max_x; ++x) {

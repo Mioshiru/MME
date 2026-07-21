@@ -7,7 +7,7 @@
 #include <wx/listctrl.h>
 #include <vector>
 
-class Editor;
+#include "editor.h"
 
 struct DiagnosticIssue {
 	Position pos;

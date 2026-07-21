@@ -7,7 +7,7 @@
 #include <set>
 #include "position.h"
 
-class Editor;
+#include "editor.h"
 
 class MapDiffDialog : public wxDialog {
 public:
