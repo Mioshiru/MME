@@ -9,6 +9,7 @@
 #include "live_socket.h"
 #include "map_display.h"
 #include "map_drawer.h"
+#include "map_diff_window.h"
 #include "raw_brush.h"
 #include "settings.h"
 #include "style_manager.h"
@@ -41,6 +42,8 @@ void MapDrawer::DrawLiveCursors() {
     return;
 
   LiveSocket &live = editor.GetLive();
+
+  // 1. Peer Cursors
   for (LiveCursor &cursor : live.getCursorList()) {
     if (cursor.pos.z <= GROUND_LAYER && floor > GROUND_LAYER)
       continue;
@@ -61,7 +64,7 @@ void MapDrawer::DrawLiveCursors() {
     glVertex2f(draw_x, draw_y + TileSize);
     glEnd();
 
-    // Player name label
+    // Player name & status label
     if (ImGui::GetCurrentContext()) {
       ImDrawList *draw_list = ImGui::GetForegroundDrawList();
       ImU32 col = IM_COL32(cursor.color.Red(), cursor.color.Green(),
@@ -82,10 +85,134 @@ void MapDrawer::DrawLiveCursors() {
           label = "Host";
       }
 
+      if (cursor.status == USER_STATUS_AFK) {
+        label += " [AFK]";
+      }
+
       ImVec2 pos(draw_x, draw_y - 15.0f);
       draw_list->AddText(ImVec2(pos.x + 1.0f, pos.y + 1.0f), shadow_col,
                          label.c_str());
       draw_list->AddText(pos, col, label.c_str());
+    }
+  }
+
+  // 2. Entity Locks Overlay
+  for (const auto& pair : live.lockedEntities) {
+    const Position& pos = pair.first;
+    const LiveEntityLock& lock = pair.second;
+    if (pos.z != floor) continue;
+
+    float draw_x = (pos.x * TileSize) - view_scroll_x;
+    float draw_y = (pos.y * TileSize) - view_scroll_y;
+
+    glColor4ub(255, 60, 0, 100);
+    glBegin(GL_QUADS);
+    glVertex2f(draw_x, draw_y);
+    glVertex2f(draw_x + TileSize, draw_y);
+    glVertex2f(draw_x + TileSize, draw_y + TileSize);
+    glVertex2f(draw_x, draw_y + TileSize);
+    glEnd();
+
+    glColor4ub(255, 60, 0, 220);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(draw_x, draw_y);
+    glVertex2f(draw_x + TileSize, draw_y);
+    glVertex2f(draw_x + TileSize, draw_y + TileSize);
+    glVertex2f(draw_x, draw_y + TileSize);
+    glEnd();
+    glLineWidth(1.0f);
+
+    if (ImGui::GetCurrentContext()) {
+      ImDrawList *draw_list = ImGui::GetForegroundDrawList();
+      std::string lockLabel = "[LOCK] " + lock.ownerName.ToStdString();
+      draw_list->AddText(ImVec2(draw_x + 1.0f, draw_y - 14.0f), IM_COL32(0, 0, 0, 255), lockLabel.c_str());
+      draw_list->AddText(ImVec2(draw_x, draw_y - 15.0f), IM_COL32(255, 100, 100, 255), lockLabel.c_str());
+    }
+  }
+
+  // 3. Quick Pings
+  uint64_t now_ms = wxGetLocalTimeMillis().GetValue();
+  auto pingIt = live.activePings.begin();
+  while (pingIt != live.activePings.end()) {
+    if (now_ms - pingIt->timestamp > 4000) {
+      pingIt = live.activePings.erase(pingIt);
+    } else {
+      float progress = (float)(now_ms - pingIt->timestamp) / 4000.0f;
+      float radius = TileSize * (0.5f + progress * 2.0f);
+      float alpha = 1.0f - progress;
+
+      if (pingIt->pos.z == floor) {
+        float draw_x = (pingIt->pos.x * TileSize) - view_scroll_x + (TileSize / 2.0f);
+        float draw_y = (pingIt->pos.y * TileSize) - view_scroll_y + (TileSize / 2.0f);
+
+        glColor4ub(pingIt->color.Red(), pingIt->color.Green(), pingIt->color.Blue(), (uint8_t)(alpha * 220));
+        glBegin(GL_LINE_LOOP);
+        for (int i = 0; i < 20; ++i) {
+          float angle = i * 2.0f * 3.14159f / 20.0f;
+          glVertex2f(draw_x + cos(angle) * radius, draw_y + sin(angle) * radius);
+        }
+        glEnd();
+
+        if (ImGui::GetCurrentContext()) {
+          ImDrawList *draw_list = ImGui::GetForegroundDrawList();
+          std::string pingLabel = "PING: " + pingIt->senderName.ToStdString();
+          draw_list->AddText(ImVec2(draw_x - 20.0f, draw_y - radius - 15.0f), IM_COL32(255, 255, 0, (int)(alpha * 255)), pingLabel.c_str());
+        }
+      }
+      ++pingIt;
+    }
+  }
+
+  // 4. Map Annotations
+  for (const auto& pair : live.mapAnnotations) {
+    const MapAnnotation& ann = pair.second;
+    if (ann.pos.z != floor) continue;
+
+    float draw_x = (ann.pos.x * TileSize) - view_scroll_x;
+    float draw_y = (ann.pos.y * TileSize) - view_scroll_y;
+
+    glColor4ub(255, 215, 0, 220);
+    glBegin(GL_QUADS);
+    glVertex2f(draw_x, draw_y);
+    glVertex2f(draw_x + 10.0f, draw_y);
+    glVertex2f(draw_x + 10.0f, draw_y + 10.0f);
+    glVertex2f(draw_x, draw_y + 10.0f);
+    glEnd();
+
+    if (ImGui::GetCurrentContext()) {
+      ImDrawList *draw_list = ImGui::GetForegroundDrawList();
+      std::string annText = ann.author.ToStdString() + ": " + ann.text.ToStdString();
+      draw_list->AddText(ImVec2(draw_x + 12.0f, draw_y - 2.0f), IM_COL32(0, 0, 0, 255), annText.c_str());
+      draw_list->AddText(ImVec2(draw_x + 11.0f, draw_y - 3.0f), IM_COL32(255, 215, 0, 255), annText.c_str());
+    }
+  }
+
+  // 5. Map Diff Overlay
+  if (MapDiffDialog::isDiffModeActive) {
+    for (const Position& pos : MapDiffDialog::addedPositions) {
+      if (pos.z != floor) continue;
+      float draw_x = (pos.x * TileSize) - view_scroll_x;
+      float draw_y = (pos.y * TileSize) - view_scroll_y;
+      glColor4ub(0, 255, 0, 120); // Green for added
+      glBegin(GL_QUADS);
+      glVertex2f(draw_x, draw_y);
+      glVertex2f(draw_x + TileSize, draw_y);
+      glVertex2f(draw_x + TileSize, draw_y + TileSize);
+      glVertex2f(draw_x, draw_y + TileSize);
+      glEnd();
+    }
+    for (const Position& pos : MapDiffDialog::removedPositions) {
+      if (pos.z != floor) continue;
+      float draw_x = (pos.x * TileSize) - view_scroll_x;
+      float draw_y = (pos.y * TileSize) - view_scroll_y;
+      glColor4ub(255, 0, 0, 120); // Red for removed
+      glBegin(GL_QUADS);
+      glVertex2f(draw_x, draw_y);
+      glVertex2f(draw_x + TileSize, draw_y);
+      glVertex2f(draw_x + TileSize, draw_y + TileSize);
+      glVertex2f(draw_x, draw_y + TileSize);
+      glEnd();
     }
   }
 }

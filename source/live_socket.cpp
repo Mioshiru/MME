@@ -396,6 +396,7 @@ LiveCursor LiveSocket::readCursor(NetworkMessage& message) {
 	cursor.color = wxColor(r, g, b, a);
 
 	cursor.pos = message.read<Position>();
+	cursor.status = static_cast<UserStatus>(message.read<uint8_t>());
 	return cursor;
 }
 
@@ -406,4 +407,5 @@ void LiveSocket::writeCursor(NetworkMessage& message, const LiveCursor& cursor) 
 	message.write<uint8_t>(cursor.color.Blue());
 	message.write<uint8_t>(cursor.color.Alpha());
 	message.write<Position>(cursor.pos);
+	message.write<uint8_t>(static_cast<uint8_t>(cursor.status));
 }

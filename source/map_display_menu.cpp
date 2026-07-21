@@ -152,6 +152,19 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 		return;
 	}
 
+	if (editor.IsLive()) {
+		Position pos = tile->getPosition();
+		auto& live = editor.GetLive();
+		auto it = live.lockedEntities.find(pos);
+		if (it != live.lockedEntities.end()) {
+			if (editor.IsLiveClient() && it->second.ownerId != 0) {
+				g_gui.SetStatusText(wxString::Format("Zugriff verweigert: Position wird gerade von '%s' bearbeitet!", it->second.ownerName));
+				wxMessageBox(wxString::Format("Diese Position/Eigenschaft wird derzeit von '%s' bearbeitet!", it->second.ownerName), "Sperre aktiv", wxOK | wxICON_WARNING);
+				return;
+			}
+		}
+	}
+
 	Tile* new_tile = tile->deepCopy(editor.map);
 
 	wxDialog* w = nullptr; 
@@ -352,6 +365,12 @@ void MapPopupMenu::Update() {
 				if (tile->hasGround() || topCreature || topSpawn) {
 					AppendSeparator();
 					Append(MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
+				}
+
+				if (editor.IsLive()) {
+					AppendSeparator();
+					Append(MAP_POPUP_MENU_QUICK_PING, "Signalpunkt setzen (Ping)", "Platziert einen hervorgehobenen Signalpunkt für Mitspieler");
+					Append(MAP_POPUP_MENU_ADD_ANNOTATION, "Anmerkung / Notiz hinzufügen", "Platziert eine bleibende Notiz an dieser Position");
 				}
 
 				Town* clicked_town = nullptr;

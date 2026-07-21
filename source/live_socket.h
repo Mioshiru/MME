@@ -37,10 +37,39 @@ class MemoryNodeFileWriteHandle;
 class LiveLogTab;
 class Action;
 
+enum UserStatus {
+	USER_STATUS_ACTIVE = 0,
+	USER_STATUS_AFK = 1
+};
+
 struct LiveCursor {
-	uint32_t id;
-	wxColor color;
+	uint32_t id = 0;
+	wxColor color = *wxWHITE;
 	Position pos;
+	UserStatus status = USER_STATUS_ACTIVE;
+};
+
+struct LiveEntityLock {
+	Position pos;
+	uint32_t ownerId = 0;
+	wxString ownerName;
+	wxColor ownerColor = *wxWHITE;
+};
+
+struct LivePing {
+	Position pos;
+	uint32_t senderId = 0;
+	wxString senderName;
+	wxColor color = *wxWHITE;
+	uint64_t timestamp = 0;
+};
+
+struct MapAnnotation {
+	uint32_t id = 0;
+	Position pos;
+	wxString text;
+	wxString author;
+	wxColor color = *wxWHITE;
 };
 
 class LiveSocket {
@@ -91,6 +120,9 @@ public:
 
 	//
 	std::unordered_map<uint32_t, LiveCursor> cursors;
+	std::map<Position, LiveEntityLock> lockedEntities;
+	std::vector<LivePing> activePings;
+	std::unordered_map<uint32_t, MapAnnotation> mapAnnotations;
 
 	MemoryNodeFileReadHandle mapReader;
 	MemoryNodeFileWriteHandle mapWriter;

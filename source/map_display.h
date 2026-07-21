@@ -81,6 +81,8 @@ public:
   void OnGotoDestination(wxCommandEvent &event);
   void OnRotateItem(wxCommandEvent &event);
   void OnSwitchDoor(wxCommandEvent &event);
+  void OnQuickPing(wxCommandEvent &event);
+  void OnAddAnnotation(wxCommandEvent &event);
   // ----
   void OnSelectRAWBrush(wxCommandEvent &event);
   void OnSelectGroundBrush(wxCommandEvent &event);

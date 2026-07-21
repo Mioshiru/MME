@@ -153,6 +153,7 @@ void LiveServer::removeClient(uint32_t id) {
 		editor->map.clearVisible(clientIds);
 	}
 
+	clearLocksForClient(clientId);
 	clients.erase(it);
 	delete peer;
 	updateClientList();
@@ -326,7 +327,107 @@ void LiveServer::updateOperation(int32_t percent) {
 
 	NetworkMessage message;
 	message.write<uint8_t>(PACKET_UPDATE_OPERATION);
-	message.write<uint32_t>(percent);
+	message.write<int32_t>(percent);
+
+	for (auto& clientEntry : clients) {
+		clientEntry.second->send(message);
+	}
+}
+
+bool LiveServer::requestLock(uint32_t clientId, const Position& pos, const wxString& clientName, const wxColor& clientColor) {
+	auto it = lockedEntities.find(pos);
+	if (it != lockedEntities.end()) {
+		if (it->second.ownerId != clientId) {
+			return false; // Already locked by another client
+		}
+		return true;
+	}
+
+	LiveEntityLock lock;
+	lock.pos = pos;
+	lock.ownerId = clientId;
+	lock.ownerName = clientName;
+	lock.ownerColor = clientColor;
+	lockedEntities[pos] = lock;
+
+	broadcastLockState(pos, clientId, clientName, clientColor, true);
+	return true;
+}
+
+void LiveServer::unlock(uint32_t clientId, const Position& pos) {
+	auto it = lockedEntities.find(pos);
+	if (it != lockedEntities.end() && it->second.ownerId == clientId) {
+		lockedEntities.erase(it);
+		broadcastLockState(pos, 0, "", *wxWHITE, false);
+	}
+}
+
+void LiveServer::clearLocksForClient(uint32_t clientId) {
+	std::vector<Position> toRemove;
+	for (const auto& pair : lockedEntities) {
+		if (pair.second.ownerId == clientId) {
+			toRemove.push_back(pair.first);
+		}
+	}
+	for (const auto& pos : toRemove) {
+		lockedEntities.erase(pos);
+		broadcastLockState(pos, 0, "", *wxWHITE, false);
+	}
+}
+
+void LiveServer::broadcastLockState(const Position& pos, uint32_t ownerId, const wxString& ownerName, const wxColor& ownerColor, bool isLocked) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_LOCK_BROADCAST);
+	message.write<Position>(pos);
+	message.write<uint32_t>(ownerId);
+	message.write<uint8_t>(isLocked ? 1 : 0);
+	if (isLocked) {
+		message.write<std::string>(nstr(ownerName));
+		message.write<uint8_t>(ownerColor.Red());
+		message.write<uint8_t>(ownerColor.Green());
+		message.write<uint8_t>(ownerColor.Blue());
+	}
+
+	for (auto& clientEntry : clients) {
+		clientEntry.second->send(message);
+	}
+}
+
+void LiveServer::broadcastPing(const LivePing& ping) {
+	activePings.push_back(ping);
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_PING_LOCATION);
+	message.write<Position>(ping.pos);
+	message.write<uint32_t>(ping.senderId);
+	message.write<std::string>(nstr(ping.senderName));
+	message.write<uint8_t>(ping.color.Red());
+	message.write<uint8_t>(ping.color.Green());
+	message.write<uint8_t>(ping.color.Blue());
+	message.write<uint64_t>(ping.timestamp);
+
+	for (auto& clientEntry : clients) {
+		clientEntry.second->send(message);
+	}
+}
+
+void LiveServer::broadcastAnnotation(const MapAnnotation& annotation, bool remove) {
+	if (remove) {
+		mapAnnotations.erase(annotation.id);
+	} else {
+		mapAnnotations[annotation.id] = annotation;
+	}
+
+	NetworkMessage message;
+	message.write<uint8_t>(remove ? PACKET_REMOVE_ANNOTATION : PACKET_ADD_ANNOTATION);
+	message.write<uint32_t>(annotation.id);
+	if (!remove) {
+		message.write<Position>(annotation.pos);
+		message.write<std::string>(nstr(annotation.text));
+		message.write<std::string>(nstr(annotation.author));
+		message.write<uint8_t>(annotation.color.Red());
+		message.write<uint8_t>(annotation.color.Green());
+		message.write<uint8_t>(annotation.color.Blue());
+	}
 
 	for (auto& clientEntry : clients) {
 		clientEntry.second->send(message);

@@ -1,0 +1,147 @@
+#include "map_diagnostic_window.h"
+#include "editor.h"
+#include "gui.h"
+#include "map.h"
+#include "tile.h"
+#include "item.h"
+#include "spawn.h"
+#include "creature.h"
+#include <wx/stattext.h>
+#include <wx/button.h>
+#include <wx/sizer.h>
+#include <set>
+
+enum {
+	DIAG_BTN_SCAN = wxID_HIGHEST + 300,
+	DIAG_LIST_CTRL
+};
+
+BEGIN_EVENT_TABLE(MapDiagnosticDialog, wxDialog)
+EVT_BUTTON(DIAG_BTN_SCAN, MapDiagnosticDialog::OnClickScan)
+EVT_LIST_ITEM_SELECTED(DIAG_LIST_CTRL, MapDiagnosticDialog::OnItemSelect)
+EVT_BUTTON(wxID_CANCEL, MapDiagnosticDialog::OnClickClose)
+END_EVENT_TABLE()
+
+MapDiagnosticDialog::MapDiagnosticDialog(wxWindow* parent, Editor& editor) :
+	wxDialog(parent, wxID_ANY, "Map Diagnostic & Health Scanner", wxDefaultPosition, wxSize(640, 480), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+	editor(editor) {
+
+	wxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
+
+	// Title
+	wxStaticText* header = new wxStaticText(this, wxID_ANY, "Map Analyse & Qualitätsprüfung");
+	wxFont headerFont = header->GetFont();
+	headerFont.SetPointSize(12);
+	headerFont.SetWeight(wxFONTWEIGHT_BOLD);
+	header->SetFont(headerFont);
+	header->SetForegroundColour(wxColor(180, 140, 50));
+	topsizer->Add(header, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
+
+	issueListCtrl = new wxListCtrl(this, DIAG_LIST_CTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
+	issueListCtrl->InsertColumn(0, "Kategorie", wxLIST_FORMAT_LEFT, 140);
+	issueListCtrl->InsertColumn(1, "Position", wxLIST_FORMAT_LEFT, 100);
+	issueListCtrl->InsertColumn(2, "Beschreibung", wxLIST_FORMAT_LEFT, 350);
+
+	topsizer->Add(issueListCtrl, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
+
+	wxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+	buttonSizer->Add(new wxButton(this, DIAG_BTN_SCAN, "Scan starten"), 0, wxRIGHT, 10);
+	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Schließen"), 0);
+
+	topsizer->Add(buttonSizer, 0, wxALIGN_RIGHT | wxALL, 10);
+	SetSizerAndFit(topsizer);
+}
+
+MapDiagnosticDialog::~MapDiagnosticDialog() {
+}
+
+void MapDiagnosticDialog::runDiagnostics() {
+	issues.clear();
+	issueListCtrl->DeleteAllItems();
+
+	std::set<uint32_t> usedUids;
+
+	Map& map = editor.map;
+	for (int z = 0; z < 16; ++z) {
+		for (int y = 0; y < map.getHeight(); y += 4) {
+			for (int x = 0; x < map.getWidth(); x += 4) {
+				QTreeNode* node = map.getLeaf(x, y);
+				if (!node) continue;
+
+				Floor* f = node->getFloor(z);
+				if (!f) continue;
+
+				for (int ty = 0; ty < 4; ++ty) {
+					for (int tx = 0; tx < 4; ++tx) {
+						Tile* tile = f->getTile(tx, ty);
+						if (!tile) continue;
+
+						Position pos = tile->getPosition();
+
+						// Check 1: Orphan Spawn
+						if (tile->spawn && !tile->hasGround()) {
+							DiagnosticIssue issue;
+							issue.pos = pos;
+							issue.category = "Orphan Spawn";
+							issue.description = "Spawn befindet sich auf keinem begehbaren Boden!";
+							issues.push_back(issue);
+						}
+
+						// Check 2: Floating Walls without Ground
+						bool hasWall = false;
+						for (Item* item : tile->items) {
+							if (item && item->isWall()) {
+								hasWall = true;
+							}
+							if (item) {
+								uint32_t uid = item->getUniqueID();
+								if (uid != 0) {
+									if (usedUids.find(uid) != usedUids.end()) {
+										DiagnosticIssue issue;
+										issue.pos = pos;
+										issue.category = "Duplicate UID";
+										issue.description = wxString::Format("UniqueID %d ist mehrfach vergeben!", uid);
+										issues.push_back(issue);
+									} else {
+										usedUids.insert(uid);
+									}
+								}
+							}
+						}
+
+						if (hasWall && !tile->hasGround()) {
+							DiagnosticIssue issue;
+							issue.pos = pos;
+							issue.category = "Floating Wall";
+							issue.description = "Wandsegment ohne Ground-Tile darunter!";
+							issues.push_back(issue);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for (size_t i = 0; i < issues.size(); ++i) {
+		long idx = issueListCtrl->InsertItem((long)i, issues[i].category);
+		issueListCtrl->SetItem(idx, 1, wxString::Format("(%d, %d, %d)", issues[i].pos.x, issues[i].pos.y, issues[i].pos.z));
+		issueListCtrl->SetItem(idx, 2, issues[i].description);
+	}
+
+	g_gui.SetStatusText(wxString::Format("Scan beendet: %d mögliche Probleme gefunden.", (int)issues.size()));
+}
+
+void MapDiagnosticDialog::OnClickScan(wxCommandEvent& WXUNUSED(event)) {
+	runDiagnostics();
+}
+
+void MapDiagnosticDialog::OnItemSelect(wxListEvent& event) {
+	long idx = event.GetIndex();
+	if (idx >= 0 && idx < (long)issues.size()) {
+		g_gui.ScrollTo(issues[idx].pos);
+	}
+}
+
+void MapDiagnosticDialog::OnClickClose(wxCommandEvent& WXUNUSED(event)) {
+	EndModal(wxID_CANCEL);
+}

@@ -154,6 +154,14 @@
 			<item name="Show Minimap" action="SHOW_MINIMAP_HUD" help="Toggle visibility of the in-canvas minimap."/>
 			<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
 	</menu>
+	<menu name="Tools">
+		<item name="Prozeduraler Map-Generator..." action="TOOLS_PROCEDURAL_GENERATOR" help="Generiert Höhlen, Wälder oder Inseln per Noise-Algorithmus."/>
+		<item name="Prefab &amp; Template Bibliothek..." action="TOOLS_PREFAB_LIBRARY" help="Vorlagen verwalten und auf der Karte platzieren."/>
+		<separator/>
+		<item name="Map Diagnostic &amp; Health Scanner..." action="TOOLS_MAP_DIAGNOSTIC" help="Durchsucht die Karte nach UIDs, verwaisten Spawns &amp; Fehlern."/>
+		<item name="Map Diff / Versionsvergleich..." action="TOOLS_MAP_DIFF" help="Vergleicht zwei Map-Dateien und hebt Änderungen hervor."/>
+	</menu>
+
 	<menu name="Map">
 		<item name="Edit Towns" hotkey="Ctrl+T" action="EDIT_TOWNS" help="Edit towns."/>
 		<separator/>

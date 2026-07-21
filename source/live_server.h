@@ -65,6 +65,12 @@ public:
 	void broadcastNodes(DirtyList& dirtyList);
 	void broadcastChat(const wxString& speaker, const wxString& chatMessage);
 	void broadcastCursor(const LiveCursor& cursor);
+	bool requestLock(uint32_t clientId, const Position& pos, const wxString& clientName, const wxColor& clientColor);
+	void unlock(uint32_t clientId, const Position& pos);
+	void clearLocksForClient(uint32_t clientId);
+	void broadcastLockState(const Position& pos, uint32_t ownerId, const wxString& ownerName, const wxColor& ownerColor, bool isLocked);
+	void broadcastPing(const LivePing& ping);
+	void broadcastAnnotation(const MapAnnotation& annotation, bool remove = false);
 
 	void startOperation(const wxString& operationMessage);
 	void updateOperation(int32_t percent);

@@ -181,6 +181,24 @@ void LivePeer::parseEditorPacket(NetworkMessage message) {
     case PACKET_CLIENT_TALK:
       parseChatMessage(message);
       break;
+    case PACKET_LOCK_ENTITY:
+      parseLockEntity(message);
+      break;
+    case PACKET_UNLOCK_ENTITY:
+      parseUnlockEntity(message);
+      break;
+    case PACKET_PING_LOCATION:
+      parsePingLocation(message);
+      break;
+    case PACKET_ADD_ANNOTATION:
+      parseAddAnnotation(message);
+      break;
+    case PACKET_REMOVE_ANNOTATION:
+      parseRemoveAnnotation(message);
+      break;
+    case PACKET_UPDATE_STATUS:
+      parseUpdateStatus(message);
+      break;
     case PACKET_PING: {
       uint64_t timestamp = message.read<uint64_t>();
       uint32_t reported_latency = message.read<uint32_t>();
@@ -429,12 +447,17 @@ void LivePeer::parseCursorUpdate(NetworkMessage &message) {
   LiveCursor cursor = readCursor(message);
   cursor.id = clientId;
 
-  // Initialisierung der Farbe falls noch nicht gesetzt (Random-Wunsch)
+  // Distinct color assignment for up to 6 players (Host + 5 Clients)
   if (color == wxColor()) {
-    static wxColor available[] = {wxColor(255, 0, 0, 128),
-                                  wxColor(0, 120, 255, 128),
-                                  wxColor(255, 255, 0, 128)};
-    setUsedColor(available[rand() % 3]);
+    static wxColor available[] = {
+        wxColor(255, 50, 50, 128),   // Rot (P2)
+        wxColor(0, 150, 255, 128),  // Cyan (P3)
+        wxColor(255, 215, 0, 128),  // Gold (P4)
+        wxColor(200, 0, 255, 128),  // Violett (P5)
+        wxColor(255, 128, 0, 128)   // Orange (P6)
+    };
+    uint32_t colorIdx = (clientId == 0) ? 0 : ((clientId - 1) % 5);
+    setUsedColor(available[colorIdx]);
   }
   cursor.color = color;
 
@@ -451,4 +474,66 @@ void LivePeer::parseChatMessage(NetworkMessage &message) {
   const std::string &chatMessage = message.read<std::string>();
   server->broadcastChat(name, wxstr(chatMessage));
   g_gui.AddChatMessage(nstr(name), chatMessage);
+}
+
+void LivePeer::parseLockEntity(NetworkMessage &message) {
+  Position pos = message.read<Position>();
+  bool success = server->requestLock(clientId, pos, name, color);
+  if (!success) {
+    NetworkMessage reply;
+    reply.write<uint8_t>(PACKET_LOCK_REJECT);
+    reply.write<Position>(pos);
+    auto it = server->lockedEntities.find(pos);
+    if (it != server->lockedEntities.end()) {
+      reply.write<std::string>(nstr(it->second.ownerName));
+    } else {
+      reply.write<std::string>("Another user");
+    }
+    send(reply);
+  }
+}
+
+void LivePeer::parseUnlockEntity(NetworkMessage &message) {
+  Position pos = message.read<Position>();
+  server->unlock(clientId, pos);
+}
+
+void LivePeer::parsePingLocation(NetworkMessage &message) {
+  Position pos = message.read<Position>();
+  LivePing ping;
+  ping.pos = pos;
+  ping.senderId = clientId;
+  ping.senderName = name;
+  ping.color = color;
+  ping.timestamp = wxGetLocalTimeMillis().GetValue();
+  server->broadcastPing(ping);
+  g_gui.RefreshView();
+}
+
+void LivePeer::parseAddAnnotation(NetworkMessage &message) {
+  MapAnnotation annotation;
+  annotation.id = message.read<uint32_t>();
+  annotation.pos = message.read<Position>();
+  annotation.text = wxstr(message.read<std::string>());
+  annotation.author = name;
+  annotation.color = color;
+  server->broadcastAnnotation(annotation, false);
+  g_gui.RefreshView();
+}
+
+void LivePeer::parseRemoveAnnotation(NetworkMessage &message) {
+  uint32_t annotationId = message.read<uint32_t>();
+  MapAnnotation annotation;
+  annotation.id = annotationId;
+  server->broadcastAnnotation(annotation, true);
+  g_gui.RefreshView();
+}
+
+void LivePeer::parseUpdateStatus(NetworkMessage &message) {
+  UserStatus status = static_cast<UserStatus>(message.read<uint8_t>());
+  auto it = server->cursors.find(clientId);
+  if (it != server->cursors.end()) {
+    it->second.status = status;
+    server->broadcastCursor(it->second);
+  }
 }

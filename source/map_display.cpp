@@ -105,6 +105,8 @@ EVT_MENU(MAP_POPUP_MENU_COPY_NAME, MapCanvas::OnCopyName)
 EVT_MENU(MAP_POPUP_MENU_ROTATE, MapCanvas::OnRotateItem)
 EVT_MENU(MAP_POPUP_MENU_GOTO, MapCanvas::OnGotoDestination)
 EVT_MENU(MAP_POPUP_MENU_SWITCH_DOOR, MapCanvas::OnSwitchDoor)
+EVT_MENU(MAP_POPUP_MENU_QUICK_PING, MapCanvas::OnQuickPing)
+EVT_MENU(MAP_POPUP_MENU_ADD_ANNOTATION, MapCanvas::OnAddAnnotation)
 // ----
 EVT_MENU(MAP_POPUP_MENU_SELECT_RAW_BRUSH, MapCanvas::OnSelectRAWBrush)
 EVT_MENU(MAP_POPUP_MENU_SELECT_GROUND_BRUSH, MapCanvas::OnSelectGroundBrush)
@@ -1892,6 +1894,16 @@ void MapCanvas::OnIdle(wxIdleEvent& event) {
   auto now = std::chrono::steady_clock::now();
   double dt = std::chrono::duration<double>(now - last_frame_time).count();
 
+  if (editor.IsLiveClient()) {
+    auto client = editor.GetLiveClient();
+    if (client->getLocalStatus() == USER_STATUS_ACTIVE) {
+      uint64_t now_ms = wxGetLocalTimeMillis().GetValue();
+      if (client->lastUserActivityTime > 0 && (now_ms - client->lastUserActivityTime > 300000)) {
+        client->sendStatusUpdate(USER_STATUS_AFK);
+      }
+    }
+  }
+
   bool wants_continuous = true;
 
   if (wants_continuous) {
@@ -1901,5 +1913,50 @@ void MapCanvas::OnIdle(wxIdleEvent& event) {
     Refresh(false);
     last_frame_time = std::chrono::steady_clock::now();
     event.RequestMore(true);
+  }
+}
+
+void MapCanvas::OnQuickPing(wxCommandEvent &event) {
+  int map_x = last_click_map_x;
+  int map_y = last_click_map_y;
+  Position pos(map_x, map_y, floor);
+
+  if (editor.IsLiveClient()) {
+    editor.GetLiveClient()->sendPing(pos);
+  } else if (editor.IsLiveServer()) {
+    LivePing ping;
+    ping.pos = pos;
+    ping.senderId = 0;
+    ping.senderName = editor.GetLiveServer()->getName();
+    ping.color = *wxGREEN;
+    ping.timestamp = wxGetLocalTimeMillis().GetValue();
+    editor.GetLiveServer()->broadcastPing(ping);
+  }
+  Refresh();
+}
+
+void MapCanvas::OnAddAnnotation(wxCommandEvent &event) {
+  int map_x = last_click_map_x;
+  int map_y = last_click_map_y;
+  Position pos(map_x, map_y, floor);
+
+  wxTextEntryDialog dialog(this, "Geben Sie eine Anmerkung / Notiz für diese Position ein:", "Map Annotation hinzufügen");
+  if (dialog.ShowModal() == wxID_OK) {
+    wxString text = dialog.GetValue();
+    if (!text.IsEmpty()) {
+      if (editor.IsLiveClient()) {
+        editor.GetLiveClient()->sendAddAnnotation(pos, text);
+      } else if (editor.IsLiveServer()) {
+        static uint32_t nextId = 1;
+        MapAnnotation annotation;
+        annotation.id = nextId++;
+        annotation.pos = pos;
+        annotation.text = text;
+        annotation.author = editor.GetLiveServer()->getName();
+        annotation.color = *wxGREEN;
+        editor.GetLiveServer()->broadcastAnnotation(annotation, false);
+      }
+      Refresh();
+    }
   }
 }

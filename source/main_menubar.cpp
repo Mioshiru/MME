@@ -48,6 +48,10 @@
 #include "lua/lua_script_manager.h"
 #include "lua/lua_scripts_window.h"
 #include "otc_export.h"
+#include "procedural_generator_window.h"
+#include "prefab_manager.h"
+#include "map_diagnostic_window.h"
+#include "map_diff_window.h"
 
 namespace {
 	bool CopyTextToClipboard(const wxString& text) {
@@ -249,6 +253,11 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(LIVE_CLOSE, wxITEM_NORMAL, OnCloseLive); // Intern verknüpft mit "Disconnect"
 	MAKE_ACTION(LIVE_HELP, wxITEM_NORMAL, OnHelpLive);
 
+	MAKE_ACTION(TOOLS_PROCEDURAL_GENERATOR, wxITEM_NORMAL, OnProceduralGenerator);
+	MAKE_ACTION(TOOLS_PREFAB_LIBRARY, wxITEM_NORMAL, OnPrefabLibrary);
+	MAKE_ACTION(TOOLS_MAP_DIAGNOSTIC, wxITEM_NORMAL, OnMapDiagnostic);
+	MAKE_ACTION(TOOLS_MAP_DIFF, wxITEM_NORMAL, OnMapDiff);
+
 	MAKE_ACTION(SELECT_TERRAIN, wxITEM_NORMAL, OnSelectTerrainPalette);
 	MAKE_ACTION(SELECT_DOODAD, wxITEM_NORMAL, OnSelectDoodadPalette);
 	MAKE_ACTION(SELECT_ITEM, wxITEM_NORMAL, OnSelectItemPalette);
@@ -319,6 +328,11 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	for (int i = SHOW_CUSTOM_FIRST; i <= SHOW_CUSTOM_LAST; ++i) {
 		frame->Connect(MAIN_FRAME_MENU + i, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnShowOverlayToggle), nullptr, this);
 	}
+
+	frame->Connect(TOOLS_PROCEDURAL_GENERATOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnProceduralGenerator), nullptr, this);
+	frame->Connect(TOOLS_PREFAB_LIBRARY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnPrefabLibrary), nullptr, this);
+	frame->Connect(TOOLS_MAP_DIAGNOSTIC, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiagnostic), nullptr, this);
+	frame->Connect(TOOLS_MAP_DIFF, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiff), nullptr, this);
 }
 
 MainMenuBar::~MainMenuBar() {
@@ -1690,4 +1704,28 @@ void MainMenuBar::OnExportMinimap(wxCommandEvent& WXUNUSED(event)) {
 	if (dialog.ShowModal() == wxID_OK) {
 		g_gui.GetCurrentEditor()->exportMiniMap(dialog.GetPath(), GROUND_LAYER, true);
 	}
+}
+
+void MainMenuBar::OnProceduralGenerator(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) return;
+	ProceduralGeneratorDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnPrefabLibrary(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) return;
+	PrefabLibraryDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnMapDiagnostic(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) return;
+	MapDiagnosticDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnMapDiff(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) return;
+	MapDiffDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
 }

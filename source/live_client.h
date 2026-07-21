@@ -73,6 +73,19 @@ public:
 	void sendChat(const wxString& chatMessage);
 	void sendReady();
 
+	void requestLock(const Position& pos);
+	void sendUnlock(const Position& pos);
+	void sendPing(const Position& pos);
+	void sendAddAnnotation(const Position& pos, const wxString& text);
+	void sendRemoveAnnotation(uint32_t id);
+	void sendStatusUpdate(UserStatus status);
+
+	// Camera Follow & Status
+	uint32_t getFollowClientId() const { return followClientId; }
+	void setFollowClientId(uint32_t id) { followClientId = id; }
+	UserStatus getLocalStatus() const { return localStatus; }
+	void updateActivity();
+
 	// Flags a node as queried and stores it, need to call SendNodeRequest to send it to server
 	void queryNode(int32_t ndx, int32_t ndy, bool underground);
 
@@ -89,9 +102,18 @@ protected:
 	void parseCursorUpdate(NetworkMessage& message);
 	void parseStartOperation(NetworkMessage& message);
 	void parseUpdateOperation(NetworkMessage& message);
+	void parseLockBroadcast(NetworkMessage& message);
+	void parseLockReject(NetworkMessage& message);
+	void parsePingLocation(NetworkMessage& message);
+	void parseAddAnnotation(NetworkMessage& message);
+	void parseRemoveAnnotation(NetworkMessage& message);
 	bool scheduleReconnect(const wxString& reason);
 	void attemptReconnect();
 	void resetConnectionMetrics();
+
+	uint32_t followClientId = 0;
+	UserStatus localStatus = USER_STATUS_ACTIVE;
+	uint64_t lastUserActivityTime = 0;
 
 	//
 	NetworkMessage readMessage;

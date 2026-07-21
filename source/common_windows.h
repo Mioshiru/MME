@@ -301,10 +301,14 @@ public:
 	ObjectPropertiesWindowBase(
 		wxWindow* parent, wxString title, wxPoint position = wxDefaultPosition
 	);
+	virtual ~ObjectPropertiesWindowBase();
 
 	Item* getItemBeingEdited();
 	Creature* getCreatureBeingEdited();
 	Spawn* getSpawnBeingEdited();
+
+	void acquireLock();
+	void releaseLock();
 
 protected:
 	const Map* edit_map;

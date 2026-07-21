@@ -490,6 +490,25 @@ void LiveClient::parsePacket(NetworkMessage message) {
 			case PACKET_UPDATE_OPERATION:
 				parseUpdateOperation(message);
 				break;
+			case PACKET_LOCK_BROADCAST:
+				parseLockBroadcast(message);
+				needsRefresh = true;
+				break;
+			case PACKET_LOCK_REJECT:
+				parseLockReject(message);
+				break;
+			case PACKET_PING_LOCATION:
+				parsePingLocation(message);
+				needsRefresh = true;
+				break;
+			case PACKET_ADD_ANNOTATION:
+				parseAddAnnotation(message);
+				needsRefresh = true;
+				break;
+			case PACKET_REMOVE_ANNOTATION:
+				parseRemoveAnnotation(message);
+				needsRefresh = true;
+				break;
 			case PACKET_PONG: {
 				uint64_t timestamp = message.read<uint64_t>();
 				latency = (uint32_t)(wxGetLocalTimeMillis().GetValue() - timestamp);
@@ -563,6 +582,22 @@ void LiveClient::parseKick(NetworkMessage& message) {
 
 void LiveClient::parseClientAccepted(NetworkMessage& message) {
 	sendReady();
+
+	// Resync active map view nodes on reconnect
+	int map_x, map_y;
+	g_gui.GetScreenCenterPosition(&map_x, &map_y);
+	int min_ndx = std::max(0, (map_x - 100) / 4);
+	int max_ndx = (map_x + 100) / 4;
+	int min_ndy = std::max(0, (map_y - 100) / 4);
+	int max_ndy = (map_y + 100) / 4;
+
+	for (int ndx = min_ndx; ndx <= max_ndx; ++ndx) {
+		for (int ndy = min_ndy; ndy <= max_ndy; ++ndy) {
+			queryNode(ndx, ndy, false);
+			queryNode(ndx, ndy, true);
+		}
+	}
+	sendNodeRequests();
 }
 
 void LiveClient::parseChangeClientVersion(NetworkMessage& message) {
@@ -632,6 +667,10 @@ void LiveClient::parseNode(NetworkMessage& message) {
 void LiveClient::parseCursorUpdate(NetworkMessage& message) {
 	LiveCursor cursor = readCursor(message);
 	cursors[cursor.id] = cursor;
+
+	if (followClientId != 0 && cursor.id == followClientId) {
+		g_gui.ScrollTo(cursor.pos);
+	}
 }
 
 void LiveClient::parseStartOperation(NetworkMessage& message) {
@@ -648,4 +687,119 @@ void LiveClient::parseUpdateOperation(NetworkMessage& message) {
 	} else {
 		g_gui.SetStatusText("Server Operation in Progress: " + currentOperation + "... (" + std::to_string(percent) + "%)");
 	}
+}
+
+void LiveClient::requestLock(const Position& pos) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_LOCK_ENTITY);
+	message.write<Position>(pos);
+	send(message);
+}
+
+void LiveClient::sendUnlock(const Position& pos) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_UNLOCK_ENTITY);
+	message.write<Position>(pos);
+	send(message);
+}
+
+void LiveClient::sendPing(const Position& pos) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_PING_LOCATION);
+	message.write<Position>(pos);
+	send(message);
+}
+
+void LiveClient::sendAddAnnotation(const Position& pos, const wxString& text) {
+	static uint32_t nextId = 1;
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_ADD_ANNOTATION);
+	message.write<uint32_t>(nextId++);
+	message.write<Position>(pos);
+	message.write<std::string>(nstr(text));
+	send(message);
+}
+
+void LiveClient::sendRemoveAnnotation(uint32_t id) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_REMOVE_ANNOTATION);
+	message.write<uint32_t>(id);
+	send(message);
+}
+
+void LiveClient::sendStatusUpdate(UserStatus status) {
+	localStatus = status;
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_UPDATE_STATUS);
+	message.write<uint8_t>(static_cast<uint8_t>(status));
+	send(message);
+}
+
+void LiveClient::updateActivity() {
+	lastUserActivityTime = wxGetLocalTimeMillis().GetValue();
+	if (localStatus == USER_STATUS_AFK) {
+		sendStatusUpdate(USER_STATUS_ACTIVE);
+	}
+}
+
+void LiveClient::parseLockBroadcast(NetworkMessage& message) {
+	Position pos = message.read<Position>();
+	uint32_t ownerId = message.read<uint32_t>();
+	bool isLocked = message.read<uint8_t>() != 0;
+	if (isLocked) {
+		LiveEntityLock lock;
+		lock.pos = pos;
+		lock.ownerId = ownerId;
+		lock.ownerName = wxstr(message.read<std::string>());
+		uint8_t r = message.read<uint8_t>();
+		uint8_t g = message.read<uint8_t>();
+		uint8_t b = message.read<uint8_t>();
+		lock.ownerColor = wxColor(r, g, b, 255);
+		lockedEntities[pos] = lock;
+	} else {
+		lockedEntities.erase(pos);
+	}
+}
+
+void LiveClient::parseLockReject(NetworkMessage& message) {
+	Position pos = message.read<Position>();
+	std::string ownerName = message.read<std::string>();
+	g_gui.SetStatusText(wxString::Format("Zugriff verweigert: Diese Position wird gerade von '%s' bearbeitet!", wxstr(ownerName)));
+	wxMessageBox(wxString::Format("Diese Position/Eigenschaft wird derzeit von '%s' bearbeitet!", wxstr(ownerName)), "Sperre aktiv", wxOK | wxICON_WARNING);
+}
+
+void LiveClient::parsePingLocation(NetworkMessage& message) {
+	Position pos = message.read<Position>();
+	uint32_t senderId = message.read<uint32_t>();
+	std::string senderName = message.read<std::string>();
+	uint8_t r = message.read<uint8_t>();
+	uint8_t g = message.read<uint8_t>();
+	uint8_t b = message.read<uint8_t>();
+	uint64_t timestamp = message.read<uint64_t>();
+
+	LivePing ping;
+	ping.pos = pos;
+	ping.senderId = senderId;
+	ping.senderName = wxstr(senderName);
+	ping.color = wxColor(r, g, b, 255);
+	ping.timestamp = timestamp;
+	activePings.push_back(ping);
+}
+
+void LiveClient::parseAddAnnotation(NetworkMessage& message) {
+	MapAnnotation annotation;
+	annotation.id = message.read<uint32_t>();
+	annotation.pos = message.read<Position>();
+	annotation.text = wxstr(message.read<std::string>());
+	annotation.author = wxstr(message.read<std::string>());
+	uint8_t r = message.read<uint8_t>();
+	uint8_t g = message.read<uint8_t>();
+	uint8_t b = message.read<uint8_t>();
+	annotation.color = wxColor(r, g, b, 255);
+	mapAnnotations[annotation.id] = annotation;
+}
+
+void LiveClient::parseRemoveAnnotation(NetworkMessage& message) {
+	uint32_t id = message.read<uint32_t>();
+	mapAnnotations.erase(id);
 }

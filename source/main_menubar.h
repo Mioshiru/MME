@@ -270,6 +270,12 @@ public:
 	void OnMapProperties(wxCommandEvent& event);
 	void OnMapStatistics(wxCommandEvent& event);
 
+	// Tools Menu
+	void OnProceduralGenerator(wxCommandEvent& event);
+	void OnPrefabLibrary(wxCommandEvent& event);
+	void OnMapDiagnostic(wxCommandEvent& event);
+	void OnMapDiff(wxCommandEvent& event);
+
 	// View Menu
 	void OnToolbars(wxCommandEvent& event);
 	void OnNewView(wxCommandEvent& event);

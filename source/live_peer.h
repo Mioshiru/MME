@@ -81,6 +81,12 @@ protected:
 	void parseRemoveHouse(NetworkMessage& message);
 	void parseCursorUpdate(NetworkMessage& message);
 	void parseChatMessage(NetworkMessage& message);
+	void parseLockEntity(NetworkMessage& message);
+	void parseUnlockEntity(NetworkMessage& message);
+	void parsePingLocation(NetworkMessage& message);
+	void parseAddAnnotation(NetworkMessage& message);
+	void parseRemoveAnnotation(NetworkMessage& message);
+	void parseUpdateStatus(NetworkMessage& message);
 
 	//
 	NetworkMessage readMessage;

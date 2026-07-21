@@ -33,6 +33,8 @@
 #include "common_windows.h"
 #include "positionctrl.h"
 #include "style_manager.h"
+#include "live_client.h"
+#include "live_server.h"
 
 #ifdef _MSC_VER
 	#pragma warning(disable : 4018) // signed/unsigned mismatch
@@ -1160,7 +1162,7 @@ ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxStrin
 	edit_item(item),
 	edit_creature(nullptr),
 	edit_spawn(nullptr) {
-	////
+	acquireLock();
 }
 
 ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxString title, const Map* map, const Tile* tile, Creature* creature, wxPoint position /* = wxDefaultPosition */) :
@@ -1170,7 +1172,7 @@ ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxStrin
 	edit_item(nullptr),
 	edit_creature(creature),
 	edit_spawn(nullptr) {
-	////
+	acquireLock();
 }
 
 ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxString title, const Map* map, const Tile* tile, Spawn* spawn, wxPoint position /* = wxDefaultPosition */) :
@@ -1180,12 +1182,36 @@ ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxStrin
 	edit_item(nullptr),
 	edit_creature(nullptr),
 	edit_spawn(spawn) {
-	////
+	acquireLock();
 }
 
 ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxString title, wxPoint position /* = wxDefaultPosition */) :
-	wxDialog(parent, wxID_ANY, title, position, wxSize(600, 400), wxCAPTION | wxCLOSE_BOX | wxRESIZE_BORDER) {
-	////
+	wxDialog(parent, wxID_ANY, title, position, wxSize(600, 400), wxCAPTION | wxCLOSE_BOX | wxRESIZE_BORDER),
+	edit_map(nullptr), edit_tile(nullptr), edit_item(nullptr), edit_creature(nullptr), edit_spawn(nullptr) {
+}
+
+ObjectPropertiesWindowBase::~ObjectPropertiesWindowBase() {
+	releaseLock();
+}
+
+void ObjectPropertiesWindowBase::acquireLock() {
+	if (!edit_tile) return;
+	Position pos = edit_tile->getPosition();
+	if (g_gui.GetEditor().IsLiveClient()) {
+		g_gui.GetEditor().GetLiveClient()->requestLock(pos);
+	} else if (g_gui.GetEditor().IsLiveServer()) {
+		g_gui.GetEditor().GetLiveServer()->requestLock(0, pos, g_gui.GetEditor().GetLiveServer()->getName(), *wxGREEN);
+	}
+}
+
+void ObjectPropertiesWindowBase::releaseLock() {
+	if (!edit_tile) return;
+	Position pos = edit_tile->getPosition();
+	if (g_gui.GetEditor().IsLiveClient()) {
+		g_gui.GetEditor().GetLiveClient()->sendUnlock(pos);
+	} else if (g_gui.GetEditor().IsLiveServer()) {
+		g_gui.GetEditor().GetLiveServer()->unlock(0, pos);
+	}
 }
 
 Item* ObjectPropertiesWindowBase::getItemBeingEdited() {
