@@ -50,22 +50,22 @@ void LivePeer::close() {
 }
 
 bool LivePeer::handleError(const boost::system::error_code &error) {
-  if (error == boost::asio::error::eof ||
-      error == boost::asio::error::connection_reset) {
+  if (error) {
     connectionStatus = "Disconnected";
-    logMessage(wxString() + getHostName() + ": disconnected.");
+    logMessage(wxString() + getHostName() + ": disconnected (" + error.message() + ").");
     close();
-    return true;
-  } else if (error == boost::asio::error::connection_aborted) {
-    connectionStatus = "Disconnected";
-    logMessage(name + " have left the server.");
     return true;
   }
   return false;
 }
 
 std::string LivePeer::getHostName() const {
-  return socket.remote_endpoint().address().to_string();
+  boost::system::error_code ec;
+  auto endpoint = socket.remote_endpoint(ec);
+  if (ec) {
+    return "Unknown IP";
+  }
+  return endpoint.address().to_string();
 }
 
 void LivePeer::receiveHeader() {
@@ -215,6 +215,9 @@ void LivePeer::parseEditorPacket(NetworkMessage message) {
       packetLoss = reported_packet_loss;
       lastHeartbeat = wxGetLocalTimeMillis().GetValue();
       connectionStatus = packetLoss > 20 ? "Unstable" : "Connected";
+      if (log) {
+        log->Message(wxString::Format("[Server] Received Ping from %s, reported latency: %u ms", name, latency));
+      }
       server->updateClientList();
 
       NetworkMessage out;

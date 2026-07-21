@@ -135,21 +135,17 @@ void LiveClient::close() {
 }
 
 bool LiveClient::handleError(const boost::system::error_code& error) {
-	if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset) {
+	if (error) {
 		wxTheApp->CallAfter([this, error]() {
-			if (error == boost::asio::error::connection_reset || !scheduleReconnect(wxString() + getHostName() + ": disconnected.")) {
+			if (!scheduleReconnect(wxString::Format("%s: disconnected (%s).", getHostName(), error.message()))) {
 				if (log) {
-					log->Message(wxString() + getHostName() + ": disconnected.");
+					log->Message(wxString::Format("%s: disconnected (%s).", getHostName(), error.message()));
 				}
 				close();
 				g_gui.CloseLiveEditors(this);
 				mapEditor = nullptr;
 			}
 		});
-		return true;
-	} else if (error == boost::asio::error::connection_aborted) {
-		logMessage("You have left the server.");
-		connectionStatus = "Disconnected";
 		return true;
 	}
 	return false;
@@ -213,7 +209,12 @@ std::string LiveClient::getHostName() const {
 	if (!socket) {
 		return "not connected";
 	}
-	return socket->remote_endpoint().address().to_string();
+	boost::system::error_code ec;
+	auto endpoint = socket->remote_endpoint(ec);
+	if (ec) {
+		return "Unknown IP";
+	}
+	return endpoint.address().to_string();
 }
 
 void LiveClient::receiveHeader() {
@@ -332,6 +333,9 @@ void LiveClient::sendHeartbeat() {
 		msg.write<uint32_t>(latency);
 		msg.write<uint32_t>(packetLossPercent);
 		send(msg);
+		if (log) {
+			log->Message(wxString::Format("[Client] Sending Ping, current latency: %u ms", latency));
+		}
 		++pingsSent;
 		lastPingTimestamp = now;
 		waitingForPong = true;
@@ -520,6 +524,9 @@ void LiveClient::parsePacket(NetworkMessage message) {
 				uint64_t timestamp = message.read<uint64_t>();
 				latency = (uint32_t)(wxGetLocalTimeMillis().GetValue() - timestamp);
 				g_gui.latencies[this] = latency;
+				if (log) {
+					log->Message(wxString::Format("[Client] Received Pong, computed latency: %u ms", latency));
+				}
 				packetLossPercent = pingsSent == 0 ? 0 : (pingsMissed * 100U) / pingsSent;
 				waitingForPong = false;
 				connectionStatus = packetLossPercent > 20 ? "Unstable" : "Connected";

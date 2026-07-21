@@ -25,6 +25,7 @@
 #include "materials.h"
 #include <wx/settings.h>
 #include <wx/wrapsizer.h>
+#include <wx/dcbuffer.h>
 
 // ============================================================================
 // Brush Palette Panel
@@ -570,183 +571,289 @@ void BrushPanel::OnClickListBoxRow(wxCommandEvent& event) {
 // BrushIconBox
 
 BEGIN_EVENT_TABLE(BrushIconBox, wxScrolledWindow)
-// Listbox style
-EVT_TOGGLEBUTTON(wxID_ANY, BrushIconBox::OnClickBrushButton)
+EVT_PAINT(BrushIconBox::OnPaint)
+EVT_LEFT_DOWN(BrushIconBox::OnClick)
 EVT_SIZE(BrushIconBox::OnSize)
 END_EVENT_TABLE()
 
 BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes, RenderSize rsz) :
-	wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL),
+	wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxFULL_REPAINT_ON_RESIZE),
 	BrushBoxInterface(brushes),
 	icon_size(rsz) {
-
-	wxBoxSizer* outersizer = newd wxBoxSizer(wxHORIZONTAL);
-	left_spacer = outersizer->AddSpacer(0);
-
-	wxWrapSizer* wrapsizer = newd wxWrapSizer(wxHORIZONTAL);
-
-	for (BrushVector::const_iterator iter = all_brushes.begin(); iter != all_brushes.end(); ++iter) {
-		ASSERT(*iter);
-		BrushButton* bb = newd BrushButton(this, *iter, rsz);
-		brush_buttons.push_back(bb);
-		wrapsizer->Add(bb, 0, wxALL, 1);
-	}
-
-	outersizer->Add(wrapsizer, 1, wxEXPAND);
-
-	SetSizer(outersizer);
+	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	SetScrollRate(0, 20);
-	FitInside();
+	UpdateLayout();
 }
 
 BrushIconBox::~BrushIconBox() {
-	////
 }
 
 void BrushIconBox::SelectFirstBrush() {
-	DeselectAll();
-	for (BrushButton* bb : brush_buttons) {
-		if (bb->IsShown()) {
-			bb->SetValue(true);
-			EnsureVisible(bb);
-			break;
-		}
+	if (!visible_brushes.empty()) {
+		selected_brush = visible_brushes[0];
+		EnsureVisible(0);
+	} else {
+		selected_brush = nullptr;
 	}
+	Refresh();
 }
 
 Brush* BrushIconBox::GetSelectedBrush() const {
-	for (std::vector<BrushButton*>::const_iterator it = brush_buttons.begin(); it != brush_buttons.end(); ++it) {
-		if ((*it)->GetValue() && (*it)->IsShown()) {
-			return (*it)->brush;
-		}
-	}
-	return nullptr;
+	return selected_brush;
 }
 
 bool BrushIconBox::SelectBrush(const Brush* whatbrush) {
-	DeselectAll();
-	for (std::vector<BrushButton*>::iterator it = brush_buttons.begin(); it != brush_buttons.end(); ++it) {
-		if ((*it)->brush == whatbrush) {
-			(*it)->SetValue(true);
-			EnsureVisible(*it);
+	for (size_t i = 0; i < visible_brushes.size(); ++i) {
+		if (visible_brushes[i] == whatbrush) {
+			selected_brush = const_cast<Brush*>(whatbrush);
+			EnsureVisible(i);
+			Refresh();
 			return true;
 		}
 	}
 	return false;
 }
 
-void BrushIconBox::DeselectAll() {
-	for (std::vector<BrushButton*>::iterator it = brush_buttons.begin(); it != brush_buttons.end(); ++it) {
-		(*it)->SetValue(false);
-	}
-}
-
-void BrushIconBox::EnsureVisible(BrushButton* btn) {
-	int windowSizeX, windowSizeY;
-	GetVirtualSize(&windowSizeX, &windowSizeY);
-
-	int scrollUnitX;
-	int scrollUnitY;
-	GetScrollPixelsPerUnit(&scrollUnitX, &scrollUnitY);
-
-	wxRect rect = btn->GetRect();
-	int y;
-	CalcUnscrolledPosition(0, rect.y, nullptr, &y);
-
-	int maxScrollPos = windowSizeY / scrollUnitY;
-	int scrollPosY = std::min(maxScrollPos, (y / scrollUnitY));
-
-	int startScrollPosY;
-	GetViewStart(nullptr, &startScrollPosY);
-
-	int clientSizeX, clientSizeY;
-	GetClientSize(&clientSizeX, &clientSizeY);
-	int endScrollPosY = startScrollPosY + clientSizeY / scrollUnitY;
-
-	if (scrollPosY < startScrollPosY || scrollPosY > endScrollPosY) {
-		// only scroll if the button isnt visible
-		Scroll(-1, scrollPosY);
-	}
-}
-
 void BrushIconBox::EnsureVisible(size_t n) {
-	if (n < brush_buttons.size()) {
-		EnsureVisible(brush_buttons[n]);
+	int client_width = GetClientSize().x;
+	int btn_width = 36;
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+
+	if (icon_size == RENDER_SIZE_16x16) {
+		btn_width = 20;
+	} else if (icon_size == RENDER_SIZE_32x32) {
+		btn_width = 36;
+	}
+	btn_width = btn_width * scale_percent / 100;
+
+	int columns = client_width / btn_width;
+	if (columns < 1) columns = 1;
+
+	int row = n / columns;
+	int y = row * btn_width;
+
+	int scroll_unit_y;
+	GetScrollPixelsPerUnit(nullptr, &scroll_unit_y);
+	if (scroll_unit_y > 0) {
+		int start_scroll_y;
+		GetViewStart(nullptr, &start_scroll_y);
+		int client_height = GetClientSize().y;
+
+		int start_y = start_scroll_y * scroll_unit_y;
+		int end_y = start_y + client_height;
+
+		if (y < start_y || y + btn_width > end_y) {
+			Scroll(-1, y / scroll_unit_y);
+		}
 	}
 }
 
 void BrushIconBox::Filter(const wxString& query) {
-	wxString lower_query = query.Lower();
 	visible_brushes.clear();
-
-	Freeze();
-	for (BrushButton* bb : brush_buttons) {
-		wxString brush_name = wxstr(bb->brush->getName());
-		if (lower_query.IsEmpty() || brush_name.Lower().Contains(lower_query)) {
-			bb->Show(true);
-			visible_brushes.push_back(bb->brush);
-		} else {
-			bb->Show(false);
-			bb->SetValue(false);
+	wxString lower_query = query.Lower();
+	for (Brush* brush : all_brushes) {
+		if (lower_query.IsEmpty() || wxstr(brush->getName()).Lower().Contains(lower_query)) {
+			visible_brushes.push_back(brush);
 		}
 	}
-
-	Layout();
-	FitInside();
-	Thaw();
+	UpdateLayout();
 	SelectFirstBrush();
-}
-
-void BrushIconBox::OnClickBrushButton(wxCommandEvent& event) {
-	wxObject* obj = event.GetEventObject();
-	BrushButton* btn = dynamic_cast<BrushButton*>(obj);
-	if (btn) {
-		wxWindow* w = this;
-		while ((w = w->GetParent()) && dynamic_cast<PaletteWindow*>(w) == nullptr)
-			;
-		if (w) {
-			g_gui.ActivatePalette(static_cast<PaletteWindow*>(w));
-		}
-		
-		TilesetCategoryType catType = TILESET_UNKNOWN;
-		wxWindow* pw = this;
-		while (pw && dynamic_cast<BrushPalettePanel*>(pw) == nullptr) {
-			pw = pw->GetParent();
-		}
-		if (pw) {
-			catType = static_cast<BrushPalettePanel*>(pw)->GetType();
-		}
-		
-		g_gui.SelectBrush(btn->brush, catType);
-	}
+	Refresh();
 }
 
 void BrushIconBox::OnSize(wxSizeEvent& event) {
-	if (GetSizer()) {
-		int client_width = GetClientSize().x;
-		int btn_width = 34;
-		if (!brush_buttons.empty()) {
-			btn_width = brush_buttons[0]->GetSize().x + 2;
-		}
+	UpdateLayout();
+	event.Skip();
+}
 
-		int columns = client_width / btn_width;
-		if (columns < 1) columns = 1;
+void BrushIconBox::UpdateLayout() {
+	int client_width = GetClientSize().x;
+	int btn_width = 36;
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
 
-		int total_items_width = columns * btn_width;
-		int remaining_space = client_width - total_items_width;
-		int left_padding = remaining_space / 2;
-		if (left_padding < 0) left_padding = 0;
+	if (icon_size == RENDER_SIZE_16x16) {
+		btn_width = 20;
+	} else if (icon_size == RENDER_SIZE_32x32) {
+		btn_width = 36;
+	}
+	btn_width = btn_width * scale_percent / 100;
 
-		if (left_spacer) {
-			left_spacer->SetInitSize(left_padding, 0);
-		}
+	int columns = client_width / btn_width;
+	if (columns < 1) columns = 1;
 
-		SetVirtualSize(client_width, -1);
-		Layout();
-		int height = GetSizer()->GetMinSize().y;
+	int rows = (visible_brushes.size() + columns - 1) / columns;
+	int height = rows * btn_width;
+
+	wxSize cur_virt = GetVirtualSize();
+	if (cur_virt.x != client_width || cur_virt.y != height) {
 		SetVirtualSize(client_width, height);
 	}
-	event.Skip();
+}
+
+void BrushIconBox::OnPaint(wxPaintEvent& event) {
+	wxBufferedPaintDC dc(this);
+	DoPrepareDC(dc);
+
+	dc.SetBackground(wxBrush(wxColor(10, 20, 35)));
+	dc.Clear();
+
+	if (g_gui.gfx.isUnloaded()) {
+		return;
+	}
+
+	int client_width = GetClientSize().x;
+	int btn_width = 36;
+	int spr_w = 32;
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+
+	if (icon_size == RENDER_SIZE_16x16) {
+		btn_width = 20;
+		spr_w = 16;
+	} else if (icon_size == RENDER_SIZE_32x32) {
+		btn_width = 36;
+		spr_w = 32;
+	}
+	btn_width = btn_width * scale_percent / 100;
+	spr_w = spr_w * scale_percent / 100;
+	int offset = 2 * scale_percent / 100;
+
+	int columns = client_width / btn_width;
+	if (columns < 1) columns = 1;
+
+	int total_items_width = columns * btn_width;
+	int left_padding = (client_width - total_items_width) / 2;
+	if (left_padding < 0) left_padding = 0;
+
+	static std::unique_ptr<wxPen> highlight_pen;
+	static std::unique_ptr<wxPen> dark_highlight_pen;
+	static std::unique_ptr<wxPen> light_shadow_pen;
+	static std::unique_ptr<wxPen> shadow_pen;
+
+	if (highlight_pen.get() == nullptr) {
+		highlight_pen.reset(newd wxPen(wxColor(0xFF, 0xFF, 0xFF), 1, wxSOLID));
+		dark_highlight_pen.reset(newd wxPen(wxColor(0xD4, 0xD0, 0xC8), 1, wxSOLID));
+		light_shadow_pen.reset(newd wxPen(wxColor(0x80, 0x80, 0x80), 1, wxSOLID));
+		shadow_pen.reset(newd wxPen(wxColor(0x40, 0x40, 0x40), 1, wxSOLID));
+	}
+
+	SpriteSize spr_sz = (icon_size == RENDER_SIZE_16x16 ? SPRITE_SIZE_16x16 : SPRITE_SIZE_32x32);
+	Sprite* selection_marker = g_gui.gfx.getSprite(EDITOR_SPRITE_SELECTION_MARKER);
+
+	int client_height = GetClientSize().y;
+	int start_y = GetViewStart().y * 20;
+	int end_y = start_y + client_height;
+
+	int start_row = start_y / btn_width;
+	int end_row = (end_y + btn_width - 1) / btn_width;
+
+	for (int row = start_row; row <= end_row; ++row) {
+		for (int col = 0; col < columns; ++col) {
+			size_t idx = row * columns + col;
+			if (idx >= visible_brushes.size()) break;
+
+			Brush* brush = visible_brushes[idx];
+			int x = left_padding + col * btn_width;
+			int y = row * btn_width;
+
+			bool is_selected = (brush == selected_brush);
+
+			dc.SetBrush(*wxBLACK_BRUSH);
+			dc.SetPen(*wxTRANSPARENT_PEN);
+			dc.DrawRectangle(x, y, btn_width, btn_width);
+
+			if (is_selected) {
+				dc.SetPen(wxPen(wxColor(180, 150, 50), 2, wxSOLID));
+				dc.SetBrush(*wxTRANSPARENT_BRUSH);
+				dc.DrawRoundedRectangle(x + 1, y + 1, btn_width - 2, btn_width - 2, 4);
+			} else {
+				dc.SetPen(*highlight_pen);
+				dc.DrawLine(x, y, x + btn_width - 1, y);
+				dc.DrawLine(x, y + 1, x, y + btn_width - 1);
+				dc.SetPen(*dark_highlight_pen);
+				dc.DrawLine(x + 1, y + 1, x + btn_width - 2, y + 1);
+				dc.DrawLine(x + 1, y + 2, x + 1, y + btn_width - 2);
+				dc.SetPen(*light_shadow_pen);
+				dc.DrawLine(x + btn_width - 2, y + 1, x + btn_width - 2, y + btn_width - 2);
+				dc.DrawLine(x + 1, y + btn_width - 2, x + btn_width - 1, y + btn_width - 2);
+				dc.SetPen(*shadow_pen);
+				dc.DrawLine(x + btn_width - 1, y, x + btn_width - 1, y + btn_width - 1);
+				dc.DrawLine(x, y + btn_width - 1, x + btn_width, y + btn_width - 1);
+			}
+
+			Sprite* sprite = nullptr;
+			int look_id = brush->getLookID();
+			if (look_id > 0 && g_items.typeExists(look_id)) {
+				sprite = g_gui.gfx.getSprite(g_items[look_id].clientID);
+			} else {
+				sprite = g_gui.gfx.getSprite(look_id);
+			}
+
+			if (sprite) {
+				sprite->DrawTo(&dc, spr_sz, x + offset, y + offset, spr_w, spr_w);
+			}
+		}
+	}
+}
+
+void BrushIconBox::OnClick(wxMouseEvent& event) {
+	int logical_x, logical_y;
+	CalcUnscrolledPosition(event.GetX(), event.GetY(), &logical_x, &logical_y);
+
+	int client_width = GetClientSize().x;
+	int btn_width = 36;
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+
+	if (icon_size == RENDER_SIZE_16x16) {
+		btn_width = 20;
+	} else if (icon_size == RENDER_SIZE_32x32) {
+		btn_width = 36;
+	}
+	btn_width = btn_width * scale_percent / 100;
+
+	int columns = client_width / btn_width;
+	if (columns < 1) columns = 1;
+
+	int total_items_width = columns * btn_width;
+	int left_padding = (client_width - total_items_width) / 2;
+	if (left_padding < 0) left_padding = 0;
+
+	if (logical_x >= left_padding && logical_x < left_padding + total_items_width) {
+		int col = (logical_x - left_padding) / btn_width;
+		int row = logical_y / btn_width;
+
+		size_t idx = row * columns + col;
+		if (idx < visible_brushes.size()) {
+			Brush* clicked_brush = visible_brushes[idx];
+			SelectBrush(clicked_brush);
+
+			wxWindow* w = this;
+			while ((w = w->GetParent()) && dynamic_cast<PaletteWindow*>(w) == nullptr)
+				;
+			if (w) {
+				g_gui.ActivatePalette(static_cast<PaletteWindow*>(w));
+			}
+
+			TilesetCategoryType catType = TILESET_UNKNOWN;
+			wxWindow* pw = this;
+			while (pw && dynamic_cast<BrushPalettePanel*>(pw) == nullptr) {
+				pw = pw->GetParent();
+			}
+			if (pw) {
+				catType = static_cast<BrushPalettePanel*>(pw)->GetType();
+			}
+
+			g_gui.SelectBrush(clicked_brush, catType);
+		}
+	}
+	SetFocus();
 }
 
 // ============================================================================

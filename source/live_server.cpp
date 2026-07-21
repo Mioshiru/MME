@@ -130,6 +130,30 @@ void LiveServer::acceptClient() {
 		if (error) {
 			//
 		} else {
+			boost::system::error_code ec;
+			auto endpoint = socket->remote_endpoint(ec);
+			if (!ec) {
+				std::string ip = endpoint.address().to_string();
+				std::vector<uint32_t> ids_to_remove;
+				for (auto& clientEntry : clients) {
+					LivePeer* peer = clientEntry.second;
+					boost::system::error_code peer_ec;
+					auto peer_endpoint = peer->socket.remote_endpoint(peer_ec);
+					if (!peer_ec && peer_endpoint.address().to_string() == ip) {
+						ids_to_remove.push_back(clientEntry.first);
+					}
+				}
+				for (uint32_t rid : ids_to_remove) {
+					auto it = clients.find(rid);
+					if (it != clients.end()) {
+						if (log) {
+							log->Message("Same IP connected. Kicking ghost connection: " + it->second->getName() + " (" + ip + ")");
+						}
+						it->second->close();
+					}
+				}
+			}
+
 			uint32_t currentId = id++;
 			LivePeer* peer = new LivePeer(this, std::move(*socket), currentId);
 			peer->log = log;
@@ -137,6 +161,7 @@ void LiveServer::acceptClient() {
 
 			clients.insert(std::make_pair(currentId, peer));
 		}
+		socket = nullptr;
 		acceptClient();
 	});
 }

@@ -172,6 +172,7 @@ void GUI::SaveMap() {
 	if (mapTab) {
 		mapTab->GetEditor()->saveMap(FileName(), true);
 	}
+	g_settings.save();
 }
 
 
