@@ -20,3 +20,5 @@
 [2026-07-21 20:21:41] Pane: name='Tools', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=3
 [2026-07-21 20:21:41] Pane: name='Brush Size', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=4
 [2026-07-21 20:21:41] =============================
+[2026-07-21 20:30:48] FATAL ERROR: Structured Exception (e.g. Access Violation/Crash) occurred in the application!
+Active actions stack (last first):

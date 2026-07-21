@@ -47,6 +47,7 @@ bool LiveClient::connect(const std::string& address, uint16_t port) {
 	reconnectPort = port;
 	stopped = false;
 	connectionStatus = reconnectAttempts > 0 ? wxString::Format("Reconnecting (%u/3)", reconnectAttempts) : wxString("Connecting");
+	resetConnectionMetrics();
 
 	NetworkConnection& connection = NetworkConnection::getInstance();
 	if (!connection.start()) {
@@ -255,7 +256,8 @@ void LiveClient::receive(uint32_t packetSize) {
 
 void LiveClient::send(NetworkMessage& message) {
 	memcpy(&message.buffer[0], &message.size, 4);
-	boost::asio::async_write(*socket, boost::asio::buffer(message.buffer, message.size + 4), [this](const boost::system::error_code& error, size_t bytesTransferred) -> void {
+	auto bufferCopy = std::make_shared<std::vector<uint8_t>>(message.buffer);
+	boost::asio::async_write(*socket, boost::asio::buffer(*bufferCopy, message.size + 4), [this, bufferCopy](const boost::system::error_code& error, size_t bytesTransferred) -> void {
 		if (error) {
 			logMessage(wxString() + getHostName() + ": " + error.message());
 		}
