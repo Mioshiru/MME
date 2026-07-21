@@ -23,6 +23,7 @@
 #include "live_action.h"
 
 #include "editor.h"
+#include <cpr/cpr.h>
 
 LiveServer::LiveServer(Editor& editor) :
 	LiveSocket(),
@@ -440,7 +441,18 @@ LiveLogTab* LiveServer::createLogWindow(wxWindow* parent) {
 
 	log = newd LiveLogTab(mapTabBook, this);
 	log->Message("New Live mapping session started.");
-	log->Message("Hosted on server " + getHostName() + ".");
+
+	std::thread([this]() {
+		cpr::Response r = cpr::Get(cpr::Url{"https://api.ipify.org"}, cpr::Timeout{2000});
+		std::string extIp = (r.status_code == 200) ? r.text : "";
+		if (!extIp.empty()) {
+			wxTheApp->CallAfter([this, extIp]() {
+				if (log) {
+					log->Message("External host IP: " + extIp + ":" + std::to_string(port) + ".");
+				}
+			});
+		}
+	}).detach();
 
 	updateClientList();
 	return log;

@@ -161,8 +161,8 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 		auto it = live.lockedEntities.find(pos);
 		if (it != live.lockedEntities.end()) {
 			if (editor.IsLiveClient() && it->second.ownerId != 0) {
-				g_gui.SetStatusText(wxString::Format("Zugriff verweigert: Position wird gerade von '%s' bearbeitet!", it->second.ownerName));
-				wxMessageBox(wxString::Format("Diese Position/Eigenschaft wird derzeit von '%s' bearbeitet!", it->second.ownerName), "Sperre aktiv", wxOK | wxICON_WARNING);
+				g_gui.SetStatusText(wxString::Format("Access denied: Position is currently being edited by '%s'!", it->second.ownerName));
+				wxMessageBox(wxString::Format("This position/property is currently being edited by '%s'!", it->second.ownerName), "Lock Active", wxOK | wxICON_WARNING);
 				return;
 			}
 		}

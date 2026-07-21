@@ -572,12 +572,16 @@ void BrushPanel::OnClickListBoxRow(wxCommandEvent& event) {
 BEGIN_EVENT_TABLE(BrushIconBox, wxScrolledWindow)
 // Listbox style
 EVT_TOGGLEBUTTON(wxID_ANY, BrushIconBox::OnClickBrushButton)
+EVT_SIZE(BrushIconBox::OnSize)
 END_EVENT_TABLE()
 
 BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes, RenderSize rsz) :
 	wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL),
 	BrushBoxInterface(brushes),
 	icon_size(rsz) {
+
+	wxBoxSizer* outersizer = newd wxBoxSizer(wxHORIZONTAL);
+	left_spacer = outersizer->AddSpacer(0);
 
 	wxWrapSizer* wrapsizer = newd wxWrapSizer(wxHORIZONTAL);
 
@@ -588,7 +592,9 @@ BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes,
 		wrapsizer->Add(bb, 0, wxALL, 1);
 	}
 
-	SetSizer(wrapsizer);
+	outersizer->Add(wrapsizer, 1, wxEXPAND);
+
+	SetSizer(outersizer);
 	SetScrollRate(0, 20);
 	FitInside();
 }
@@ -713,6 +719,34 @@ void BrushIconBox::OnClickBrushButton(wxCommandEvent& event) {
 		
 		g_gui.SelectBrush(btn->brush, catType);
 	}
+}
+
+void BrushIconBox::OnSize(wxSizeEvent& event) {
+	if (GetSizer()) {
+		int client_width = GetClientSize().x;
+		int btn_width = 34;
+		if (!brush_buttons.empty()) {
+			btn_width = brush_buttons[0]->GetSize().x + 2;
+		}
+
+		int columns = client_width / btn_width;
+		if (columns < 1) columns = 1;
+
+		int total_items_width = columns * btn_width;
+		int remaining_space = client_width - total_items_width;
+		int left_padding = remaining_space / 2;
+		if (left_padding < 0) left_padding = 0;
+
+		if (left_spacer) {
+			left_spacer->SetInitSize(left_padding, 0);
+		}
+
+		SetVirtualSize(client_width, -1);
+		Layout();
+		int height = GetSizer()->GetMinSize().y;
+		SetVirtualSize(client_width, height);
+	}
+	event.Skip();
 }
 
 // ============================================================================

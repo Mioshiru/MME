@@ -320,7 +320,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	minimap_panel(nullptr),
 	palette_choice(nullptr),
 	search_box(nullptr) {
-	SetMinSize(wxSize(170, 250));
+	SetMinSize(wxSize(120, 150));
 	SetBackgroundColour(wxColor(10, 20, 35));
 
 	palette_choice = newd wxChoice(this, wxID_ANY);
@@ -386,7 +386,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	sizer->Add(palette_choice, 0, wxEXPAND | wxALL, 5);
 	sizer->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
 
-	choicebook->SetMinSize(wxSize(255, 300));
+	choicebook->SetMinSize(wxSize(120, 150));
 	sizer->Add(choicebook, 1, wxEXPAND);
 
 	for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {

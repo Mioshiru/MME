@@ -64,6 +64,7 @@ class SearchResultWindow;
 class MinimapWindow;
 class PaletteWindow;
 class OldPropertiesWindow;
+class ObjectPropertiesWindowBase;
 class TilesetWindow;
 class EditTownsDialog;
 class ItemButton;
@@ -427,6 +428,7 @@ public:
 	MapTabbook* tabbook;
 	MainFrame* root; // The main frame
 	WelcomeDialog* welcomeDialog;
+	ObjectPropertiesWindowBase* activePropertiesWindow = nullptr;
 	CopyBuffer copybuffer;
 	std::map<const void*, uint32_t> latencies;
 	std::vector<ChatMessage> chat_log;

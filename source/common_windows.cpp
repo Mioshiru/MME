@@ -1162,6 +1162,7 @@ ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxStrin
 	edit_item(item),
 	edit_creature(nullptr),
 	edit_spawn(nullptr) {
+	g_gui.activePropertiesWindow = this;
 	acquireLock();
 }
 
@@ -1172,6 +1173,7 @@ ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxStrin
 	edit_item(nullptr),
 	edit_creature(creature),
 	edit_spawn(nullptr) {
+	g_gui.activePropertiesWindow = this;
 	acquireLock();
 }
 
@@ -1182,15 +1184,20 @@ ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxStrin
 	edit_item(nullptr),
 	edit_creature(nullptr),
 	edit_spawn(spawn) {
+	g_gui.activePropertiesWindow = this;
 	acquireLock();
 }
 
 ObjectPropertiesWindowBase::ObjectPropertiesWindowBase(wxWindow* parent, wxString title, wxPoint position /* = wxDefaultPosition */) :
 	wxDialog(parent, wxID_ANY, title, position, wxSize(600, 400), wxCAPTION | wxCLOSE_BOX | wxRESIZE_BORDER),
 	edit_map(nullptr), edit_tile(nullptr), edit_item(nullptr), edit_creature(nullptr), edit_spawn(nullptr) {
+	g_gui.activePropertiesWindow = this;
 }
 
 ObjectPropertiesWindowBase::~ObjectPropertiesWindowBase() {
+	if (g_gui.activePropertiesWindow == this) {
+		g_gui.activePropertiesWindow = nullptr;
+	}
 	releaseLock();
 }
 

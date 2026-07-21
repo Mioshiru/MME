@@ -329,7 +329,7 @@ void LiveClient::sendHeartbeat() {
 		NetworkMessage msg;
 		msg.write<uint8_t>(PACKET_PING);
 		msg.write<uint64_t>(now);
-		msg.write<uint32_t>(g_gui.latencies[this]);
+		msg.write<uint32_t>(latency);
 		msg.write<uint32_t>(packetLossPercent);
 		send(msg);
 		++pingsSent;
@@ -776,8 +776,11 @@ void LiveClient::parseLockBroadcast(NetworkMessage& message) {
 void LiveClient::parseLockReject(NetworkMessage& message) {
 	Position pos = message.read<Position>();
 	std::string ownerName = message.read<std::string>();
-	g_gui.SetStatusText(wxString::Format("Zugriff verweigert: Diese Position wird gerade von '%s' bearbeitet!", wxstr(ownerName)));
-	wxMessageBox(wxString::Format("Diese Position/Eigenschaft wird derzeit von '%s' bearbeitet!", wxstr(ownerName)), "Sperre aktiv", wxOK | wxICON_WARNING);
+	g_gui.SetStatusText(wxString::Format("Access denied: This position is currently being edited by '%s'!", wxstr(ownerName)));
+	wxMessageBox(wxString::Format("This position/property is currently being edited by '%s'!", wxstr(ownerName)), "Lock Active", wxOK | wxICON_WARNING);
+	if (g_gui.activePropertiesWindow) {
+		g_gui.activePropertiesWindow->EndModal(wxID_CANCEL);
+	}
 }
 
 void LiveClient::parsePingLocation(NetworkMessage& message) {

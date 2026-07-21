@@ -101,6 +101,7 @@ public:
 	// Event handling...
 	void OnClickBrushButton(wxCommandEvent& event);
 	void Filter(const wxString& query) override;
+	void OnSize(wxSizeEvent& event);
 
 protected:
 	// Used internally to deselect all buttons before selecting a newd one.
@@ -109,6 +110,7 @@ protected:
 protected:
 	std::vector<BrushButton*> brush_buttons;
 	RenderSize icon_size;
+	wxSizerItem* left_spacer = nullptr;
 
 	DECLARE_EVENT_TABLE();
 };
