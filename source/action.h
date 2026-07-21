@@ -148,6 +148,10 @@ public:
 	void redo(DirtyList* dirty_list) {
 		commit(dirty_list);
 	}
+	
+	const ChangeList& getChanges() const {
+		return changes;
+	}
 
 protected:
 	Action(Editor& editor, ActionIdentifier ident);
@@ -177,6 +181,9 @@ public:
 	}
 	ActionIdentifier getType() const {
 		return type;
+	}
+	const ActionVector& getActions() const {
+		return batch;
 	}
 
 	virtual void addAction(Action* action);
@@ -212,6 +219,7 @@ public:
 	virtual Action* createAction(ActionIdentifier ident);
 	virtual Action* createAction(BatchAction* parent);
 	virtual BatchAction* createBatch(ActionIdentifier ident);
+	bool isLiveServer() const;
 
 	void addBatch(BatchAction* action, int stacking_delay = 0);
 	void addAction(Action* action, int stacking_delay = 0);

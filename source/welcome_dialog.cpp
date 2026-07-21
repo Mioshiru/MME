@@ -230,7 +230,7 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent& event) {
 				LiveClient* liveClient = newd LiveClient();
 				liveClient->setName(name);
 
-				EndModal(wxID_CANCEL);
+				g_gui.FinishWelcomeDialog();
 
 				wxTheApp->CallAfter([liveClient, ip, port]() {
 					g_gui.SetStatusText("Joining live session...");

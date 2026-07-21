@@ -24,7 +24,7 @@
 class LiveServer;
 class LivePeer : public LiveSocket {
 public:
-	LivePeer(LiveServer* server, boost::asio::ip::tcp::socket socket);
+	LivePeer(LiveServer* server, boost::asio::ip::tcp::socket socket, uint32_t id);
 	~LivePeer();
 
 	void close();
@@ -57,6 +57,7 @@ public:
 	}
 
 	//
+	bool isConnected() const { return connected; }
 	void receiveHeader();
 	void receive(uint32_t packetSize);
 	void send(NetworkMessage& message);

@@ -91,9 +91,13 @@ void LiveSocket::logMessage(const wxString& message) {
 }
 
 void LiveSocket::receiveNode(NetworkMessage& message, MapEditor& editor, Action* action, int32_t ndx, int32_t ndy, bool underground) {
-	QTreeNode* node = editor.map.getLeaf(ndx * 4, ndy * 4);
+	// Use getLeafForce to create the node if it doesn't exist yet (client-side nodes
+	// are not pre-allocated, they are created on demand when the server sends data).
+	QTreeNode* node = editor.map.createLeaf(ndx * 4, ndy * 4);
 	if (!node) {
-		log->Message("Warning: Received update for unknown tile (" + std::to_string(ndx * 4) + "/" + std::to_string(ndy * 4) + "/" + (underground ? "true" : "false") + ")");
+		if (log) {
+			log->Message("Warning: Could not create tile node (" + std::to_string(ndx * 4) + "/" + std::to_string(ndy * 4) + "/" + (underground ? "true" : "false") + ")");
+		}
 		return;
 	}
 
@@ -173,6 +177,9 @@ void LiveSocket::receiveFloor(NetworkMessage& message, MapEditor& editor, Action
 	mapReader.assign(reinterpret_cast<const uint8_t*>(data.data()), data.size()); // Korrekte Zuweisung der Rohdaten
 
 	BinaryNode* rootNode = mapReader.getRootNode();
+	if (!rootNode) {
+		return;
+	}
 	BinaryNode* tileNode = rootNode->getChild();
 
 	Position position(0, 0, z);
@@ -182,8 +189,10 @@ void LiveSocket::receiveFloor(NetworkMessage& message, MapEditor& editor, Action
 			position.y = (ndy * 4) + y;
 
 			if (testFlags(tileBits, static_cast<uint64_t>(1) << ((x * 4) + y))) {
-				receiveTile(tileNode, editor, action, &position);
-				tileNode->advance();
+				if (tileNode) {
+					receiveTile(tileNode, editor, action, &position);
+					tileNode->advance();
+				}
 			} else {
 				action->addChange(new Change(map.allocator(node->createTile(position.x, position.y, z))));
 			}
@@ -211,6 +220,7 @@ void LiveSocket::sendFloor(NetworkMessage& message, Floor* floor) {
 	}
 
 	mapWriter.reset();
+	mapWriter.addNode(0x00); // Root container node
 	for (uint_fast8_t x = 0; x < 4; ++x) {
 		for (uint_fast8_t y = 0; y < 4; ++y) {
 			uint_fast8_t index = (x * 4) + y;
@@ -238,6 +248,9 @@ void LiveSocket::receiveTile(BinaryNode* node, MapEditor& editor, Action* action
 }
 
 void LiveSocket::sendTile(MemoryNodeFileWriteHandle& writer, Tile* tile, const Position* position) {
+	if (!tile) {
+		return;
+	}
 	writer.addNode(tile->isHouseTile() ? OTBM_HOUSETILE : OTBM_TILE);
 	if (position) {
 		writer.addU16(position->x);

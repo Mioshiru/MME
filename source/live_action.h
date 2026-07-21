@@ -59,6 +59,9 @@ public:
 	Action* createAction(ActionIdentifier ident);
 	BatchAction* createBatch(ActionIdentifier ident);
 
+	void addAction(Action* action, int stacking_delay = 0);
+	void addBatch(BatchAction* action, int stacking_delay = 0);
+
 protected:
 	void broadcast(DirtyList& dirty_list);
 

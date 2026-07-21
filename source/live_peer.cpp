@@ -25,10 +25,10 @@
 
 #include "editor.h"
 
-LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket)
+LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket, uint32_t id)
     : LiveSocket(), readMessage(), server(server), socket(std::move(socket)),
       color(), latency(0), packetLoss(0), lastHeartbeat(0),
-      connectionStatus("Connecting"), id(0), clientId(0), connected(false) {
+      connectionStatus("Connecting"), id(id), clientId(0), connected(false) {
   ASSERT(server != nullptr);
 }
 
@@ -39,7 +39,12 @@ LivePeer::~LivePeer() {
   }
 }
 
-void LivePeer::close() { server->removeClient(id); }
+void LivePeer::close() {
+  if (connected) {
+    server->broadcastChat("Server", name + " left the session.");
+  }
+  server->removeClient(id);
+}
 
 bool LivePeer::handleError(const boost::system::error_code &error) {
   if (error == boost::asio::error::eof ||
@@ -61,6 +66,9 @@ std::string LivePeer::getHostName() const {
 }
 
 void LivePeer::receiveHeader() {
+  if (!socket.is_open()) {
+    return;
+  }
   readMessage.position = 0;
   boost::asio::async_read(
       socket, boost::asio::buffer(readMessage.buffer, 4),
@@ -126,6 +134,10 @@ void LivePeer::send(NetworkMessage &message) {
 void LivePeer::parseLoginPacket(NetworkMessage message) {
   uint8_t packetType;
   while (message.position < message.buffer.size()) {
+    if (connected) {
+      parseEditorPacket(message);
+      return;
+    }
     packetType = message.read<uint8_t>();
     switch (packetType) {
     case PACKET_HELLO_FROM_CLIENT:
@@ -137,7 +149,7 @@ void LivePeer::parseLoginPacket(NetworkMessage message) {
     default: {
       log->Message("Invalid login packet receieved, connection severed.");
       close();
-      break;
+      return;
     }
     }
   }
@@ -241,6 +253,9 @@ void LivePeer::parseHello(NetworkMessage &message) {
   g_gui.SetStatusText(name + " joined the session!");
   log->Message(name + " (" + getHostName() + ") connected.");
 
+  MapVersion ver = server->getEditor()->map.getVersion();
+  this->mapVersion = VirtualIOMap(ver);
+
   NetworkMessage outMessage;
   if (static_cast<ClientVersionID>(clientVersion) !=
       g_gui.GetCurrentVersionID()) {
@@ -278,16 +293,83 @@ void LivePeer::parseReady(NetworkMessage &message) {
 
   server->updateClientList();
 
-  // Let's reply
+  // Step 1: Send HELLO first so the client creates its map/editor
+  Map &map = server->getEditor()->map;
+
   NetworkMessage outMessage;
   outMessage.write<uint8_t>(PACKET_HELLO_FROM_SERVER);
-
-  Map &map = server->getEditor()->map;
   outMessage.write<std::string>(map.getName());
   outMessage.write<uint16_t>(map.getWidth());
   outMessage.write<uint16_t>(map.getHeight());
 
+  Position focusPos(map.getWidth() / 2, map.getHeight() / 2, 7);
+  MapTab* hostTab = g_gui.GetCurrentMapTab();
+  if (hostTab) {
+    focusPos = hostTab->GetScreenCenterPosition();
+  }
+  outMessage.write<Position>(focusPos);
   send(outMessage);
+
+  // Step 2: Send chat messages (after HELLO, so the client is ready)
+  // Broadcast join message to everyone
+  server->broadcastChat("Server", name + " joined the session!");
+
+  // Send current users list to the newly joined client
+  wxString userList = "Connected clients: Host";
+  for (const auto& clientEntry : server->clients) {
+    LivePeer* peer = clientEntry.second;
+    if (peer != this && peer->isConnected()) {
+      userList += ", " + peer->getName();
+    }
+  }
+  NetworkMessage listMsg;
+  listMsg.write<uint8_t>(PACKET_SERVER_TALK);
+  listMsg.write<std::string>("Server");
+  listMsg.write<std::string>(nstr(userList));
+  send(listMsg);
+
+  // Step 3: Initial Map Sync — send ALL non-empty nodes to this client
+  // This ensures the joiner sees exactly what the host has on the map.
+  int nodesSent = 0;
+
+  std::vector<QTreeNode::VisibleNode> visibleNodes;
+  map.root.getVisibleLeaves(0, 0, -1, 0, 0, 65535, 65535, visibleNodes);
+
+  for (const auto& vn : visibleNodes) {
+    QTreeNode* node = vn.node;
+    if (!node) {
+      continue;
+    }
+    
+    int ndx = vn.map_x / 4;
+    int ndy = vn.map_y / 4;
+
+    // Check if this node has any floor data at all
+    Floor** floors = node->getFloors();
+    bool hasOverground = false;
+    bool hasUnderground = false;
+
+    for (int z = 0; z < MAP_LAYERS; ++z) {
+      if (floors[z]) {
+        if (z <= GROUND_LAYER) {
+          hasOverground = true;
+        } else {
+          hasUnderground = true;
+        }
+      }
+    }
+
+    if (hasOverground) {
+      sendNode(clientId, node, ndx, ndy, 0x00FF);
+      ++nodesSent;
+    }
+    if (hasUnderground) {
+      sendNode(clientId, node, ndx, ndy, 0xFF00);
+      ++nodesSent;
+    }
+  }
+
+  log->Message(wxString::Format("%s: Initial sync complete (%d nodes sent).", name, nodesSent));
 }
 
 void LivePeer::parseNodeRequest(NetworkMessage &message) {
@@ -313,6 +395,9 @@ void LivePeer::parseReceiveChanges(NetworkMessage &message) {
   mapReader.assign(reinterpret_cast<const uint8_t *>(data.data()), data.size());
 
   BinaryNode *rootNode = mapReader.getRootNode();
+  if (!rootNode) {
+    return;
+  }
   BinaryNode *tileNode = rootNode->getChild();
 
   NetworkedAction *action = static_cast<NetworkedAction *>(
@@ -365,4 +450,5 @@ void LivePeer::parseCursorUpdate(NetworkMessage &message) {
 void LivePeer::parseChatMessage(NetworkMessage &message) {
   const std::string &chatMessage = message.read<std::string>();
   server->broadcastChat(name, wxstr(chatMessage));
+  g_gui.AddChatMessage(nstr(name), chatMessage);
 }

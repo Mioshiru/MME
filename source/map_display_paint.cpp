@@ -409,19 +409,28 @@ SetVSync(true);
 			LiveClient* client = editor.GetLiveClient();
 			uint32_t lat = client->getLatency();
 			ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Connection: ");
+			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Join Mode | ");
 			ImGui::SameLine();
 			ImGui::TextColored(col, "%s | %d ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), lat, client->getPacketLoss());
 		}
 		ImGui::Separator();
 
+		// Determine own name for highlighting
+		std::string ownName;
+		if (editor.IsLiveServer()) {
+			ownName = "Host";
+		} else if (editor.GetLiveClient()) {
+			ownName = nstr(editor.GetLiveClient()->getName());
+		}
+
 		// Chat history area
 		float reserve_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -reserve_height), false, ImGuiWindowFlags_HorizontalScrollbar);
 		for (const auto& msg : g_gui.chat_log) {
-			ImVec4 color = ImVec4(0.7f, 0.7f, 0.9f, 1.0f); // Default silver
-			if (msg.sender == "Host") color = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); // Green for Host
-			else if (msg.sender == "Me") color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // White for self
+			ImVec4 color = ImVec4(0.7f, 0.7f, 0.9f, 1.0f); // Default silver for other players
+			if (msg.sender == ownName) color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // White for self
+			else if (msg.sender == "Host") color = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); // Green for Host
+			else if (msg.sender == "Server") color = ImVec4(1.0f, 0.8f, 0.2f, 1.0f); // Gold for Server messages
 
 			ImGui::TextColored(color, "[%s]: ", msg.sender.c_str());
 			ImGui::SameLine();

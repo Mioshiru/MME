@@ -181,13 +181,7 @@ bool Application::OnInit() {
 
   // Truncate/empty the error.log file on startup
   {
-    std::ofstream err_file("C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\error.log", std::ios::out | std::ios::trunc);
-    if (!err_file.is_open()) {
-      err_file.open("c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log", std::ios::out | std::ios::trunc);
-    }
-    if (!err_file.is_open()) {
-      err_file.open("error.log", std::ios::out | std::ios::trunc);
-    }
+    std::ofstream err_file("error.log", std::ios::out | std::ios::trunc);
     if (err_file.is_open()) {
       err_file.close();
     }
@@ -529,12 +523,7 @@ std::string GetModuleInfoFromAddress(void *address) {
 
 LONG WINAPI
 MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
-  std::ofstream err_file(
-      "c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log",
-      std::ios::app);
-  if (!err_file.is_open()) {
-    err_file.open("error.log", std::ios::app);
-  }
+  std::ofstream err_file("error.log", std::ios::app);
   if (err_file.is_open()) {
     std::string modInfo = GetModuleInfoFromAddress(
         exceptionInfo->ExceptionRecord->ExceptionAddress);
@@ -556,15 +545,7 @@ MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
 #endif
 
 void LogErrorToFile(const std::string &message) {
-  std::ofstream err_file(
-      "C:\\Users\\weber\\Dokumente\\Projekt\\In Arbeit\\Map Editor\\error.log",
-      std::ios::app);
-  if (!err_file.is_open()) {
-    err_file.open("c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log", std::ios::app);
-  }
-  if (!err_file.is_open()) {
-    err_file.open("error.log", std::ios::app);
-  }
+  std::ofstream err_file("error.log", std::ios::app);
   if (err_file.is_open()) {
     err_file << "[" << wxDateTime::Now().FormatISOCombined(' ').ToStdString()
              << "] " << message << std::endl;
@@ -575,12 +556,7 @@ void LogErrorToFile(const std::string &message) {
 void Application::OnFatalException() {
   LogErrorToFile("FATAL ERROR: Structured Exception (e.g. Access "
                  "Violation/Crash) occurred in the application!");
-  std::ofstream err_file(
-      "c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log",
-      std::ios::app);
-  if (!err_file.is_open()) {
-    err_file.open("error.log", std::ios::app);
-  }
+  std::ofstream err_file("error.log", std::ios::app);
   if (err_file.is_open()) {
     err_file << "Active actions stack (last first):" << std::endl;
     std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
@@ -593,12 +569,7 @@ void Application::OnFatalException() {
 
 void Application::OnUnhandledException() {
   LogErrorToFile("UNHANDLED EXCEPTION: An unhandled C++ exception occurred!");
-  std::ofstream err_file(
-      "c:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/error.log",
-      std::ios::app);
-  if (!err_file.is_open()) {
-    err_file.open("error.log", std::ios::app);
-  }
+  std::ofstream err_file("error.log", std::ios::app);
   if (err_file.is_open()) {
     err_file << "Active actions stack (last first):" << std::endl;
     std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
@@ -997,8 +968,8 @@ void MainFrame::OnExit(wxCloseEvent &event) {
       }
     }
   }
-  g_gui.aui_manager->UnInit();
   ((Application &)wxGetApp()).Unload();
+  g_gui.aui_manager->UnInit();
 #ifdef __RELEASE__
   // Hack, "crash" gracefully in release builds, let OS handle cleanup of
   // windows

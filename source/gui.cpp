@@ -65,26 +65,37 @@ GUI::~GUI() {
 
 bool GUI::CloseLiveEditors(LiveSocket *sock) {
   for (int i = 0; i < tabbook->GetTabCount(); ++i) {
-    auto *mapTab = dynamic_cast<MapTab *>(tabbook->GetTab(i));
+    EditorTab* tab = tabbook->GetTab(i);
+
+    auto *mapTab = dynamic_cast<MapTab *>(tab);
     if (mapTab) {
       Editor *editor = mapTab->GetEditor();
-      if (editor->GetLiveClient() == sock) {
+      if (editor->GetLiveClient() == sock || editor->GetLiveServer() == sock) {
         tabbook->DeleteTab(i--);
       }
+      continue; // Tab was either deleted or is a MapTab (not a LiveLogTab)
     }
-    auto *liveLogTab = dynamic_cast<LiveLogTab *>(tabbook->GetTab(i));
-    if (liveLogTab) {
-      if (liveLogTab->GetSocket() == sock) {
-        liveLogTab->Disconnect();
-        tabbook->DeleteTab(i--);
-      }
+
+    auto *liveLogTab = dynamic_cast<LiveLogTab *>(tab);
+    if (liveLogTab && liveLogTab->GetSocket() == sock) {
+      liveLogTab->Disconnect();
+      tabbook->DeleteTab(i--);
     }
   }
-  root->UpdateMenubar();
+  if (root) {
+    root->UpdateMenubar();
+  }
   return true;
 }
 
 bool GUI::CloseAllEditors() {
+  if (in_game_preview) {
+    aui_manager->DetachPane(in_game_preview);
+    in_game_preview->Destroy();
+    in_game_preview = nullptr;
+    aui_manager->Update();
+  }
+
   for (int i = 0; i < tabbook->GetTabCount(); ++i) {
     auto *mapTab = dynamic_cast<MapTab *>(tabbook->GetTab(i));
     if (mapTab) {
@@ -299,6 +310,12 @@ void GUI::DestroyPalettes() {
     palette->Destroy();
   }
   palettes.clear();
+
+  if (in_game_preview) {
+    aui_manager->DetachPane(in_game_preview);
+    in_game_preview->Destroy();
+    in_game_preview = nullptr;
+  }
 
   if (tools_panel) {
     aui_manager->DetachPane(tools_panel);

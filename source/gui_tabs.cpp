@@ -157,6 +157,12 @@ Map& GUI::GetCurrentMap() {
 
 void GUI::CloseCurrentEditor() {
 	if (tabbook && tabbook->GetTabCount() > 0) {
+		if (tabbook->GetTabCount() == 1 && in_game_preview) {
+			aui_manager->DetachPane(in_game_preview);
+			in_game_preview->Destroy();
+			in_game_preview = nullptr;
+			aui_manager->Update();
+		}
 		tabbook->DeleteTab(tabbook->GetSelection());
 	}
 }

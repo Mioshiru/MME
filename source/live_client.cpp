@@ -133,13 +133,14 @@ void LiveClient::close() {
 
 bool LiveClient::handleError(const boost::system::error_code& error) {
 	if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset) {
-		wxTheApp->CallAfter([this]() {
-			if (!scheduleReconnect(wxString() + getHostName() + ": disconnected.")) {
+		wxTheApp->CallAfter([this, error]() {
+			if (error == boost::asio::error::connection_reset || !scheduleReconnect(wxString() + getHostName() + ": disconnected.")) {
 				if (log) {
 					log->Message(wxString() + getHostName() + ": disconnected.");
 				}
 				close();
 				g_gui.CloseLiveEditors(this);
+				mapEditor = nullptr;
 			}
 		});
 		return true;
@@ -213,6 +214,9 @@ std::string LiveClient::getHostName() const {
 }
 
 void LiveClient::receiveHeader() {
+	if (stopped || !socket || !socket->is_open()) {
+		return;
+	}
 	readMessage.position = 0;
 	boost::asio::async_read(*socket, boost::asio::buffer(readMessage.buffer, 4), [this](const boost::system::error_code& error, size_t bytesReceived) -> void {
 		if (error) {
@@ -345,23 +349,70 @@ void LiveClient::sendNodeRequests() {
 	queryNodeList.clear();
 }
 
+void LiveClient::requestTileChange(Action* action) {
+	mapWriter.reset();
+	mapWriter.addNode(0x00); // Root container node
+	for (Change* change : action->getChanges()) {
+		if (change->getType() == CHANGE_TILE) {
+			Tile* newtile = reinterpret_cast<Tile*>(change->getData());
+			if (newtile) {
+				const Position& position = newtile->getPosition();
+				sendTile(mapWriter, newtile, &position);
+			}
+		}
+	}
+	mapWriter.endNode();
+
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHANGE_LIST);
+
+	std::string data(reinterpret_cast<const char*>(mapWriter.getMemory()), mapWriter.getSize());
+	message.write<std::string>(data);
+
+	send(message);
+}
+
+void LiveClient::requestBatchChange(BatchAction* batchAction) {
+	mapWriter.reset();
+	mapWriter.addNode(0x00); // Root container node
+	for (Action* action : batchAction->getActions()) {
+		for (Change* change : action->getChanges()) {
+			if (change->getType() == CHANGE_TILE) {
+				Tile* newtile = reinterpret_cast<Tile*>(change->getData());
+				if (newtile) {
+					const Position& position = newtile->getPosition();
+					sendTile(mapWriter, newtile, &position);
+				}
+			}
+		}
+	}
+	mapWriter.endNode();
+
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHANGE_LIST);
+
+	std::string data(reinterpret_cast<const char*>(mapWriter.getMemory()), mapWriter.getSize());
+	message.write<std::string>(data);
+
+	send(message);
+}
+
 void LiveClient::sendChanges(DirtyList& dirtyList) {
 	ChangeList& changeList = dirtyList.GetChanges();
 	if (changeList.empty()) {
 		return;
 	}
 
-    // PERFORMANCE: Kleinere Änderungen puffern, um Packet-Flood zu vermeiden
-    if (changeList.size() < 5) {
-        // Wartet auf nächsten Batch-Zyklus (implizit durch DirtyList Logik)
-    }
-
 	mapWriter.reset();
+	mapWriter.addNode(0x00); // Root container node
 	for (Change* change : changeList) {
 		switch (change->getType()) {
 			case CHANGE_TILE: { 
 				const Position& position = static_cast<Tile*>(change->getData())->getPosition();
-				sendTile(mapWriter, mapEditor->map.getTile(position), &position);
+				Tile* tile = mapEditor->map.getTile(position);
+				if (tile) {
+					sendTile(mapWriter, tile, &position);
+				}
 				break;
 			}
 			default:
@@ -379,11 +430,15 @@ void LiveClient::sendChanges(DirtyList& dirtyList) {
 	send(message);
 }
 
-void LiveClient::sendChat(const wxString& chatMessage) {
-	NetworkMessage message;
-	message.write<uint8_t>(PACKET_CLIENT_TALK);
-	message.write<std::string>(nstr(chatMessage));
-	send(message);
+void LiveClient::sendChat(const wxString& message) {
+	if (!socket || !socket->is_open()) {
+		return;
+	}
+
+	NetworkMessage msg;
+	msg.write<uint8_t>(PACKET_CLIENT_TALK);
+	msg.write<std::string>(nstr(message));
+	send(msg);
 }
 
 void LiveClient::sendReady() {
@@ -445,9 +500,11 @@ void LiveClient::parsePacket(NetworkMessage message) {
 				break;
 			}
 			default: {
-				log->Message("Unknown packet receieved!");
+				if (log) {
+					log->Message(wxString::Format("Unknown packet received: 0x%02X", packetType));
+				}
 				close();
-				break;
+				return; // Stop processing after close
 			}
 		}
 	}
@@ -459,6 +516,7 @@ void LiveClient::parsePacket(NetworkMessage message) {
 }
 
 void LiveClient::parseHello(NetworkMessage& message) {
+	logMessage("Connected to server.");
 	if (!mapEditor) {
 		mapEditor = newd Editor(g_gui.copybuffer, this);
 	} else {
@@ -471,11 +529,22 @@ void LiveClient::parseHello(NetworkMessage& message) {
 	map.setName("Live Map - " + message.read<std::string>());
 	map.setWidth(message.read<uint16_t>());
 	map.setHeight(message.read<uint16_t>());
+	Position focusPos = message.read<Position>();
 	map.clearChanges();
 
+	MapVersion ver;
+	ver.otbm = g_gui.GetCurrentVersion().getPrefferedMapVersionID();
+	ver.client = g_gui.GetCurrentVersionID();
+	map.convert(ver);
+	this->mapVersion = VirtualIOMap(ver);
+
 	if (reconnectAttempts == 0) {
-		createEditorWindow();
+		MapTab* tab = createEditorWindow();
+		if (tab) {
+			tab->SetScreenCenterPosition(focusPos);
+		}
 	} else {
+		g_gui.SetScreenCenterPosition(focusPos);
 		g_gui.RefreshView();
 		g_gui.UpdateMinimap();
 	}
@@ -486,6 +555,8 @@ void LiveClient::parseKick(NetworkMessage& message) {
 	kickedByServer = true;
 	connectionStatus = "Disconnected";
 	close();
+	g_gui.CloseLiveEditors(this);
+	mapEditor = nullptr;
 
 	g_gui.PopupDialog("Disconnected", wxstr(kickMessage), wxOK);
 }
@@ -504,6 +575,7 @@ void LiveClient::parseChangeClientVersion(NetworkMessage& message) {
 		close();
 		return;
 	}
+	mapEditor = nullptr;
 
 	wxString error;
 	wxArrayString warnings;
@@ -516,6 +588,11 @@ void LiveClient::parseChangeClientVersion(NetworkMessage& message) {
 		g_gui.ListDialog("Version Warnings", warnings);
 	}
 
+	MapVersion ver;
+	ver.otbm = g_gui.GetCurrentVersion().getPrefferedMapVersionID();
+	ver.client = clientVersion;
+	this->mapVersion = VirtualIOMap(ver);
+
 	sendReady();
 }
 
@@ -527,7 +604,11 @@ void LiveClient::parseServerTalk(NetworkMessage& message) {
 			wxstr(speaker),
 			wxstr(chatMessage)
 		);
+		if (speaker == "Server") {
+			log->Message(wxstr(chatMessage));
+		}
 	}
+	g_gui.AddChatMessage(speaker, chatMessage);
 }
 
 void LiveClient::parseNode(NetworkMessage& message) {
@@ -537,6 +618,11 @@ void LiveClient::parseNode(NetworkMessage& message) {
 	int32_t ndx = ind >> 18;
 	int32_t ndy = (ind >> 4) & 0x3FFF;
 	bool underground = ind & 1;
+
+	if (!mapEditor) {
+		if (log) { log->Message("Warning: Received node before map was initialized."); }
+		return;
+	}
 
 	Action* action = mapEditor->actionQueue->createAction(ACTION_REMOTE);
 	receiveNode(message, *mapEditor, action, ndx, ndy, underground);

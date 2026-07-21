@@ -37,7 +37,11 @@ void NetworkMessage::expand(const size_t length) {
 
 template <>
 std::string NetworkMessage::read<std::string>() {
-	const uint16_t length = read<uint16_t>();
+	const uint32_t length = read<uint32_t>();
+	if (position + length > buffer.size()) {
+		position = buffer.size();
+		return std::string();
+	}
 	char* strBuffer = reinterpret_cast<char*>(&buffer[position]);
 	position += length;
 	return std::string(strBuffer, length);
@@ -55,7 +59,7 @@ Position NetworkMessage::read<Position>() {
 template <>
 void NetworkMessage::write<std::string>(const std::string& value) {
 	const size_t length = value.length();
-	write<uint16_t>(length);
+	write<uint32_t>(static_cast<uint32_t>(length));
 
 	expand(length);
 	memcpy(&buffer[position], &value[0], length);

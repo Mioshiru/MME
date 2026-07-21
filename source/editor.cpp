@@ -169,7 +169,10 @@ MapEditor::MapEditor(CopyBuffer& copybuffer, LiveClient* client) :
 	copybuffer(copybuffer),
 	replace_brush(nullptr),
 	defer_borders(false) {
-	;
+	MapVersion version;
+	version.otbm = g_gui.GetCurrentVersion().getPrefferedMapVersionID();
+	version.client = g_gui.GetCurrentVersionID();
+	map.convert(version);
 }
 
 MapEditor::~MapEditor() {

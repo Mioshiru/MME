@@ -69,7 +69,7 @@ void GUI::SendChat(const std::string& text) {
 			AddChatMessage("Host", text);
 		} else {
             ed->GetLiveClient()->sendChat(wxstr(text));
-            AddChatMessage("Me", text);
+            // Client waits for the server to broadcast the message back
 		}
 	}
 }

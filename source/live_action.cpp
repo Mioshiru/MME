@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "live_action.h"
+#include "live_client.h"
 #include "editor.h"
 
 NetworkedAction::NetworkedAction(Editor& editor, ActionIdentifier ident) :
@@ -60,7 +61,9 @@ void NetworkedBatchAction::addAndCommitAction(Action* action) {
 	timestamp = time(nullptr);
 
 	// Broadcast changes!
-	queue.broadcast(dirty_list);
+	if (type != ACTION_REMOTE || queue.isLiveServer()) {
+		queue.broadcast(dirty_list);
+	}
 }
 
 void NetworkedBatchAction::commit() {
@@ -77,7 +80,9 @@ void NetworkedBatchAction::commit() {
 		}
 	}
 	// Broadcast changes!
-	queue.broadcast(dirty_list);
+	if (type != ACTION_REMOTE || queue.isLiveServer()) {
+		queue.broadcast(dirty_list);
+	}
 }
 
 void NetworkedBatchAction::undo() {
@@ -111,6 +116,14 @@ Action* NetworkedActionQueue::createAction(ActionIdentifier ident) {
 
 BatchAction* NetworkedActionQueue::createBatch(ActionIdentifier ident) {
 	return newd NetworkedBatchAction(editor, *this, ident);
+}
+
+void NetworkedActionQueue::addAction(Action* action, int stacking_delay) {
+	ActionQueue::addAction(action, stacking_delay);
+}
+
+void NetworkedActionQueue::addBatch(BatchAction* action, int stacking_delay) {
+	ActionQueue::addBatch(action, stacking_delay);
 }
 
 void NetworkedActionQueue::broadcast(DirtyList& dirty_list) {

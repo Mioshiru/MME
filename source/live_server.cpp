@@ -63,8 +63,37 @@ bool LiveServer::bind() {
 }
 
 void LiveServer::close() {
+	if (stopped) {
+		return;
+	}
+	stopped = true;
+
+	if (acceptor) {
+		boost::system::error_code ec;
+		acceptor->close(ec);
+	}
+
+	NetworkMessage kickMsg;
+	kickMsg.write<uint8_t>(PACKET_KICK);
+	kickMsg.write<std::string>("Host has closed the server.");
+	memcpy(&kickMsg.buffer[0], &kickMsg.size, 4);
+
 	for (auto& clientEntry : clients) {
-		delete clientEntry.second;
+		LivePeer* peer = clientEntry.second;
+		if (peer->socket.is_open()) {
+			boost::system::error_code ec;
+			peer->socket.non_blocking(true, ec); // Prevent blocking if TCP buffer is full or client dead
+			boost::asio::write(peer->socket, boost::asio::buffer(kickMsg.buffer, kickMsg.size + 4), ec);
+		}
+	}
+	
+	// Give the TCP stack a tiny moment to flush before we forcefully terminate the process
+	wxMilliSleep(50);
+
+	for (auto& clientEntry : clients) {
+		LivePeer* peer = clientEntry.second;
+		peer->close();
+		delete peer;
 	}
 	clients.clear();
 
@@ -100,11 +129,12 @@ void LiveServer::acceptClient() {
 		if (error) {
 			//
 		} else {
-			LivePeer* peer = new LivePeer(this, std::move(*socket));
+			uint32_t currentId = id++;
+			LivePeer* peer = new LivePeer(this, std::move(*socket), currentId);
 			peer->log = log;
 			peer->receiveHeader();
 
-			clients.insert(std::make_pair(id++, peer));
+			clients.insert(std::make_pair(currentId, peer));
 		}
 		acceptClient();
 	});
@@ -116,13 +146,15 @@ void LiveServer::removeClient(uint32_t id) {
 		return;
 	}
 
-	const uint32_t clientId = it->second->getClientId();
+	LivePeer* peer = it->second;
+	const uint32_t clientId = peer->getClientId();
 	if (clientId != 0) {
 		clientIds &= ~clientId;
 		editor->map.clearVisible(clientIds);
 	}
 
 	clients.erase(it);
+	delete peer;
 	updateClientList();
 }
 
@@ -213,20 +245,16 @@ void LiveServer::broadcastNodes(DirtyList& dirtyList) {
 		LivePeer* peer = clientEntry.second;
 		const uint32_t clientId = peer->getClientId();
 
-		if (dirtyList.owner != 0 && dirtyList.owner == clientId) {
-			continue;
-		}
-
 		for (const auto& item : cache) {
 			// Optimierter Check: Nur senden, wenn sich der Client im Sichtbereich befindet
             // und die Ebene (Floors) tatsächlich Daten enthält.
             bool isUnderground = (item.floors & 0xFF00) != 0;
             bool isOverground = (item.floors & 0x00FF) != 0;
 
-			if (isUnderground && item.node->isVisible(clientId, true)) {
+			if (isUnderground) {
 				peer->sendNode(clientId, item.node, item.ndx, item.ndy, item.floors & 0xFF00);
 			}
-			if (isOverground && item.node->isVisible(clientId, false)) {
+			if (isOverground) {
 				peer->sendNode(clientId, item.node, item.ndx, item.ndy, item.floors & 0x00FF);
 			}
 		}
@@ -273,7 +301,7 @@ void LiveServer::broadcastChat(const wxString& speaker, const wxString& chatMess
 	}
 
 	if (log) {
-		log->Chat(name, chatMessage);
+		log->Chat(speaker, chatMessage);
 	}
 }
 

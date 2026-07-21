@@ -102,7 +102,6 @@ bool GUI::LoadVersion(ClientVersionID version, wxString& error, wxArrayString& w
 	if (version != loaded_version || force) {
 		if (getLoadedVersion() != nullptr) SavePerspective();
 		UnnamedRenderingLock();
-		DestroyPalettes();
 		UnloadVersion();
 		loaded_version = version;
 		if (!getLoadedVersion()->hasValidPaths()) {

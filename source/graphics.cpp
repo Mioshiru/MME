@@ -1362,7 +1362,9 @@ void GameSprite::Image::createGLTexture(GLuint whatid) {
 void GameSprite::Image::unloadGLTexture(GLuint whatid) {
 	isGLLoaded = false;
 	g_gui.gfx.loaded_textures -= 1;
-	glDeleteTextures(1, &whatid);
+	if (whatid != 0) {
+		glDeleteTextures(1, &whatid);
+	}
 }
 
 void GameSprite::Image::visit() {

@@ -35,6 +35,10 @@ struct NetworkMessage {
 	//
 	template <typename T>
 	T read() {
+		if (position + sizeof(T) > buffer.size()) {
+			position = buffer.size();
+			return T();
+		}
 		T& value = *reinterpret_cast<T*>(&buffer[position]);
 		position += sizeof(T);
 		return value;

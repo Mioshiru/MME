@@ -152,7 +152,7 @@ void Action::commit(DirtyList* dirty_list) {
 				ASSERT(newtile);
 				Position pos = newtile->getPosition();
 
-				if (editor.IsLiveClient()) {
+				if (editor.IsLiveClient() && type != ACTION_REMOTE) {
 					QTreeNode* nd = editor.map.getLeaf(pos.x, pos.y);
 					if (!nd || !nd->isVisible(pos.z > GROUND_LAYER)) {
 						// Delete all changes that affect tiles outside our view
@@ -304,7 +304,7 @@ void Action::undo(DirtyList* dirty_list) {
 				ASSERT(oldtile);
 				Position pos = oldtile->getPosition();
 
-				if (editor.IsLiveClient()) {
+				if (editor.IsLiveClient() && type != ACTION_REMOTE) {
 					QTreeNode* nd = editor.map.getLeaf(pos.x, pos.y);
 					if (!nd || !nd->isVisible(pos.z > GROUND_LAYER)) {
 						// Delete all changes that affect tiles outside our view
@@ -607,6 +607,10 @@ void ActionQueue::addBatch(BatchAction* batch, int stacking_delay) {
 
 	// Notify Lua scripts about action change
 	g_luaScripts.emit("actionChange");
+}
+
+bool ActionQueue::isLiveServer() const {
+	return editor.IsLiveServer();
 }
 
 void ActionQueue::addAction(Action* action, int stacking_delay) {

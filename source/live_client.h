@@ -25,6 +25,9 @@
 
 class DirtyList;
 class MapTab;
+class MapEditor;
+class Action;
+class BatchAction;
 
 class LiveClient : public LiveSocket {
 public:
@@ -65,6 +68,8 @@ public:
 	void sendHello();
 	void sendNodeRequests();
 	void sendChanges(DirtyList& dirtyList);
+	void requestTileChange(Action* action);
+	void requestBatchChange(BatchAction* batchAction);
 	void sendChat(const wxString& chatMessage);
 	void sendReady();
 
