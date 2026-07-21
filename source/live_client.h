@@ -87,6 +87,7 @@ public:
 	void updateActivity();
 	void checkInactivity();
 	void touchActivity();
+	void sendHeartbeat();
 
 	// Flags a node as queried and stores it, need to call SendNodeRequest to send it to server
 	void queryNode(int32_t ndx, int32_t ndy, bool underground);

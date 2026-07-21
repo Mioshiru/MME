@@ -95,6 +95,7 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 			}
 		} else {
 			socket->set_option(boost::asio::ip::tcp::no_delay(true), error);
+			socket->set_option(boost::asio::socket_base::keep_alive(true), error);
 			if (error) {
 				wxTheApp->CallAfter([this]() {
 					close();
@@ -311,7 +312,8 @@ void LiveClient::sendHello() {
 	send(message);
 }
 
-void LiveClient::sendNodeRequests() {
+void LiveClient::sendHeartbeat() {
+	if (!socket || !socket->is_open()) return;
 	static uint64_t last_ping_time = 0;
 	uint64_t now = wxGetLocalTimeMillis().GetValue();
 	if (now - last_ping_time > 2000) {
@@ -333,7 +335,9 @@ void LiveClient::sendNodeRequests() {
 		waitingForPong = true;
 		last_ping_time = now;
 	}
+}
 
+void LiveClient::sendNodeRequests() {
 	if (queryNodeList.empty()) {
 		return;
 	}

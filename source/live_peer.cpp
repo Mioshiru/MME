@@ -30,6 +30,9 @@ LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket, uint
       color(), latency(0), packetLoss(0), lastHeartbeat(0),
       connectionStatus("Connecting"), id(id), clientId(0), connected(false) {
   ASSERT(server != nullptr);
+  boost::system::error_code error;
+  this->socket.set_option(boost::asio::ip::tcp::no_delay(true), error);
+  this->socket.set_option(boost::asio::socket_base::keep_alive(true), error);
 }
 
 LivePeer::~LivePeer() {

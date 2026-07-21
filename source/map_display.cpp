@@ -1897,6 +1897,7 @@ void MapCanvas::OnIdle(wxIdleEvent& event) {
 
   if (editor.IsLiveClient()) {
     editor.GetLiveClient()->checkInactivity();
+    editor.GetLiveClient()->sendHeartbeat();
   }
 
   bool wants_continuous = true;
