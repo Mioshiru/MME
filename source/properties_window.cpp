@@ -55,22 +55,22 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 	currentPanel(nullptr) {
 	ASSERT(edit_item);
 
-	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
+	SetBackgroundColour(wxColour(10, 20, 35));
 	wxSizer* topSizer = newd wxBoxSizer(wxVERTICAL);
 
 	// Header Banner Panel
 	wxPanel* headerPanel = newd wxPanel(this, wxID_ANY);
-	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	headerPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* headerSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxString itemTitle = wxString::Format("Item #%d: %s", edit_item->getID(), wxstr(edit_item->getName()));
 	wxStaticText* header = newd wxStaticText(headerPanel, wxID_ANY, itemTitle);
 	header->SetFont(wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	header->SetForegroundColour(wxColour(248, 250, 252));
+	header->SetForegroundColour(wxColour(180, 150, 50));
 
 	wxStaticText* subheader = newd wxStaticText(headerPanel, wxID_ANY, "Configure item attributes, action/unique IDs, container items, and waypoint settings.");
 	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
-	subheader->SetForegroundColour(wxColour(148, 163, 184));
+	subheader->SetForegroundColour(wxColour(180, 190, 205));
 
 	headerSizer->Add(header, 0, wxBOTTOM, 4);
 	headerSizer->Add(subheader, 0);
@@ -79,8 +79,8 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 	topSizer->Add(headerPanel, 0, wxEXPAND | wxALL, 12);
 
 	notebook = newd wxNotebook(this, wxID_ANY, wxDefaultPosition, wxSize(600, 340));
-	notebook->SetBackgroundColour(wxColour(30, 41, 59));
-	notebook->SetForegroundColour(wxColour(203, 213, 225));
+	notebook->SetBackgroundColour(wxColour(16, 28, 48));
+	notebook->SetForegroundColour(wxColour(240, 245, 255));
 
 	notebook->AddPage(createGeneralPanel(notebook), "General", true);
 	if (dynamic_cast<Container*>(item)) {
@@ -98,12 +98,12 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 	wxButton* okBtn = newd wxButton(this, wxID_OK, "OK");
 	wxButton* cancelBtn = newd wxButton(this, wxID_CANCEL, "Cancel");
 
-	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
-	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetBackgroundColour(wxColour(35, 75, 150));
+	okBtn->SetForegroundColour(wxColour(240, 210, 120));
 	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 
-	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
-	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+	cancelBtn->SetBackgroundColour(wxColour(22, 36, 58));
+	cancelBtn->SetForegroundColour(wxColour(180, 190, 205));
 
 	optSizer->Add(okBtn, 0, wxRIGHT, 8);
 	optSizer->Add(cancelBtn, 0);
@@ -130,31 +130,31 @@ void PropertiesWindow::Update() {
 
 wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 	wxPanel* panel = newd wxPanel(parent, ITEM_PROPERTIES_GENERAL_TAB);
-	panel->SetBackgroundColour(wxColour(30, 41, 59)); // Slate 800
+	panel->SetBackgroundColour(wxColour(16, 28, 48));
 
 	wxFlexGridSizer* gridsizer = newd wxFlexGridSizer(2, 10, 10);
 	gridsizer->AddGrowableCol(1);
 
 	auto addLabel = [panel, gridsizer](const wxString& labelText) {
 		wxStaticText* label = newd wxStaticText(panel, wxID_ANY, labelText);
-		label->SetForegroundColour(wxColour(203, 213, 225));
+		label->SetForegroundColour(wxColour(180, 190, 205));
 		label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 		gridsizer->Add(label, 0, wxALIGN_CENTER_VERTICAL);
 	};
 
 	auto styleSpin = [](wxSpinCtrl* ctrl) {
-		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
-		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+		ctrl->SetBackgroundColour(wxColour(16, 28, 48));
+		ctrl->SetForegroundColour(wxColour(240, 245, 255));
 	};
 
 	auto styleText = [](wxTextCtrl* ctrl) {
-		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
-		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+		ctrl->SetBackgroundColour(wxColour(16, 28, 48));
+		ctrl->SetForegroundColour(wxColour(240, 245, 255));
 	};
 
 	addLabel("Item ID:");
 	wxStaticText* idText = newd wxStaticText(panel, wxID_ANY, i2ws(edit_item->getID()) + " (\"" + wxstr(edit_item->getName()) + "\")");
-	idText->SetForegroundColour(wxColour(129, 140, 248));
+	idText->SetForegroundColour(wxColour(180, 150, 50));
 	idText->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	gridsizer->Add(idText, 0, wxALIGN_CENTER_VERTICAL);
 

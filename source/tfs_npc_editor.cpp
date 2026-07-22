@@ -16,21 +16,21 @@ TFSNPCDialog::TFSNPCDialog(wxWindow* parent, Editor& editor, Creature* target_cr
 	editor(editor),
 	creature(target_creature) {
 
-	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
+	SetBackgroundColour(wxColour(10, 20, 35));
 	wxBoxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
 	// Header Banner Panel
 	wxPanel* headerPanel = newd wxPanel(this, wxID_ANY);
-	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	headerPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* headerSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* header = newd wxStaticText(headerPanel, wxID_ANY, "TFS 1.6 NPC & Dialogue Creator");
 	header->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	header->SetForegroundColour(wxColour(248, 250, 252));
+	header->SetForegroundColour(wxColour(180, 150, 50));
 
 	wxStaticText* subheader = newd wxStaticText(headerPanel, wxID_ANY, "Build TFS 1.6 XML NPC definitions, English dialogue keywords, and shop lists.");
 	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
-	subheader->SetForegroundColour(wxColour(148, 163, 184));
+	subheader->SetForegroundColour(wxColour(180, 190, 205));
 
 	headerSizer->Add(header, 0, wxBOTTOM, 4);
 	headerSizer->Add(subheader, 0);
@@ -42,18 +42,18 @@ TFSNPCDialog::TFSNPCDialog(wxWindow* parent, Editor& editor, Creature* target_cr
 	wxBoxSizer* contentSizer = newd wxBoxSizer(wxHORIZONTAL);
 
 	auto styleTextCtrl = [](wxTextCtrl* ctrl) {
-		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
-		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+		ctrl->SetBackgroundColour(wxColour(16, 28, 48));
+		ctrl->SetForegroundColour(wxColour(240, 245, 255));
 	};
 
 	auto styleSpinCtrl = [](wxSpinCtrl* ctrl) {
-		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
-		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+		ctrl->SetBackgroundColour(wxColour(16, 28, 48));
+		ctrl->SetForegroundColour(wxColour(240, 245, 255));
 	};
 
 	// Column 1: NPC Attributes Panel
 	wxPanel* attrPanel = newd wxPanel(this, wxID_ANY);
-	attrPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	attrPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* attrSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* attrHeader = newd wxStaticText(attrPanel, wxID_ANY, "NPC Attributes");
@@ -103,12 +103,12 @@ TFSNPCDialog::TFSNPCDialog(wxWindow* parent, Editor& editor, Creature* target_cr
 
 	// Column 2: Dialogue Triggers Panel
 	wxPanel* dlgPanel = newd wxPanel(this, wxID_ANY);
-	dlgPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	dlgPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* dlgSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* dlgHeader = newd wxStaticText(dlgPanel, wxID_ANY, "Dialogue Triggers (English)");
 	dlgHeader->SetFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	dlgHeader->SetForegroundColour(wxColour(129, 140, 248));
+	dlgHeader->SetForegroundColour(wxColour(180, 150, 50));
 	dlgSizer->Add(dlgHeader, 0, wxALL, 8);
 
 	wxFlexGridSizer* dlgGrid = newd wxFlexGridSizer(2, 6, 10);
@@ -116,7 +116,7 @@ TFSNPCDialog::TFSNPCDialog(wxWindow* parent, Editor& editor, Creature* target_cr
 
 	auto addDlgLabel = [dlgPanel, dlgGrid](const wxString& labelText) {
 		wxStaticText* label = newd wxStaticText(dlgPanel, wxID_ANY, labelText);
-		label->SetForegroundColour(wxColour(203, 213, 225));
+		label->SetForegroundColour(wxColour(180, 190, 205));
 		label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 		dlgGrid->Add(label, 0, wxALIGN_CENTER_VERTICAL);
 	};
@@ -150,12 +150,12 @@ TFSNPCDialog::TFSNPCDialog(wxWindow* parent, Editor& editor, Creature* target_cr
 
 	// Shop Table Card
 	wxPanel* shopPanel = newd wxPanel(this, wxID_ANY);
-	shopPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	shopPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* shopSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* shopHeader = newd wxStaticText(shopPanel, wxID_ANY, "Shop Items (Item ID | Item Name | Buy Price | Sell Price)");
 	shopHeader->SetFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	shopHeader->SetForegroundColour(wxColour(129, 140, 248));
+	shopHeader->SetForegroundColour(wxColour(180, 150, 50));
 	shopSizer->Add(shopHeader, 0, wxALL, 8);
 
 	shopGrid = newd wxGrid(shopPanel, wxID_ANY, wxDefaultPosition, wxSize(-1, 120));
@@ -165,11 +165,11 @@ TFSNPCDialog::TFSNPCDialog(wxWindow* parent, Editor& editor, Creature* target_cr
 	shopGrid->SetColLabelValue(2, "Buy Price");
 	shopGrid->SetColLabelValue(3, "Sell Price");
 
-	shopGrid->SetGridLineColour(wxColour(71, 85, 105));
-	shopGrid->SetDefaultCellBackgroundColour(wxColour(51, 65, 85));
-	shopGrid->SetDefaultCellTextColour(wxColour(248, 250, 252));
-	shopGrid->SetLabelBackgroundColour(wxColour(15, 23, 42));
-	shopGrid->SetLabelTextColour(wxColour(203, 213, 225));
+	shopGrid->SetGridLineColour(wxColour(180, 150, 50));
+	shopGrid->SetDefaultCellBackgroundColour(wxColour(16, 28, 48));
+	shopGrid->SetDefaultCellTextColour(wxColour(240, 245, 255));
+	shopGrid->SetLabelBackgroundColour(wxColour(10, 20, 35));
+	shopGrid->SetLabelTextColour(wxColour(180, 190, 205));
 
 	shopGrid->SetCellValue(0, 0, "2160"); shopGrid->SetCellValue(0, 1, "crystal coin"); shopGrid->SetCellValue(0, 2, "10000"); shopGrid->SetCellValue(0, 3, "10000");
 	shopGrid->SetCellValue(1, 0, "2152"); shopGrid->SetCellValue(1, 1, "platinum coin"); shopGrid->SetCellValue(1, 2, "100"); shopGrid->SetCellValue(1, 3, "100");
@@ -185,12 +185,12 @@ TFSNPCDialog::TFSNPCDialog(wxWindow* parent, Editor& editor, Creature* target_cr
 	wxButton* okBtn = newd wxButton(this, wxID_OK, "Generate NPC Files");
 	wxButton* cancelBtn = newd wxButton(this, wxID_CANCEL, "Cancel");
 
-	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
-	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetBackgroundColour(wxColour(35, 75, 150));
+	okBtn->SetForegroundColour(wxColour(240, 210, 120));
 	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 
-	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
-	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+	cancelBtn->SetBackgroundColour(wxColour(22, 36, 58));
+	cancelBtn->SetForegroundColour(wxColour(180, 190, 205));
 
 	btnsizer->Add(okBtn, 0, wxRIGHT, 8);
 	btnsizer->Add(cancelBtn, 0);

@@ -15,21 +15,21 @@ TFSExportDialog::TFSExportDialog(wxWindow* parent, Editor& editor) :
 	wxDialog(parent, wxID_ANY, "Export to TFS 1.6 Server Data", wxDefaultPosition, wxSize(520, 320), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	editor(editor) {
 
-	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
+	SetBackgroundColour(wxColour(10, 20, 35));
 	wxBoxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
 	// Header Banner Panel
 	wxPanel* headerPanel = newd wxPanel(this, wxID_ANY);
-	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	headerPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* headerSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* header = newd wxStaticText(headerPanel, wxID_ANY, "Export Server Files (TFS 1.6)");
 	header->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	header->SetForegroundColour(wxColour(248, 250, 252));
+	header->SetForegroundColour(wxColour(180, 150, 50));
 
 	wxStaticText* subheader = newd wxStaticText(headerPanel, wxID_ANY, "Exports .otbm map into data/world/ and generated scripts/NPCs into data/ directories.");
 	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
-	subheader->SetForegroundColour(wxColour(148, 163, 184));
+	subheader->SetForegroundColour(wxColour(180, 190, 205));
 	subheader->Wrap(480);
 
 	headerSizer->Add(header, 0, wxBOTTOM, 4);
@@ -40,17 +40,17 @@ TFSExportDialog::TFSExportDialog(wxWindow* parent, Editor& editor) :
 
 	// Card Container
 	wxPanel* cardPanel = newd wxPanel(this, wxID_ANY);
-	cardPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	cardPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* cardSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* dirLabel = newd wxStaticText(cardPanel, wxID_ANY, "Select TFS Server 'data' Directory:");
-	dirLabel->SetForegroundColour(wxColour(203, 213, 225));
+	dirLabel->SetForegroundColour(wxColour(180, 190, 205));
 	dirLabel->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	cardSizer->Add(dirLabel, 0, wxALL, 8);
 
 	dirPicker = newd wxDirPickerCtrl(cardPanel, wxID_ANY, "", "Select TFS data directory");
-	dirPicker->SetBackgroundColour(wxColour(51, 65, 85));
-	dirPicker->SetForegroundColour(wxColour(248, 250, 252));
+	dirPicker->SetBackgroundColour(wxColour(16, 28, 48));
+	dirPicker->SetForegroundColour(wxColour(240, 245, 255));
 	cardSizer->Add(dirPicker, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
 	cardPanel->SetSizer(cardSizer);
@@ -62,12 +62,12 @@ TFSExportDialog::TFSExportDialog(wxWindow* parent, Editor& editor) :
 	wxButton* okBtn = newd wxButton(this, wxID_OK, "Export All Files");
 	wxButton* cancelBtn = newd wxButton(this, wxID_CANCEL, "Cancel");
 
-	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
-	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetBackgroundColour(wxColour(35, 75, 150));
+	okBtn->SetForegroundColour(wxColour(240, 210, 120));
 	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 
-	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
-	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+	cancelBtn->SetBackgroundColour(wxColour(22, 36, 58));
+	cancelBtn->SetForegroundColour(wxColour(180, 190, 205));
 
 	btnsizer->Add(okBtn, 0, wxRIGHT, 8);
 	btnsizer->Add(cancelBtn, 0);

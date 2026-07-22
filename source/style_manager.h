@@ -27,13 +27,13 @@ namespace RME::UI {
     public:
         static const ThemeData& GetTheme() {
             static ThemeData darkTheme = {
-                nvgRGBA(18, 22, 28, 255),   // Deep Space Blue #12161c
-                nvgRGBA(35, 42, 53, 255),   // Steel Panel #232a35
-                nvgRGBA(180, 140, 50, 255), // Fantasy Gold #B48C32
-                nvgRGBA(255, 255, 255, 255), // Pure White Text globally for dark bg
-                nvgRGBA(100, 90, 70, 255),    // Bronze borders
-                2.5f,                        // Requested corner radius
-                "sans"                       // Font alias for Inter/Roboto
+                nvgRGBA(10, 20, 35, 255),   // Loadingbar Dark Blue #0A1423
+                nvgRGBA(16, 28, 48, 255),   // Dark Sapphire Panel #101C30
+                nvgRGBA(180, 150, 50, 255), // Corporate Gold #B49632
+                nvgRGBA(240, 245, 255, 255),// Crisp Text
+                nvgRGBA(180, 150, 50, 255), // Gold borders
+                2.5f,
+                "sans"
             };
             return darkTheme;
         }

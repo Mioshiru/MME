@@ -18,21 +18,21 @@ TFSKeyDoorDialog::TFSKeyDoorDialog(wxWindow* parent, Editor& editor, Tile* targe
 	tile(target_tile),
 	assigned_key_aid(3001) {
 
-	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
+	SetBackgroundColour(wxColour(10, 20, 35));
 	wxBoxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
 	// Header Banner Panel
 	wxPanel* headerPanel = newd wxPanel(this, wxID_ANY);
-	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	headerPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* headerSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxStaticText* header = newd wxStaticText(headerPanel, wxID_ANY, "Pair Key & Locked Door (TFS 1.6)");
 	header->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	header->SetForegroundColour(wxColour(248, 250, 252));
+	header->SetForegroundColour(wxColour(180, 150, 50));
 
 	wxStaticText* subheader = newd wxStaticText(headerPanel, wxID_ANY, "Binds key items (2088-2092) to locked doors via matching ActionIDs.");
 	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
-	subheader->SetForegroundColour(wxColour(148, 163, 184));
+	subheader->SetForegroundColour(wxColour(180, 190, 205));
 
 	headerSizer->Add(header, 0, wxBOTTOM, 4);
 	headerSizer->Add(subheader, 0);
@@ -42,7 +42,7 @@ TFSKeyDoorDialog::TFSKeyDoorDialog(wxWindow* parent, Editor& editor, Tile* targe
 
 	// Card Container
 	wxPanel* cardPanel = newd wxPanel(this, wxID_ANY);
-	cardPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	cardPanel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxBoxSizer* cardSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxFlexGridSizer* grid = newd wxFlexGridSizer(2, 8, 12);
@@ -50,19 +50,19 @@ TFSKeyDoorDialog::TFSKeyDoorDialog(wxWindow* parent, Editor& editor, Tile* targe
 
 	auto addLabel = [cardPanel, grid](const wxString& labelText) {
 		wxStaticText* label = newd wxStaticText(cardPanel, wxID_ANY, labelText);
-		label->SetForegroundColour(wxColour(203, 213, 225));
+		label->SetForegroundColour(wxColour(180, 190, 205));
 		label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 		grid->Add(label, 0, wxALIGN_CENTER_VERTICAL);
 	};
 
 	auto styleTextCtrl = [](wxTextCtrl* ctrl) {
-		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
-		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+		ctrl->SetBackgroundColour(wxColour(16, 28, 48));
+		ctrl->SetForegroundColour(wxColour(240, 245, 255));
 	};
 
 	auto styleSpinCtrl = [](wxSpinCtrl* ctrl) {
-		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
-		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+		ctrl->SetBackgroundColour(wxColour(16, 28, 48));
+		ctrl->SetForegroundColour(wxColour(240, 245, 255));
 	};
 
 	addLabel("Key Item ID:");
@@ -90,12 +90,12 @@ TFSKeyDoorDialog::TFSKeyDoorDialog(wxWindow* parent, Editor& editor, Tile* targe
 	wxButton* okBtn = newd wxButton(this, wxID_OK, "Apply to Door");
 	wxButton* cancelBtn = newd wxButton(this, wxID_CANCEL, "Cancel");
 
-	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
-	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetBackgroundColour(wxColour(35, 75, 150));
+	okBtn->SetForegroundColour(wxColour(240, 210, 120));
 	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 
-	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
-	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+	cancelBtn->SetBackgroundColour(wxColour(22, 36, 58));
+	cancelBtn->SetForegroundColour(wxColour(180, 190, 205));
 
 	btnsizer->Add(okBtn, 0, wxRIGHT, 8);
 	btnsizer->Add(cancelBtn, 0);
