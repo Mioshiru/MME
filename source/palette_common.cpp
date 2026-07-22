@@ -836,6 +836,8 @@ static void AddFavoriteBrush(Brush* brush) {
 	if (catSub && !catSub->containsBrush(brush)) {
 		catSub->brushlist.push_back(brush);
 	}
+
+	g_materials.saveFavorites();
 }
 
 static void RemoveFavoriteBrush(Brush* brush) {
@@ -849,6 +851,8 @@ static void RemoveFavoriteBrush(Brush* brush) {
 			cat->brushlist.erase(it);
 		}
 	}
+
+	g_materials.saveFavorites();
 }
 
 void BrushButton::OnContextMenu(wxContextMenuEvent& event) {

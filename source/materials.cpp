@@ -18,6 +18,8 @@
 #include "main.h"
 
 #include <wx/dir.h>
+#include <wx/stdpaths.h>
+#include <wx/filename.h>
 
 #include "editor.h"
 #include "items.h"
@@ -305,6 +307,81 @@ void Materials::createOtherTileset() {
 				npc_tileset->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
 			} else {
 				others->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
+			}
+		}
+	}
+
+	loadFavorites();
+}
+
+void Materials::saveFavorites() {
+	Tileset* favs = tilesets["Favorites"];
+	if (!favs) return;
+
+	pugi::xml_document doc;
+	pugi::xml_node root = doc.append_child("favorites");
+
+	const TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+	if (catFav) {
+		for (Brush* b : catFav->brushlist) {
+			if (b && !b->getName().empty()) {
+				pugi::xml_node item = root.append_child("brush");
+				item.append_attribute("name") = b->getName().c_str();
+			}
+		}
+	}
+
+	wxFileName fn(wxStandardPaths::Get().GetUserDataDir(), "favorites.xml");
+	if (!wxDirExists(fn.GetPath())) {
+		wxFileName::Mkdir(fn.GetPath(), 511, wxPATH_MKDIR_FULL);
+	}
+	doc.save_file(fn.GetFullPath().mb_str());
+}
+
+void Materials::loadFavorites() {
+	wxFileName fn(wxStandardPaths::Get().GetUserDataDir(), "favorites.xml");
+	if (!wxFileExists(fn.GetFullPath())) return;
+
+	pugi::xml_document doc;
+	pugi::xml_parse_result result = doc.load_file(fn.GetFullPath().mb_str());
+	if (!result) return;
+
+	pugi::xml_node root = doc.child("favorites");
+	if (!root) return;
+
+	for (pugi::xml_node item = root.child("brush"); item; item = item.next_sibling("brush")) {
+		const char* brush_name = item.attribute("name").as_string();
+		if (brush_name && strlen(brush_name) > 0) {
+			Brush* b = g_brushes.getBrush(brush_name);
+			if (b) {
+				Tileset* favs = tilesets["Favorites"];
+				if (favs) {
+					TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+					if (catFav && !catFav->containsBrush(b)) {
+						catFav->brushlist.push_back(b);
+					}
+
+					TilesetCategoryType subType = TILESET_TERRAIN;
+					if (b->isCreature()) {
+						CreatureBrush* cb = static_cast<CreatureBrush*>(b);
+						if (cb && cb->getType() && cb->getType()->isNpc) {
+							subType = TILESET_NPC;
+						} else {
+							subType = TILESET_CREATURE;
+						}
+					} else if (b->isDoodad()) {
+						subType = TILESET_DOODAD;
+					} else if (b->isRaw()) {
+						subType = TILESET_ITEM;
+					} else {
+						subType = TILESET_TERRAIN;
+					}
+
+					TilesetCategory* catSub = favs->getCategory(subType);
+					if (catSub && !catSub->containsBrush(b)) {
+						catSub->brushlist.push_back(b);
+					}
+				}
 			}
 		}
 	}

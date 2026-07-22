@@ -927,6 +927,8 @@ static void AddFavoriteBrushIconBox(Brush* brush) {
 	if (catSub && !catSub->containsBrush(brush)) {
 		catSub->brushlist.push_back(brush);
 	}
+
+	g_materials.saveFavorites();
 }
 
 static void RemoveFavoriteBrushIconBox(Brush* brush) {
@@ -940,6 +942,8 @@ static void RemoveFavoriteBrushIconBox(Brush* brush) {
 			cat->brushlist.erase(it);
 		}
 	}
+
+	g_materials.saveFavorites();
 }
 
 void BrushIconBox::OnRightClick(wxMouseEvent& event) {

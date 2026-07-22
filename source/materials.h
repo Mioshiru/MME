@@ -38,6 +38,8 @@ public:
 	bool loadMaterials(const FileName& identifier, wxString& error, wxArrayString& warnings);
 	bool loadExtensions(FileName identifier, wxString& error, wxArrayString& warnings);
 	void createOtherTileset();
+	void saveFavorites();
+	void loadFavorites();
 	void addToTileset(std::string tilesetName, int itemId, TilesetCategoryType categoryType);
 
 	bool isInTileset(Item* item, std::string tileset) const;

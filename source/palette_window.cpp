@@ -720,6 +720,20 @@ bool PaletteWindow::OnSelectBrush(const Brush* whatbrush, PaletteType primary) {
 		return true;
 	}
 
+	// Priority 1: Check Favorites FIRST if primary is TILESET_FAVORITE or if currently on Favorites page or if brush is in Favorites
+	if (primary == TILESET_FAVORITE || GetSelectedPage() == TILESET_FAVORITE) {
+		if (favorites_palette && favorites_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_FAVORITE);
+			return true;
+		}
+	}
+
+	// Always test if brush is in Favorites before falling back to default palettes
+	if (favorites_palette && favorites_palette->SelectBrush(whatbrush)) {
+		SelectPage(TILESET_FAVORITE);
+		return true;
+	}
+
 	switch (primary) {
 		case TILESET_TERRAIN: {
 			// This is already searched first
