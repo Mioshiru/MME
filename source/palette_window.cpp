@@ -23,6 +23,9 @@
 #include "map_display.h"
 
 #include "palette_window.h"
+#include "materials.h"
+#include "items.h"
+#include "graphics.h"
 #include "palette_brushlist.h"
 #include "palette_house.h"
 #include "palette_creature.h"
@@ -304,6 +307,8 @@ EVT_TEXT(PALETTE_SEARCH_BOX, PaletteWindow::OnSearchTextChanged)
 EVT_KEY_DOWN(PaletteWindow::OnKey)
 END_EVENT_TABLE()
 
+
+
 PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets) :
 	wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(255, 250)),
 	choicebook(nullptr),
@@ -379,7 +384,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 
 	favorites_palette = static_cast<BrushPalettePanel*>(CreateFavoritesPalette(choicebook, tilesets));
 	favorites_palette->SetBackgroundColour(wxColor(10, 20, 35));
-	choicebook->AddPage(favorites_palette, "Favorites");
+	choicebook->AddPage(favorites_palette, favorites_palette->GetName());
 
 	// Setup sizers
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
@@ -404,6 +409,8 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	sizer->Add(minimap_panel, 0, wxALIGN_CENTER | wxALL, 10);
 
 	SetSizer(sizer);
+
+	RefreshFavoritesBox();
 
 	// Load first page
 	LoadCurrentContents();
@@ -527,6 +534,13 @@ PalettePanel* PaletteWindow::CreateFavoritesPalette(wxWindow* parent, const Tile
 	BrushPalettePanel* panel = newd BrushPalettePanel(parent, tilesets, TILESET_FAVORITE);
 	panel->SetListType(wxString("large icons"));
 	return panel;
+}
+
+void PaletteWindow::RefreshFavoritesBox() {
+	if (favorites_palette) {
+		favorites_palette->InvalidateContents();
+		favorites_palette->LoadCurrentContents();
+	}
 }
 
 PalettePanel* PaletteWindow::CreateTerrainPalette(wxWindow* parent, const TilesetContainer& tilesets) {

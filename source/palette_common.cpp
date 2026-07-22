@@ -27,6 +27,7 @@
 #include "palette_waypoints.h"
 #include <wx/wrapsizer.h>
 #include "palette_window.h"
+#include "creature_brush.h"
 
 // ============================================================================
 // Palette Panel
@@ -109,6 +110,8 @@ wxString PalettePanel::GetName() const {
 			return "RAW Palette";
 		case TILESET_WAYPOINT:
 			return "Waypoint Palette";
+		case TILESET_FAVORITE:
+			return "Favorites";
 		case TILESET_UNKNOWN:
 			return "Unknown";
 	}
@@ -803,6 +806,51 @@ void BrushButton::OnKey(wxKeyEvent& event) {
 	g_gui.AddPendingCanvasEvent(event);
 }
 
+static void AddFavoriteBrush(Brush* brush) {
+	if (!brush) return;
+	Tileset* favs = g_materials.tilesets["Favorites"];
+	if (!favs) return;
+
+	TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+	if (catFav && !catFav->containsBrush(brush)) {
+		catFav->brushlist.push_back(brush);
+	}
+
+	TilesetCategoryType subType = TILESET_TERRAIN;
+	if (brush->isCreature()) {
+		CreatureBrush* cb = static_cast<CreatureBrush*>(brush);
+		if (cb && cb->getType() && cb->getType()->isNpc) {
+			subType = TILESET_NPC;
+		} else {
+			subType = TILESET_CREATURE;
+		}
+	} else if (brush->isDoodad()) {
+		subType = TILESET_DOODAD;
+	} else if (brush->isRaw()) {
+		subType = TILESET_ITEM;
+	} else {
+		subType = TILESET_TERRAIN;
+	}
+
+	TilesetCategory* catSub = favs->getCategory(subType);
+	if (catSub && !catSub->containsBrush(brush)) {
+		catSub->brushlist.push_back(brush);
+	}
+}
+
+static void RemoveFavoriteBrush(Brush* brush) {
+	if (!brush) return;
+	Tileset* favs = g_materials.tilesets["Favorites"];
+	if (!favs) return;
+
+	for (TilesetCategory* cat : favs->categories) {
+		auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), brush);
+		if (it != cat->brushlist.end()) {
+			cat->brushlist.erase(it);
+		}
+	}
+}
+
 void BrushButton::OnContextMenu(wxContextMenuEvent& event) {
 	if (!brush) return;
 	wxMenu menu;
@@ -816,35 +864,23 @@ void BrushButton::OnContextMenu(wxContextMenuEvent& event) {
 	}
 	
 	if (is_favorited) {
-		menu.Append(10002, "Remove from Favorites");
+		menu.Append(10002, "Remove Favorite");
 	} else {
-		menu.Append(10001, "Add to Favorites");
+		menu.Append(10001, "Favorite");
 	}
 	
 	Bind(wxEVT_MENU, [this](wxCommandEvent& ev) {
-		Tileset* favs = g_materials.tilesets["Favorites"];
-		if (favs) {
-			TilesetCategory* cat = favs->getCategory(TILESET_FAVORITE);
-			if (cat) {
-				if (ev.GetId() == 10001) {
-					if (!cat->containsBrush(this->brush)) {
-						cat->brushlist.push_back(this->brush);
-					}
-				} else if (ev.GetId() == 10002) {
-					auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), this->brush);
-					if (it != cat->brushlist.end()) {
-						cat->brushlist.erase(it);
-					}
-				}
-				PaletteWindow* pw = nullptr;
-				const wxWindow* w = this;
-				while ((w = w->GetParent()) && (pw = dynamic_cast<PaletteWindow*>(const_cast<wxWindow*>(w))) == nullptr)
-					;
-				if (pw) {
-					pw->InvalidateContents();
-					pw->LoadCurrentContents();
-				}
-			}
+		if (ev.GetId() == 10001) {
+			AddFavoriteBrush(this->brush);
+		} else if (ev.GetId() == 10002) {
+			RemoveFavoriteBrush(this->brush);
+		}
+		PaletteWindow* pw = nullptr;
+		const wxWindow* w = this;
+		while ((w = w->GetParent()) && (pw = dynamic_cast<PaletteWindow*>(const_cast<wxWindow*>(w))) == nullptr)
+			;
+		if (pw) {
+			pw->RefreshFavoritesBox();
 		}
 	});
 

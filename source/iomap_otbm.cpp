@@ -1531,7 +1531,6 @@ bool IOMapOTBM::saveMap(Map& map, NodeFileWriteHandle& f) {
 				++tiles_saved;
 				if (tiles_saved % 8192 == 0) {
 					g_gui.SetLoadDone(int(tiles_saved / double(map.getTileCount()) * 100.0));
-					wxSafeYield(); // UI während des Speicherns reaktiv halten
 				}
 
 				// Get tile

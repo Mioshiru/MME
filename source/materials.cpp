@@ -242,8 +242,14 @@ void Materials::createOtherTileset() {
 	}
 
 	if (tilesets["Favorites"] == nullptr) {
-		tilesets["Favorites"] = newd Tileset(g_brushes, "Favorites");
-		tilesets["Favorites"]->getCategory(TILESET_FAVORITE);
+		Tileset* favs = newd Tileset(g_brushes, "Favorites");
+		favs->getCategory(TILESET_FAVORITE);
+		favs->getCategory(TILESET_TERRAIN);
+		favs->getCategory(TILESET_DOODAD);
+		favs->getCategory(TILESET_ITEM);
+		favs->getCategory(TILESET_CREATURE);
+		favs->getCategory(TILESET_NPC);
+		tilesets["Favorites"] = favs;
 	}
 
 	if (tilesets["NPCs"] != nullptr) {

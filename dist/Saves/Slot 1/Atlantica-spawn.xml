@@ -1,12 +1,2 @@
 <?xml version="1.0"?>
-<spawns>
-	<spawn centerx="1038" centery="1018" centerz="7" radius="1">
-		<monster name="Ghoul" x="1" y="0" spawntime="60" direction="2" />
-	</spawn>
-	<spawn centerx="1035" centery="1028" centerz="7" radius="1">
-		<monster name="Ghoul" x="0" y="1" spawntime="60" direction="2" />
-	</spawn>
-	<spawn centerx="1025" centery="1034" centerz="7" radius="1">
-		<monster name="Adventurer" x="0" y="0" spawntime="60" direction="2" />
-	</spawn>
-</spawns>
+<spawns />

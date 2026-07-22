@@ -95,12 +95,14 @@ public:
 	Brush* GetSelectedBrush() const;
 	// Select the brush in the parameter, this only changes the look of the panel
 	bool SelectBrush(const Brush* brush);
+	void SetBrushes(const std::vector<Brush*>& brushes);
 
 	// Event handling...
 	void Filter(const wxString& query) override;
 	void OnSize(wxSizeEvent& event);
 	void OnPaint(wxPaintEvent& event);
 	void OnClick(wxMouseEvent& event);
+	void OnRightClick(wxMouseEvent& event);
 	void OnMouseMove(wxMouseEvent& event);
 
 	void UpdateLayout();

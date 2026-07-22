@@ -41,6 +41,7 @@ enum TilesetCategoryType {
 	TILESET_WAYPOINT,
 	TILESET_PREFAB,
 	TILESET_FAVORITE,
+	TILESET_NPC,
 };
 
 class TilesetCategory {

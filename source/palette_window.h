@@ -24,6 +24,7 @@ class BrushPalettePanel;
 class CreaturePalettePanel;
 class HousePalettePanel;
 class WaypointPalettePanel;
+class BrushIconBox;
 
 class PrefabPalettePanel : public PalettePanel {
 public:
@@ -49,6 +50,25 @@ protected:
 	DECLARE_EVENT_TABLE()
 };
 
+class FavoritesBox : public wxPanel {
+public:
+	FavoritesBox(wxWindow* parent);
+	virtual ~FavoritesBox();
+
+	void RefreshFavorites();
+	Brush* GetSelectedBrush() const { return selected_brush; }
+
+protected:
+	void OnPaint(wxPaintEvent& event);
+	void OnClick(wxMouseEvent& event);
+	void OnRightClick(wxMouseEvent& event);
+	void OnMouseMove(wxMouseEvent& event);
+
+private:
+	Brush* selected_brush = nullptr;
+	DECLARE_EVENT_TABLE()
+};
+
 class PaletteWindow : public wxPanel {
 public:
 	PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets);
@@ -71,6 +91,7 @@ public:
 	PaletteType GetSelectedPage() const;
 	BrushPalettePanel* collection_palette;
 	void InvalidatePrefabPalette();
+	void RefreshFavoritesBox();
 	wxTextCtrl* GetSearchBox() const { return search_box; }
 
 	// Custom Event handlers (something has changed?)

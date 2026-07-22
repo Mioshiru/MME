@@ -23,6 +23,8 @@
 #include "add_tileset_window.h"
 #include "add_item_window.h"
 #include "materials.h"
+#include "creature_brush.h"
+#include "palette_window.h"
 #include <wx/settings.h>
 #include <wx/wrapsizer.h>
 #include <wx/dcbuffer.h>
@@ -68,13 +70,40 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 		topsizer->Add(tmpsizer, 0, wxCENTER, 10);
 	}
 
-	for (TilesetContainer::const_iterator iter = tilesets.begin(); iter != tilesets.end(); ++iter) {
-		const TilesetCategory* tcg = iter->second->getCategory(category);
-		if (tcg && (tcg->size() > 0 || (category == TILESET_FAVORITE && iter->second->name == "Favorites"))) {
-			BrushPanel* panel = newd BrushPanel(tmp_choicebook);
-			panel->AssignTileset(tcg);
-			tmp_choicebook->AddPage(panel, wxstr(iter->second->name));
-			tileset_choice->Append(wxstr(iter->second->name));
+	if (category == TILESET_FAVORITE) {
+		Tileset* favs = g_materials.tilesets["Favorites"];
+		if (favs) {
+			struct FavCat {
+				TilesetCategoryType type;
+				wxString name;
+			} subcats[] = {
+				{ TILESET_FAVORITE, "All Favorites" },
+				{ TILESET_TERRAIN, "Terrain" },
+				{ TILESET_DOODAD, "Doodads" },
+				{ TILESET_ITEM, "Items" },
+				{ TILESET_CREATURE, "Monster" },
+				{ TILESET_NPC, "NPCs" }
+			};
+
+			for (const auto& sc : subcats) {
+				const TilesetCategory* tcg = favs->getCategory(sc.type);
+				if (tcg) {
+					BrushPanel* panel = newd BrushPanel(tmp_choicebook);
+					panel->AssignTileset(tcg);
+					tmp_choicebook->AddPage(panel, sc.name);
+					tileset_choice->Append(sc.name);
+				}
+			}
+		}
+	} else {
+		for (TilesetContainer::const_iterator iter = tilesets.begin(); iter != tilesets.end(); ++iter) {
+			const TilesetCategory* tcg = iter->second->getCategory(category);
+			if (tcg && tcg->size() > 0) {
+				BrushPanel* panel = newd BrushPanel(tmp_choicebook);
+				panel->AssignTileset(tcg);
+				tmp_choicebook->AddPage(panel, wxstr(iter->second->name));
+				tileset_choice->Append(wxstr(iter->second->name));
+			}
 		}
 	}
 
@@ -573,6 +602,7 @@ void BrushPanel::OnClickListBoxRow(wxCommandEvent& event) {
 BEGIN_EVENT_TABLE(BrushIconBox, wxScrolledWindow)
 EVT_PAINT(BrushIconBox::OnPaint)
 EVT_LEFT_DOWN(BrushIconBox::OnClick)
+EVT_RIGHT_DOWN(BrushIconBox::OnRightClick)
 EVT_MOTION(BrushIconBox::OnMouseMove)
 EVT_SIZE(BrushIconBox::OnSize)
 END_EVENT_TABLE()
@@ -613,6 +643,13 @@ bool BrushIconBox::SelectBrush(const Brush* whatbrush) {
 		}
 	}
 	return false;
+}
+
+void BrushIconBox::SetBrushes(const std::vector<Brush*>& brushes) {
+	all_brushes = brushes;
+	visible_brushes = brushes;
+	UpdateLayout();
+	Refresh();
 }
 
 void BrushIconBox::EnsureVisible(size_t n) {
@@ -787,16 +824,18 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 				dc.DrawLine(x, y + btn_width - 1, x + btn_width, y + btn_width - 1);
 			}
 
-			Sprite* sprite = nullptr;
-			int look_id = brush->getLookID();
-			if (look_id > 0 && g_items.typeExists(look_id)) {
-				sprite = g_gui.gfx.getSprite(g_items[look_id].clientID);
-			} else {
-				sprite = g_gui.gfx.getSprite(look_id);
-			}
+			if (brush) {
+				Sprite* sprite = nullptr;
+				int look_id = brush->getLookID();
+				if (look_id > 0 && g_items.typeExists(look_id)) {
+					sprite = g_gui.gfx.getSprite(g_items[look_id].clientID);
+				} else {
+					sprite = g_gui.gfx.getSprite(look_id);
+				}
 
-			if (sprite) {
-				sprite->DrawTo(&dc, spr_sz, x + offset, y + offset, spr_w, spr_w);
+				if (sprite) {
+					sprite->DrawTo(&dc, spr_sz, x + offset, y + offset, spr_w, spr_w);
+				}
 			}
 		}
 	}
@@ -833,6 +872,7 @@ void BrushIconBox::OnClick(wxMouseEvent& event) {
 		size_t idx = row * columns + col;
 		if (idx < visible_brushes.size()) {
 			Brush* clicked_brush = visible_brushes[idx];
+			if (!clicked_brush) return;
 			SelectBrush(clicked_brush);
 
 			wxWindow* w = this;
@@ -855,6 +895,120 @@ void BrushIconBox::OnClick(wxMouseEvent& event) {
 		}
 	}
 	SetFocus();
+}
+
+static void AddFavoriteBrushIconBox(Brush* brush) {
+	if (!brush) return;
+	Tileset* favs = g_materials.tilesets["Favorites"];
+	if (!favs) return;
+
+	TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+	if (catFav && !catFav->containsBrush(brush)) {
+		catFav->brushlist.push_back(brush);
+	}
+
+	TilesetCategoryType subType = TILESET_TERRAIN;
+	if (brush->isCreature()) {
+		CreatureBrush* cb = static_cast<CreatureBrush*>(brush);
+		if (cb && cb->getType() && cb->getType()->isNpc) {
+			subType = TILESET_NPC;
+		} else {
+			subType = TILESET_CREATURE;
+		}
+	} else if (brush->isDoodad()) {
+		subType = TILESET_DOODAD;
+	} else if (brush->isRaw()) {
+		subType = TILESET_ITEM;
+	} else {
+		subType = TILESET_TERRAIN;
+	}
+
+	TilesetCategory* catSub = favs->getCategory(subType);
+	if (catSub && !catSub->containsBrush(brush)) {
+		catSub->brushlist.push_back(brush);
+	}
+}
+
+static void RemoveFavoriteBrushIconBox(Brush* brush) {
+	if (!brush) return;
+	Tileset* favs = g_materials.tilesets["Favorites"];
+	if (!favs) return;
+
+	for (TilesetCategory* cat : favs->categories) {
+		auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), brush);
+		if (it != cat->brushlist.end()) {
+			cat->brushlist.erase(it);
+		}
+	}
+}
+
+void BrushIconBox::OnRightClick(wxMouseEvent& event) {
+	int logical_x, logical_y;
+	CalcUnscrolledPosition(event.GetX(), event.GetY(), &logical_x, &logical_y);
+
+	int client_width = GetClientSize().x;
+	int btn_width = 36;
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+
+	if (icon_size == RENDER_SIZE_16x16) {
+		btn_width = 20;
+	} else if (icon_size == RENDER_SIZE_32x32) {
+		btn_width = 36;
+	}
+	btn_width = btn_width * scale_percent / 100;
+
+	int columns = client_width / btn_width;
+	if (columns < 1) columns = 1;
+
+	int total_items_width = columns * btn_width;
+	int left_padding = (client_width - total_items_width) / 2;
+	if (left_padding < 0) left_padding = 0;
+
+	if (logical_x >= left_padding && logical_x < left_padding + total_items_width) {
+		int col = (logical_x - left_padding) / btn_width;
+		int row = logical_y / btn_width;
+
+		size_t idx = row * columns + col;
+		if (idx < visible_brushes.size()) {
+			Brush* clicked_brush = visible_brushes[idx];
+			if (!clicked_brush) return;
+
+			wxMenu menu;
+			Tileset* favs = g_materials.tilesets["Favorites"];
+			bool is_favorited = false;
+			if (favs) {
+				const TilesetCategory* cat = favs->getCategory(TILESET_FAVORITE);
+				if (cat && cat->containsBrush(clicked_brush)) {
+					is_favorited = true;
+				}
+			}
+
+			if (is_favorited) {
+				menu.Append(10002, "Remove Favorite");
+			} else {
+				menu.Append(10001, "Favorite");
+			}
+
+			Bind(wxEVT_MENU, [this, clicked_brush](wxCommandEvent& ev) {
+				if (ev.GetId() == 10001) {
+					AddFavoriteBrushIconBox(clicked_brush);
+				} else if (ev.GetId() == 10002) {
+					RemoveFavoriteBrushIconBox(clicked_brush);
+				}
+				PaletteWindow* pw = nullptr;
+				const wxWindow* w = this;
+				while ((w = w->GetParent()) && (pw = dynamic_cast<PaletteWindow*>(const_cast<wxWindow*>(w))) == nullptr)
+					;
+				if (pw) {
+					pw->RefreshFavoritesBox();
+				}
+			});
+
+			PopupMenu(&menu);
+		}
+	}
 }
 
 void BrushIconBox::OnMouseMove(wxMouseEvent& event) {
