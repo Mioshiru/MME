@@ -27,7 +27,7 @@ set "BUILD_DIR=!PROJECT_ROOT!\build"
 set "RELEASE_DIR=!PROJECT_ROOT!\dist"
 set "ERROR_FILE=!PROJECT_ROOT!\compiler_error_latest.md"
 set "INSTALL_DIR=!BUILD_DIR!"
-set "LOG_FILE=%TEMP%\mme_build.log"
+set "LOG_FILE=%TEMP%\mme_build_%RANDOM%.log"
 set "TOTAL_STEPS=5"
 
 REM --- Check if log file is accessible ---

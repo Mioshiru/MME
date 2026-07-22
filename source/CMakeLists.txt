@@ -4,8 +4,6 @@ if(MSVC)
     set(CMAKE_UNITY_BUILD OFF)
     # set(CMAKE_UNITY_BUILD_BATCH_SIZE 20)
     
-    # Multicore-Kompilierung auf Dateiebene erzwingen
-    add_compile_options(/MP)
     # Schnellere Verknüpfung und weniger Debug-Overhead im Release
     add_compile_options(/Zc:inline)
 endif()
