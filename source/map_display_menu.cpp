@@ -559,18 +559,16 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event)) {
 		Tile* tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 		if (tile && (!tile->empty() || tile->ground)) {
 			Item* target = nullptr;
-			if (tile->ground && tile->ground->isRoteable()) {
+			Item* top = tile->getTopItem();
+			if (top && top->isRoteable()) {
+				target = top;
+			} else if (tile->ground && tile->ground->isRoteable()) {
 				target = tile->ground;
 			} else {
-				Item* top = tile->getTopItem();
-				if (top && top->isRoteable()) {
-					target = top;
-				} else {
-					for (Item* item : tile->items) {
-						if (item->isRoteable()) {
-							target = item;
-							break;
-						}
+				for (Item* item : tile->items) {
+					if (item->isRoteable()) {
+						target = item;
+						break;
 					}
 				}
 			}

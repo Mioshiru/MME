@@ -715,28 +715,39 @@ void MainFrame::OnActivate(wxActivateEvent &event) {
 }
 
 void MainFrame::OnAutoSaveTimer(wxTimerEvent& /*event*/) {
-  if (!g_settings.getBoolean(Config::AUTO_SAVE_ENABLED)) {
-    return;
-  }
-  // Save all open map tabs silently (no dialog)
   if (!g_gui.IsAnyEditorOpen()) {
     return;
   }
   MapTab* mapTab = g_gui.GetCurrentMapTab();
   if (mapTab) {
     Editor* editor = mapTab->GetEditor();
-    if (editor && editor->map.hasChanged() && editor->map.hasFile()) {
-      editor->saveMap(FileName(), false, true);
-      g_gui.UpdateTitle();
+    if (editor) {
+      bool is_live_server = editor->IsLiveServer();
+      bool auto_save_enabled = g_settings.getBoolean(Config::AUTO_SAVE_ENABLED);
+      if ((is_live_server || auto_save_enabled) && editor->map.hasChanged() && editor->map.hasFile()) {
+        editor->saveMap(FileName(), false, true);
+        g_gui.UpdateTitle();
+      }
     }
   }
 }
 
 void MainFrame::RestartAutoSaveTimer() {
   autosave_timer.Stop();
-  if (g_settings.getBoolean(Config::AUTO_SAVE_ENABLED)) {
+  bool is_live_server = false;
+  if (g_gui.IsAnyEditorOpen()) {
+    MapTab* mapTab = g_gui.GetCurrentMapTab();
+    if (mapTab && mapTab->GetEditor() && mapTab->GetEditor()->IsLiveServer()) {
+      is_live_server = true;
+    }
+  }
+
+  if (is_live_server) {
+    // Multiplayer Server Host: Always Autosave every 1 minute to prevent data loss
+    autosave_timer.Start(1 * 60 * 1000); // 1 minute
+  } else if (g_settings.getBoolean(Config::AUTO_SAVE_ENABLED)) {
     int interval_min = g_settings.getInteger(Config::AUTO_SAVE_INTERVAL);
-    if (interval_min < 5)  interval_min = 5;
+    if (interval_min < 1)  interval_min = 1;
     if (interval_min > 40) interval_min = 40;
     autosave_timer.Start(interval_min * 60 * 1000); // ms
   }

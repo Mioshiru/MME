@@ -285,13 +285,9 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
   }
 
   if (!event.ControlDown() && (event.GetKeyCode() == 'R' || event.GetKeyCode() == 'r' || event.GetKeyCode() == 'Z' || event.GetKeyCode() == 'z')) {
-    if (editor.selection.size() > 0) {
-      wxCommandEvent dummy;
-      OnRotateItem(dummy);
-      return;
-    } else {
-      Brush* brush = g_gui.GetCurrentBrush();
-      if (brush && brush->isRaw()) {
+    Brush* brush = g_gui.GetCurrentBrush();
+    if (brush) {
+      if (brush->isRaw()) {
         RAWBrush* raw_brush = static_cast<RAWBrush*>(brush);
         const ItemType& itemtype = g_items[raw_brush->getItemID()];
         if (itemtype.rotateTo != 0) {
@@ -302,8 +298,23 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
             return;
           }
         }
+      } else if (brush->isDoodad()) {
+        DoodadBrush* doodad = static_cast<DoodadBrush*>(brush);
+        if (doodad->getMaxVariation() > 1) {
+          int current_var = g_gui.GetBrushVariation();
+          int next_var = (current_var + 1) % doodad->getMaxVariation();
+          g_gui.SetBrushVariation(next_var);
+          Refresh();
+          return;
+        }
       }
-      
+    }
+
+    if (editor.selection.size() > 0) {
+      wxCommandEvent dummy;
+      OnRotateItem(dummy);
+      return;
+    } else {
       int mouse_map_x, mouse_map_y;
       ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
       last_click_map_x = mouse_map_x;
