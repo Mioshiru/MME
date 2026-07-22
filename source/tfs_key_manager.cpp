@@ -4,6 +4,7 @@
 #include "action.h"
 
 #include <wx/msgdlg.h>
+#include <wx/panel.h>
 #include <sstream>
 
 BEGIN_EVENT_TABLE(TFSKeyDoorDialog, wxDialog)
@@ -12,49 +13,94 @@ EVT_BUTTON(wxID_CANCEL, TFSKeyDoorDialog::OnClickCancel)
 END_EVENT_TABLE()
 
 TFSKeyDoorDialog::TFSKeyDoorDialog(wxWindow* parent, Editor& editor, Tile* target_tile) :
-	wxDialog(parent, wxID_ANY, "TFS 1.6 Key & Door Manager", wxDefaultPosition, wxSize(420, 320), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+	wxDialog(parent, wxID_ANY, "TFS 1.6 Key & Door Manager", wxDefaultPosition, wxSize(440, 380), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	editor(editor),
 	tile(target_tile),
 	assigned_key_aid(3001) {
 
-	SetBackgroundColour(wxColour(15, 23, 42));
+	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
 	wxBoxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* header = newd wxStaticText(this, wxID_ANY, "Pair Key & Locked Door (TFS 1.6)");
-	header->SetFont(wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	header->SetForegroundColour(wxColour(241, 245, 249));
-	topsizer->Add(header, 0, wxALL, 12);
+	// Header Banner Panel
+	wxPanel* headerPanel = newd wxPanel(this, wxID_ANY);
+	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* headerSizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxStaticText* header = newd wxStaticText(headerPanel, wxID_ANY, "Pair Key & Locked Door (TFS 1.6)");
+	header->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	header->SetForegroundColour(wxColour(248, 250, 252));
+
+	wxStaticText* subheader = newd wxStaticText(headerPanel, wxID_ANY, "Binds key items (2088-2092) to locked doors via matching ActionIDs.");
+	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+	subheader->SetForegroundColour(wxColour(148, 163, 184));
+
+	headerSizer->Add(header, 0, wxBOTTOM, 4);
+	headerSizer->Add(subheader, 0);
+	headerPanel->SetSizer(headerSizer);
+
+	topsizer->Add(headerPanel, 0, wxEXPAND | wxALL, 12);
+
+	// Card Container
+	wxPanel* cardPanel = newd wxPanel(this, wxID_ANY);
+	cardPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* cardSizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxFlexGridSizer* grid = newd wxFlexGridSizer(2, 8, 12);
 	grid->AddGrowableCol(1);
 
-	auto addLabel = [this, grid](const wxString& labelText) {
-		wxStaticText* label = newd wxStaticText(this, wxID_ANY, labelText);
+	auto addLabel = [cardPanel, grid](const wxString& labelText) {
+		wxStaticText* label = newd wxStaticText(cardPanel, wxID_ANY, labelText);
 		label->SetForegroundColour(wxColour(203, 213, 225));
+		label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 		grid->Add(label, 0, wxALIGN_CENTER_VERTICAL);
 	};
 
+	auto styleTextCtrl = [](wxTextCtrl* ctrl) {
+		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
+		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+	};
+
+	auto styleSpinCtrl = [](wxSpinCtrl* ctrl) {
+		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
+		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+	};
+
 	addLabel("Key Item ID:");
-	keyItemIdSpin = newd wxSpinCtrl(this, wxID_ANY, "2088", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 2088, 2092, 2088);
+	keyItemIdSpin = newd wxSpinCtrl(cardPanel, wxID_ANY, "2088", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 2088, 2092, 2088);
+	styleSpinCtrl(keyItemIdSpin);
 	grid->Add(keyItemIdSpin, 1, wxEXPAND);
 
 	addLabel("Key Action ID (aid):");
-	keyActionIdSpin = newd wxSpinCtrl(this, wxID_ANY, "3001", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 100, 65535, 3001);
+	keyActionIdSpin = newd wxSpinCtrl(cardPanel, wxID_ANY, "3001", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 100, 65535, 3001);
+	styleSpinCtrl(keyActionIdSpin);
 	grid->Add(keyActionIdSpin, 1, wxEXPAND);
 
 	addLabel("Key Label / Name:");
-	keyNameCtrl = newd wxTextCtrl(this, wxID_ANY, "Copper Key (3001)");
+	keyNameCtrl = newd wxTextCtrl(cardPanel, wxID_ANY, "Copper Key (3001)");
+	styleTextCtrl(keyNameCtrl);
 	grid->Add(keyNameCtrl, 1, wxEXPAND);
 
-	topsizer->Add(grid, 1, wxEXPAND | wxALL, 12);
+	cardSizer->Add(grid, 1, wxEXPAND | wxALL, 12);
+	cardPanel->SetSizer(cardSizer);
 
+	topsizer->Add(cardPanel, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+	// Action Buttons
 	wxBoxSizer* btnsizer = newd wxBoxSizer(wxHORIZONTAL);
 	wxButton* okBtn = newd wxButton(this, wxID_OK, "Apply to Door");
 	wxButton* cancelBtn = newd wxButton(this, wxID_CANCEL, "Cancel");
+
+	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
+	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+
+	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
+	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+
 	btnsizer->Add(okBtn, 0, wxRIGHT, 8);
 	btnsizer->Add(cancelBtn, 0);
 
-	topsizer->Add(btnsizer, 0, wxALIGN_RIGHT | wxALL, 12);
+	topsizer->Add(btnsizer, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 	SetSizerAndFit(topsizer);
 
 	if (tile) {
@@ -91,7 +137,6 @@ void TFSKeyDoorDialog::OnClickApply(wxCommandEvent& WXUNUSED(event)) {
 
 	generated_script = ss.str();
 
-	// If a door tile is selected, apply actionID to the door item
 	if (tile) {
 		Item* top_item = tile->getTopItem();
 		if (top_item) {

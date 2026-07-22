@@ -9,6 +9,7 @@
 #include <wx/stattext.h>
 #include <wx/button.h>
 #include <wx/sizer.h>
+#include <wx/panel.h>
 #include <wx/msgdlg.h>
 
 BEGIN_EVENT_TABLE(ProceduralGeneratorDialog, wxDialog)
@@ -17,65 +18,124 @@ EVT_BUTTON(wxID_CANCEL, ProceduralGeneratorDialog::OnClickCancel)
 END_EVENT_TABLE()
 
 ProceduralGeneratorDialog::ProceduralGeneratorDialog(wxWindow* parent, Editor& editor) :
-	wxDialog(parent, wxID_ANY, "Prozeduraler Map-Generator (FastNoise)", wxDefaultPosition, wxSize(400, 360), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+	wxDialog(parent, wxID_ANY, "Procedural Terrain Generator", wxDefaultPosition, wxSize(460, 520), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	editor(editor) {
 
-	wxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
+	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
+	wxBoxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
 
-	// Title
-	wxStaticText* header = new wxStaticText(this, wxID_ANY, "Prozedurale Landschaftsgenerierung");
-	wxFont headerFont = header->GetFont();
-	headerFont.SetPointSize(12);
-	headerFont.SetWeight(wxFONTWEIGHT_BOLD);
-	header->SetFont(headerFont);
-	header->SetForegroundColour(wxColor(180, 140, 50));
-	topsizer->Add(header, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
+	// Header Banner Panel
+	wxPanel* headerPanel = new wxPanel(this, wxID_ANY);
+	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* headerSizer = new wxBoxSizer(wxVERTICAL);
 
-	wxFlexGridSizer* grid = new wxFlexGridSizer(2, 10, 10);
+	wxStaticText* header = new wxStaticText(headerPanel, wxID_ANY, "Procedural Terrain Generator");
+	header->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	header->SetForegroundColour(wxColour(248, 250, 252));
+
+	wxStaticText* subheader = new wxStaticText(headerPanel, wxID_ANY, "Generate natural caves, forests, rivers, or islands using FastNoiseLite algorithms.");
+	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+	subheader->SetForegroundColour(wxColour(148, 163, 184));
+	subheader->Wrap(420);
+
+	headerSizer->Add(header, 0, wxBOTTOM, 4);
+	headerSizer->Add(subheader, 0);
+	headerPanel->SetSizer(headerSizer);
+
+	topsizer->Add(headerPanel, 0, wxEXPAND | wxALL, 12);
+
+	// Card Panel Container
+	wxPanel* cardPanel = new wxPanel(this, wxID_ANY);
+	cardPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* cardSizer = new wxBoxSizer(wxVERTICAL);
+
+	wxFlexGridSizer* grid = new wxFlexGridSizer(2, 10, 12);
 	grid->AddGrowableCol(1);
 
+	auto addLabel = [cardPanel, grid](const wxString& labelText) {
+		wxStaticText* label = new wxStaticText(cardPanel, wxID_ANY, labelText);
+		label->SetForegroundColour(wxColour(203, 213, 225));
+		label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+		grid->Add(label, 0, wxALIGN_CENTER_VERTICAL);
+	};
+
+	auto styleChoice = [](wxChoice* ctrl) {
+		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
+		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+	};
+
+	// Target Area
+	addLabel("Target Area:");
+	wxArrayString targetAreas;
+	targetAreas.Add("Active Screen Viewport (60x60 Area)");
+	targetAreas.Add("Entire Map Floor");
+	targetAreaChoice = new wxChoice(cardPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, targetAreas);
+	styleChoice(targetAreaChoice);
+	targetAreaChoice->SetSelection(0);
+	grid->Add(targetAreaChoice, 1, wxEXPAND);
+
 	// Generator Type
-	grid->Add(new wxStaticText(this, wxID_ANY, "Landschaftstyp:"), 0, wxALIGN_CENTER_VERTICAL);
+	addLabel("Landscape Type:");
 	wxArrayString genTypes;
-	genTypes.Add("Höhlensystem (Cave)");
-	genTypes.Add("Wald & Vegetation (Forest)");
-	genTypes.Add("Insel / Flussverlauf (Island/River)");
-	generatorTypeChoice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, genTypes);
+	genTypes.Add("Cave System");
+	genTypes.Add("Forest & Vegetation");
+	genTypes.Add("Island / River Path");
+	generatorTypeChoice = new wxChoice(cardPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, genTypes);
+	styleChoice(generatorTypeChoice);
 	generatorTypeChoice->SetSelection(0);
 	grid->Add(generatorTypeChoice, 1, wxEXPAND);
 
-	// Noise Type
-	grid->Add(new wxStaticText(this, wxID_ANY, "Rausch-Algorithmus:"), 0, wxALIGN_CENTER_VERTICAL);
+	// Noise Algorithm
+	addLabel("Noise Algorithm:");
 	wxArrayString noiseTypes;
-	noiseTypes.Add("Cellular (Zellulär / Höhlen)");
-	noiseTypes.Add("Perlin (Weich)");
-	noiseTypes.Add("OpenSimplex2 (Natürlich)");
-	noiseTypeChoice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, noiseTypes);
+	noiseTypes.Add("Cellular (Caves)");
+	noiseTypes.Add("Perlin (Smooth)");
+	noiseTypes.Add("OpenSimplex2 (Natural)");
+	noiseTypeChoice = new wxChoice(cardPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, noiseTypes);
+	styleChoice(noiseTypeChoice);
 	noiseTypeChoice->SetSelection(0);
 	grid->Add(noiseTypeChoice, 1, wxEXPAND);
 
 	// Seed
-	grid->Add(new wxStaticText(this, wxID_ANY, "Seed (Zufallswert):"), 0, wxALIGN_CENTER_VERTICAL);
-	seedSpin = new wxSpinCtrl(this, wxID_ANY, wxString::Format("%d", rand() % 999999), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 9999999);
+	addLabel("Random Seed:");
+	seedSpin = new wxSpinCtrl(cardPanel, wxID_ANY, wxString::Format("%d", rand() % 999999), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 9999999);
+	seedSpin->SetBackgroundColour(wxColour(51, 65, 85));
+	seedSpin->SetForegroundColour(wxColour(248, 250, 252));
 	grid->Add(seedSpin, 1, wxEXPAND);
 
 	// Density / Threshold
-	grid->Add(new wxStaticText(this, wxID_ANY, "Dichte / Schwelle (%):"), 0, wxALIGN_CENTER_VERTICAL);
-	densitySlider = new wxSlider(this, wxID_ANY, 50, 10, 90, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_LABELS);
+	addLabel("Density Threshold (%):");
+	densitySlider = new wxSlider(cardPanel, wxID_ANY, 50, 10, 90, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_LABELS);
+	densitySlider->SetForegroundColour(wxColour(203, 213, 225));
 	grid->Add(densitySlider, 1, wxEXPAND);
 
 	// Frequency
-	grid->Add(new wxStaticText(this, wxID_ANY, "Skalierung (Frequency):"), 0, wxALIGN_CENTER_VERTICAL);
-	frequencySpin = new wxSpinCtrlDouble(this, wxID_ANY, "0.05", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.001, 0.5, 0.05, 0.01);
+	addLabel("Scale (Frequency):");
+	frequencySpin = new wxSpinCtrlDouble(cardPanel, wxID_ANY, "0.05", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0.001, 0.5, 0.05, 0.01);
+	frequencySpin->SetBackgroundColour(wxColour(51, 65, 85));
+	frequencySpin->SetForegroundColour(wxColour(248, 250, 252));
 	grid->Add(frequencySpin, 1, wxEXPAND);
 
-	topsizer->Add(grid, 1, wxEXPAND | wxALL, 15);
+	cardSizer->Add(grid, 1, wxEXPAND | wxALL, 12);
+	cardPanel->SetSizer(cardSizer);
+
+	topsizer->Add(cardPanel, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
 	// Buttons
-	wxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-	buttonSizer->Add(new wxButton(this, wxID_OK, "Generieren"), 0, wxRIGHT, 10);
-	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Abbrechen"), 0);
-	topsizer->Add(buttonSizer, 0, wxALIGN_RIGHT | wxALL, 10);
+	wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxButton* okBtn = new wxButton(this, wxID_OK, "Generate Terrain");
+	wxButton* cancelBtn = new wxButton(this, wxID_CANCEL, "Cancel");
+
+	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
+	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+
+	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
+	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+
+	buttonSizer->Add(okBtn, 0, wxRIGHT, 8);
+	buttonSizer->Add(cancelBtn, 0);
+	topsizer->Add(buttonSizer, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
 	SetSizerAndFit(topsizer);
 }
@@ -93,7 +153,9 @@ void ProceduralGeneratorDialog::OnClickGenerate(wxCommandEvent& WXUNUSED(event))
 	noise.SetSeed(seedSpin->GetValue());
 	noise.SetFrequency((float)frequencySpin->GetValue());
 
-	int map_x = 0, map_y = 0;
+	int map_x = editor.map.getWidth() / 2;
+	int map_y = editor.map.getHeight() / 2;
+
 	MapTab* activeTab = dynamic_cast<MapTab*>(g_gui.GetCurrentTab());
 	if (activeTab) {
 		Position centerPos = activeTab->GetScreenCenterPosition();
@@ -102,10 +164,16 @@ void ProceduralGeneratorDialog::OnClickGenerate(wxCommandEvent& WXUNUSED(event))
 	}
 	int floor = g_gui.GetCurrentFloor();
 
-	int min_x = std::max(0, map_x - 30);
-	int max_x = std::min(editor.map.getWidth(), map_x + 30);
-	int min_y = std::max(0, map_y - 30);
-	int max_y = std::min(editor.map.getHeight(), map_y + 30);
+	int min_x = 0, max_x = editor.map.getWidth();
+	int min_y = 0, max_y = editor.map.getHeight();
+
+	if (targetAreaChoice->GetSelection() == 0) {
+		// Active Screen Viewport (60x60 Area)
+		min_x = std::max(0, map_x - 30);
+		max_x = std::min(editor.map.getWidth(), map_x + 30);
+		min_y = std::max(0, map_y - 30);
+		max_y = std::min(editor.map.getHeight(), map_y + 30);
+	}
 
 	float threshold = (float)densitySlider->GetValue() / 100.0f - 0.5f;
 
@@ -138,7 +206,6 @@ void ProceduralGeneratorDialog::OnClickGenerate(wxCommandEvent& WXUNUSED(event))
 
 	editor.addAction(action);
 	g_gui.RefreshView();
-	g_gui.SetStatusText("Prozedurale Generierung erfolgreich durchgeführt.");
 	EndModal(wxID_OK);
 }
 

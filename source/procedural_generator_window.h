@@ -21,6 +21,7 @@ public:
 private:
 	Editor& editor;
 
+	wxChoice* targetAreaChoice;
 	wxChoice* generatorTypeChoice;
 	wxChoice* noiseTypeChoice;
 	wxSpinCtrl* seedSpin;
@@ -30,4 +31,4 @@ private:
 	DECLARE_EVENT_TABLE()
 };
 
-#endif
+#endif // RME_PROCEDURAL_GENERATOR_WINDOW_H_

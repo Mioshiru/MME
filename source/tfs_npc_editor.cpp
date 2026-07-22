@@ -3,6 +3,7 @@
 #include "action.h"
 
 #include <wx/msgdlg.h>
+#include <wx/panel.h>
 #include <sstream>
 
 BEGIN_EVENT_TABLE(TFSNPCDialog, wxDialog)
@@ -11,108 +12,190 @@ EVT_BUTTON(wxID_CANCEL, TFSNPCDialog::OnClickCancel)
 END_EVENT_TABLE()
 
 TFSNPCDialog::TFSNPCDialog(wxWindow* parent, Editor& editor, Creature* target_creature) :
-	wxDialog(parent, wxID_ANY, "TFS 1.6 NPC & Dialogue Creator", wxDefaultPosition, wxSize(560, 620), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+	wxDialog(parent, wxID_ANY, "TFS 1.6 NPC & Dialogue Creator", wxDefaultPosition, wxSize(640, 680), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	editor(editor),
 	creature(target_creature) {
 
-	SetBackgroundColour(wxColour(15, 23, 42));
+	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
 	wxBoxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* header = newd wxStaticText(this, wxID_ANY, "Create TFS 1.6 NPC Definition & Script");
-	header->SetFont(wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	header->SetForegroundColour(wxColour(241, 245, 249));
-	topsizer->Add(header, 0, wxALL, 12);
+	// Header Banner Panel
+	wxPanel* headerPanel = newd wxPanel(this, wxID_ANY);
+	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* headerSizer = newd wxBoxSizer(wxVERTICAL);
 
-	wxFlexGridSizer* grid = newd wxFlexGridSizer(2, 6, 12);
-	grid->AddGrowableCol(1);
+	wxStaticText* header = newd wxStaticText(headerPanel, wxID_ANY, "TFS 1.6 NPC & Dialogue Creator");
+	header->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	header->SetForegroundColour(wxColour(248, 250, 252));
 
-	auto addLabel = [this, grid](const wxString& labelText) {
-		wxStaticText* label = newd wxStaticText(this, wxID_ANY, labelText);
-		label->SetForegroundColour(wxColour(203, 213, 225));
-		grid->Add(label, 0, wxALIGN_CENTER_VERTICAL);
+	wxStaticText* subheader = newd wxStaticText(headerPanel, wxID_ANY, "Build TFS 1.6 XML NPC definitions, English dialogue keywords, and shop lists.");
+	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+	subheader->SetForegroundColour(wxColour(148, 163, 184));
+
+	headerSizer->Add(header, 0, wxBOTTOM, 4);
+	headerSizer->Add(subheader, 0);
+	headerPanel->SetSizer(headerSizer);
+
+	topsizer->Add(headerPanel, 0, wxEXPAND | wxALL, 12);
+
+	// Two-Column Main Content Card
+	wxBoxSizer* contentSizer = newd wxBoxSizer(wxHORIZONTAL);
+
+	auto styleTextCtrl = [](wxTextCtrl* ctrl) {
+		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
+		ctrl->SetForegroundColour(wxColour(248, 250, 252));
 	};
 
-	addLabel("NPC Name:");
-	npcNameCtrl = newd wxTextCtrl(this, wxID_ANY, "Merchant");
-	grid->Add(npcNameCtrl, 1, wxEXPAND);
+	auto styleSpinCtrl = [](wxSpinCtrl* ctrl) {
+		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
+		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+	};
 
-	addLabel("LookType (Outfit ID):");
-	lookTypeSpin = newd wxSpinCtrl(this, wxID_ANY, "128", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2000, 128);
-	grid->Add(lookTypeSpin, 1, wxEXPAND);
+	// Column 1: NPC Attributes Panel
+	wxPanel* attrPanel = newd wxPanel(this, wxID_ANY);
+	attrPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* attrSizer = newd wxBoxSizer(wxVERTICAL);
 
-	addLabel("Health:");
-	healthSpin = newd wxSpinCtrl(this, wxID_ANY, "100", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 100000, 100);
-	grid->Add(healthSpin, 1, wxEXPAND);
+	wxStaticText* attrHeader = newd wxStaticText(attrPanel, wxID_ANY, "NPC Attributes");
+	attrHeader->SetFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	attrHeader->SetForegroundColour(wxColour(129, 140, 248)); // Indigo accent
+	attrSizer->Add(attrHeader, 0, wxALL, 8);
 
-	addLabel("Max Health:");
-	maxHealthSpin = newd wxSpinCtrl(this, wxID_ANY, "100", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 100000, 100);
-	grid->Add(maxHealthSpin, 1, wxEXPAND);
+	wxFlexGridSizer* attrGrid = newd wxFlexGridSizer(2, 6, 10);
+	attrGrid->AddGrowableCol(1);
 
-	addLabel("Walk Interval (ms):");
-	walkIntervalSpin = newd wxSpinCtrl(this, wxID_ANY, "2000", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 500, 10000, 2000);
-	grid->Add(walkIntervalSpin, 1, wxEXPAND);
+	auto addAttrLabel = [attrPanel, attrGrid](const wxString& labelText) {
+		wxStaticText* label = newd wxStaticText(attrPanel, wxID_ANY, labelText);
+		label->SetForegroundColour(wxColour(203, 213, 225));
+		label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+		attrGrid->Add(label, 0, wxALIGN_CENTER_VERTICAL);
+	};
 
-	topsizer->Add(grid, 0, wxEXPAND | wxALL, 12);
+	addAttrLabel("NPC Name:");
+	npcNameCtrl = newd wxTextCtrl(attrPanel, wxID_ANY, "Merchant");
+	styleTextCtrl(npcNameCtrl);
+	attrGrid->Add(npcNameCtrl, 1, wxEXPAND);
 
-	// Dialogue Triggers section
-	wxStaticText* dlgHeader = newd wxStaticText(this, wxID_ANY, "Dialogue Triggers (English)");
+	addAttrLabel("LookType ID:");
+	lookTypeSpin = newd wxSpinCtrl(attrPanel, wxID_ANY, "128", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2000, 128);
+	styleSpinCtrl(lookTypeSpin);
+	attrGrid->Add(lookTypeSpin, 1, wxEXPAND);
+
+	addAttrLabel("Health:");
+	healthSpin = newd wxSpinCtrl(attrPanel, wxID_ANY, "100", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 100000, 100);
+	styleSpinCtrl(healthSpin);
+	attrGrid->Add(healthSpin, 1, wxEXPAND);
+
+	addAttrLabel("Max Health:");
+	maxHealthSpin = newd wxSpinCtrl(attrPanel, wxID_ANY, "100", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 100000, 100);
+	styleSpinCtrl(maxHealthSpin);
+	attrGrid->Add(maxHealthSpin, 1, wxEXPAND);
+
+	addAttrLabel("Walk Speed:");
+	walkIntervalSpin = newd wxSpinCtrl(attrPanel, wxID_ANY, "2000", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 500, 10000, 2000);
+	styleSpinCtrl(walkIntervalSpin);
+	attrGrid->Add(walkIntervalSpin, 1, wxEXPAND);
+
+	attrSizer->Add(attrGrid, 1, wxEXPAND | wxALL, 8);
+	attrPanel->SetSizer(attrSizer);
+
+	contentSizer->Add(attrPanel, 1, wxEXPAND | wxRIGHT, 6);
+
+	// Column 2: Dialogue Triggers Panel
+	wxPanel* dlgPanel = newd wxPanel(this, wxID_ANY);
+	dlgPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* dlgSizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxStaticText* dlgHeader = newd wxStaticText(dlgPanel, wxID_ANY, "Dialogue Triggers (English)");
 	dlgHeader->SetFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	dlgHeader->SetForegroundColour(wxColour(148, 163, 184));
-	topsizer->Add(dlgHeader, 0, wxLEFT | wxRIGHT | wxTOP, 12);
+	dlgHeader->SetForegroundColour(wxColour(129, 140, 248));
+	dlgSizer->Add(dlgHeader, 0, wxALL, 8);
 
-	wxFlexGridSizer* dlgGrid = newd wxFlexGridSizer(2, 6, 12);
+	wxFlexGridSizer* dlgGrid = newd wxFlexGridSizer(2, 6, 10);
 	dlgGrid->AddGrowableCol(1);
 
-	auto addDlgLabel = [this, dlgGrid](const wxString& labelText) {
-		wxStaticText* label = newd wxStaticText(this, wxID_ANY, labelText);
+	auto addDlgLabel = [dlgPanel, dlgGrid](const wxString& labelText) {
+		wxStaticText* label = newd wxStaticText(dlgPanel, wxID_ANY, labelText);
 		label->SetForegroundColour(wxColour(203, 213, 225));
+		label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 		dlgGrid->Add(label, 0, wxALIGN_CENTER_VERTICAL);
 	};
 
-	addDlgLabel("Greeting ('hi'):");
-	hiGreetingCtrl = newd wxTextCtrl(this, wxID_ANY, "Hello traveler! How can I help you?");
+	addDlgLabel("Greeting:");
+	hiGreetingCtrl = newd wxTextCtrl(dlgPanel, wxID_ANY, "Hello traveler! How can I help you?");
+	styleTextCtrl(hiGreetingCtrl);
 	dlgGrid->Add(hiGreetingCtrl, 1, wxEXPAND);
 
-	addDlgLabel("Job Response ('job'):");
-	jobResponseCtrl = newd wxTextCtrl(this, wxID_ANY, "I am a local merchant selling fine goods.");
+	addDlgLabel("Job:");
+	jobResponseCtrl = newd wxTextCtrl(dlgPanel, wxID_ANY, "I am a local merchant selling fine goods.");
+	styleTextCtrl(jobResponseCtrl);
 	dlgGrid->Add(jobResponseCtrl, 1, wxEXPAND);
 
-	addDlgLabel("Quest Response ('quest'):");
-	questResponseCtrl = newd wxTextCtrl(this, wxID_ANY, "I need someone to retrieve my stolen ring.");
+	addDlgLabel("Quest:");
+	questResponseCtrl = newd wxTextCtrl(dlgPanel, wxID_ANY, "I need someone to retrieve my stolen ring.");
+	styleTextCtrl(questResponseCtrl);
 	dlgGrid->Add(questResponseCtrl, 1, wxEXPAND);
 
-	addDlgLabel("Farewell ('bye'):");
-	byeResponseCtrl = newd wxTextCtrl(this, wxID_ANY, "Farewell and safe travels!");
+	addDlgLabel("Farewell:");
+	byeResponseCtrl = newd wxTextCtrl(dlgPanel, wxID_ANY, "Farewell and safe travels!");
+	styleTextCtrl(byeResponseCtrl);
 	dlgGrid->Add(byeResponseCtrl, 1, wxEXPAND);
 
-	topsizer->Add(dlgGrid, 0, wxEXPAND | wxALL, 12);
+	dlgSizer->Add(dlgGrid, 1, wxEXPAND | wxALL, 8);
+	dlgPanel->SetSizer(dlgSizer);
 
-	// Shop grid
-	wxStaticText* shopHeader = newd wxStaticText(this, wxID_ANY, "Shop Items (Item ID | Item Name | Buy Price | Sell Price)");
+	contentSizer->Add(dlgPanel, 1, wxEXPAND | wxLEFT, 6);
+
+	topsizer->Add(contentSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+	// Shop Table Card
+	wxPanel* shopPanel = newd wxPanel(this, wxID_ANY);
+	shopPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* shopSizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxStaticText* shopHeader = newd wxStaticText(shopPanel, wxID_ANY, "Shop Items (Item ID | Item Name | Buy Price | Sell Price)");
 	shopHeader->SetFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	shopHeader->SetForegroundColour(wxColour(148, 163, 184));
-	topsizer->Add(shopHeader, 0, wxLEFT | wxRIGHT | wxTOP, 12);
+	shopHeader->SetForegroundColour(wxColour(129, 140, 248));
+	shopSizer->Add(shopHeader, 0, wxALL, 8);
 
-	shopGrid = newd wxGrid(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 100));
+	shopGrid = newd wxGrid(shopPanel, wxID_ANY, wxDefaultPosition, wxSize(-1, 120));
 	shopGrid->CreateGrid(3, 4);
 	shopGrid->SetColLabelValue(0, "Item ID");
 	shopGrid->SetColLabelValue(1, "Item Name");
 	shopGrid->SetColLabelValue(2, "Buy Price");
 	shopGrid->SetColLabelValue(3, "Sell Price");
 
+	shopGrid->SetGridLineColour(wxColour(71, 85, 105));
+	shopGrid->SetDefaultCellBackgroundColour(wxColour(51, 65, 85));
+	shopGrid->SetDefaultCellTextColour(wxColour(248, 250, 252));
+	shopGrid->SetLabelBackgroundColour(wxColour(15, 23, 42));
+	shopGrid->SetLabelTextColour(wxColour(203, 213, 225));
+
 	shopGrid->SetCellValue(0, 0, "2160"); shopGrid->SetCellValue(0, 1, "crystal coin"); shopGrid->SetCellValue(0, 2, "10000"); shopGrid->SetCellValue(0, 3, "10000");
 	shopGrid->SetCellValue(1, 0, "2152"); shopGrid->SetCellValue(1, 1, "platinum coin"); shopGrid->SetCellValue(1, 2, "100"); shopGrid->SetCellValue(1, 3, "100");
 	shopGrid->SetCellValue(2, 0, "2148"); shopGrid->SetCellValue(2, 1, "gold coin"); shopGrid->SetCellValue(2, 2, "1"); shopGrid->SetCellValue(2, 3, "1");
 
-	topsizer->Add(shopGrid, 1, wxEXPAND | wxALL, 12);
+	shopSizer->Add(shopGrid, 1, wxEXPAND | wxALL, 8);
+	shopPanel->SetSizer(shopSizer);
 
+	topsizer->Add(shopPanel, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+	// Action Buttons
 	wxBoxSizer* btnsizer = newd wxBoxSizer(wxHORIZONTAL);
 	wxButton* okBtn = newd wxButton(this, wxID_OK, "Generate NPC Files");
 	wxButton* cancelBtn = newd wxButton(this, wxID_CANCEL, "Cancel");
+
+	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
+	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+
+	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
+	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+
 	btnsizer->Add(okBtn, 0, wxRIGHT, 8);
 	btnsizer->Add(cancelBtn, 0);
 
-	topsizer->Add(btnsizer, 0, wxALIGN_RIGHT | wxALL, 12);
+	topsizer->Add(btnsizer, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 	SetSizerAndFit(topsizer);
 
 	if (creature) {

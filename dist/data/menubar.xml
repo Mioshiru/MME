@@ -13,6 +13,8 @@
 			<separator/>
 			<item name="Export Minimap..." action="EXPORT_MINIMAP" help="Export minimap to an image file."/>
 			<item name="Export Tilesets..." action="EXPORT_TILESETS" help="Export tilesets to an xml file."/>
+			<separator/>
+			<item name="Export to TFS 1.6 Server Data..." action="TFS_EXPORTER" help="Export map OTBM and generated scripts directly into TFS 1.6 server data directory."/>
 		</menu>
 		<item name="Reload Data" hotkey="F5" action="RELOAD_DATA" help="Reloads all data files."/>
 		<separator/>
@@ -150,16 +152,31 @@
 			<item name="Highlight Locked Doors" action="HIGHLIGHT_LOCKED_DOORS" help="Highlight doors that require key to open."/>
 			<item name="Show Wall Hooks" action="SHOW_WALL_HOOKS" help="Show indicators for wall hooks."/>
 		</menu>
-			<separator/>
-			<item name="Show Minimap" action="SHOW_MINIMAP_HUD" help="Toggle visibility of the in-canvas minimap."/>
-			<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
-	</menu>
-	<menu name="Tools">
-		<item name="Prozeduraler Map-Generator..." action="TOOLS_PROCEDURAL_GENERATOR" help="Generiert Höhlen, Wälder oder Inseln per Noise-Algorithmus."/>
-		<item name="Prefab &amp; Template Bibliothek..." action="TOOLS_PREFAB_LIBRARY" help="Vorlagen verwalten und auf der Karte platzieren."/>
 		<separator/>
-		<item name="Map Diagnostic &amp; Health Scanner..." action="TOOLS_MAP_DIAGNOSTIC" help="Durchsucht die Karte nach UIDs, verwaisten Spawns &amp; Fehlern."/>
-		<item name="Map Diff / Versionsvergleich..." action="TOOLS_MAP_DIFF" help="Vergleicht zwei Map-Dateien und hebt Änderungen hervor."/>
+		<item name="Show Minimap" action="SHOW_MINIMAP_HUD" help="Toggle visibility of the in-canvas minimap."/>
+		<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
+	</menu>
+
+	<menu name="Tools">
+		<item name="Procedural Map Generator..." action="TOOLS_PROCEDURAL_GENERATOR" help="Generates caves, forests, or islands using noise algorithms."/>
+		<item name="Prefab &amp; Template Library..." action="TOOLS_PREFAB_LIBRARY" help="Manage pre-built templates and place them on the map."/>
+		<separator/>
+		<menu name="TFS 1.6 Multi-Tool Suite">
+			<item name="TFS 1.6 Quest Chest Creator..." action="TFS_QUEST_GENERATOR" help="Visually create TFS 1.6 quest chests, rewards, and RevScriptSys scripts."/>
+			<item name="TFS 1.6 Key &amp; Door Manager..." action="TFS_KEY_MANAGER" help="Pair keys (2088-2092) with locked doors using matching ActionIDs."/>
+			<item name="TFS 1.6 NPC &amp; Dialogue Creator..." action="TFS_NPC_EDITOR" help="Create TFS 1.6 NPCs, dialogue trees, and shop item lists."/>
+			<separator/>
+			<item name="Export to TFS 1.6 Server Data..." action="TFS_EXPORTER" help="Export map OTBM and all generated XML/Lua scripts directly to server data folder."/>
+		</menu>
+		<separator/>
+		<menu name="Scripts" special="SCRIPTS">
+			<item name="Script Manager..." action="SCRIPTS_MANAGER" help="Show/hide the Script Manager window."/>
+			<separator/>
+			<item name="Open Scripts Folder" action="SCRIPTS_OPEN_FOLDER" help="Open the scripts folder in file explorer."/>
+			<item name="Reload Scripts" hotkey="Ctrl+Shift+F5" action="SCRIPTS_RELOAD" help="Reload all scripts from disk."/>
+			<separator/>
+			<!-- Scripts are loaded dynamically below this point -->
+		</menu>
 	</menu>
 
 	<menu name="Map">
@@ -175,24 +192,9 @@
 		<item name="Help" action="LIVE_HELP" help="How to host a multiplayer session."/>
 	</menu>
 
-	<menu name="Tools">
-		<menu name="Scripts" special="SCRIPTS">
-			<item name="Script Manager..." action="SCRIPTS_MANAGER" help="Show/hide the Script Manager window."/>
-			<separator/>
-			<item name="Open Scripts Folder" action="SCRIPTS_OPEN_FOLDER" help="Open the scripts folder in file explorer."/>
-			<item name="Reload Scripts" hotkey="Ctrl+Shift+F5" action="SCRIPTS_RELOAD" help="Reload all scripts from disk."/>
-			<separator/>
-			<!-- Scripts are loaded dynamically below this point -->
-		</menu>
-		<menu name="Experimental">
-			<item name="Fog in light view" hotkey="" action="EXPERIMENTAL_FOG" help="Apply fog filter to light effect."/>
-		</menu>
-	</menu>
-
 	<menu name="Help">
 		<item name="Extensions..." hotkey="F2" action="EXTENSIONS" help=""/>
 		<item name="Goto Website" hotkey="F3" action="GOTO_WEBSITE" help=""/>
 		<item name="About..." hotkey="F1" action="ABOUT" help=""/>
 	</menu>
 </menubar>
-

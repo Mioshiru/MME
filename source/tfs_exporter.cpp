@@ -2,6 +2,7 @@
 #include "iomap_otbm.h"
 
 #include <wx/msgdlg.h>
+#include <wx/panel.h>
 #include <wx/ffile.h>
 #include <wx/filename.h>
 
@@ -11,36 +12,67 @@ EVT_BUTTON(wxID_CANCEL, TFSExportDialog::OnClickCancel)
 END_EVENT_TABLE()
 
 TFSExportDialog::TFSExportDialog(wxWindow* parent, Editor& editor) :
-	wxDialog(parent, wxID_ANY, "Export to TFS 1.6 Server Data", wxDefaultPosition, wxSize(480, 260), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+	wxDialog(parent, wxID_ANY, "Export to TFS 1.6 Server Data", wxDefaultPosition, wxSize(520, 320), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	editor(editor) {
 
-	SetBackgroundColour(wxColour(15, 23, 42));
+	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
 	wxBoxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* header = newd wxStaticText(this, wxID_ANY, "Export Server Files (TFS 1.6)");
-	header->SetFont(wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	header->SetForegroundColour(wxColour(241, 245, 249));
-	topsizer->Add(header, 0, wxALL, 12);
+	// Header Banner Panel
+	wxPanel* headerPanel = newd wxPanel(this, wxID_ANY);
+	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* headerSizer = newd wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* info = newd wxStaticText(this, wxID_ANY, "Select the root 'data' folder of your TFS 1.6 server.\nThe editor will export the map (.otbm) into data/world/ and all scripts/NPCs into their respective directories.");
-	info->SetForegroundColour(wxColour(203, 213, 225));
-	info->Wrap(440);
-	topsizer->Add(info, 0, wxLEFT | wxRIGHT | wxBOTTOM, 12);
+	wxStaticText* header = newd wxStaticText(headerPanel, wxID_ANY, "Export Server Files (TFS 1.6)");
+	header->SetFont(wxFont(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	header->SetForegroundColour(wxColour(248, 250, 252));
 
-	wxStaticText* dirLabel = newd wxStaticText(this, wxID_ANY, "TFS 'data' Directory:");
+	wxStaticText* subheader = newd wxStaticText(headerPanel, wxID_ANY, "Exports .otbm map into data/world/ and generated scripts/NPCs into data/ directories.");
+	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+	subheader->SetForegroundColour(wxColour(148, 163, 184));
+	subheader->Wrap(480);
+
+	headerSizer->Add(header, 0, wxBOTTOM, 4);
+	headerSizer->Add(subheader, 0);
+	headerPanel->SetSizer(headerSizer);
+
+	topsizer->Add(headerPanel, 0, wxEXPAND | wxALL, 12);
+
+	// Card Container
+	wxPanel* cardPanel = newd wxPanel(this, wxID_ANY);
+	cardPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* cardSizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxStaticText* dirLabel = newd wxStaticText(cardPanel, wxID_ANY, "Select TFS Server 'data' Directory:");
 	dirLabel->SetForegroundColour(wxColour(203, 213, 225));
-	topsizer->Add(dirLabel, 0, wxLEFT | wxRIGHT, 12);
+	dirLabel->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	cardSizer->Add(dirLabel, 0, wxALL, 8);
 
-	dirPicker = newd wxDirPickerCtrl(this, wxID_ANY, "", "Select TFS data directory");
-	topsizer->Add(dirPicker, 0, wxEXPAND | wxALL, 12);
+	dirPicker = newd wxDirPickerCtrl(cardPanel, wxID_ANY, "", "Select TFS data directory");
+	dirPicker->SetBackgroundColour(wxColour(51, 65, 85));
+	dirPicker->SetForegroundColour(wxColour(248, 250, 252));
+	cardSizer->Add(dirPicker, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
+	cardPanel->SetSizer(cardSizer);
+
+	topsizer->Add(cardPanel, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+	// Action Buttons
 	wxBoxSizer* btnsizer = newd wxBoxSizer(wxHORIZONTAL);
 	wxButton* okBtn = newd wxButton(this, wxID_OK, "Export All Files");
 	wxButton* cancelBtn = newd wxButton(this, wxID_CANCEL, "Cancel");
+
+	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
+	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+
+	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
+	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+
 	btnsizer->Add(okBtn, 0, wxRIGHT, 8);
 	btnsizer->Add(cancelBtn, 0);
 
-	topsizer->Add(btnsizer, 0, wxALIGN_RIGHT | wxALL, 12);
+	topsizer->Add(btnsizer, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 	SetSizerAndFit(topsizer);
 }
 

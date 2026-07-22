@@ -54,24 +54,61 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 	waypoint_name_field(nullptr),
 	currentPanel(nullptr) {
 	ASSERT(edit_item);
-	notebook = newd wxNotebook(this, wxID_ANY, wxDefaultPosition, wxSize(600, 300));
 
-	notebook->AddPage(createGeneralPanel(notebook), "Simple", true);
+	SetBackgroundColour(wxColour(15, 23, 42)); // Slate 900
+	wxSizer* topSizer = newd wxBoxSizer(wxVERTICAL);
+
+	// Header Banner Panel
+	wxPanel* headerPanel = newd wxPanel(this, wxID_ANY);
+	headerPanel->SetBackgroundColour(wxColour(30, 41, 59));
+	wxBoxSizer* headerSizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxString itemTitle = wxString::Format("Item #%d: %s", edit_item->getID(), wxstr(edit_item->getName()));
+	wxStaticText* header = newd wxStaticText(headerPanel, wxID_ANY, itemTitle);
+	header->SetFont(wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	header->SetForegroundColour(wxColour(248, 250, 252));
+
+	wxStaticText* subheader = newd wxStaticText(headerPanel, wxID_ANY, "Configure item attributes, action/unique IDs, container items, and waypoint settings.");
+	subheader->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+	subheader->SetForegroundColour(wxColour(148, 163, 184));
+
+	headerSizer->Add(header, 0, wxBOTTOM, 4);
+	headerSizer->Add(subheader, 0);
+	headerPanel->SetSizer(headerSizer);
+
+	topSizer->Add(headerPanel, 0, wxEXPAND | wxALL, 12);
+
+	notebook = newd wxNotebook(this, wxID_ANY, wxDefaultPosition, wxSize(600, 340));
+	notebook->SetBackgroundColour(wxColour(30, 41, 59));
+	notebook->SetForegroundColour(wxColour(203, 213, 225));
+
+	notebook->AddPage(createGeneralPanel(notebook), "General", true);
 	if (dynamic_cast<Container*>(item)) {
 		notebook->AddPage(createContainerPanel(notebook), "Contents");
 	}
-	notebook->AddPage(createAttributesPanel(notebook), "Advanced");
+	notebook->AddPage(createAttributesPanel(notebook), "Attributes");
 	if (edit_tile) {
 		notebook->AddPage(createWaypointPanel(notebook), "Waypoint");
 	}
 
-	wxSizer* topSizer = newd wxBoxSizer(wxVERTICAL);
-	topSizer->Add(notebook, wxSizerFlags(1).DoubleBorder());
+	topSizer->Add(notebook, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
-	wxSizer* optSizer = newd wxBoxSizer(wxHORIZONTAL);
-	optSizer->Add(newd wxButton(this, wxID_OK, "OK"), wxSizerFlags(0).Center());
-	optSizer->Add(newd wxButton(this, wxID_CANCEL, "Cancel"), wxSizerFlags(0).Center());
-	topSizer->Add(optSizer, wxSizerFlags(0).Center().DoubleBorder());
+	// Action Buttons
+	wxBoxSizer* optSizer = newd wxBoxSizer(wxHORIZONTAL);
+	wxButton* okBtn = newd wxButton(this, wxID_OK, "OK");
+	wxButton* cancelBtn = newd wxButton(this, wxID_CANCEL, "Cancel");
+
+	okBtn->SetBackgroundColour(wxColour(79, 70, 229));
+	okBtn->SetForegroundColour(wxColour(255, 255, 255));
+	okBtn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+
+	cancelBtn->SetBackgroundColour(wxColour(51, 65, 85));
+	cancelBtn->SetForegroundColour(wxColour(203, 213, 225));
+
+	optSizer->Add(okBtn, 0, wxRIGHT, 8);
+	optSizer->Add(cancelBtn, 0);
+
+	topSizer->Add(optSizer, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
 	SetSizerAndFit(topSizer);
 	Centre(wxBOTH);
@@ -93,18 +130,42 @@ void PropertiesWindow::Update() {
 
 wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 	wxPanel* panel = newd wxPanel(parent, ITEM_PROPERTIES_GENERAL_TAB);
+	panel->SetBackgroundColour(wxColour(30, 41, 59)); // Slate 800
+
 	wxFlexGridSizer* gridsizer = newd wxFlexGridSizer(2, 10, 10);
 	gridsizer->AddGrowableCol(1);
 
-	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "ID " + i2ws(edit_item->getID())));
-	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "\"" + wxstr(edit_item->getName()) + "\""));
+	auto addLabel = [panel, gridsizer](const wxString& labelText) {
+		wxStaticText* label = newd wxStaticText(panel, wxID_ANY, labelText);
+		label->SetForegroundColour(wxColour(203, 213, 225));
+		label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+		gridsizer->Add(label, 0, wxALIGN_CENTER_VERTICAL);
+	};
 
-	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Action ID"));
+	auto styleSpin = [](wxSpinCtrl* ctrl) {
+		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
+		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+	};
+
+	auto styleText = [](wxTextCtrl* ctrl) {
+		ctrl->SetBackgroundColour(wxColour(51, 65, 85));
+		ctrl->SetForegroundColour(wxColour(248, 250, 252));
+	};
+
+	addLabel("Item ID:");
+	wxStaticText* idText = newd wxStaticText(panel, wxID_ANY, i2ws(edit_item->getID()) + " (\"" + wxstr(edit_item->getName()) + "\")");
+	idText->SetForegroundColour(wxColour(129, 140, 248));
+	idText->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	gridsizer->Add(idText, 0, wxALIGN_CENTER_VERTICAL);
+
+	addLabel("Action ID:");
 	action_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getActionID()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getActionID());
+	styleSpin(action_id_field);
 	gridsizer->Add(action_id_field, wxSizerFlags(1).Expand());
 
-	gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Unique ID"));
-	unique_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getUniqueID()), wxDefaultPosition, wxSize(-1, 20), wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getUniqueID());
+	addLabel("Unique ID:");
+	unique_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getUniqueID()), wxDefaultPosition, wxSize(-1, 24), wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getUniqueID());
+	styleSpin(unique_id_field);
 	gridsizer->Add(unique_id_field, wxSizerFlags(1).Expand());
 
 	if (edit_item->isStackable() || edit_item->isCharged() || edit_item->isFluidContainer() || edit_item->isSplash()) {
@@ -114,8 +175,9 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 		} else if (edit_item->isCharged()) {
 			max_count = 65500;
 		}
-		gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Count/Subtype"));
+		addLabel("Count/Subtype:");
 		count_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getCount()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, max_count, edit_item->getCount());
+		styleSpin(count_field);
 		if (edit_item->isHangable()) {
 			count_field->Enable(false);
 		}
@@ -125,8 +187,9 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 	}
 
 	if (edit_item->canHoldText() || edit_item->canHoldDescription()) {
-		gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Text"));
+		addLabel("Text Inscription:");
 		text_field = newd wxTextCtrl(panel, wxID_ANY, wxstr(edit_item->getText()), wxDefaultPosition, wxSize(-1, 80), wxTE_MULTILINE);
+		styleText(text_field);
 		gridsizer->Add(text_field, wxSizerFlags(1).Expand());
 	} else {
 		text_field = nullptr;
@@ -149,19 +212,20 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 			town_text_val = wxString::Format("%d - %s", clicked_town->getID(), wxstr(clicked_town->getName()));
 		}
 
-		gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Town"));
-
+		addLabel("Town Temple:");
 		wxSizer* town_sizer = newd wxBoxSizer(wxHORIZONTAL);
 		wxStaticText* town_lbl = newd wxStaticText(panel, wxID_ANY, town_text_val);
+		town_lbl->SetForegroundColour(wxColour(248, 250, 252));
 		town_sizer->Add(town_lbl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
 		wxButton* town_btn = newd wxButton(panel, ITEM_PROPERTIES_TOWN_BTN, "Edit Towns...");
+		town_btn->SetBackgroundColour(wxColour(51, 65, 85));
+		town_btn->SetForegroundColour(wxColour(203, 213, 225));
 		town_sizer->Add(town_btn, 0, wxALIGN_CENTER_VERTICAL);
 
 		gridsizer->Add(town_sizer, wxSizerFlags(0));
 	}
 
 	panel->SetSizerAndFit(gridsizer);
-
 	return panel;
 }
 
