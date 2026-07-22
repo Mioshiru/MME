@@ -573,6 +573,7 @@ void BrushPanel::OnClickListBoxRow(wxCommandEvent& event) {
 BEGIN_EVENT_TABLE(BrushIconBox, wxScrolledWindow)
 EVT_PAINT(BrushIconBox::OnPaint)
 EVT_LEFT_DOWN(BrushIconBox::OnClick)
+EVT_MOTION(BrushIconBox::OnMouseMove)
 EVT_SIZE(BrushIconBox::OnSize)
 END_EVENT_TABLE()
 
@@ -854,6 +855,54 @@ void BrushIconBox::OnClick(wxMouseEvent& event) {
 		}
 	}
 	SetFocus();
+}
+
+void BrushIconBox::OnMouseMove(wxMouseEvent& event) {
+	int logical_x, logical_y;
+	CalcUnscrolledPosition(event.GetX(), event.GetY(), &logical_x, &logical_y);
+
+	int client_width = GetClientSize().x;
+	int btn_width = 36;
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+
+	if (icon_size == RENDER_SIZE_16x16) {
+		btn_width = 20;
+	} else if (icon_size == RENDER_SIZE_32x32) {
+		btn_width = 36;
+	}
+	btn_width = btn_width * scale_percent / 100;
+
+	int columns = client_width / btn_width;
+	if (columns < 1) columns = 1;
+
+	int total_items_width = columns * btn_width;
+	int left_padding = (client_width - total_items_width) / 2;
+	if (left_padding < 0) left_padding = 0;
+
+	if (logical_x >= left_padding && logical_x < left_padding + total_items_width) {
+		int col = (logical_x - left_padding) / btn_width;
+		int row = logical_y / btn_width;
+		size_t idx = row * columns + col;
+
+		if (idx < visible_brushes.size()) {
+			Brush* hovered = visible_brushes[idx];
+			if (hovered) {
+				wxString tip = wxstr(hovered->getName());
+				if (RAWBrush* raw = dynamic_cast<RAWBrush*>(hovered)) {
+					tip << " (ID: " << raw->getItemID() << ")";
+				}
+				SetToolTip(tip);
+				g_gui.SetStatusText(tip);
+			}
+		} else {
+			UnsetToolTip();
+		}
+	} else {
+		UnsetToolTip();
+	}
+	event.Skip();
 }
 
 // ============================================================================

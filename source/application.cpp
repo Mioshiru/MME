@@ -691,27 +691,26 @@ void MainFrame::OnIdle(wxIdleEvent &event) {
   if (g_gui.async_loader) {
     g_gui.async_loader->update();
   }
-  // Continuously render for maximum frame rate
   if (g_gui.IsAnyEditorOpen()) {
     MapTab* tab = g_gui.GetCurrentMapTab();
     if (tab && tab->canvas) {
-      tab->canvas->Refresh();
+      tab->canvas->Refresh(false);
       event.RequestMore(true);
     }
   }
 }
 
 void MainFrame::OnActivate(wxActivateEvent &event) {
-  if (event.GetActive()) {
-    if (g_gui.IsAnyEditorOpen()) {
-      MapTab* tab = g_gui.GetCurrentMapTab();
-      if (tab && tab->canvas) {
+  if (g_gui.IsAnyEditorOpen()) {
+    MapTab* tab = g_gui.GetCurrentMapTab();
+    if (tab && tab->canvas) {
+      if (event.GetActive()) {
         tab->canvas->SetFocus();
-        tab->canvas->Refresh(false);
       }
+      tab->canvas->Refresh(false);
     }
-    wxWakeUpIdle();
   }
+  wxWakeUpIdle();
   event.Skip();
 }
 

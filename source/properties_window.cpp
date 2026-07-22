@@ -124,6 +124,14 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 		count_field = nullptr;
 	}
 
+	if (edit_item->canHoldText() || edit_item->canHoldDescription()) {
+		gridsizer->Add(newd wxStaticText(panel, wxID_ANY, "Text"));
+		text_field = newd wxTextCtrl(panel, wxID_ANY, wxstr(edit_item->getText()), wxDefaultPosition, wxSize(-1, 80), wxTE_MULTILINE);
+		gridsizer->Add(text_field, wxSizerFlags(1).Expand());
+	} else {
+		text_field = nullptr;
+	}
+
 	if (edit_item->isGroundTile() && !edit_item->hasProperty(BLOCKSOLID)) {
 		Town* clicked_town = nullptr;
 		if (edit_tile && edit_map) {
@@ -319,6 +327,9 @@ void PropertiesWindow::saveGeneralPanel() {
 	}
 	if (count_field && (edit_item->isStackable() || edit_item->isCharged() || edit_item->isFluidContainer() || edit_item->isSplash())) {
 		edit_item->setSubtype(count_field->GetValue());
+	}
+	if (text_field && (edit_item->canHoldText() || edit_item->canHoldDescription())) {
+		edit_item->setText(nstr(text_field->GetValue()));
 	}
 }
 

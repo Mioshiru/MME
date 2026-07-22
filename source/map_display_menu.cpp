@@ -279,7 +279,8 @@ void MapPopupMenu::Update() {
 			if (topSelectedItem || topCreature || topItem) {
 				bool has_items_added = false;
 
-				if (topSelectedItem && topSelectedItem->isRoteable()) {
+				Item* rotatableItem = topSelectedItem ? topSelectedItem : topItem;
+				if (rotatableItem && rotatableItem->isRoteable()) {
 					Append(MAP_POPUP_MENU_ROTATE, "&Rotate item", "Rotate this item");
 					has_items_added = true;
 				}
@@ -557,20 +558,40 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event)) {
 	} else {
 		Tile* tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 		if (tile && (!tile->empty() || tile->ground)) {
-			Item* top = tile->getTopItem();
-			if (top && top->isRoteable()) {
-				ItemType& it = g_items[top->getID()];
-				if (it.rotateTo != 0) {
-					Tile* new_tile = tile->deepCopy(editor.map);
-					Item* new_top = nullptr;
-					if (top == tile->ground) new_top = new_tile->ground;
-					else {
-						for (size_t i = 0; i < tile->items.size() && i < new_tile->items.size(); ++i) {
-							if (tile->items[i] == top) { new_top = new_tile->items[i]; break; }
+			Item* target = nullptr;
+			if (tile->ground && tile->ground->isRoteable()) {
+				target = tile->ground;
+			} else {
+				Item* top = tile->getTopItem();
+				if (top && top->isRoteable()) {
+					target = top;
+				} else {
+					for (Item* item : tile->items) {
+						if (item->isRoteable()) {
+							target = item;
+							break;
 						}
 					}
-					if (new_top) {
-						new_top->setID(it.rotateTo);
+				}
+			}
+
+			if (target && target->isRoteable()) {
+				ItemType& it = g_items[target->getID()];
+				if (it.rotateTo != 0) {
+					Tile* new_tile = tile->deepCopy(editor.map);
+					Item* new_target = nullptr;
+					if (target == tile->ground) {
+						new_target = new_tile->ground;
+					} else {
+						for (size_t i = 0; i < tile->items.size() && i < new_tile->items.size(); ++i) {
+							if (tile->items[i] == target) {
+								new_target = new_tile->items[i];
+								break;
+							}
+						}
+					}
+					if (new_target) {
+						new_target->setID(it.rotateTo);
 						rotated_any = true;
 					}
 					action->addChange(newd Change(new_tile));

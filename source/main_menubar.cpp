@@ -496,7 +496,7 @@ void MainMenuBar::Update() {
 	EnableItem(CLEAR_INVALID_HOUSES, is_local);
 	EnableItem(CLEAR_MODIFIED_STATE, is_local);
 
-	EnableItem(EDIT_TOWNS, is_local);
+	EnableItem(EDIT_TOWNS, has_map);
 	EnableItem(EDIT_ITEMS, false);
 	EnableItem(EDIT_MONSTERS, false);
 

@@ -303,6 +303,15 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
           }
         }
       }
+      
+      int mouse_map_x, mouse_map_y;
+      ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+      last_click_map_x = mouse_map_x;
+      last_click_map_y = mouse_map_y;
+      last_click_map_z = floor;
+      wxCommandEvent dummy;
+      OnRotateItem(dummy);
+      return;
     }
   }
 
@@ -1529,7 +1538,7 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     int max_x = map_width - 1;
     int max_y = map_height - 1;
 
-    size_t max_fill_tiles = 100000;
+    size_t max_fill_tiles = 10000;
 
     auto encode = [](int x, int y, int z) -> uint64_t {
       return (static_cast<uint64_t>(z) << 48) |

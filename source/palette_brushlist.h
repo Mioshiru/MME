@@ -101,6 +101,7 @@ public:
 	void OnSize(wxSizeEvent& event);
 	void OnPaint(wxPaintEvent& event);
 	void OnClick(wxMouseEvent& event);
+	void OnMouseMove(wxMouseEvent& event);
 
 	void UpdateLayout();
 
