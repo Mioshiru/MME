@@ -138,6 +138,10 @@ namespace MenuBar {
 		SELECT_CREATURE,
 		SELECT_HOUSE,
 		SELECT_WAYPOINT,
+		TFS_QUEST_GENERATOR,
+		TFS_KEY_MANAGER,
+		TFS_NPC_EDITOR,
+		TFS_EXPORTER,
 		SHOW_MINIMAP_HUD, // New item for toggling canvas-based minimap
 		SELECT_RAW,
 		FLOOR_0,
@@ -275,6 +279,10 @@ public:
 	void OnPrefabLibrary(wxCommandEvent& event);
 	void OnMapDiagnostic(wxCommandEvent& event);
 	void OnMapDiff(wxCommandEvent& event);
+	void OnTFSQuestGenerator(wxCommandEvent& event);
+	void OnTFSKeyManager(wxCommandEvent& event);
+	void OnTFSNPCEditor(wxCommandEvent& event);
+	void OnTFSExporter(wxCommandEvent& event);
 
 	// View Menu
 	void OnToolbars(wxCommandEvent& event);

@@ -2264,15 +2264,6 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
       r = int(r * factor[idx]);
     }
 
-    if (options.show_spawns && location->getSpawnCount() > 0) {
-      float f = 1.0f;
-      for (uint32_t i = 0; i < location->getSpawnCount(); ++i) {
-        f *= 0.7f;
-      }
-      g = uint8_t(g * f);
-      b = uint8_t(b * f);
-    }
-
     if (options.show_houses && tile->isHouseTile()) {
       if ((int)tile->getHouseID() == current_house_id) {
         r /= 2;
@@ -2395,6 +2386,12 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
       // town temple (gray flag)
       if (options.show_towns && tile->isTownExit(editor.map)) {
         BlitSpriteType(draw_x, draw_y, SPRITE_TOWN_TEMPLE, 255, 255, 64, 170);
+      }
+
+      // spawn area translucent overlay (above ground, borders, and items)
+      if (options.show_spawns && location->getSpawnCount() > 0) {
+        int alpha = std::min(140, 50 * (int)location->getSpawnCount());
+        BlitSquare(draw_x, draw_y, 180, 50, 200, alpha);
       }
 
       // spawn (purple flame)

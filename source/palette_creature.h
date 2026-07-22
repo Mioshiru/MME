@@ -19,6 +19,7 @@
 #define RME_TILESET_CREATURE_H_
 
 #include "palette_common.h"
+#include <wx/srchctrl.h>
 
 class CreaturePalettePanel : public PalettePanel {
 public:
@@ -40,8 +41,9 @@ public:
 	void OnUpdateBrushSize(BrushShape shape, int size);
 	// Called when this page is displayed
 	void OnSwitchIn();
-	// Called sometimes?
 	void OnUpdate();
+	// Called when palette search box text changes
+	void DoSearch(const wxString& query);
 
 protected:
 	void SelectTileset(size_t index);

@@ -52,6 +52,10 @@
 #include "prefab_manager.h"
 #include "map_diagnostic_window.h"
 #include "map_diff_window.h"
+#include "tfs_quest_generator.h"
+#include "tfs_key_manager.h"
+#include "tfs_npc_editor.h"
+#include "tfs_exporter.h"
 
 namespace {
 	bool CopyTextToClipboard(const wxString& text) {
@@ -257,6 +261,10 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(TOOLS_PREFAB_LIBRARY, wxITEM_NORMAL, OnPrefabLibrary);
 	MAKE_ACTION(TOOLS_MAP_DIAGNOSTIC, wxITEM_NORMAL, OnMapDiagnostic);
 	MAKE_ACTION(TOOLS_MAP_DIFF, wxITEM_NORMAL, OnMapDiff);
+	MAKE_ACTION(TFS_QUEST_GENERATOR, wxITEM_NORMAL, OnTFSQuestGenerator);
+	MAKE_ACTION(TFS_KEY_MANAGER, wxITEM_NORMAL, OnTFSKeyManager);
+	MAKE_ACTION(TFS_NPC_EDITOR, wxITEM_NORMAL, OnTFSNPCEditor);
+	MAKE_ACTION(TFS_EXPORTER, wxITEM_NORMAL, OnTFSExporter);
 
 	MAKE_ACTION(SELECT_TERRAIN, wxITEM_NORMAL, OnSelectTerrainPalette);
 	MAKE_ACTION(SELECT_DOODAD, wxITEM_NORMAL, OnSelectDoodadPalette);
@@ -333,6 +341,10 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	frame->Connect(TOOLS_PREFAB_LIBRARY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnPrefabLibrary), nullptr, this);
 	frame->Connect(TOOLS_MAP_DIAGNOSTIC, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiagnostic), nullptr, this);
 	frame->Connect(TOOLS_MAP_DIFF, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiff), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_QUEST_GENERATOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSQuestGenerator), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_KEY_MANAGER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSKeyManager), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_NPC_EDITOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSNPCEditor), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_EXPORTER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSExporter), nullptr, this);
 }
 
 MainMenuBar::~MainMenuBar() {
@@ -1727,5 +1739,29 @@ void MainMenuBar::OnMapDiagnostic(wxCommandEvent& WXUNUSED(event)) {
 void MainMenuBar::OnMapDiff(wxCommandEvent& WXUNUSED(event)) {
 	if (!g_gui.GetCurrentEditor()) return;
 	MapDiffDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnTFSQuestGenerator(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) return;
+	TFSQuestDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnTFSKeyManager(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) return;
+	TFSKeyDoorDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnTFSNPCEditor(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) return;
+	TFSNPCDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnTFSExporter(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) return;
+	TFSExportDialog dialog(frame, *g_gui.GetCurrentEditor());
 	dialog.ShowModal();
 }

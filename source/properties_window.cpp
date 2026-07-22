@@ -338,7 +338,18 @@ void PropertiesWindow::saveContainerPanel() {
 }
 
 void PropertiesWindow::saveAttributesPanel() {
+	if (!attributesGrid) return;
+	// Preserve general panel attributes before clearing
+	std::string text_val = edit_item->getText();
+	uint16_t aid_val = edit_item->getActionID();
+	uint16_t uid_val = edit_item->getUniqueID();
+
 	edit_item->clearAllAttributes();
+
+	if (!text_val.empty()) edit_item->setText(text_val);
+	if (aid_val > 0) edit_item->setActionID(aid_val);
+	if (uid_val > 0) edit_item->setUniqueID(uid_val);
+
 	for (int32_t rowIndex = 0; rowIndex < attributesGrid->GetNumberRows(); ++rowIndex) {
 		ItemAttribute attr;
 		wxString type = attributesGrid->GetCellValue(rowIndex, 1);
@@ -359,7 +370,10 @@ void PropertiesWindow::saveAttributesPanel() {
 		} else {
 			continue;
 		}
-		edit_item->setAttribute(nstr(attributesGrid->GetCellValue(rowIndex, 0)), attr);
+		std::string key = nstr(attributesGrid->GetCellValue(rowIndex, 0));
+		if (!key.empty()) {
+			edit_item->setAttribute(key, attr);
+		}
 	}
 }
 
@@ -514,19 +528,13 @@ void PropertiesWindow::saveWaypointPanel() {
 	Waypoint* current_wp = mutable_map->waypoints.getWaypoint(mutable_tile->getLocation());
 
 	if (current_wp) {
+		std::string old_name = current_wp->name;
 		if (new_name.empty()) {
 			// User cleared the name, remove the waypoint
-			if (mutable_map->getTile(current_wp->pos)) {
-				mutable_map->getTileL(current_wp->pos)->decreaseWaypointCount();
-			}
-			mutable_map->waypoints.removeWaypoint(current_wp->name);
+			mutable_map->waypoints.removeWaypoint(old_name);
 			g_gui.RefreshPalettes();
-		} else if (current_wp->name != new_name) {
+		} else if (old_name != new_name) {
 			// Rename the waypoint
-			if (mutable_map->getTile(current_wp->pos)) {
-				mutable_map->getTileL(current_wp->pos)->decreaseWaypointCount();
-			}
-			std::string old_name = current_wp->name;
 			mutable_map->waypoints.removeWaypoint(old_name);
 
 			Waypoint* nwp = newd Waypoint(new_name, edit_tile->getPosition());

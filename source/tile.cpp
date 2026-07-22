@@ -388,8 +388,13 @@ ItemVector Tile::popSelectedItems(bool ignoreTileSelected) {
 	it = items.begin();
 	while (it != items.end()) {
 		if ((*it)->isSelected()) {
-			pop_items.push_back(*it);
-			it = items.erase(it);
+			if ((*it)->isBorder() && ground != nullptr) {
+				(*it)->deselect();
+				++it;
+			} else {
+				pop_items.push_back(*it);
+				it = items.erase(it);
+			}
 		} else {
 			++it;
 		}

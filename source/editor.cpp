@@ -1033,8 +1033,8 @@ void MapEditor::moveSelection(Position offset) {
 	// Commit changes to map
 	batchAction->addAndCommitAction(action);
 
-	// Remove old borders (and create some newd?)
-	if (g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_DRAG) && selection.size() < size_t(g_settings.getInteger(Config::BORDERIZE_DRAG_THRESHOLD))) {
+	// Remove old borders (and create new borders on former position)
+	if (doborders && g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_DRAG) && selection.size() < size_t(g_settings.getInteger(Config::BORDERIZE_DRAG_THRESHOLD))) {
 		action = actionQueue->createAction(batchAction);
 		TileList borderize_tiles;
 		// Go through all modified (selected) tiles (might be slow)
@@ -1141,7 +1141,7 @@ void MapEditor::moveSelection(Position offset) {
 	batchAction->addAndCommitAction(action);
 
 	// Create borders
-	if (g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_DRAG) && selection.size() < size_t(g_settings.getInteger(Config::BORDERIZE_DRAG_THRESHOLD))) {
+	if (doborders && g_settings.getInteger(Config::USE_AUTOMAGIC) && g_settings.getInteger(Config::BORDERIZE_DRAG) && selection.size() < size_t(g_settings.getInteger(Config::BORDERIZE_DRAG_THRESHOLD))) {
 		action = actionQueue->createAction(batchAction);
 		TileList borderize_tiles;
 		// Go through all modified (selected) tiles (might be slow)
@@ -1693,6 +1693,10 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		batch->addAndCommitAction(action);
 
 		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+			// Sort and deduplicate tilestoborder so every boundary position is processed once
+			std::sort(tilestoborder.begin(), tilestoborder.end());
+			tilestoborder.erase(std::unique(tilestoborder.begin(), tilestoborder.end()), tilestoborder.end());
+
 			// Do borders!
 			action = actionQueue->createAction(batch);
 			for (PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {

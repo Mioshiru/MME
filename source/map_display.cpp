@@ -698,6 +698,7 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 		ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
 
 		if (last_click_map_x != -1 && last_click_map_y != -1) {
+			int brush_size = g_gui.GetBrushSize();
 			int start_x = std::min(last_click_map_x, mouse_map_x);
 			int end_x = std::max(last_click_map_x, mouse_map_x);
 			int start_y = std::min(last_click_map_y, mouse_map_y);
@@ -706,11 +707,11 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 			bool is_wall = g_gui.GetCurrentBrush() && g_gui.GetCurrentBrush()->isWall();
 			PositionVector tilestodraw;
 			PositionVector tilestoborder;
-			for (int y = start_y - 1; y <= end_y + 1; ++y) {
-				for (int x = start_x - 1; x <= end_x + 1; ++x) {
+			for (int y = start_y - brush_size - 1; y <= end_y + brush_size + 1; ++y) {
+				for (int x = start_x - brush_size - 1; x <= end_x + brush_size + 1; ++x) {
 					Position pos(x, y, floor);
-					if (x >= start_x && x <= end_x && y >= start_y && y <= end_y) {
-						if (!is_wall || (x == start_x || x == end_x || y == start_y || y == end_y)) {
+					if (x >= start_x - brush_size && x <= end_x + brush_size && y >= start_y - brush_size && y <= end_y + brush_size) {
+						if (!is_wall || (x == start_x - brush_size || x == end_x + brush_size || y == start_y - brush_size || y == end_y + brush_size)) {
 							tilestodraw.push_back(pos);
 						}
 					}
@@ -1062,6 +1063,13 @@ void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event) {
     if (has_spawn || has_creature || top_item) {
       editor.selection.start(Selection::INTERNAL);
       editor.selection.clear();
+      if (has_spawn) {
+        editor.selection.add(tile, tile->spawn);
+      } else if (has_creature) {
+        editor.selection.add(tile, tile->creature);
+      } else if (top_item) {
+        editor.selection.add(tile, top_item);
+      }
       editor.selection.finish(Selection::INTERNAL);
       
       last_click_map_x = mouse_map_x;
@@ -1647,9 +1655,15 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
 
       for (const Position &pos : *tilestodraw) {
         const Position neighbors[] = {
-            Position(pos.x, pos.y, pos.z), Position(pos.x - 1, pos.y, pos.z),
-            Position(pos.x + 1, pos.y, pos.z), Position(pos.x, pos.y - 1, pos.z),
-            Position(pos.x, pos.y + 1, pos.z)};
+            Position(pos.x, pos.y, pos.z),
+            Position(pos.x - 1, pos.y, pos.z),
+            Position(pos.x + 1, pos.y, pos.z),
+            Position(pos.x, pos.y - 1, pos.z),
+            Position(pos.x, pos.y + 1, pos.z),
+            Position(pos.x - 1, pos.y - 1, pos.z),
+            Position(pos.x + 1, pos.y - 1, pos.z),
+            Position(pos.x - 1, pos.y + 1, pos.z),
+            Position(pos.x + 1, pos.y + 1, pos.z)};
 
         for (const Position &neighbor : neighbors) {
           if (neighbor.x <= 0 || neighbor.y <= 0 || neighbor.x >= map_width ||

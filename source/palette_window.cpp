@@ -844,6 +844,8 @@ void PaletteWindow::OnSearchTextChanged(wxCommandEvent& event) {
 	wxWindow* page = choicebook->GetCurrentPage();
 	if (auto* brush_page = dynamic_cast<BrushPalettePanel*>(page)) {
 		brush_page->DoSearch(query);
+	} else if (auto* creature_page = dynamic_cast<CreaturePalettePanel*>(page)) {
+		creature_page->DoSearch(query);
 	}
 }
 

@@ -42,8 +42,7 @@ public:
  */
 class ItemButton : public DCButton {
 public:
-	ItemButton(wxWindow* parent, RenderSize size, uint16_t lookid, wxWindowID id = wxID_ANY) :
-		DCButton(parent, id, wxDefaultPosition, DC_BTN_NORMAL, size, lookid) { }
+	ItemButton(wxWindow* parent, RenderSize size, uint16_t lookid, wxWindowID id = wxID_ANY);
 	virtual ~ItemButton() { }
 };
 

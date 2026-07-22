@@ -25,6 +25,7 @@
 #include "spawn_brush.h"
 #include "materials.h"
 #include "application.h"
+#include <wx/srchctrl.h>
 
 // ============================================================================
 // Creature palette
@@ -190,7 +191,6 @@ void CreaturePalettePanel::SelectTileset(size_t index) {
 		creature_brush_button->Enable(false);
 	} else {
 		const TilesetCategory* tsc = reinterpret_cast<const TilesetCategory*>(tileset_choice->GetClientData(index));
-		// Select first house
 		for (BrushVector::const_iterator iter = tsc->brushlist.begin();
 			 iter != tsc->brushlist.end();
 			 ++iter) {
@@ -203,8 +203,41 @@ void CreaturePalettePanel::SelectTileset(size_t index) {
 	}
 }
 
+void CreaturePalettePanel::DoSearch(const wxString& query) {
+	if (query.IsEmpty()) {
+		int sel = tileset_choice->GetSelection();
+		if (sel != wxNOT_FOUND) {
+			SelectTileset(sel);
+		}
+		return;
+	}
+
+	wxString search_filter = query.Lower();
+	creature_list->Clear();
+
+	for (size_t i = 0; i < tileset_choice->GetCount(); ++i) {
+		const TilesetCategory* tsc = reinterpret_cast<const TilesetCategory*>(tileset_choice->GetClientData(i));
+		if (!tsc) continue;
+
+		for (BrushVector::const_iterator iter = tsc->brushlist.begin(); iter != tsc->brushlist.end(); ++iter) {
+			wxString name = wxstr((*iter)->getName());
+			if (name.Lower().Contains(search_filter)) {
+				if (creature_list->FindString(name) == wxNOT_FOUND) {
+					creature_list->Append(name, *iter);
+				}
+			}
+		}
+	}
+
+	creature_list->Sort();
+	if (creature_list->GetCount() > 0) {
+		SelectCreature(0);
+	} else {
+		creature_brush_button->Enable(false);
+	}
+}
+
 void CreaturePalettePanel::SelectCreature(size_t index) {
-	// Save the old g_settings
 	ASSERT(creature_list->GetCount() >= index);
 
 	if (creature_list->GetCount() > 0) {
@@ -236,7 +269,6 @@ void CreaturePalettePanel::SelectCreatureBrush() {
 }
 
 void CreaturePalettePanel::SelectSpawnBrush() {
-	// g_gui.house_exit_brush->setHouse(house);
 	creature_brush_button->SetValue(false);
 	spawn_brush_button->SetValue(true);
 }

@@ -64,6 +64,12 @@ void Waypoints::removeWaypoint(std::string name) {
 	if (iter == waypoints.end()) {
 		return;
 	}
+	if (iter->second && iter->second->pos != Position()) {
+		Tile* t = map.getTile(iter->second->pos);
+		if (t && t->getLocation()) {
+			t->getLocation()->decreaseWaypointCount();
+		}
+	}
 	delete iter->second;
 	waypoints.erase(iter);
 }

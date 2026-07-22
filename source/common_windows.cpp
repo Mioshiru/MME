@@ -26,6 +26,7 @@
 #include "item.h"
 #include "complexitem.h"
 #include "raw_brush.h"
+#include "creature_brush.h"
 
 #include "palette_window.h"
 #include "gui.h"
@@ -39,6 +40,10 @@
 #ifdef _MSC_VER
 	#pragma warning(disable : 4018) // signed/unsigned mismatch
 #endif
+
+ItemButton::ItemButton(wxWindow* parent, RenderSize size, uint16_t lookid, wxWindowID id) :
+	DCButton(parent, id, wxDefaultPosition, DC_BTN_NORMAL, size, (lookid > 0 && g_items.typeExists(lookid)) ? g_items[lookid].clientID : lookid) {
+}
 
 // ============================================================================
 // Map Properties Window
@@ -967,6 +972,16 @@ void FindBrushDialog::RefreshContentsInternal() {
 
 			found_search_results = true;
 			item_list->AddBrush(raw_brush);
+		}
+
+		for (auto iter = g_creatures.begin(); iter != g_creatures.end(); ++iter) {
+			CreatureType* ctype = iter->second;
+			if (ctype && ctype->brush) {
+				if (as_lower_str(ctype->name).find(search_string) != std::string::npos) {
+					found_search_results = true;
+					item_list->AddBrush(reinterpret_cast<Brush*>(ctype->brush));
+				}
+			}
 		}
 
 		while (raws.size() > 0) {
