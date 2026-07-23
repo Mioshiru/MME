@@ -49,7 +49,7 @@ GUI::GUI()
       loaded_version(CLIENT_VERSION_NONE), mode(SELECTION_MODE), pasting(false),
       hotkeys_enabled(true), current_brush(nullptr), previous_brush(nullptr),
       brush_shape(BRUSHSHAPE_SQUARE), brush_size(0), brush_variation(0),
-      creature_spawntime(0), fill_brush_mode(false), draw_locked_doors(false),
+      creature_spawntime(0), fill_brush_mode(false), magic_wand_mode(false), draw_locked_doors(false),
       use_custom_thickness(false), custom_thickness_mod(0.0),
       progressBar(nullptr), disabled_counter(0) {
   doodad_buffer_map = newd BaseMap();
@@ -904,6 +904,8 @@ void GUI::SetDrawingMode() {
     return;
   }
 
+  magic_wand_mode = false;
+
   std::set<MapTab *> al;
   for (int idx = 0; idx < tabbook->GetTabCount(); ++idx) {
     EditorTab *editorTab = tabbook->GetTab(idx);
@@ -941,7 +943,26 @@ void GUI::SetFillBrushMode(bool enabled) {
 
   fill_brush_mode = enabled;
   if (fill_brush_mode) {
+    magic_wand_mode = false;
     SetDrawingMode();
+  }
+
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->UpdateBrushButtons();
+  }
+
+  RefreshView();
+}
+
+void GUI::SetMagicWandMode(bool enabled) {
+  if (magic_wand_mode == enabled) {
+    return;
+  }
+
+  magic_wand_mode = enabled;
+  if (magic_wand_mode) {
+    fill_brush_mode = false;
+    SetSelectionMode();
   }
 
   if (root && root->GetAuiToolBar()) {

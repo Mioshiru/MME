@@ -143,6 +143,9 @@ public:
 
   unsigned int GetMinimapTextureID() const { return minimap_tex_id; }
 
+  void ExecuteMagicWandSelect(int mouse_map_x, int mouse_map_y, int floor, bool add_to_selection = false);
+  void ReplaceSelectionWithBrush(Brush* brush);
+
 protected:
   void getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
                       PositionVector *tilestodraw,
@@ -186,8 +189,12 @@ protected:
   int rubber_end_x;
   int rubber_end_y;
   bool tool_wheel_open;
+  int tool_wheel_sub_menu;
   float tool_wheel_x;
   float tool_wheel_y;
+  int tool_wheel_tile_x;
+  int tool_wheel_tile_y;
+  int tool_wheel_tile_z;
 
   uint8_t *screenshot_buffer;
 
@@ -220,7 +227,7 @@ protected:
   wxStopWatch refresh_watch;
   std::unique_ptr<RME::UI::UIToolbar> ui_toolbar; // Hinzugefügt
   unsigned int minimap_tex_id = 0;
-  unsigned int radial_tex_ids[10] = {0};
+  unsigned int radial_tex_ids[16] = {0};
   bool radial_textures_loaded = false;
   void LoadRadialTextures();
   uint8_t minimap_pixels[180 * 180 * 3]; // Added for Palette minimap

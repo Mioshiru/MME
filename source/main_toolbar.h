@@ -43,6 +43,9 @@ public:
 	void SetFloor(int floor);
 
 	void OnBrushesButtonClick(wxCommandEvent& event);
+	void OnZonesDropdown(wxCommandEvent& event);
+	void OnDoorsDropdown(wxCommandEvent& event);
+	void OnWindowsDropdown(wxCommandEvent& event);
 	void OnPositionButtonClick(wxCommandEvent& event);
 	void OnPositionKeyUp(wxKeyEvent& event);
 	void OnPastePositionText(wxClipboardTextEvent& event);

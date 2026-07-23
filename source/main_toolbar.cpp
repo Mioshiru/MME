@@ -74,7 +74,19 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	wxSize base_size(16 * scale_percent / 100, 16 * scale_percent / 100);
 	wxSize icon_size = FROM_DIP(parent, base_size);
 
-	wxBitmap* border_bitmap = loadPNGFileSized(optional_border_small_png, icon_size);
+	wxBitmap border_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/auto_border.png",
+		"../icons/auto_border.png",
+		"Map Editor/icons/auto_border.png",
+		"../Map Editor/icons/auto_border.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "auto_border.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "auto_border.png"
+	});
+	if (!border_bitmap.IsOk()) {
+		wxBitmap* mem_bmp = loadPNGFileSized(optional_border_small_png, icon_size);
+		if (mem_bmp) border_bitmap = *mem_bmp;
+	}
+
 	wxBitmap pointer_bitmap = LoadBitmapFromFileCandidates(icon_size, {
 		"icons/pointer.png",
 		"../icons/pointer.png",
@@ -99,6 +111,14 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png",
 		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png"
 	});
+	wxBitmap wand_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/magic-wand.png",
+		"../icons/magic-wand.png",
+		"Map Editor/icons/magic-wand.png",
+		"../Map Editor/icons/magic-wand.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "magic-wand.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "magic-wand.png"
+	});
 	wxBitmap prefab_bitmap = LoadBitmapFromFileCandidates(icon_size, {
 		"icons/prefab.png",
 		"../icons/prefab.png",
@@ -107,17 +127,42 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "prefab.png",
 		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "prefab.png"
 	});
-	wxBitmap* eraser_bitmap = loadPNGFileSized(eraser_small_png, icon_size);
-	wxBitmap pz_bitmap = wxArtProvider::GetBitmap(ART_PZ_BRUSH, wxART_TOOLBAR, icon_size);
-	wxBitmap nopvp_bitmap = wxArtProvider::GetBitmap(ART_NOPVP_BRUSH, wxART_TOOLBAR, icon_size);
-	wxBitmap nologout_bitmap = wxArtProvider::GetBitmap(ART_NOLOOUT_BRUSH, wxART_TOOLBAR, icon_size);
-	wxBitmap pvp_bitmap = wxArtProvider::GetBitmap(ART_PVP_BRUSH, wxART_TOOLBAR, icon_size);
-	wxBitmap normal_bitmap = wxArtProvider::GetBitmap(ART_DOOR_NORMAL_SMALL, wxART_TOOLBAR, icon_size);
-	wxBitmap locked_bitmap = wxArtProvider::GetBitmap(ART_DOOR_LOCKED_SMALL, wxART_TOOLBAR, icon_size);
-	wxBitmap magic_bitmap = wxArtProvider::GetBitmap(ART_DOOR_MAGIC_SMALL, wxART_TOOLBAR, icon_size);
-	wxBitmap quest_bitmap = wxArtProvider::GetBitmap(ART_DOOR_QUEST_SMALL, wxART_TOOLBAR, icon_size);
-	wxBitmap* hatch_bitmap = loadPNGFileSized(window_hatch_small_png, icon_size);
-	wxBitmap* window_bitmap = loadPNGFileSized(window_normal_small_png, icon_size);
+	wxBitmap pz_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/protected_zone.png",
+		"../icons/protected_zone.png",
+		"Map Editor/icons/protected_zone.png",
+		"../Map Editor/icons/protected_zone.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "protected_zone.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "protected_zone.png"
+	});
+	if (!pz_bitmap.IsOk()) pz_bitmap = wxArtProvider::GetBitmap(ART_PZ_BRUSH, wxART_TOOLBAR, icon_size);
+
+	wxBitmap eraser_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/eraser.png", "../icons/eraser.png", "Map Editor/icons/eraser.png", "../Map Editor/icons/eraser.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "eraser.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "eraser.png"
+	});
+	if (!eraser_bitmap.IsOk()) {
+		wxBitmap* mem_bmp = loadPNGFileSized(eraser_small_png, icon_size);
+		if (mem_bmp) eraser_bitmap = *mem_bmp;
+	}
+
+	wxBitmap normal_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/door.png", "../icons/door.png", "Map Editor/icons/door.png", "../Map Editor/icons/door.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "door.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "door.png"
+	});
+	if (!normal_bitmap.IsOk()) normal_bitmap = wxArtProvider::GetBitmap(ART_DOOR_NORMAL_SMALL, wxART_TOOLBAR, icon_size);
+
+	wxBitmap window_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/window.png", "../icons/window.png", "Map Editor/icons/window.png", "../Map Editor/icons/window.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "window.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "window.png"
+	});
+	if (!window_bitmap.IsOk()) {
+		wxBitmap* mem_bmp = _wxGetBitmapFromMemory(window_hatch_small_png, sizeof(window_hatch_small_png), icon_size);
+		if (mem_bmp) window_bitmap = *mem_bmp;
+	}
 
 	brushes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_BRUSHES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
 	brushes_toolbar->SetToolBitmapSize(icon_size);
@@ -130,25 +175,21 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	if (bucket_bitmap.IsOk()) {
 		brushes_toolbar->AddTool(PALETTE_TERRAIN_BUCKET_TOOL, wxEmptyString, bucket_bitmap, wxNullBitmap, wxITEM_CHECK, "Bucket Fill", wxEmptyString, NULL);
 	}
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_ERASER, wxEmptyString, *eraser_bitmap, wxNullBitmap, wxITEM_CHECK, "Eraser", wxEmptyString, NULL);
+	if (wand_bitmap.IsOk()) {
+		brushes_toolbar->AddTool(PALETTE_TERRAIN_MAGIC_WAND_TOOL, wxEmptyString, wand_bitmap, wxNullBitmap, wxITEM_CHECK, "Magic Wand Selection", wxEmptyString, NULL);
+	}
+	brushes_toolbar->AddTool(PALETTE_TERRAIN_ERASER, wxEmptyString, eraser_bitmap, wxNullBitmap, wxITEM_CHECK, "Eraser", wxEmptyString, NULL);
 	if (prefab_bitmap.IsOk()) {
 		brushes_toolbar->AddTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, wxEmptyString, prefab_bitmap, wxNullBitmap, wxITEM_CHECK, "Prefab Creator", wxEmptyString, NULL);
 	}
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, wxEmptyString, *border_bitmap, wxNullBitmap, wxITEM_CHECK, "Border", wxEmptyString, NULL);
-	brushes_toolbar->AddSeparator();
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_PZ_TOOL, wxEmptyString, pz_bitmap, wxNullBitmap, wxITEM_CHECK, "Protected Zone", wxEmptyString, NULL);
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_NOPVP_TOOL, wxEmptyString, nopvp_bitmap, wxNullBitmap, wxITEM_CHECK, "No PvP Zone", wxEmptyString, NULL);
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_NOLOGOUT_TOOL, wxEmptyString, nologout_bitmap, wxNullBitmap, wxITEM_CHECK, "No Logout Zone", wxEmptyString, NULL);
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_PVPZONE_TOOL, wxEmptyString, pvp_bitmap, wxNullBitmap, wxITEM_CHECK, "PvP Zone", wxEmptyString, NULL);
+	brushes_toolbar->AddTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, wxEmptyString, border_bitmap, wxNullBitmap, wxITEM_CHECK, "Autoborder", wxEmptyString, NULL);
 	brushes_toolbar->AddSeparator();
 
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_NORMAL_DOOR, wxEmptyString, normal_bitmap, wxNullBitmap, wxITEM_CHECK, "Normal Door", wxEmptyString, NULL);
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_LOCKED_DOOR, wxEmptyString, locked_bitmap, wxNullBitmap, wxITEM_CHECK, "Locked Door", wxEmptyString, NULL);
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_MAGIC_DOOR, wxEmptyString, magic_bitmap, wxNullBitmap, wxITEM_CHECK, "Magic Door", wxEmptyString, NULL);
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_QUEST_DOOR, wxEmptyString, quest_bitmap, wxNullBitmap, wxITEM_CHECK, "Quest Door", wxEmptyString, NULL);
+	brushes_toolbar->AddTool(PALETTE_TERRAIN_ZONES_DROPDOWN, "Zones", pz_bitmap, wxNullBitmap, wxITEM_NORMAL, "Zones (PZ, No-Logout, No-PVP, PVP)", wxEmptyString, NULL);
 	brushes_toolbar->AddSeparator();
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_HATCH_DOOR, wxEmptyString, *hatch_bitmap, wxNullBitmap, wxITEM_CHECK, "Hatch Window", wxEmptyString, NULL);
-	brushes_toolbar->AddTool(PALETTE_TERRAIN_WINDOW_DOOR, wxEmptyString, *window_bitmap, wxNullBitmap, wxITEM_CHECK, "Window", wxEmptyString, NULL);
+	brushes_toolbar->AddTool(PALETTE_TERRAIN_DOORS_DROPDOWN, "Doors", normal_bitmap, wxNullBitmap, wxITEM_NORMAL, "Doors", wxEmptyString, NULL);
+	brushes_toolbar->AddSeparator();
+	brushes_toolbar->AddTool(PALETTE_TERRAIN_WINDOWS_DROPDOWN, "Windows", window_bitmap, wxNullBitmap, wxITEM_NORMAL, "Windows (Hatch Window, Window)", wxEmptyString, NULL);
 	brushes_toolbar->Realize();
 
 	wxBitmap go_bitmap = wxArtProvider::GetBitmap(ART_POSITION_GO, wxART_TOOLBAR, icon_size);
@@ -222,17 +263,11 @@ void MainToolBar::UpdateButtons() {
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_PENCIL_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_BUCKET_TOOL, has_map);
+	brushes_toolbar->EnableTool(PALETTE_TERRAIN_MAGIC_WAND_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_ERASER, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_PZ_TOOL, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_NOPVP_TOOL, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_NOLOGOUT_TOOL, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_PVPZONE_TOOL, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_NORMAL_DOOR, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_LOCKED_DOOR, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_MAGIC_DOOR, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_QUEST_DOOR, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_HATCH_DOOR, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_WINDOW_DOOR, has_map);
+	brushes_toolbar->EnableTool(PALETTE_TERRAIN_ZONES_DROPDOWN, has_map);
+	brushes_toolbar->EnableTool(PALETTE_TERRAIN_DOORS_DROPDOWN, has_map);
+	brushes_toolbar->EnableTool(PALETTE_TERRAIN_WINDOWS_DROPDOWN, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, has_map);
 
 	if (z_choice) {
@@ -433,8 +468,20 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 			g_gui.SetDrawingMode();
 			g_gui.SetFillBrushMode(!g_gui.IsFillBrushMode());
 			break;
+		case PALETTE_TERRAIN_MAGIC_WAND_TOOL:
+			g_gui.SetMagicWandMode(!g_gui.IsMagicWandMode());
+			break;
 		case PALETTE_TERRAIN_ERASER:
 			g_gui.SelectBrush(g_gui.eraser);
+			break;
+		case PALETTE_TERRAIN_ZONES_DROPDOWN:
+			OnZonesDropdown(event);
+			break;
+		case PALETTE_TERRAIN_DOORS_DROPDOWN:
+			OnDoorsDropdown(event);
+			break;
+		case PALETTE_TERRAIN_WINDOWS_DROPDOWN:
+			OnWindowsDropdown(event);
 			break;
 		case PALETTE_TERRAIN_PZ_TOOL:
 			g_gui.SelectBrush(g_gui.pz_brush);
@@ -472,6 +519,31 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 		default:
 			break;
 	}
+}
+
+void MainToolBar::OnZonesDropdown(wxCommandEvent& WXUNUSED(event)) {
+	wxMenu menu;
+	menu.Append(PALETTE_TERRAIN_PZ_TOOL, "Protected Zone");
+	menu.Append(PALETTE_TERRAIN_NOLOGOUT_TOOL, "No Logout Zone");
+	menu.Append(PALETTE_TERRAIN_NOPVP_TOOL, "No PvP Zone");
+	menu.Append(PALETTE_TERRAIN_PVPZONE_TOOL, "PvP Zone");
+	brushes_toolbar->PopupMenu(&menu);
+}
+
+void MainToolBar::OnDoorsDropdown(wxCommandEvent& WXUNUSED(event)) {
+	wxMenu menu;
+	menu.Append(PALETTE_TERRAIN_NORMAL_DOOR, "Normal Door");
+	menu.Append(PALETTE_TERRAIN_LOCKED_DOOR, "Locked Door");
+	menu.Append(PALETTE_TERRAIN_MAGIC_DOOR, "Magic Door");
+	menu.Append(PALETTE_TERRAIN_QUEST_DOOR, "Quest Door");
+	brushes_toolbar->PopupMenu(&menu);
+}
+
+void MainToolBar::OnWindowsDropdown(wxCommandEvent& WXUNUSED(event)) {
+	wxMenu menu;
+	menu.Append(PALETTE_TERRAIN_HATCH_DOOR, "Hatch Window");
+	menu.Append(PALETTE_TERRAIN_WINDOW_DOOR, "Window");
+	brushes_toolbar->PopupMenu(&menu);
 }
 
 void MainToolBar::SetFloor(int floor) {

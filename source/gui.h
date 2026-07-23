@@ -250,8 +250,12 @@ public:
 	void SetSelectionMode();
 	void SetDrawingMode();
 	void SetFillBrushMode(bool enabled);
+	void SetMagicWandMode(bool enabled);
 	[[nodiscard]] bool IsFillBrushMode() const {
 		return fill_brush_mode;
+	}
+	[[nodiscard]] bool IsMagicWandMode() const {
+		return magic_wand_mode;
 	}
 	[[nodiscard]] bool IsSelectionMode() const {
 		return mode == SELECTION_MODE;
@@ -495,6 +499,7 @@ protected:
 	int brush_variation;
 	int creature_spawntime;
 	bool fill_brush_mode;
+	bool magic_wand_mode;
 
 	bool draw_locked_doors;
 	bool use_custom_thickness;

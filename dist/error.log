@@ -1,22 +1,22 @@
-[2026-07-22 22:11:49] === AUI Panes Diagnostics ===
-[2026-07-22 22:11:49] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 483, 30), row=0, col=0
-[2026-07-22 22:11:49] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(483, 0, 201, 30), row=0, col=483
-[2026-07-22 22:11:49] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(684, 0, 0, 30), row=0, col=752
-[2026-07-22 22:11:49] =============================
-[2026-07-22 22:11:49] === AUI Panes Diagnostics ===
-[2026-07-22 22:11:49] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 483, 30), row=0, col=0
-[2026-07-22 22:11:49] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(483, 0, 269, 30), row=0, col=483
-[2026-07-22 22:11:49] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(752, 0, 85, 30), row=0, col=752
-[2026-07-22 22:11:49] Pane: name='099821f06a6124050000003700000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 30, 1535, 838), row=0, col=0
-[2026-07-22 22:11:49] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
-[2026-07-22 22:11:49] =============================
-[2026-07-22 22:11:51] === AUI Panes Diagnostics ===
-[2026-07-22 22:11:51] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 483, 30), row=0, col=0
-[2026-07-22 22:11:51] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(483, 0, 269, 30), row=0, col=483
-[2026-07-22 22:11:51] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(752, 0, 85, 30), row=0, col=752
-[2026-07-22 22:11:51] Pane: name='099821f06a6124050000003700000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(260, 30, 1275, 838), row=0, col=0
-[2026-07-22 22:11:51] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
-[2026-07-22 22:11:51] Pane: name='Palette_1', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 47, 255, 821), row=0, col=0
-[2026-07-22 22:11:51] Pane: name='Tools', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=3
-[2026-07-22 22:11:51] Pane: name='Brush Size', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=4
-[2026-07-22 22:11:51] =============================
+[2026-07-23 17:40:36] === AUI Panes Diagnostics ===
+[2026-07-23 17:40:36] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 315, 30), row=0, col=0
+[2026-07-23 17:40:36] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(315, 0, 269, 30), row=0, col=315
+[2026-07-23 17:40:36] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(584, 0, 85, 30), row=0, col=584
+[2026-07-23 17:40:36] =============================
+[2026-07-23 17:40:36] === AUI Panes Diagnostics ===
+[2026-07-23 17:40:36] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 315, 30), row=0, col=0
+[2026-07-23 17:40:36] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(315, 0, 269, 30), row=0, col=315
+[2026-07-23 17:40:36] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(584, 0, 85, 30), row=0, col=584
+[2026-07-23 17:40:36] Pane: name='230f0b106a6235f40000005b00000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 30, 3424, 1280), row=0, col=0
+[2026-07-23 17:40:36] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-07-23 17:40:36] =============================
+[2026-07-23 17:40:37] === AUI Panes Diagnostics ===
+[2026-07-23 17:40:37] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 315, 30), row=0, col=0
+[2026-07-23 17:40:37] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(315, 0, 269, 30), row=0, col=315
+[2026-07-23 17:40:37] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(584, 0, 85, 30), row=0, col=584
+[2026-07-23 17:40:37] Pane: name='230f0b106a6235f40000005b00000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(260, 30, 3180, 1296), row=0, col=0
+[2026-07-23 17:40:37] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-07-23 17:40:37] Pane: name='Palette_1', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 47, 255, 1279), row=0, col=0
+[2026-07-23 17:40:37] Pane: name='Tools', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=3
+[2026-07-23 17:40:37] Pane: name='Brush Size', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=4
+[2026-07-23 17:40:37] =============================

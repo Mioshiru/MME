@@ -334,7 +334,7 @@ SetVSync(true);
 	ImGui::End();
 
 	// Render Brush Hover Preview Overlay
-	if (!screendragging && !boundbox_selection && g_gui.GetCurrentBrush() && !g_gui.IsSelectionMode()) {
+	if (!tool_wheel_open && !screendragging && !boundbox_selection && g_gui.GetCurrentBrush() && !g_gui.IsSelectionMode()) {
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(io.DisplaySize);
 		ImGui::SetNextWindowBgAlpha(0.0f);
@@ -712,24 +712,57 @@ SetVSync(true);
 			
 			struct RadialTool {
 				std::string label;
+				uint32_t icon_id;
 			};
 			
-			static const std::vector<RadialTool> tools = {
-				{"SELECTION"},
-				{"PENCIL"},
-				{"BUCKET"},
-				{"PROTECTION ZONE"},
-				{"NORMAL DOOR"},
-				{"LOCKED DOOR"},
-				{"MAGIC DOOR"},
-				{"HATCH WINDOW"},
-				{"ERASER"},
-				{"PREFAB CREATOR"}
-			};
+			std::vector<RadialTool> tools;
+			if (tool_wheel_sub_menu == 1) { // Zones Sub-Menu
+				tools = {
+					{"PROTECTION ZONE", radial_tex_ids[4]},
+					{"NO LOGOUT ZONE", radial_tex_ids[9]},
+					{"NO PVP ZONE", radial_tex_ids[10]},
+					{"PVP ZONE", radial_tex_ids[11]},
+					{"BACK", radial_tex_ids[12]}
+				};
+			} else if (tool_wheel_sub_menu == 2) { // Doors Sub-Menu
+				tools = {
+					{"NORMAL DOOR", radial_tex_ids[5]},
+					{"LOCKED DOOR", radial_tex_ids[5]},
+					{"MAGIC DOOR", radial_tex_ids[5]},
+					{"QUEST DOOR", radial_tex_ids[5]},
+					{"BACK", radial_tex_ids[12]}
+				};
+			} else if (tool_wheel_sub_menu == 3) { // Windows Sub-Menu
+				tools = {
+					{"HATCH WINDOW", radial_tex_ids[8]},
+					{"WINDOW", radial_tex_ids[8]},
+					{"BACK", radial_tex_ids[12]}
+				};
+			} else { // Main Wheel
+				tools = {
+					{"SELECTION", radial_tex_ids[0]},
+					{"PENCIL", radial_tex_ids[1]},
+					{"BUCKET", radial_tex_ids[2]},
+					{"MAGIC WAND", radial_tex_ids[3]},
+					{"ZONES", radial_tex_ids[4]},
+					{"DOORS", radial_tex_ids[5]},
+					{"WINDOWS", radial_tex_ids[8]},
+					{"ERASER", radial_tex_ids[6]},
+					{"PREFAB CREATOR", radial_tex_ids[7]}
+				};
+			}
 			
 			const int N = tools.size();
 			ImVec2 mouse_pos = ImGui::GetMousePos();
-			ImVec2 center(vp->Pos.x + tool_wheel_x, vp->Pos.y + tool_wheel_y);
+			
+			int scroll_x = 0, scroll_y = 0;
+			if (GetParent()) {
+				static_cast<MapWindow*>(GetParent())->GetViewStart(&scroll_x, &scroll_y);
+			}
+			int offset = (tool_wheel_tile_z <= 7) ? (7 - tool_wheel_tile_z) * TileSize : 0;
+			float tile_cx = (((tool_wheel_tile_x + 0.5f) * TileSize - scroll_x) - offset) / zoom;
+			float tile_cy = (((tool_wheel_tile_y + 0.5f) * TileSize - scroll_y) - offset) / zoom;
+			ImVec2 center(tile_cx, tile_cy);
 			
 			float dx = mouse_pos.x - center.x;
 			float dy = mouse_pos.y - center.y;
@@ -738,7 +771,7 @@ SetVSync(true);
 			int hovered_slice = GetHoveredRadialSlice();
 			
 			// 1. Draw outer glowing ring (shadow)
-			draw_list->AddCircle(center, r_max + 1.0f, IM_COL32(0, 0, 0, 100), 64, 4.0f);
+			draw_list->AddCircle(center, r_max + 1.0f, IM_COL32(0, 0, 0, 120), 64, 4.0f);
 			
 			// 2. Draw slices
 			for (int i = 0; i < N; ++i) {
@@ -776,36 +809,57 @@ SetVSync(true);
 				
 				ImU32 icon_color = is_hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(245, 215, 120, 255);
 				
-				if (radial_tex_ids[i] != 0) {
+				if (tools[i].icon_id != 0) {
 					draw_list->AddImage(
-						(ImTextureID)(intptr_t)radial_tex_ids[i],
-						ImVec2(icon_pos.x - 12.0f, icon_pos.y - 12.0f),
-						ImVec2(icon_pos.x + 12.0f, icon_pos.y + 12.0f),
+						(ImTextureID)(intptr_t)tools[i].icon_id,
+						ImVec2(icon_pos.x - 14.0f, icon_pos.y - 14.0f),
+						ImVec2(icon_pos.x + 14.0f, icon_pos.y + 14.0f),
 						ImVec2(0, 0), ImVec2(1, 1),
 						icon_color
 					);
 				}
 			}
 			
-			// 4. Draw central circle
-			draw_list->AddCircleFilled(center, r_min - 2.0f, IM_COL32(8, 10, 18, 255));
-			draw_list->AddCircle(center, r_min - 2.0f, IM_COL32(180, 140, 50, 255), 64, 2.0f);
-			
-			// 5. Draw center text label
-			std::string center_text = "TOOLS";
+			// 4. Draw central circle outline (Hollow center hole so highlighted map tile field is visible)
+			draw_list->AddCircle(center, r_min - 1.0f, IM_COL32(255, 215, 80, 220), 64, 2.0f);
+			draw_list->AddCircle(center, r_min - 4.0f, IM_COL32(180, 140, 50, 120), 64, 1.0f);
+
+			// 5. Combined 2-Rectangle Description Box at Top-Center above the Wheel
+			std::string selected_label = "SELECT TOOL";
 			if (hovered_slice >= 0 && hovered_slice < N) {
-				center_text = tools[hovered_slice].label;
+				selected_label = tools[hovered_slice].label;
+			} else {
+				if (tool_wheel_sub_menu == 1) selected_label = "ZONES MENU";
+				else if (tool_wheel_sub_menu == 2) selected_label = "DOORS MENU";
+				else if (tool_wheel_sub_menu == 3) selected_label = "WINDOWS MENU";
+				else selected_label = "MAIN TOOLS";
 			}
-			
-			if (hovered_slice >= 0) {
-				draw_list->AddCircle(center, r_min - 5.0f, IM_COL32(180, 140, 50, 40), 64, 1.0f);
-			}
-			
-			ImVec2 text_size = ImGui::CalcTextSize(center_text.c_str());
+
+			ImVec2 text_sz = ImGui::CalcTextSize(selected_label.c_str());
+			float box_w = std::max(220.0f, text_sz.x + 48.0f);
+			float box_h = 38.0f;
+			float box_x = center.x - box_w * 0.5f;
+			float box_y = center.y - r_max - 48.0f;
+
+			// Rectangle 1: Outer Container Box
+			ImVec2 r1_min(box_x, box_y);
+			ImVec2 r1_max(box_x + box_w, box_y + box_h);
+			draw_list->AddRectFilled(r1_min, r1_max, IM_COL32(10, 14, 24, 245), 6.0f);
+			draw_list->AddRect(r1_min, r1_max, IM_COL32(180, 140, 50, 180), 6.0f, 0, 1.5f);
+
+			// Rectangle 2: Inner Combined Accent Pill Box
+			ImVec2 r2_min(box_x + 3.0f, box_y + 3.0f);
+			ImVec2 r2_max(box_x + box_w - 3.0f, box_y + box_h - 3.0f);
+			ImU32 r2_bg = (hovered_slice >= 0) ? IM_COL32(45, 35, 15, 230) : IM_COL32(18, 24, 38, 220);
+			ImU32 r2_border = (hovered_slice >= 0) ? IM_COL32(255, 215, 80, 240) : IM_COL32(140, 110, 40, 140);
+			draw_list->AddRectFilled(r2_min, r2_max, r2_bg, 4.0f);
+			draw_list->AddRect(r2_min, r2_max, r2_border, 4.0f, 0, 1.0f);
+
+			// Description text centered inside the combined rectangle box
 			draw_list->AddText(
-				ImVec2(center.x - text_size.x * 0.5f, center.y - text_size.y * 0.5f),
-				IM_COL32(180, 140, 50, 255),
-				center_text.c_str()
+				ImVec2(center.x - text_sz.x * 0.5f, box_y + (box_h - text_sz.y) * 0.5f),
+				IM_COL32(255, 225, 120, 255),
+				selected_label.c_str()
 			);
 		}
 		ImGui::End();
@@ -997,8 +1051,16 @@ SetVSync(true);
 int MapCanvas::GetHoveredRadialSlice() const {
 	if (!tool_wheel_open) return -1;
 	
-	float dx = cursor_x - tool_wheel_x;
-	float dy = cursor_y - tool_wheel_y;
+	int scroll_x = 0, scroll_y = 0;
+	if (GetParent()) {
+		const_cast<MapWindow*>(static_cast<const MapWindow*>(GetParent()))->GetViewStart(&scroll_x, &scroll_y);
+	}
+	int offset = (tool_wheel_tile_z <= 7) ? (7 - tool_wheel_tile_z) * TileSize : 0;
+	float tile_cx = (((tool_wheel_tile_x + 0.5f) * TileSize - scroll_x) - offset) / zoom;
+	float tile_cy = (((tool_wheel_tile_y + 0.5f) * TileSize - scroll_y) - offset) / zoom;
+
+	float dx = cursor_x - tile_cx;
+	float dy = cursor_y - tile_cy;
 	float dist = std::sqrt(dx * dx + dy * dy);
 	
 	const float r_min = 45.0f;
@@ -1011,7 +1073,11 @@ int MapCanvas::GetHoveredRadialSlice() const {
 	float angle = std::atan2(dy, dx);
 	if (angle < 0) angle += 2.0f * PI;
 	
-	const int N = 10;
+	int N = 9;
+	if (tool_wheel_sub_menu == 1) N = 5;
+	else if (tool_wheel_sub_menu == 2) N = 5;
+	else if (tool_wheel_sub_menu == 3) N = 3;
+
 	float adjusted_angle = angle + PI / 2.0f + (PI / N);
 	if (adjusted_angle >= 2.0f * PI) adjusted_angle -= 2.0f * PI;
 	
@@ -1100,7 +1166,7 @@ void MapCanvas::LoadRadialTextures() {
 	
 	wxSize size = wxSize(32, 32);
 	
-	// Selection
+	// Selection (0)
 	wxBitmap pointer_bmp = LoadBitmapFromCandidatesRadial(size, {
 		"icons/pointer.png", "../icons/pointer.png", "Map Editor/icons/pointer.png", "../Map Editor/icons/pointer.png",
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pointer.png",
@@ -1108,7 +1174,7 @@ void MapCanvas::LoadRadialTextures() {
 	});
 	radial_tex_ids[0] = ConvertBitmapToTexture(pointer_bmp);
 	
-	// Pencil
+	// Pencil (1)
 	wxBitmap pencil_bmp = LoadBitmapFromCandidatesRadial(size, {
 		"icons/pencil.png", "../icons/pencil.png", "Map Editor/icons/pencil.png", "../Map Editor/icons/pencil.png",
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pencil.png",
@@ -1116,7 +1182,7 @@ void MapCanvas::LoadRadialTextures() {
 	});
 	radial_tex_ids[1] = ConvertBitmapToTexture(pencil_bmp);
 	
-	// Bucket
+	// Bucket (2)
 	wxBitmap bucket_bmp = LoadBitmapFromCandidatesRadial(size, {
 		"icons/bucket.png", "../icons/bucket.png", "Map Editor/icons/bucket.png", "../Map Editor/icons/bucket.png",
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "bucket.png",
@@ -1124,7 +1190,15 @@ void MapCanvas::LoadRadialTextures() {
 	});
 	radial_tex_ids[2] = ConvertBitmapToTexture(bucket_bmp);
 	
-	// Protection Zone (Shield)
+	// Magic Wand (3)
+	wxBitmap wand_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/magic-wand.png", "../icons/magic-wand.png", "Map Editor/icons/magic-wand.png", "../Map Editor/icons/magic-wand.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "magic-wand.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "magic-wand.png"
+	});
+	radial_tex_ids[3] = ConvertBitmapToTexture(wand_bmp);
+
+	// Protection Zone (4)
 	wxBitmap pz_bmp = LoadBitmapFromCandidatesRadial(size, {
 		"icons/protected_zone.png", "../icons/protected_zone.png", "Map Editor/icons/protected_zone.png", "../Map Editor/icons/protected_zone.png",
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "protected_zone.png",
@@ -1133,35 +1207,85 @@ void MapCanvas::LoadRadialTextures() {
 	if (!pz_bmp.IsOk()) {
 		pz_bmp = wxArtProvider::GetBitmap(ART_PZ_BRUSH, wxART_TOOLBAR, size);
 	}
-	radial_tex_ids[3] = ConvertBitmapToTexture(pz_bmp);
+	radial_tex_ids[4] = ConvertBitmapToTexture(pz_bmp);
 	
-	// Normal Door
-	wxBitmap normal_door_bmp = wxArtProvider::GetBitmap(ART_DOOR_NORMAL_SMALL, wxART_TOOLBAR, size);
-	radial_tex_ids[4] = ConvertBitmapToTexture(normal_door_bmp);
+	// Normal Door (5)
+	wxBitmap normal_door_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/door.png", "../icons/door.png", "Map Editor/icons/door.png", "../Map Editor/icons/door.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "door.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "door.png"
+	});
+	if (!normal_door_bmp.IsOk()) {
+		normal_door_bmp = wxArtProvider::GetBitmap(ART_DOOR_NORMAL_SMALL, wxART_TOOLBAR, size);
+	}
+	radial_tex_ids[5] = ConvertBitmapToTexture(normal_door_bmp);
 	
-	// Locked Door
-	wxBitmap locked_door_bmp = wxArtProvider::GetBitmap(ART_DOOR_LOCKED_SMALL, wxART_TOOLBAR, size);
-	radial_tex_ids[5] = ConvertBitmapToTexture(locked_door_bmp);
+	// Eraser (6)
+	wxBitmap eraser_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/eraser.png", "../icons/eraser.png", "Map Editor/icons/eraser.png", "../Map Editor/icons/eraser.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "eraser.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "eraser.png"
+	});
+	if (!eraser_bmp.IsOk()) {
+		eraser_bmp = _wxGetBitmapFromMemoryRadial(eraser_small_png, sizeof(eraser_small_png), size);
+	}
+	radial_tex_ids[6] = ConvertBitmapToTexture(eraser_bmp);
 	
-	// Magic Door
-	wxBitmap magic_door_bmp = wxArtProvider::GetBitmap(ART_DOOR_MAGIC_SMALL, wxART_TOOLBAR, size);
-	radial_tex_ids[6] = ConvertBitmapToTexture(magic_door_bmp);
-	
-	// Hatch Window
-	wxBitmap hatch_bmp = _wxGetBitmapFromMemoryRadial(window_hatch_small_png, sizeof(window_hatch_small_png), size);
-	radial_tex_ids[7] = ConvertBitmapToTexture(hatch_bmp);
-	
-	// Eraser
-	wxBitmap eraser_bmp = _wxGetBitmapFromMemoryRadial(eraser_small_png, sizeof(eraser_small_png), size);
-	radial_tex_ids[8] = ConvertBitmapToTexture(eraser_bmp);
-	
-	// Prefab Creator (Blueprint)
+	// Prefab Creator (7)
 	wxBitmap prefab_bmp = LoadBitmapFromCandidatesRadial(size, {
 		"icons/prefab.png", "../icons/prefab.png", "Map Editor/icons/prefab.png", "../Map Editor/icons/prefab.png",
 		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "prefab.png",
 		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "prefab.png"
 	});
-	radial_tex_ids[9] = ConvertBitmapToTexture(prefab_bmp);
+	radial_tex_ids[7] = ConvertBitmapToTexture(prefab_bmp);
+
+	// Window (8)
+	wxBitmap window_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/window.png", "../icons/window.png", "Map Editor/icons/window.png", "../Map Editor/icons/window.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "window.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "window.png"
+	});
+	if (!window_bmp.IsOk()) {
+		window_bmp = _wxGetBitmapFromMemoryRadial(window_hatch_small_png, sizeof(window_hatch_small_png), size);
+	}
+	radial_tex_ids[8] = ConvertBitmapToTexture(window_bmp);
+
+	// No Logout Zone (9)
+	wxBitmap nologout_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/nologout_zone.png", "../icons/nologout_zone.png", "Map Editor/icons/nologout_zone.png", "../Map Editor/icons/nologout_zone.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "nologout_zone.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "nologout_zone.png"
+	});
+	if (!nologout_bmp.IsOk()) nologout_bmp = wxArtProvider::GetBitmap(ART_NOLOOUT_BRUSH, wxART_TOOLBAR, size);
+	radial_tex_ids[9] = ConvertBitmapToTexture(nologout_bmp);
+
+	// No PVP Zone (10)
+	wxBitmap nopvp_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/nopvp_zone.png", "../icons/nopvp_zone.png", "Map Editor/icons/nopvp_zone.png", "../Map Editor/icons/nopvp_zone.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "nopvp_zone.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "nopvp_zone.png"
+	});
+	if (!nopvp_bmp.IsOk()) nopvp_bmp = wxArtProvider::GetBitmap(ART_NOPVP_BRUSH, wxART_TOOLBAR, size);
+	radial_tex_ids[10] = ConvertBitmapToTexture(nopvp_bmp);
+
+	// PVP Zone (11)
+	wxBitmap pvp_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/pvp_zone.png", "../icons/pvp_zone.png", "Map Editor/icons/pvp_zone.png", "../Map Editor/icons/pvp_zone.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pvp_zone.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "pvp_zone.png"
+	});
+	if (!pvp_bmp.IsOk()) pvp_bmp = wxArtProvider::GetBitmap(ART_PVP_BRUSH, wxART_TOOLBAR, size);
+	radial_tex_ids[11] = ConvertBitmapToTexture(pvp_bmp);
+
+	// Back Icon (12)
+	wxBitmap back_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/back.png", "../icons/back.png", "Map Editor/icons/back.png", "../Map Editor/icons/back.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "back.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "back.png"
+	});
+	if (back_bmp.IsOk()) {
+		radial_tex_ids[12] = ConvertBitmapToTexture(back_bmp);
+	}
 	
 	radial_textures_loaded = true;
 }

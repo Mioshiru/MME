@@ -79,11 +79,11 @@ public:
 	// This deletes the thread
 	void join(SelectionThread* thread);
 
-	size_t size() {
-		return tiles.size();
-	}
 	size_t size() const {
 		return tiles.size();
+	}
+	bool empty() const {
+		return tiles.empty();
 	}
 	void updateSelectionCount();
 	TileSet::iterator begin() {

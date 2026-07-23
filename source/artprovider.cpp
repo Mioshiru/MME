@@ -133,7 +133,17 @@ wxBitmap ArtProvider::CreateBitmap(const wxArtID& id, const wxArtClient& client,
 	} else if (id == ART_RECTANGULAR_7) {
 		bitmap = GetCachedPngBitmap(id, rectangular_7_png, sizeof(rectangular_7_png));
 	} else if (id == ART_DOOR_NORMAL_SMALL) {
-		bitmap = GetCachedPngBitmap(id, door_normal_small_png, sizeof(door_normal_small_png));
+		wxBitmap file_bmp = GetCachedFileBitmap(id, {
+			"icons/door.png",
+			"../icons/door.png",
+			"Map Editor/icons/door.png",
+			"../Map Editor/icons/door.png"
+		});
+		if (file_bmp.IsOk()) {
+			bitmap = file_bmp;
+		} else {
+			bitmap = GetCachedPngBitmap(id, door_normal_small_png, sizeof(door_normal_small_png));
+		}
 	} else if (id == ART_DOOR_LOCKED_SMALL) {
 		bitmap = GetCachedPngBitmap(id, door_locked_small_png, sizeof(door_locked_small_png));
 	} else if (id == ART_DOOR_MAGIC_SMALL) {

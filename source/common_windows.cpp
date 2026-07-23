@@ -1316,6 +1316,28 @@ EditTownsDialog::EditTownsDialog(wxWindow* parent, Editor& editor, uint32_t sele
 	SetSizerAndFit(sizer);
 	Centre(wxBOTH);
 
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
+	wxColour bg_dark(10, 20, 35);      // #0A1423
+	wxColour panel_bg(16, 28, 48);     // #101C30
+	wxColour accent_gold(180, 150, 50);// #B49632
+	wxColour text_white(240, 245, 255);
+
+	SetBackgroundColour(bg_dark);
+	SetForegroundColour(text_white);
+
+	if (town_listbox) {
+		town_listbox->SetBackgroundColour(panel_bg);
+		town_listbox->SetForegroundColour(accent_gold);
+	}
+	if (name_field) {
+		name_field->SetBackgroundColour(panel_bg);
+		name_field->SetForegroundColour(text_white);
+	}
+	if (id_field) {
+		id_field->SetBackgroundColour(panel_bg);
+		id_field->SetForegroundColour(text_white);
+	}
+
 	BuildListBox(select_town_id == 0);
 	if (select_town_id != 0) {
 		int i = 0;
