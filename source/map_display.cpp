@@ -1860,13 +1860,8 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     }
 
   } else {
-    Brush *brush = g_gui.GetCurrentBrush();
-    bool is_wall = brush && brush->isWall();
-
-    for (int y = -g_gui.GetBrushSize() - 1; y <= g_gui.GetBrushSize() + 1;
-         y++) {
-      for (int x = -g_gui.GetBrushSize() - 1; x <= g_gui.GetBrushSize() + 1;
-           x++) {
+    for (int y = -g_gui.GetBrushSize(); y <= g_gui.GetBrushSize(); y++) {
+      for (int x = -g_gui.GetBrushSize(); x <= g_gui.GetBrushSize(); x++) {
         int tx = mouse_map_x + x;
         int ty = mouse_map_y + y;
         if (tx <= 0 || ty <= 0 || tx >= map_width || ty >= map_height) {
@@ -1874,19 +1869,8 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
         }
 
         if (g_gui.GetBrushShape() == BRUSHSHAPE_SQUARE) {
-          if (x >= -g_gui.GetBrushSize() && x <= g_gui.GetBrushSize() &&
-              y >= -g_gui.GetBrushSize() && y <= g_gui.GetBrushSize()) {
-            if (tilestodraw) {
-              if (!is_wall || (x == -g_gui.GetBrushSize() || x == g_gui.GetBrushSize() || y == -g_gui.GetBrushSize() || y == g_gui.GetBrushSize())) {
-                tilestodraw->push_back(Position(tx, ty, floor));
-              }
-            }
-          }
-          if (std::abs(x) - g_gui.GetBrushSize() < 2 &&
-              std::abs(y) - g_gui.GetBrushSize() < 2) {
-            if (tilestoborder) {
-              tilestoborder->push_back(Position(tx, ty, floor));
-            }
+          if (tilestodraw) {
+            tilestodraw->push_back(Position(tx, ty, floor));
           }
         } else if (g_gui.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
           double distance = sqrt(double(x * x) + double(y * y));
@@ -1895,15 +1879,32 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
               tilestodraw->push_back(Position(tx, ty, floor));
             }
           }
-          if (std::abs(distance - g_gui.GetBrushSize()) < 1.5) {
-            if (tilestoborder) {
-              tilestoborder->push_back(Position(tx, ty, floor));
+        }
+      }
+    }
+
+    if (tilestoborder && tilestodraw && !tilestodraw->empty()) {
+      std::unordered_set<uint64_t> border_set;
+      border_set.reserve(tilestodraw->size() * 9);
+      for (const Position &pos : *tilestodraw) {
+        for (int dy = -1; dy <= 1; ++dy) {
+          for (int dx = -1; dx <= 1; ++dx) {
+            int bx = pos.x + dx;
+            int by = pos.y + dy;
+            if (bx > 0 && by > 0 && bx < map_width && by < map_height) {
+              uint64_t key = (static_cast<uint64_t>(pos.z) << 48) |
+                             (static_cast<uint64_t>(bx & 0xFFFFFF) << 24) |
+                             static_cast<uint64_t>(by & 0xFFFFFF);
+              if (border_set.insert(key).second) {
+                tilestoborder->push_back(Position(bx, by, pos.z));
+              }
             }
           }
         }
       }
     }
   }
+
 }
 
 void MapCanvas::ExecuteMagicWandSelect(int mouse_map_x, int mouse_map_y, int floor, bool add_to_selection) {

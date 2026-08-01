@@ -28,6 +28,8 @@
 #include "wall_brush.h"
 #include "carpet_brush.h"
 #include "table_brush.h"
+#include "doodad_brush.h"
+
 #include "town.h"
 #include "map.h"
 
@@ -264,8 +266,21 @@ void Tile::addItem(Item* item) {
 		return;
 	}
 
-	if (!item->isStackable()) {
-		bool item_fc = g_items[item->getID()].isFloorChange();
+	// Max stack size limit (Tibia protocol / RME standard max 10 items per tile)
+	constexpr size_t MAX_TILE_STACK_SIZE = 10;
+	if (items.size() >= MAX_TILE_STACK_SIZE) {
+		delete item;
+		return;
+	}
+
+	ItemType& it_info = g_items[item->getID()];
+	bool is_doodad_dup = (it_info.doodad_brush && it_info.doodad_brush->isDoodad() && it_info.doodad_brush->asDoodad()->placeOnDuplicate());
+	bool allow_stacking = item->isStackable() || it_info.moveable || it_info.pickupable || it_info.hasElevation || is_doodad_dup;
+
+
+
+	if (!allow_stacking) {
+		bool item_fc = it_info.isFloorChange();
 		for (ItemVector::iterator iter = items.begin(); iter != items.end();) {
 			bool iter_fc = g_items[(*iter)->getID()].isFloorChange();
 			if (*iter != item && ((*iter)->getID() == item->getID() || (item_fc && iter_fc))) {
@@ -276,6 +291,7 @@ void Tile::addItem(Item* item) {
 			}
 		}
 	}
+
 
 	ItemVector::iterator it;
 

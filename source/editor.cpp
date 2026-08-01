@@ -1820,19 +1820,49 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		batch->addAndCommitAction(action);
 
 		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-			// Do borders!
+			// Do walls! Collect all drawn tiles + direct neighbors for wallize pass.
+			// We CANNOT rely on tilestoborder here because defer_borders clears it
+			// before this code runs.
 			action = actionQueue->createAction(batch);
-			for (PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-				Tile* tile = map.getTile(*it);
+
+			// Build a deduped set of positions to wallize: all drawn tiles + their 4 NSEW neighbors
+			std::unordered_set<uint64_t> wallize_set;
+			PositionVector wallize_positions;
+			auto encode_pos = [](int x, int y, int z) -> uint64_t {
+				return (static_cast<uint64_t>(z) << 48) |
+				       (static_cast<uint64_t>(x & 0xFFFFFF) << 24) |
+				        static_cast<uint64_t>(y & 0xFFFFFF);
+			};
+			auto add_wallize = [&](const Position& pos) {
+				uint64_t key = encode_pos(pos.x, pos.y, pos.z);
+				if (wallize_set.insert(key).second) {
+					wallize_positions.push_back(pos);
+				}
+			};
+			static const int dx4[] = {0, 0, -1, 1};
+			static const int dy4[] = {-1, 1, 0, 0};
+			for (const Position& pos : tilestodraw) {
+				add_wallize(pos);
+				for (int d = 0; d < 4; ++d) {
+					add_wallize(Position(pos.x + dx4[d], pos.y + dy4[d], pos.z));
+				}
+			}
+			// Also add any non-empty tilestoborder (in case it wasn't cleared)
+			for (const Position& pos : tilestoborder) {
+				add_wallize(pos);
+			}
+
+			for (const Position& pos : wallize_positions) {
+				Tile* tile = map.getTile(pos);
 				if (tile) {
 					Tile* new_tile = tile->deepCopy(map);
 					new_tile->wallize(&map);
-					// if(*tile == *new_tile) delete new_tile;
 					action->addChange(newd Change(new_tile));
 				}
 			}
 			batch->addAndCommitAction(action);
 		}
+
 
 		addBatch(batch, 2);
 	} else if (brush->isWall()) {
@@ -1894,19 +1924,48 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 			batch->addAndCommitAction(action);
 
 			if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-				// Do borders!
+				// Do walls! Must use tilestodraw + neighbors directly because
+				// defer_borders clears tilestoborder before we get here,
+				// making the old tilestoborder-based wallize pass a no-op.
 				action = actionQueue->createAction(batch);
-				for (PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-					Tile* tile = map.getTile(*it);
+
+				std::unordered_set<uint64_t> wallize_set;
+				PositionVector wallize_positions;
+				auto encode_wpos = [](int x, int y, int z) -> uint64_t {
+					return (static_cast<uint64_t>(z) << 48) |
+					       (static_cast<uint64_t>(x & 0xFFFFFF) << 24) |
+					        static_cast<uint64_t>(y & 0xFFFFFF);
+				};
+				auto add_wpos = [&](const Position& pos) {
+					if (pos.x <= 0 || pos.y <= 0) return;
+					uint64_t key = encode_wpos(pos.x, pos.y, pos.z);
+					if (wallize_set.insert(key).second) {
+						wallize_positions.push_back(pos);
+					}
+				};
+				static const int wdx[] = {0, 0, -1, 1};
+				static const int wdy[] = {-1, 1, 0, 0};
+				for (const Position& pos : tilestodraw) {
+					add_wpos(pos);
+					for (int d = 0; d < 4; ++d) {
+						add_wpos(Position(pos.x + wdx[d], pos.y + wdy[d], pos.z));
+					}
+				}
+				for (const Position& pos : tilestoborder) {
+					add_wpos(pos);
+				}
+
+				for (const Position& pos : wallize_positions) {
+					Tile* tile = map.getTile(pos);
 					if (tile) {
 						Tile* new_tile = tile->deepCopy(map);
 						new_tile->wallize(&map);
-						// if(*tile == *new_tile) delete new_tile;
 						action->addChange(newd Change(new_tile));
 					}
 				}
 				batch->addAndCommitAction(action);
 			}
+
 		}
 
 		if (use_snapshot) {

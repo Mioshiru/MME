@@ -1405,13 +1405,16 @@ void GUI::FillDoodadPreviewBuffer() {
               brush->getComposite(GetBrushVariation());
 
           // Figure out if the placement is valid
-          for (const auto &composite : composites) {
-            Position pos =
-                center_pos + composite.first + Position(xpos, ypos, 0);
-            if (Tile *tile = doodad_buffer_map->getTile(pos)) {
-              if (!tile->empty()) {
-                fail = true;
-                break;
+          // on_duplicate (stackable) doodads may stack on already-occupied tiles
+          if (!brush->placeOnDuplicate()) {
+            for (const auto &composite : composites) {
+              Position pos =
+                  center_pos + composite.first + Position(xpos, ypos, 0);
+              if (Tile *tile = doodad_buffer_map->getTile(pos)) {
+                if (!tile->empty()) {
+                  fail = true;
+                  break;
+                }
               }
             }
           }
@@ -1442,7 +1445,8 @@ void GUI::FillDoodadPreviewBuffer() {
           Position pos = center_pos + Position(xpos, ypos, 0);
           Tile *tile = doodad_buffer_map->getTile(pos);
           if (tile) {
-            if (!tile->empty()) {
+            // on_duplicate (stackable) doodads may stack on occupied tiles
+            if (!tile->empty() && !brush->placeOnDuplicate()) {
               fail = true;
               break;
             }

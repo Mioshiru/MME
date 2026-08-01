@@ -374,13 +374,16 @@ bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, unsigned in
 	Tile* t = map->getTile(x, y, z);
 	if (!t) return false;
 	
-	ItemVector::iterator it = t->items.begin();
-	for (; it != t->items.end(); ++it) {
-		Item* item = *it;
-		if (item->isWall()) {
+	for (Item* item : t->items) {
+		if (!item) continue;
+		ItemType& it = g_items[item->getID()];
+		if (item->isWall() || it.isWall) {
 			WallBrush* wb = item->getWallBrush();
-			if (wb && !wb->isWallDecoration()) {
-				return !g_items[item->getID()].wall_hate_me;
+			if (wb && wb->isWallDecoration()) {
+				continue;
+			}
+			if (!it.wall_hate_me) {
+				return true;
 			}
 		}
 	}
@@ -405,14 +408,33 @@ void WallBrush::doWalls(BaseMap* map, Tile* tile) {
 
 	while (it != tile->items.end()) {
 		Item* wall = *it;
-		if (!wall->isWall()) {
+		if (!wall->isWall() && !g_items[wall->getID()].isWall) {
 			++it;
 			continue;
 		}
 		WallBrush* wall_brush = wall->getWallBrush();
+		if (!wall_brush) {
+			ItemType& it_type = g_items[wall->getID()];
+			if (it_type.brush && it_type.brush->isWall()) {
+				wall_brush = it_type.brush->asWall();
+			}
+		}
+		if (!wall_brush) {
+			for (auto& pair : g_brushes.getMap()) {
+				Brush* b = pair.second;
+				if (b && b->isWall()) {
+					WallBrush* wb = b->asWall();
+					if (wb->hasWall(wall)) {
+						wall_brush = wb;
+						break;
+					}
+				}
+			}
+		}
 		// Skip if either the wall has no brush
 		if (!wall_brush) {
-			++it;
+			items_to_add.push_back(wall);
+			it = tile->items.erase(it);
 			continue;
 		}
 		// or if it's a decoration brush.
@@ -421,6 +443,7 @@ void WallBrush::doWalls(BaseMap* map, Tile* tile) {
 			it = tile->items.erase(it);
 			continue;
 		}
+
 		bool neighbours[4];
 
 		if (x == 0) {

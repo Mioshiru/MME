@@ -1,0 +1,22 @@
+[2026-08-01 15:13:48] === AUI Panes Diagnostics ===
+[2026-08-01 15:13:48] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 315, 30), row=0, col=0
+[2026-08-01 15:13:48] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(315, 0, 269, 30), row=0, col=315
+[2026-08-01 15:13:48] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(584, 0, 85, 30), row=0, col=584
+[2026-08-01 15:13:48] =============================
+[2026-08-01 15:13:48] === AUI Panes Diagnostics ===
+[2026-08-01 15:13:48] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 315, 30), row=0, col=0
+[2026-08-01 15:13:48] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(315, 0, 269, 30), row=0, col=315
+[2026-08-01 15:13:48] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(584, 0, 85, 30), row=0, col=584
+[2026-08-01 15:13:48] Pane: name='e28981f06a6df10c0000005600000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 30, 3424, 1280), row=0, col=0
+[2026-08-01 15:13:48] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-08-01 15:13:48] =============================
+[2026-08-01 15:13:50] === AUI Panes Diagnostics ===
+[2026-08-01 15:13:50] Pane: name='brushes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(0, 0, 315, 30), row=0, col=0
+[2026-08-01 15:13:50] Pane: name='sizes_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(315, 0, 269, 30), row=0, col=315
+[2026-08-01 15:13:50] Pane: name='position_toolbar', is_toolbar=1, is_shown=1, is_valid=1, rect=(584, 0, 85, 30), row=0, col=584
+[2026-08-01 15:13:50] Pane: name='e28981f06a6df10c0000005600000004', is_toolbar=0, is_shown=1, is_valid=1, rect=(260, 30, 3180, 1296), row=0, col=0
+[2026-08-01 15:13:50] Pane: name='ScriptManager', is_toolbar=0, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=0
+[2026-08-01 15:13:50] Pane: name='Palette_1', is_toolbar=0, is_shown=1, is_valid=1, rect=(0, 47, 255, 1279), row=0, col=0
+[2026-08-01 15:13:50] Pane: name='Tools', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=3
+[2026-08-01 15:13:50] Pane: name='Brush Size', is_toolbar=1, is_shown=0, is_valid=1, rect=(0, 0, 0, 0), row=0, col=4
+[2026-08-01 15:13:50] =============================
