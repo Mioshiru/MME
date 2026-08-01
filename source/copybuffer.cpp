@@ -50,6 +50,35 @@ void CopyBuffer::clear() {
 	tiles = nullptr;
 }
 
+void CopyBuffer::setFrom(const CopyBuffer* other) {
+	clear();
+	if (!other || !other->tiles) return;
+
+	copyPos = other->copyPos;
+	tiles = newd BaseMap();
+
+	for (MapIterator it = other->tiles->begin(); it != other->tiles->end(); ++it) {
+		TileLocation* loc = *it;
+		if (!loc || !loc->get()) continue;
+		Tile* srcTile = loc->get();
+
+		TileLocation* newloc = tiles->createTileL(srcTile->getPosition());
+		Tile* destTile = tiles->allocator(newloc);
+		if (srcTile->ground) {
+			destTile->house_id = srcTile->house_id;
+			destTile->setMapFlags(srcTile->getMapFlags());
+			destTile->addItem(srcTile->ground->deepCopy());
+		}
+		for (Item* item : srcTile->items) {
+			if (item) destTile->addItem(item->deepCopy());
+		}
+		if (srcTile->creature) destTile->creature = srcTile->creature->deepCopy();
+		if (srcTile->spawn) destTile->spawn = srcTile->spawn->deepCopy();
+		tiles->setTile(destTile);
+	}
+}
+
+
 void CopyBuffer::copy(Editor& editor, int floor) {
 	if (editor.selection.size() == 0) {
 		g_gui.SetStatusText("No tiles to copy.");

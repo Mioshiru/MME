@@ -41,6 +41,8 @@ public:
 
 	// Clears the copybuffer (eg. resets it)
 	void clear();
+	void setFrom(const CopyBuffer* other);
+
 
 	size_t GetTileCount();
 

@@ -66,14 +66,14 @@ inline int getFloorAdjustment(int floor) {
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
-#include "GL/glext.h" // Might not exist, let's just define the types manually if it doesn't.
+#include "GL/glext.h"
 #include <GL/gl.h>
 #include <windows.h>
-// Wait, Windows SDK includes glext.h? Often not. Let's define the function
-// types explicitly!
 #ifndef GL_ARRAY_BUFFER
 #define GL_ARRAY_BUFFER 0x8892
-#define GL_STATIC_DRAW 0x88E4
+#define GL_STATIC_DRAW  0x88E4
+#define GL_DYNAMIC_DRAW 0x88E8
+#define GL_STREAM_DRAW  0x88E0
 #endif
 
 typedef void(APIENTRY *PFNGLGENBUFFERSPROC)(GLsizei n, GLuint *buffers);
@@ -88,10 +88,15 @@ typedef void(APIENTRY *PFNGLVERTEXATTRIBPOINTERPROC)(GLuint index, GLint size,
                                                      GLboolean normalized,
                                                      GLsizei stride,
                                                      const void *pointer);
+typedef void(APIENTRY *PFNGLBUFFERSUBDATAPROC)(GLenum target, ptrdiff_t offset,
+                                               ptrdiff_t size, const void *data);
 typedef void(APIENTRY *PFNGLUSEPROGRAMPROC)(GLuint program);
 typedef void(APIENTRY *PFNGLBINDVERTEXARRAYPROC)(GLuint array);
 typedef void(APIENTRY *PFNGLACTIVETEXTUREPROC)(GLenum texture);
 typedef void(APIENTRY *PFNGLDISABLEVERTEXATTRIBARRAYPROC)(GLuint index);
+// Phase 1: VAO management
+typedef void(APIENTRY *PFNGLGENVERTEXARRAYSPROC)(GLsizei n, GLuint *arrays);
+typedef void(APIENTRY *PFNGLDELETEVERTEXARRAYSPROC)(GLsizei n, const GLuint *arrays);
 
 #ifndef GL_TEXTURE0
 #define GL_TEXTURE0 0x84C0
@@ -100,6 +105,7 @@ typedef void(APIENTRY *PFNGLDISABLEVERTEXATTRIBARRAYPROC)(GLuint index);
 static PFNGLGENBUFFERSPROC glGenBuffers = nullptr;
 static PFNGLBINDBUFFERPROC glBindBuffer = nullptr;
 static PFNGLBUFFERDATAPROC glBufferData = nullptr;
+static PFNGLBUFFERSUBDATAPROC glBufferSubData = nullptr;
 static PFNGLDELETEBUFFERSPROC glDeleteBuffers = nullptr;
 static PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray = nullptr;
 static PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer = nullptr;
@@ -107,7 +113,68 @@ static PFNGLUSEPROGRAMPROC glUseProgram = nullptr;
 static PFNGLBINDVERTEXARRAYPROC glBindVertexArray = nullptr;
 static PFNGLACTIVETEXTUREPROC glActiveTexture = nullptr;
 static PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray = nullptr;
+static PFNGLGENVERTEXARRAYSPROC glGenVertexArrays = nullptr;
+static PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays = nullptr;
 #endif
+
+#include "shader_program.h"
+
+// ── Embedded GLSL source (no file-IO at runtime) ─────────────────────────────
+static const char* k_MapVertSrc = R"GLSL(
+#version 130
+in vec2  aPos;
+in vec2  aTexCoord;
+in vec4  aColor;
+in float aShaderData;
+uniform float uTime;
+out vec2 vTexCoord;
+out vec4 vColor;
+void main() {
+    vColor = aColor;
+    vec2 pos = aPos;
+    if (aShaderData == 1.0) {
+        pos.x += sin(uTime * 2.5 + aPos.y * 0.05) * 3.0;
+        pos.y += cos(uTime * 1.8 + aPos.x * 0.05) * 1.5;
+        vColor.a *= 0.85;
+    }
+    if (aShaderData == 2.0) {
+        float pulse = sin(uTime * 4.0) * 0.5 + 0.5;
+        pos.y -= pulse * 2.0;
+    }
+    vTexCoord   = aTexCoord;
+    gl_Position = gl_ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
+}
+)GLSL";
+
+static const char* k_MapFragSrc = R"GLSL(
+#version 130
+uniform sampler2D uTexture;
+in  vec2 vTexCoord;
+in  vec4 vColor;
+void main() {
+    vec4 texel = texture(uTexture, vTexCoord);
+    if (texel.a < 0.01) discard;
+    gl_FragColor = texel * vColor;
+}
+)GLSL";
+
+
+// ── Shader singleton + time accumulator ──────────────────────────────────────
+static RME_Rendering::ShaderProgram g_map_shader;
+static float g_shader_time = 0.0f;
+static uint32_t g_shader_last_ms = 0;
+
+// Build column-major orthographic matrix (no GLM dependency)
+static void makeOrtho(float* m16, float l, float r, float b, float t) {
+    // Zero
+    for (int i = 0; i < 16; ++i) m16[i] = 0.0f;
+    m16[0]  =  2.0f / (r - l);
+    m16[5]  =  2.0f / (t - b);
+    m16[10] = -1.0f;
+    m16[12] = -(r + l) / (r - l);
+    m16[13] = -(t + b) / (t - b);
+    m16[15] =  1.0f;
+}
 
 static std::vector<RME_Rendering::MapVertex> g_vbo_vertices;
 static std::vector<DrawBatch> g_vbo_batches;
@@ -861,20 +928,24 @@ void MapDrawer::SetupGL() {
 
 #ifdef _WIN32
   if (!glGenBuffers) {
-    glGenBuffers = (PFNGLGENBUFFERSPROC)wglGetProcAddress("glGenBuffers");
-    glBindBuffer = (PFNGLBINDBUFFERPROC)wglGetProcAddress("glBindBuffer");
-    glBufferData = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
-    glDeleteBuffers =
-        (PFNGLDELETEBUFFERSPROC)wglGetProcAddress("glDeleteBuffers");
-    glEnableVertexAttribArray =
-        (PFNGLENABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress(
-            "glEnableVertexAttribArray");
-    glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)wglGetProcAddress(
-        "glVertexAttribPointer");
-    glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
-    glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)wglGetProcAddress("glBindVertexArray");
-    glActiveTexture = (PFNGLACTIVETEXTUREPROC)wglGetProcAddress("glActiveTexture");
+    glGenBuffers        = (PFNGLGENBUFFERSPROC)      wglGetProcAddress("glGenBuffers");
+    glBindBuffer        = (PFNGLBINDBUFFERPROC)      wglGetProcAddress("glBindBuffer");
+    glBufferData        = (PFNGLBUFFERDATAPROC)      wglGetProcAddress("glBufferData");
+    glBufferSubData     = (PFNGLBUFFERSUBDATAPROC)   wglGetProcAddress("glBufferSubData");
+    glDeleteBuffers     = (PFNGLDELETEBUFFERSPROC)   wglGetProcAddress("glDeleteBuffers");
+    glEnableVertexAttribArray  = (PFNGLENABLEVERTEXATTRIBARRAYPROC) wglGetProcAddress("glEnableVertexAttribArray");
     glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glDisableVertexAttribArray");
+    glVertexAttribPointer      = (PFNGLVERTEXATTRIBPOINTERPROC)     wglGetProcAddress("glVertexAttribPointer");
+    glUseProgram        = (PFNGLUSEPROGRAMPROC)      wglGetProcAddress("glUseProgram");
+    glBindVertexArray   = (PFNGLBINDVERTEXARRAYPROC) wglGetProcAddress("glBindVertexArray");
+    glActiveTexture     = (PFNGLACTIVETEXTUREPROC)   wglGetProcAddress("glActiveTexture");
+    // Phase 1: VAO creation/deletion
+    glGenVertexArrays   = (PFNGLGENVERTEXARRAYSPROC)    wglGetProcAddress("glGenVertexArrays");
+    glDeleteVertexArrays= (PFNGLDELETEVERTEXARRAYSPROC) wglGetProcAddress("glDeleteVertexArrays");
+  }
+  // Phase 2: Build the map shader once (no-op if already built)
+  if (!g_map_shader.isValid()) {
+    g_map_shader.build(k_MapVertSrc, k_MapFragSrc);
   }
 
   if (glUseProgram) {
@@ -912,6 +983,20 @@ void MapDrawer::SetupGL() {
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // ── Phase 2: update shader uniforms ────────────────────────────────────────
+  if (g_map_shader.isValid()) {
+    // Advance animation time
+    uint32_t now_ms = wxGetLocalTimeMillis().GetValue();
+    if (g_shader_last_ms != 0)
+      g_shader_time += (now_ms - g_shader_last_ms) / 1000.0f;
+    g_shader_last_ms = now_ms;
+
+    g_map_shader.use();
+    g_map_shader.setFloat("uTime",   g_shader_time);
+    g_map_shader.setInt("uTexture", 0); // texture unit 0
+    RME_Rendering::ShaderProgram::unuse(); // VBO draw path activates it per-chunk
+  }
 }
 
 void MapDrawer::Release() {
@@ -927,6 +1012,11 @@ void MapDrawer::Release() {
 
   // g_floor_batches is managed by VBO lifecycle, do not clear it here.
   g_pending_instances.clear();
+
+  // Deactivate shader (back to fixed-function for UI/overlay paths)
+  if (g_map_shader.isValid()) {
+    RME_Rendering::ShaderProgram::unuse();
+  }
 
   // Disable 2D mode
   glMatrixMode(GL_PROJECTION);
@@ -1319,19 +1409,31 @@ void MapDrawer::DrawMap() {
         if (!live_client || nd->isVisible(map_z > GROUND_LAYER)) {
           Floor *f = nd->getFloor(map_z);
           if (f) {
-            if (nd->isDirty(map_z) && f->vbo_id != 0) {
-              glDeleteBuffers(1, &f->vbo_id);
-              g_floor_batches.erase(f->vbo_id);
-              f->vbo_id = 0;
+            // [PERF] Buffer Orphaning strategy:
+            // - isDirty (user edit): full delete+recreate — correct data needed
+            // - animation/revision update: mark for rebuild but KEEP the VBO object alive
+            bool needs_rebuild = false;
+
+            if (nd->isDirty(map_z)) {
+              // Hard reset: user edited tiles — VBO must be fully cleared
+              if (f->vbo_id != 0) {
+                glDeleteBuffers(1, &f->vbo_id);
+                g_floor_batches.erase(f->vbo_id);
+                f->vbo_id = 0;
+                f->vbo_allocated_size = 0;
+              }
               nd->clearDirty(map_z);
-            } else if (f->vbo_id != 0 &&
-                       ((f->has_animations && zoom <= 2.0) || f->last_rebuild_tick != current_vbo_revision)) {
-              glDeleteBuffers(1, &f->vbo_id);
-              g_floor_batches.erase(f->vbo_id);
-              f->vbo_id = 0;
+              needs_rebuild = true;
+            } else if ((f->has_animations && zoom <= 1.5) || f->last_rebuild_tick != current_vbo_revision) {
+              // Soft update: animation frame or global revision change
+              // Keep the VBO alive — just signal a data refresh
+              needs_rebuild = true;
+              if (f->vbo_id != 0) {
+                g_floor_batches.erase(f->vbo_id); // batches will be repopulated
+              }
             }
 
-            if (f->vbo_id == 0 && !options.dragging && !canvas->isPasting() &&
+            if (needs_rebuild && !options.dragging && !canvas->isPasting() &&
                 !only_colors) {
               if (translated) {
                 glPopMatrix();
@@ -1344,7 +1446,10 @@ void MapDrawer::DrawMap() {
                 client_states_active = false;
               }
 
-              glGenBuffers(1, &f->vbo_id);
+              // Allocate new VBO only if we don't have one yet
+              if (f->vbo_id == 0) {
+                glGenBuffers(1, &f->vbo_id);
+              }
               f->last_rebuild_tick = current_vbo_revision;
 
               g_vbo_vertices.clear();
@@ -1352,16 +1457,19 @@ void MapDrawer::DrawMap() {
               g_pending_instances.clear();
               g_vbo_building = true;
               f->has_animations = false;
+              f->lights.clear();
 
               int old_scroll_x = view_scroll_x;
               int old_scroll_y = view_scroll_y;
-              view_scroll_x = 0; // Lokal für VBO-Koordinaten
+              view_scroll_x = 0;
               view_scroll_y = 0;
 
-              for (int map_x = 0; map_x < 4; ++map_x) {
-                for (int map_y = 0; map_y < 4; ++map_y) {
-                  TileLocation *location = nd->getTile(map_x, map_y, map_z);
-                  DrawTile(location, f);
+              for (int pass = 1; pass <= 2; ++pass) {
+                for (int map_x = 0; map_x < 4; ++map_x) {
+                  for (int map_y = 0; map_y < 4; ++map_y) {
+                    TileLocation *location = nd->getTile(map_x, map_y, map_z);
+                    DrawTile(location, f, pass);
+                  }
                 }
               }
 
@@ -1370,61 +1478,38 @@ void MapDrawer::DrawMap() {
 
               g_vbo_building = false;
 
+              glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
               if (!g_vbo_vertices.empty()) {
-                // [PERF] Removed: VBO rebuild logging causes stutter
-                auto *backend = g_gui.GetRenderBackend();
-                if (backend) {
-                  backend->UpdateChunk(f->vbo_id, g_vbo_vertices);
+                const ptrdiff_t needed = static_cast<ptrdiff_t>(
+                    g_vbo_vertices.size() * sizeof(RME_Rendering::MapVertex));
+
+                if (needed > f->vbo_allocated_size) {
+                  // [PERF] Buffer Orphaning: discard old GPU storage without sync,
+                  // then upload fresh data. No glDeleteBuffers needed.
+                  glBufferData(GL_ARRAY_BUFFER, needed, nullptr, GL_STREAM_DRAW);
+                  glBufferData(GL_ARRAY_BUFFER, needed, g_vbo_vertices.data(), GL_STREAM_DRAW);
+                  f->vbo_allocated_size = needed;
+                } else if (glBufferSubData) {
+                  // [PERF] Buffer already large enough — orphan then sub-write
+                  // to avoid GPU pipeline stall on re-use.
+                  glBufferData(GL_ARRAY_BUFFER, f->vbo_allocated_size, nullptr, GL_STREAM_DRAW);
+                  glBufferSubData(GL_ARRAY_BUFFER, 0, needed, g_vbo_vertices.data());
                 } else {
-                  glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
-                  glBufferData(GL_ARRAY_BUFFER,
-                               g_vbo_vertices.size() *
-                                   sizeof(RME_Rendering::MapVertex),
-                               g_vbo_vertices.data(), GL_DYNAMIC_DRAW); // [PERF] Was GL_STATIC_DRAW – VBOs are rebuilt often
-                  glBindBuffer(GL_ARRAY_BUFFER, 0);
+                  // Fallback if glBufferSubData not available (very old driver)
+                  glBufferData(GL_ARRAY_BUFFER, needed, g_vbo_vertices.data(), GL_STREAM_DRAW);
+                  f->vbo_allocated_size = needed;
                 }
+
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
                 g_floor_batches[f->vbo_id] = g_vbo_batches;
                 f->is_empty = false;
               } else {
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
                 f->is_empty = true;
               }
-
-              // Detect if the built floor is water-only (no items/creatures/spawns, and only water or empty tiles)
-              bool water_only = true;
-              for (int map_x = 0; map_x < 4; ++map_x) {
-                for (int map_y = 0; map_y < 4; ++map_y) {
-                  TileLocation *location = nd->getTile(map_x, map_y, map_z);
-                  if (location) {
-                    Tile* tile = location->get();
-                    if (tile) {
-                      if (!tile->items.empty() || tile->creature || tile->spawn) {
-                        water_only = false;
-                        break;
-                      }
-                      if (tile->ground) {
-                        int ground_id = tile->ground->getID();
-                        GroundBrush* gb = tile->getGroundBrush();
-                        std::string name = gb ? gb->getName() : g_items.getItemType(ground_id).name;
-                        for (auto &c : name) {
-                          c = std::tolower(c);
-                        }
-                        if (name.find("water") == std::string::npos) {
-                          water_only = false;
-                          break;
-                        }
-                      }
-                    }
-                  }
-                }
-                if (!water_only) break;
-              }
-              f->is_water_only = water_only;
             }
 
             if (f->vbo_id != 0 && !f->is_empty && !only_colors) {
-              if (f->is_water_only && zoom > 2.0) {
-                continue;
-              }
               PROFILE_SCOPE("MapDrawer::DrawChunkVBO");
               if (!translated) {
                 glPushMatrix();
@@ -1432,38 +1517,70 @@ void MapDrawer::DrawMap() {
                 translated = true;
               }
 
-              glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
-              if (!client_states_active) {
-                glEnableClientState(GL_VERTEX_ARRAY);
-                glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-                glEnableClientState(GL_COLOR_ARRAY);
-                client_states_active = true;
+              // ── Phase 1+2: VAO + Shader draw path ─────────────────────────
+              if (g_map_shader.isValid() &&
+                  glEnableVertexAttribArray && glVertexAttribPointer &&
+                  glDisableVertexAttribArray) {
+
+                // Deactivate legacy client states if they were set by fallback
+                if (client_states_active) {
+                  glDisableClientState(GL_VERTEX_ARRAY);
+                  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+                  glDisableClientState(GL_COLOR_ARRAY);
+                  client_states_active = false;
+                }
+
+                g_map_shader.use();
+                glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
+
+                // Describe vertex layout (matches MapVertex: pos[2], uv[2], color[4])
+                const GLsizei stride = sizeof(RME_Rendering::MapVertex);
+                glEnableVertexAttribArray(0);
+                glVertexAttribPointer(0, 2, GL_FLOAT,         GL_FALSE, stride, (void*)0);  // aPos
+                glEnableVertexAttribArray(1);
+                glVertexAttribPointer(1, 2, GL_FLOAT,         GL_FALSE, stride, (void*)8);  // aTexCoord
+                glEnableVertexAttribArray(2);
+                glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,  stride, (void*)16); // aColor
+                glEnableVertexAttribArray(3);
+                glVertexAttribPointer(3, 1, GL_FLOAT,         GL_FALSE, stride, (void*)20); // aShaderData
+
+                const auto &batches = g_floor_batches[f->vbo_id];
+                for (const auto &batch : batches) {
+                  bindTexture(batch.textureId);
+                  glDrawArrays(GL_QUADS, batch.start, batch.count);
+                }
+
+                glDisableVertexAttribArray(3);
+                glDisableVertexAttribArray(2);
+                glDisableVertexAttribArray(1);
+                glDisableVertexAttribArray(0);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                RME_Rendering::ShaderProgram::unuse();
+
+              } else {
+                // ── Fallback: legacy fixed-function path ───────────────────
+                glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
+                if (!client_states_active) {
+                  glEnableClientState(GL_VERTEX_ARRAY);
+                  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+                  glEnableClientState(GL_COLOR_ARRAY);
+                  client_states_active = true;
+                }
+                glVertexPointer  (2, GL_FLOAT,         sizeof(RME_Rendering::MapVertex), (void*)0);
+                glTexCoordPointer(2, GL_FLOAT,         sizeof(RME_Rendering::MapVertex), (void*)8);
+                glColorPointer   (4, GL_UNSIGNED_BYTE, sizeof(RME_Rendering::MapVertex), (void*)16);
+
+                const auto &batches = g_floor_batches[f->vbo_id];
+                for (const auto &batch : batches) {
+                  bindTexture(batch.textureId);
+                  glDrawArrays(GL_QUADS, batch.start, batch.count);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
               }
 
-              glVertexPointer(2, GL_FLOAT, sizeof(RME_Rendering::MapVertex),
-                              (void *)0);
-              glTexCoordPointer(2, GL_FLOAT, sizeof(RME_Rendering::MapVertex),
-                                (void *)8);
-              glColorPointer(4, GL_UNSIGNED_BYTE,
-                             sizeof(RME_Rendering::MapVertex), (void *)16);
-
-              const auto &batches = g_floor_batches[f->vbo_id];
-              for (const auto &batch : batches) {
-                bindTexture(batch.textureId);
-                glDrawArrays(GL_QUADS, batch.start, batch.count);
-              }
-
-              // Hardware Instancing Pass für registrierte Doodads
-              for (auto const &[texId, instances] : g_pending_instances) {
-                if (instances.empty())
-                  continue;
-                bindTexture(texId);
-              }
               g_pending_instances.clear();
-
-              glBindBuffer(GL_ARRAY_BUFFER, 0);
               last_bound_texture = -1;
-            } else if (f->vbo_id == 0 || only_colors) {
+            } else if ((f->vbo_id == 0 && !f->is_empty) || only_colors) {
               // Only fallback to slow immediate mode if VBO is not generated or we draw colors (minimap)
               if (translated) {
                 glPopMatrix();
@@ -1484,12 +1601,18 @@ void MapDrawer::DrawMap() {
               }
             }
 
-            if (options.isDrawLight() && zoom <= 3.0f) {
-              for (int map_x = 0; map_x < 4; ++map_x) {
-                for (int map_y = 0; map_y < 4; ++map_y) {
-                  TileLocation *location = nd->getTile(map_x, map_y, map_z);
-                  if (location) {
-                    AddLight(location);
+            if (options.isDrawLight()) {
+              if (f->vbo_id != 0) {
+                for (const auto &l : f->lights) {
+                  light_drawer->addLight(l.map_x, l.map_y, l.map_z, SpriteLight{l.intensity, l.color});
+                }
+              } else {
+                for (int map_x = 0; map_x < 4; ++map_x) {
+                  for (int map_y = 0; map_y < 4; ++map_y) {
+                    TileLocation *location = nd->getTile(map_x, map_y, map_z);
+                    if (location) {
+                      AddLight(location);
+                    }
                   }
                 }
               }
@@ -1611,7 +1734,7 @@ void MapDrawer::DrawMap() {
             }
 
             // Draw items on the tile
-            if (zoom <= 3.0 || !options.hide_items_when_zoomed) {
+            if (zoom <= 1.5 || !options.hide_items_when_zoomed) {
               ItemVector::iterator it;
               for (it = tile->items.begin(); it != tile->items.end(); it++) {
                 if ((*it)->isBorder()) {
@@ -1677,7 +1800,7 @@ void MapDrawer::DrawDraggingShadow() {
         int draw_y = ((pos.y * TileSize) - view_scroll_y) - offset;
 
         // save performance when moving large chunks unzoomed
-        ItemVector toRender = tile->getSelectedItems(zoom > 3.0);
+        ItemVector toRender = tile->getSelectedItems(zoom > 1.5);
         Tile *desttile = editor.map.getTile(pos);
         for (ItemVector::const_iterator iit = toRender.begin();
              iit != toRender.end(); iit++) {
@@ -1689,7 +1812,7 @@ void MapDrawer::DrawDraggingShadow() {
         }
 
         // save performance when moving large chunks unzoomed
-        if (zoom <= 3.0 || !options.hide_items_when_zoomed) {
+        if (zoom <= 1.5 || !options.hide_items_when_zoomed) {
           if (tile->creature && tile->creature->isSelected() &&
               options.show_creatures) {
             BlitCreature(draw_x, draw_y, tile->creature);
@@ -1709,7 +1832,7 @@ void MapDrawer::DrawHigherFloors() {
   glEnable(GL_TEXTURE_2D);
 
   // Draw "transparent higher floor"
-  if (floor != 8 && floor != 0 && options.transparent_floors && zoom <= 3.0f) {
+  if (floor != 8 && floor != 0 && options.transparent_floors && zoom <= 1.5f) {
     int map_z = floor - 1;
     for (int map_x = start_x; map_x <= end_x; map_x++) {
       for (int map_y = start_y; map_y <= end_y; map_y++) {
@@ -1736,7 +1859,7 @@ void MapDrawer::DrawHigherFloors() {
                        96);
             }
           }
-          if (zoom <= 3.0 || !options.hide_items_when_zoomed) {
+          if (zoom <= 1.5 || !options.hide_items_when_zoomed) {
             ItemVector::iterator it;
             for (it = tile->items.begin(); it != tile->items.end(); it++) {
               BlitItem(draw_x, draw_y, tile, *it, false, 255, 255, 255, 96);
@@ -1907,7 +2030,7 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
   }
 
   // zoomed out very far, avoid drawing stuff barely visible
-  if (zoom > 3.0) {
+  if (zoom > 1.5) {
     return;
   }
 
@@ -2206,7 +2329,7 @@ void MapDrawer::WriteTooltip(Waypoint *waypoint, std::ostringstream &stream) {
   stream << "wp: " << waypoint->name << "\n";
 }
 
-void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
+void MapDrawer::DrawTile(TileLocation *location, Floor *f, int pass) {
   if (!location) {
     return;
   }
@@ -2290,43 +2413,53 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
     }
   }
 
-  if (only_colors) {
-    if (as_minimap) {
-      uint8_t color = tile->getMiniMapColor();
-      r = (uint8_t)(int(color / 36) % 6 * 51);
-      g = (uint8_t)(int(color / 6) % 6 * 51);
-      b = (uint8_t)(color % 6 * 51);
-      BlitSquare(draw_x, draw_y, r, g, b, 255);
-    } else if (r != 255 || g != 255 || b != 255) {
-      BlitSquare(draw_x, draw_y, r, g, b, 128);
-    }
-  } else {
-    if (tile->ground) {
-      if (options.show_preview) {
-        tile->ground->animate();
+  if (pass == 0 || pass == 1) {
+    if (only_colors) {
+      if (as_minimap) {
+        uint8_t color = tile->getMiniMapColor();
+        r = (uint8_t)(int(color / 36) % 6 * 51);
+        g = (uint8_t)(int(color / 6) % 6 * 51);
+        b = (uint8_t)(color % 6 * 51);
+        BlitSquare(draw_x, draw_y, r, g, b, 255);
+      } else if (r != 255 || g != 255 || b != 255) {
+        BlitSquare(draw_x, draw_y, r, g, b, 128);
       }
-      if (tile->ground->getID() != 0) {
-        ItemType& type = g_items[tile->ground->getID()];
-        if (type.sprite && type.sprite->animator) {
-          if (f) f->has_animations = true;
+    } else {
+      if (tile->ground) {
+        if (options.show_preview && zoom <= 1.5) {
+          tile->ground->animate();
         }
+        if (tile->ground->getID() != 0) {
+          ItemType& type = g_items[tile->ground->getID()];
+          if (type.sprite && type.sprite->animator) {
+            if (f) {
+              f->has_animations = true;
+            }
+          }
+        }
+
+        if (f && tile->ground->hasLight()) {
+          SpriteLight sl = tile->ground->getLight();
+          f->lights.push_back({map_x, map_y, map_z, sl.intensity, sl.color});
+        }
+
+        BlitItem(draw_x, draw_y, tile, tile->ground, false, r, g, b);
       }
-
-      BlitItem(draw_x, draw_y, tile, tile->ground, false, r, g, b);
+      
+      if (options.always_show_zones && (r != 255 || g != 255 || b != 255)) {
+        DrawRawBrush(draw_x, draw_y, &g_items[SPRITE_ZONE], r, g, b, 60);
+      }
     }
-    
-    if (options.always_show_zones && (r != 255 || g != 255 || b != 255)) {
-      DrawRawBrush(draw_x, draw_y, &g_items[SPRITE_ZONE], r, g, b, 60);
-    }
-  }
 
-  if (options.show_tooltips && map_z == floor && tile->ground) {
-    WriteTooltip(tile->ground, tooltip);
+    if (options.show_tooltips && map_z == floor && tile->ground) {
+      WriteTooltip(tile->ground, tooltip);
+    }
   }
   // end filters for ground tile
 
-  if (!only_colors) {
-    if (zoom < 3.0 || !options.hide_items_when_zoomed) {
+  if (pass == 0 || pass == 2) {
+    if (!only_colors) {
+      if (true) {
       // items on tile
       for (ItemVector::iterator it = tile->items.begin();
            it != tile->items.end(); it++) {
@@ -2336,7 +2469,7 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
         }
 
         // item animation
-        if (options.show_preview) {
+        if (options.show_preview && zoom <= 1.5) {
           (*it)->animate();
         }
         if ((*it)->getID() != 0) {
@@ -2344,6 +2477,11 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
           if (type.sprite && type.sprite->animator) {
             if (f) f->has_animations = true;
           }
+        }
+
+        if (f && (*it)->hasLight()) {
+          SpriteLight sl = (*it)->getLight();
+          f->lights.push_back({map_x, map_y, map_z, sl.intensity, sl.color});
         }
 
         // item sprite
@@ -2370,7 +2508,7 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
       }
     }
 
-    if (zoom < 10.0) {
+    if (zoom <= 1.5) {
       // waypoint (blue flame)
       if (!options.ingame && waypoint && options.show_waypoints) {
         BlitSpriteType(draw_x, draw_y, SPRITE_WAYPOINT, 64, 64, 255);
@@ -2424,6 +2562,7 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
       tooltip.str("");
     }
   }
+  }
 }
 
 void MapDrawer::DrawLight() {
@@ -2462,7 +2601,7 @@ void MapDrawer::AddLight(TileLocation *location) {
     }
   }
 
-  bool hidden = options.hide_items_when_zoomed && zoom > 3.0f;
+  bool hidden = options.hide_items_when_zoomed && zoom > 1.5f;
   if (!hidden && !tile->items.empty()) {
     for (auto item : tile->items) {
       if (item->hasLight()) {
@@ -2485,9 +2624,12 @@ void MapDrawer::TakeScreenshot(uint8_t *screenshot_buffer) {
 }
 
 void MapDrawer::bindTexture(int texture_number) {
-  glBindTexture(GL_TEXTURE_2D, texture_number);
-  last_bound_texture = texture_number;
+  if (last_bound_texture != texture_number) {
+    glBindTexture(GL_TEXTURE_2D, texture_number);
+    last_bound_texture = texture_number;
+  }
 }
+
 
 void MapDrawer::glBlitTexture(int sx, int sy, int texture_number, int red,
                               int green, int blue, int alpha) {

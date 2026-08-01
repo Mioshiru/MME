@@ -371,6 +371,14 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
       g_gui.SetBrushSize(11);
       Refresh();
       return;
+    } else if (key == WXK_ADD || key == WXK_NUMPAD_ADD || key == '+' || key == '=') {
+      g_gui.IncreaseBrushSize();
+      Refresh();
+      return;
+    } else if (key == WXK_SUBTRACT || key == WXK_NUMPAD_SUBTRACT || key == '-') {
+      g_gui.DecreaseBrushSize();
+      Refresh();
+      return;
     }
   }
 
@@ -621,13 +629,14 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	last_click_map_z = floor;
 
 	if (drawing) {
+    editor.setDeferBorders(true);
     dragging_draw = !g_gui.IsFillBrushMode();
     rectangle_mode = event.ShiftDown() && !g_gui.IsFillBrushMode();
     if (g_gui.IsFillBrushMode()) {
       PositionVector tilestodraw;
       PositionVector tilestoborder;
       getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, true);
-      if (event.AltDown()) {
+      if (event.ControlDown()) {
         editor.undraw(tilestodraw, tilestoborder, false);
       } else {
         editor.draw(tilestodraw, tilestoborder, false);
@@ -636,7 +645,7 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 			PositionVector tilestodraw;
 			PositionVector tilestoborder;
 			getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, false);
-			if (event.AltDown()) {
+			if (event.ControlDown()) {
 				editor.undraw(tilestodraw, tilestoborder, false);
 			} else {
 				editor.draw(tilestodraw, tilestoborder, false);
@@ -731,17 +740,13 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 			int y1 = std::min(start_map_y, end_map_y);
 			int y2 = std::max(start_map_y, end_map_y);
 
-			if (!event.ShiftDown() && !event.ControlDown()) {
-				x2 = x1;
-				y2 = y1;
-			}
-			
 			editor.selection.start(Selection::INTERNAL);
 			for (int y = y1; y <= y2; ++y) {
 				for (int x = x1; x <= x2; ++x) {
-					Tile* tile = editor.map.getTile(x, y, floor);
+					Tile* tile = editor.map.getOrCreateTile(Position(x, y, floor));
 					if (tile) {
 						bool is_selected = editor.selection.getTiles().count(tile) > 0;
+
 						if (event.ControlDown()) {
 							if (is_selected) {
 								editor.selection.remove(tile);
@@ -798,7 +803,7 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 					tilestoborder.push_back(pos);
 				}
 			}
-			if (event.AltDown()) {
+			if (event.ControlDown()) {
 				editor.undraw(tilestodraw, tilestoborder, false);
 			} else {
 				editor.draw(tilestodraw, tilestoborder, false);
@@ -854,6 +859,9 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 	last_click_map_x = -1;
 	last_click_map_y = -1;
 	last_click_map_z = -1;
+	if (drawing) {
+		editor.setDeferBorders(false);
+	}
 	CallAfter([this]() { Refresh(); });
 }
 
@@ -1001,6 +1009,9 @@ void MapCanvas::OnMouseRightRelease(wxMouseEvent& event) {
 	last_click_map_x = -1;
 	last_click_map_y = -1;
 	last_click_map_z = -1;
+	if (drawing) {
+		editor.setDeferBorders(false);
+	}
 	CallAfter([this]() { Refresh(); });
 }
 
@@ -1078,7 +1089,8 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 	// 		cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, dragging_draw).ToStdString());
 	// }
 
-	if (mouse_map_x != last_cursor_map_x || mouse_map_y != last_cursor_map_y || floor != last_cursor_map_z) {
+	bool tile_changed = (mouse_map_x != last_cursor_map_x || mouse_map_y != last_cursor_map_y || floor != last_cursor_map_z);
+	if (tile_changed) {
 		int prev_x = last_cursor_map_x;
 		int prev_y = last_cursor_map_y;
 		last_cursor_map_x = mouse_map_x;
@@ -1110,17 +1122,19 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 			}
 			
 			if (event.LeftIsDown()) {
-				if (event.AltDown()) {
+				if (event.ControlDown()) {
 					editor.undraw(tilestodraw, tilestoborder, false);
 				} else {
 					editor.draw(tilestodraw, tilestoborder, false);
 				}
 			} else if (event.RightIsDown()) {
-				editor.undraw(tilestodraw, tilestoborder, event.AltDown());
+				editor.undraw(tilestodraw, tilestoborder, event.ControlDown());
 			}
 		}
+		Refresh();
+	} else if (screendragging || rubber_band_mode) {
+		Refresh();
 	}
-	Refresh();
 }
 
 void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event) {
@@ -1202,6 +1216,15 @@ void MapCanvas::OnWheel(wxMouseEvent& event) {
   if (tool_wheel_open) {
     return;
   }
+  if (event.AltDown() || event.ControlDown() || event.ShiftDown()) {
+    if (event.GetWheelRotation() > 0) {
+      g_gui.IncreaseBrushSize();
+    } else if (event.GetWheelRotation() < 0) {
+      g_gui.DecreaseBrushSize();
+    }
+    Refresh();
+    return;
+  }
   if (ImGui::GetCurrentContext()) {
     ImGuiIO& io = ImGui::GetIO();
     io.MousePos = ImVec2((float)event.GetX(), (float)event.GetY());
@@ -1215,15 +1238,46 @@ void MapCanvas::OnWheel(wxMouseEvent& event) {
   if (!is_smooth_zooming) {
     target_zoom = zoom;
   }
+
+  // Discrete 5% zoom steps from 100% down to 1% (ideal max out-zoom 2.4444444 from screenshot)
+  static const int kZoomSteps[] = {
+    1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
+  };
+  static const int kNumSteps = sizeof(kZoomSteps) / sizeof(kZoomSteps[0]);
+
+  int current_pct = static_cast<int>(std::round(100.0 - (target_zoom - 0.5) / 1.9444444 * 99.0));
+
   if (event.GetWheelRotation() > 0) {
-    target_zoom = std::max(0.5, target_zoom * 0.85);
+    // Zoom IN (increase percentage towards 100)
+    int target_pct = 100;
+    for (int i = 0; i < kNumSteps; ++i) {
+      if (kZoomSteps[i] > current_pct) {
+        target_pct = kZoomSteps[i];
+        break;
+      }
+    }
+    target_zoom = 0.5 + (100 - target_pct) / 99.0 * 1.9444444;
   } else if (event.GetWheelRotation() < 0) {
-    target_zoom = std::min(7.5, target_zoom * 1.15);
+    // Zoom OUT (decrease percentage towards 1)
+    int target_pct = 1;
+    for (int i = kNumSteps - 1; i >= 0; --i) {
+      if (kZoomSteps[i] < current_pct) {
+        target_pct = kZoomSteps[i];
+        break;
+      }
+    }
+    target_zoom = 0.5 + (100 - target_pct) / 99.0 * 1.9444444;
   }
+
   zoom_focus_x = event.GetX();
   zoom_focus_y = event.GetY();
   is_smooth_zooming = true;
 }
+
+
+
+
+
 void MapCanvas::OnGainMouse(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
   SetFocus();
@@ -1407,9 +1461,14 @@ void MapCanvas::SetZoom(double value, int focus_x, int focus_y) {
     value = 0.5;
   }
 
-  if (value > 7.5) {
-    value = 7.5;
+  if (value > 2.4444444) {
+    value = 2.4444444;
   }
+
+
+
+
+
 
   if (zoom != value) {
     if (GetParent()) {
@@ -1610,8 +1669,7 @@ void MapCanvas::UpdatePositionStatus(int /*x*/, int /*y*/) {
 }
 
 void MapCanvas::UpdateZoomStatus() {
-  // Map zoom range [5.0, 0.5] -> [1%, 100%]
-  int percentage = (int)(100 - ((zoom - 0.5) / 4.5 * 99));
+  int percentage = static_cast<int>(std::round(100.0 - (zoom - 0.5) / 1.9444444 * 99.0));
   if (percentage < 1)
     percentage = 1;
   if (percentage > 100)
@@ -1620,6 +1678,12 @@ void MapCanvas::UpdateZoomStatus() {
   ss << "zoom: " << percentage << "%";
   g_gui.root->SetStatusText(ss, 3);
 }
+
+
+
+
+
+
 
 void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
                                PositionVector *tilestodraw,
@@ -1630,12 +1694,13 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
 
   if (fill) {
     Brush *brush = g_gui.GetCurrentBrush();
-    if (!brush || (!brush->isGround() && !brush->isWall())) {
+    bool is_eraser = brush && (brush == g_gui.eraser || brush->asEraser() != nullptr);
+    if (!brush || (!brush->isGround() && !brush->isWall() && !is_eraser)) {
       return;
     }
 
     bool is_wall = brush->isWall();
-    GroundBrush *newBrush = is_wall ? nullptr : brush->asGround();
+    GroundBrush *newBrush = (is_wall || is_eraser) ? nullptr : brush->asGround();
     Position start(mouse_map_x, mouse_map_y, floor);
     if (start.x <= 0 || start.y <= 0 || start.x >= map_width || start.y >= map_height) {
       return;
@@ -1644,7 +1709,7 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     Tile *start_tile = editor.map.getTile(start);
     GroundBrush *oldBrush = start_tile ? start_tile->getGroundBrush() : nullptr;
 
-    if (!is_wall && oldBrush && newBrush && oldBrush->getID() == newBrush->getID()) {
+    if (!is_wall && !is_eraser && oldBrush && newBrush && oldBrush->getID() == newBrush->getID()) {
       return;
     }
 
@@ -1653,34 +1718,20 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     int max_x = map_width - 1;
     int max_y = map_height - 1;
 
-    int screen_w = 0, screen_h = 0;
-    GetClientSize(&screen_w, &screen_h);
-    if (screen_w > 0 && screen_h > 0) {
-      int vis_min_x = 0, vis_min_y = 0, vis_max_x = 0, vis_max_y = 0;
-      ScreenToMap(0, 0, &vis_min_x, &vis_min_y);
-      ScreenToMap(screen_w, screen_h, &vis_max_x, &vis_max_y);
+    const bool fill_empty = (start_tile == nullptr || start_tile->ground == nullptr);
+    if (fill_empty) {
+      int screen_start_x, screen_start_y;
+      int screen_end_x, screen_end_y;
+      ScreenToMap(0, 0, &screen_start_x, &screen_start_y);
+      ScreenToMap(GetSize().GetWidth(), GetSize().GetHeight(), &screen_end_x, &screen_end_y);
 
-      int v_left = std::min(vis_min_x, vis_max_x);
-      int v_right = std::max(vis_min_x, vis_max_x);
-      int v_top = std::min(vis_min_y, vis_max_y);
-      int v_bottom = std::max(vis_min_y, vis_max_y);
-
-      // Add safety margin of 5 tiles to cover screen edges completely
-      min_x = std::max(1, v_left - 5);
-      min_y = std::max(1, v_top - 5);
-      max_x = std::min(map_width - 1, v_right + 5);
-      max_y = std::min(map_height - 1, v_bottom + 5);
+      min_x = std::max(1, screen_start_x - 20);
+      min_y = std::max(1, screen_start_y - 20);
+      max_x = std::min(map_width - 1, screen_end_x + 20);
+      max_y = std::min(map_height - 1, screen_end_y + 20);
     }
 
-    // Ensure click start position is inside bounds
-    min_x = std::min(min_x, start.x);
-    max_x = std::max(max_x, start.x);
-    min_y = std::min(min_y, start.y);
-    max_y = std::max(max_y, start.y);
-
-    const size_t range_w = static_cast<size_t>(max_x - min_x + 1);
-    const size_t range_h = static_cast<size_t>(max_y - min_y + 1);
-    const size_t max_fill_tiles = range_w * range_h;
+    const size_t max_fill_tiles = 1000000;
 
     auto encode = [](int x, int y, int z) -> uint64_t {
       return (static_cast<uint64_t>(z) << 48) |
@@ -1695,17 +1746,16 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
       return 0;
     };
 
-    const bool fill_empty = (start_tile == nullptr || start_tile->ground == nullptr);
     const uint32_t source_ground_id = get_ground_id(start_tile);
     std::queue<Position> queue;
-    std::vector<uint8_t> visited(range_w * range_h, 0);
+    std::unordered_set<uint64_t> visited;
     std::vector<Position> temp_tiles;
 
     auto is_visited = [&](int x, int y) -> bool {
-      return visited[static_cast<size_t>(y - min_y) * range_w + static_cast<size_t>(x - min_x)] != 0;
+      return visited.find(encode(x, y, floor)) != visited.end();
     };
     auto set_visited = [&](int x, int y) {
-      visited[static_cast<size_t>(y - min_y) * range_w + static_cast<size_t>(x - min_x)] = 1;
+      visited.insert(encode(x, y, floor));
     };
 
     queue.push(start);
@@ -2090,36 +2140,20 @@ void AnimationTimer::Notify() {
     map_canvas->UpdateKineticScroll();
     map_canvas->UpdateSmoothZoom();
     
-    if (map_canvas->IsAnimating()) {
-        map_canvas->last_minimap_update_time = 0;
-        map_canvas->Refresh();
-    }
+    bool animating = map_canvas->IsAnimating();
+    bool dirty = map_canvas->isDirty();
+    bool show_anim = g_settings.getBoolean(Config::SHOW_PREVIEW) && (map_canvas->GetZoom() <= 1.5);
 
-    bool is_active = true;
-    wxWindow* top = wxTheApp->GetTopWindow();
-    if (top) {
-        wxTopLevelWindow* tlw = wxDynamicCast(top, wxTopLevelWindow);
-        if (tlw) {
-            is_active = tlw->IsActive() && !tlw->IsIconized();
-        }
-    }
-
-    if (is_active) {
+    if (animating || dirty || show_anim) {
+        if (dirty) map_canvas->clearDirty();
         map_canvas->Refresh(false);
-    } else {
-        if (map_canvas->isDirty()) {
-            map_canvas->clearDirty();
-            map_canvas->Refresh(false);
-        } else if (g_settings.getBoolean(Config::SHOW_PREVIEW)) {
-            map_canvas->Refresh(false);
-        }
     }
 }
 
 void AnimationTimer::Start() {
   if (!started) {
     started = true;
-    wxTimer::Start(4);
+    wxTimer::Start(16);
   }
 };
 

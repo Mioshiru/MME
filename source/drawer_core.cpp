@@ -189,6 +189,7 @@ void MapDrawer::RebuildFloorVBO(QTreeNode* nd, int map_z) {
 	if (!f) return;
 	if (f->vbo_id == 0) {
 		glGenBuffers(1, &f->vbo_id);
+		f->vbo_allocated_size = 0;
 	}
 
 	g_vbo_vertices.clear();
@@ -204,8 +205,14 @@ void MapDrawer::RebuildFloorVBO(QTreeNode* nd, int map_z) {
 	g_vbo_building = false;
 
 	if (!g_vbo_vertices.empty()) {
+		const ptrdiff_t needed = static_cast<ptrdiff_t>(
+			g_vbo_vertices.size() * sizeof(RME_Rendering::MapVertex));
 		glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
-		glBufferData(GL_ARRAY_BUFFER, g_vbo_vertices.size() * sizeof(RME_Rendering::MapVertex), g_vbo_vertices.data(), GL_STATIC_DRAW);
+		// [PERF] Buffer orphaning: avoids GPU sync on reuse
+		glBufferData(GL_ARRAY_BUFFER, needed, nullptr, GL_STREAM_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, needed, g_vbo_vertices.data(), GL_STREAM_DRAW);
+		f->vbo_allocated_size = needed;
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		g_floor_batches[f->vbo_id] = g_vbo_batches;
 	}
 }

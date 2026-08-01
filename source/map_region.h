@@ -150,6 +150,16 @@ public:
     bool has_opaque_ground = false;
     bool has_animations = false;
     uint64_t last_rebuild_tick = 0;
+    ptrdiff_t vbo_allocated_size = 0; // [PERF] Track allocated GPU size for buffer orphaning
+
+    struct PrebatchedLight {
+        int map_x;
+        int map_y;
+        int map_z;
+        uint8_t intensity;
+        uint8_t color;
+    };
+    std::vector<PrebatchedLight> lights;
 };
 
 // This is not a QuadTree, but a HexTree (16 child nodes to every node), so the name is abit misleading

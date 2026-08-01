@@ -158,15 +158,13 @@
 	</menu>
 
 	<menu name="Tools">
-		<item name="Procedural Map Generator..." action="TOOLS_PROCEDURAL_GENERATOR" help="Generates caves, forests, or islands using noise algorithms."/>
-		<item name="Prefab &amp; Template Library..." action="TOOLS_PREFAB_LIBRARY" help="Manage pre-built templates and place them on the map."/>
+		<menu name="Wizards">
+			<item name="NPCs..." action="WIZARD_NPC" help="Wizard for Quest NPCs, Interaction NPCs (Shops/Ships/Healing/Temple), and Info Guards."/>
+			<item name="Special Objects..." action="WIZARD_SPECIAL_OBJECTS" help="Wizard for Quest Doors, Level Doors, Key Doors, and Quest Chests."/>
+		</menu>
 		<separator/>
-		<menu name="TFS 1.6 Multi-Tool Suite">
-			<item name="TFS 1.6 Quest Chest Creator..." action="TFS_QUEST_GENERATOR" help="Visually create TFS 1.6 quest chests, rewards, and RevScriptSys scripts."/>
-			<item name="TFS 1.6 Key &amp; Door Manager..." action="TFS_KEY_MANAGER" help="Pair keys (2088-2092) with locked doors using matching ActionIDs."/>
-			<item name="TFS 1.6 NPC &amp; Dialogue Creator..." action="TFS_NPC_EDITOR" help="Create TFS 1.6 NPCs, dialogue trees, and shop item lists."/>
-			<separator/>
-			<item name="Export to TFS 1.6 Server Data..." action="TFS_EXPORTER" help="Export map OTBM and all generated XML/Lua scripts directly to server data folder."/>
+		<menu name="WIP">
+			<item name="Procedural Map Generator..." action="TOOLS_PROCEDURAL_GENERATOR" help="Generates caves, forests, or islands using noise algorithms."/>
 		</menu>
 		<separator/>
 		<menu name="Scripts" special="SCRIPTS">
@@ -178,6 +176,8 @@
 			<!-- Scripts are loaded dynamically below this point -->
 		</menu>
 	</menu>
+
+
 
 	<menu name="Map">
 		<item name="Edit Towns" hotkey="Ctrl+T" action="EDIT_TOWNS" help="Edit towns."/>

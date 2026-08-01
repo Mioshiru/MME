@@ -498,7 +498,7 @@ void GUI::ShowWelcomeDialog(const wxBitmap &icon) {
   // use wider dialog size to fit sizer cleanly
   welcomeDialog =
       newd WelcomeDialog("Mio's Map Editor", "",
-                         FROM_DIP(root, wxSize(680, 580)), icon, recent_files);
+                         FROM_DIP(root, wxSize(680, 680)), icon, recent_files);
   welcomeDialog->Bind(wxEVT_CLOSE_WINDOW, &GUI::OnWelcomeDialogClosed, this);
   welcomeDialog->Bind(WELCOME_DIALOG_ACTION, &GUI::OnWelcomeDialogAction, this);
   welcomeDialog->Show();
@@ -625,6 +625,93 @@ void GUI::OnWelcomeDialogAction(wxCommandEvent &event) {
 
     NewMap(event.GetString());
   } else if (event.GetId() == wxID_OPEN) {
+    if (event.GetInt() == 1) {
+      // Populated save slot selected — version was already set during creation/loading.
+      // Load map directly without prompting for version selection dialog.
+      LoadMap(FileName(event.GetString()));
+      return;
+    }
+
+    // Ask the user which client version this map uses before loading custom map
+    // so assets are guaranteed to be correct.
+    ClientVersionID selected_version = CLIENT_VERSION_NONE;
+    wxArrayString choices;
+    std::vector<ClientVersionID> version_ids;
+
+    ClientVersionList versions = ClientVersion::getAllVisible();
+    std::sort(versions.begin(), versions.end(), [](const ClientVersion* a, const ClientVersion* b) {
+      auto splitVersion = [](const std::string& name) -> std::vector<int> {
+        std::vector<int> parts;
+        size_t start = name.find_first_of("0123456789");
+        if (start == std::string::npos) return parts;
+        std::string current_num;
+        for (char c : name.substr(start)) {
+          if (isdigit(c)) {
+            current_num += c;
+          } else if (c == '.') {
+            if (!current_num.empty()) {
+              parts.push_back(std::stoi(current_num));
+              current_num.clear();
+            }
+          } else {
+            break;
+          }
+        }
+        if (!current_num.empty()) parts.push_back(std::stoi(current_num));
+        return parts;
+      };
+      return splitVersion(a->getName()) > splitVersion(b->getName());
+    });
+
+    for (ClientVersion* version : versions) {
+      if (!version) continue;
+      if (version->getName().rfind("Auto", 0) == 0) continue;
+      if (!version->hasValidPaths()) continue;
+      wxString nameStr = wxString::FromUTF8(version->getName());
+      bool duplicate = false;
+      for (size_t c = 0; c < choices.size(); ++c) {
+        if (choices[c] == nameStr) { duplicate = true; break; }
+      }
+      if (!duplicate) {
+        choices.Add(nameStr);
+        version_ids.push_back(version->getID());
+      }
+    }
+
+    if (!choices.empty()) {
+      wxSingleChoiceDialog ver_dialog(
+          root,
+          "Select the client version this map was created for.\n"
+          "Choosing the wrong version may cause missing sprites or errors.",
+          "Select Client Version", choices);
+      if (ver_dialog.ShowModal() != wxID_OK) return;
+      int sel = ver_dialog.GetSelection();
+      if (sel >= 0 && sel < static_cast<int>(version_ids.size())) {
+        selected_version = version_ids[sel];
+      }
+    } else {
+      // No configured version — fall back to default
+      selected_version = g_settings.getInteger(Config::DEFAULT_CLIENT_VERSION);
+      if (selected_version == CLIENT_VERSION_NONE) {
+        ClientVersion* latest = ClientVersion::getLatestVersion();
+        if (latest) selected_version = latest->getID();
+      }
+    }
+
+    if (selected_version != CLIENT_VERSION_NONE &&
+        selected_version != GetCurrentVersionID()) {
+      wxString error;
+      wxArrayString warnings;
+      if (!LoadVersion(selected_version, error, warnings, true)) {
+        ClientVersion* cv = ClientVersion::get(selected_version);
+        wxString nameStr = cv ? wxString::FromUTF8(cv->getName()) : wxString("Unknown");
+        PopupDialog("Asset Load Error",
+                    "Failed to load assets for version " + nameStr,
+                    wxOK | wxICON_ERROR);
+        return;
+      }
+    }
+
     LoadMap(FileName(event.GetString()));
   }
 }
@@ -973,11 +1060,6 @@ void GUI::SetMagicWandMode(bool enabled) {
 }
 
 void GUI::SetBrushSizeInternal(int nz) {
-  PaletteWindow *p = GetPalette();
-  if (p && p->GetSelectedPage() != TILESET_TERRAIN) {
-    nz = 0;
-  }
-
   if (nz != brush_size && current_brush && current_brush->isDoodad() &&
       !current_brush->oneSizeFitsAll()) {
     brush_size = nz;

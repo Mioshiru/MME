@@ -34,14 +34,20 @@ public:
 	PaletteType GetType() const override { return TILESET_PREFAB; }
 	wxString GetName() const override { return "Prefabs"; }
 
-	void LoadCurrentContents() override;
 	void InvalidateContents() override;
+	void LoadCurrentContents() override;
 	Brush* GetSelectedBrush() const override;
 	bool SelectBrush(const Brush* whatbrush) override;
 
+
 	void OnSelect(wxCommandEvent& event);
 	void OnContextMenu(wxContextMenuEvent& event);
+	void OnCreateFromSelection(wxCommandEvent& event);
+	void OnAddLayer(wxCommandEvent& event);
+	void OnImportPrefab(wxCommandEvent& event);
 	void OnExportPrefab(wxCommandEvent& event);
+	void OnRenamePrefab(wxCommandEvent& event);
+	void OnDeletePrefab(wxCommandEvent& event);
 
 protected:
 	wxListBox* listbox;
@@ -49,6 +55,7 @@ protected:
 
 	DECLARE_EVENT_TABLE()
 };
+
 
 class FavoritesBox : public wxPanel {
 public:

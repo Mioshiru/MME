@@ -56,6 +56,9 @@
 #include "tfs_key_manager.h"
 #include "tfs_npc_editor.h"
 #include "tfs_exporter.h"
+#include "tfs_npc_wizard_window.h"
+#include "tfs_special_objects_wizard_window.h"
+
 
 namespace {
 	bool CopyTextToClipboard(const wxString& text) {
@@ -261,10 +264,13 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(TOOLS_PREFAB_LIBRARY, wxITEM_NORMAL, OnPrefabLibrary);
 	MAKE_ACTION(TOOLS_MAP_DIAGNOSTIC, wxITEM_NORMAL, OnMapDiagnostic);
 	MAKE_ACTION(TOOLS_MAP_DIFF, wxITEM_NORMAL, OnMapDiff);
+	MAKE_ACTION(WIZARD_NPC, wxITEM_NORMAL, OnWizardNPC);
+	MAKE_ACTION(WIZARD_SPECIAL_OBJECTS, wxITEM_NORMAL, OnWizardSpecialObjects);
 	MAKE_ACTION(TFS_QUEST_GENERATOR, wxITEM_NORMAL, OnTFSQuestGenerator);
 	MAKE_ACTION(TFS_KEY_MANAGER, wxITEM_NORMAL, OnTFSKeyManager);
 	MAKE_ACTION(TFS_NPC_EDITOR, wxITEM_NORMAL, OnTFSNPCEditor);
 	MAKE_ACTION(TFS_EXPORTER, wxITEM_NORMAL, OnTFSExporter);
+
 
 	MAKE_ACTION(SELECT_TERRAIN, wxITEM_NORMAL, OnSelectTerrainPalette);
 	MAKE_ACTION(SELECT_DOODAD, wxITEM_NORMAL, OnSelectDoodadPalette);
@@ -341,10 +347,13 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	frame->Connect(TOOLS_PREFAB_LIBRARY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnPrefabLibrary), nullptr, this);
 	frame->Connect(TOOLS_MAP_DIAGNOSTIC, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiagnostic), nullptr, this);
 	frame->Connect(TOOLS_MAP_DIFF, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiff), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::WIZARD_NPC, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnWizardNPC), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::WIZARD_SPECIAL_OBJECTS, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnWizardSpecialObjects), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_QUEST_GENERATOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSQuestGenerator), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_KEY_MANAGER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSKeyManager), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_NPC_EDITOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSNPCEditor), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_EXPORTER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSExporter), nullptr, this);
+
 }
 
 MainMenuBar::~MainMenuBar() {
@@ -1765,3 +1774,14 @@ void MainMenuBar::OnTFSExporter(wxCommandEvent& WXUNUSED(event)) {
 	TFSExportDialog dialog(frame, *g_gui.GetCurrentEditor());
 	dialog.ShowModal();
 }
+
+void MainMenuBar::OnWizardNPC(wxCommandEvent& WXUNUSED(event)) {
+	NPCWizardDialog dialog(frame);
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnWizardSpecialObjects(wxCommandEvent& WXUNUSED(event)) {
+	SpecialObjectsWizardDialog dialog(frame);
+	dialog.ShowModal();
+}
+

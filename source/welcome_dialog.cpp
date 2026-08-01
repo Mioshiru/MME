@@ -244,13 +244,15 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent& event) {
 		} else {
 			wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
 			if (button->GetAction() == wxID_OPEN) {
-				wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? "(*.otbm;*.otgz)|*.otbm;*.otgz" : "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
+				// File picker
+				wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0
+					? "(*.otbm;*.otgz)|*.otbm;*.otgz"
+					: "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
 				wxFileDialog file_dialog(this, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-				if (file_dialog.ShowModal() == wxID_OK) {
-					action_event.SetString(file_dialog.GetPath());
-				} else {
+				if (file_dialog.ShowModal() != wxID_OK) {
 					return;
 				}
+				action_event.SetString(file_dialog.GetPath());
 			}
 			action_event.SetId(button->GetAction());
 			ProcessWindowEvent(action_event);
@@ -314,12 +316,15 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	}
 
 
-	// Recent items list (Save Slots) in a nice clean sizer
+	// Recent items list (Save Slots) in a scrollable list view supporting 50 slots
+	wxScrolledWindow* scrollWin = newd wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxBORDER_NONE);
+	scrollWin->SetBackgroundColour(base_colour);
+	scrollWin->SetScrollRate(0, 15);
+
 	wxBoxSizer* slotsSizer = newd wxBoxSizer(wxVERTICAL);
-	// Use the executable directory as base so that relative "Saves/..." paths always resolve correctly
 	wxFileName exeDir(wxStandardPaths::Get().GetExecutablePath());
 	wxString basePath = exeDir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
-	for (size_t i = 1; i <= 3; ++i) {
+	for (size_t i = 1; i <= 50; ++i) {
 		wxString file;
 		wxString slot_dir = basePath + wxString::Format("Saves/Slot %zu", i);
 		if (wxDir::Exists(slot_dir)) {
@@ -329,10 +334,13 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 				file = slot_dir + "/" + filename;
 			}
 		}
-		auto* recent_item = newd RecentItem(this, dialog, base_colour, file, static_cast<int>(i - 1));
-		slotsSizer->Add(recent_item, 0, wxEXPAND | wxBOTTOM, FROM_DIP(this, 10));
+		auto* recent_item = newd RecentItem(scrollWin, dialog, base_colour, file, static_cast<int>(i - 1));
+		slotsSizer->Add(recent_item, 0, wxEXPAND | wxBOTTOM, FROM_DIP(this, 8));
 	}
-	rootSizer->Add(slotsSizer, 0, wxEXPAND | wxLEFT | wxRIGHT, FROM_DIP(this, 40));
+	scrollWin->SetSizer(slotsSizer);
+	scrollWin->FitInside();
+
+	rootSizer->Add(scrollWin, 1, wxEXPAND | wxLEFT | wxRIGHT, FROM_DIP(this, 30));
 
 	rootSizer->AddSpacer(FROM_DIP(this, 15));
 
@@ -348,11 +356,11 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 
 	bottomSizer->AddSpacer(FROM_DIP(this, 15));
 
-	wxSize mp_button_size = FROM_DIP(this, wxSize(180, 48));
-	auto* join_mp_button = newd WelcomeDialogButton(this, wxDefaultPosition, mp_button_size, button_base_colour, "Join Multiplayer");
-	join_mp_button->SetAction(wxID_MORE);
-	join_mp_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
-	bottomSizer->Add(join_mp_button, 0, wxALIGN_CENTER_VERTICAL);
+	wxSize load_button_size = FROM_DIP(this, wxSize(150, 48));
+	auto* load_custom_button = newd WelcomeDialogButton(this, wxDefaultPosition, load_button_size, button_base_colour, "Load Custom...");
+	load_custom_button->SetAction(wxID_OPEN);
+	load_custom_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+	bottomSizer->Add(load_custom_button, 0, wxALIGN_CENTER_VERTICAL);
 
 	// Removed checkbox
 
@@ -519,6 +527,7 @@ void RecentItem::OnMouseClick(const wxMouseEvent& event) {
 		// Load the map immediately on populated slot (full absolute path already stored)
 		action_event.SetId(wxID_OPEN);
 		action_event.SetString(m_item_text);
+		action_event.SetInt(1); // Flag: Populated save slot (skip client version prompt)
 	}
 	m_dialog->GetEventHandler()->ProcessEvent(action_event);
 }

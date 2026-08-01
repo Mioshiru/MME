@@ -15,7 +15,10 @@ public:
 
 	void addPrefab(const wxString& name, CopyBuffer* buffer);
 	CopyBuffer* getPrefab(const wxString& name);
+	void removePrefab(const wxString& name);
+	void renamePrefab(const wxString& old_name, const wxString& new_name);
 	std::vector<wxString> getPrefabNames() const;
+
 
 private:
 	PrefabManager() {}

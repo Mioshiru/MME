@@ -36,6 +36,24 @@ CopyBuffer* PrefabManager::getPrefab(const wxString& name) {
 	return nullptr;
 }
 
+void PrefabManager::removePrefab(const wxString& name) {
+	auto it = prefabs.find(name);
+	if (it != prefabs.end()) {
+		delete it->second;
+		prefabs.erase(it);
+	}
+}
+
+void PrefabManager::renamePrefab(const wxString& old_name, const wxString& new_name) {
+	auto it = prefabs.find(old_name);
+	if (it != prefabs.end()) {
+		CopyBuffer* buf = it->second;
+		prefabs.erase(it);
+		prefabs[new_name] = buf;
+	}
+}
+
+
 std::vector<wxString> PrefabManager::getPrefabNames() const {
 	std::vector<wxString> names;
 	for (const auto& pair : prefabs) {
@@ -45,13 +63,13 @@ std::vector<wxString> PrefabManager::getPrefabNames() const {
 }
 
 PrefabLibraryDialog::PrefabLibraryDialog(wxWindow* parent, Editor& editor) :
-	wxDialog(parent, wxID_ANY, "Prefab & Template Bibliothek", wxDefaultPosition, wxSize(420, 380), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+	wxDialog(parent, wxID_ANY, "Prefab & Template Library", wxDefaultPosition, wxSize(440, 380), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	editor(editor) {
 
 	wxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
 
 	// Title
-	wxStaticText* header = new wxStaticText(this, wxID_ANY, "Map Vorlagen & Prefab Manager");
+	wxStaticText* header = new wxStaticText(this, wxID_ANY, "Map Templates & Prefab Manager");
 	wxFont headerFont = header->GetFont();
 	headerFont.SetPointSize(12);
 	headerFont.SetWeight(wxFONTWEIGHT_BOLD);
@@ -68,9 +86,9 @@ PrefabLibraryDialog::PrefabLibraryDialog(wxWindow* parent, Editor& editor) :
 	topsizer->Add(prefabListBox, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
 
 	wxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-	buttonSizer->Add(new wxButton(this, PREFAB_BTN_SAVE_SELECTION, "Auswahl als Prefab speichern"), 0, wxRIGHT, 10);
-	buttonSizer->Add(new wxButton(this, PREFAB_BTN_PASTE_SELECTED, "Prefab stempeln"), 0, wxRIGHT, 10);
-	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Schließen"), 0);
+	buttonSizer->Add(new wxButton(this, PREFAB_BTN_SAVE_SELECTION, "Save Selection as Prefab"), 0, wxRIGHT, 10);
+	buttonSizer->Add(new wxButton(this, PREFAB_BTN_PASTE_SELECTED, "Stamp Prefab"), 0, wxRIGHT, 10);
+	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Close"), 0);
 
 	topsizer->Add(buttonSizer, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
 	SetSizerAndFit(topsizer);
@@ -86,11 +104,11 @@ PrefabLibraryDialog::~PrefabLibraryDialog() {
 
 void PrefabLibraryDialog::OnClickSaveCurrentSelection(wxCommandEvent& WXUNUSED(event)) {
 	if (editor.selection.size() == 0) {
-		wxMessageBox("Bitte wählen Sie zuerst einen Bereich auf der Karte aus!", "Keine Auswahl", wxOK | wxICON_INFORMATION);
+		wxMessageBox("Please select an area on the map first!", "No Selection", wxOK | wxICON_INFORMATION);
 		return;
 	}
 
-	wxTextEntryDialog nameDialog(this, "Name für das neue Prefab eingeben:", "Prefab speichern");
+	wxTextEntryDialog nameDialog(this, "Enter a name for the new prefab:", "Save Prefab");
 	if (nameDialog.ShowModal() == wxID_OK) {
 		wxString name = nameDialog.GetValue();
 		if (!name.IsEmpty()) {
@@ -99,7 +117,7 @@ void PrefabLibraryDialog::OnClickSaveCurrentSelection(wxCommandEvent& WXUNUSED(e
 			PrefabManager::getInstance().addPrefab(name, buf);
 
 			prefabListBox->Append(name);
-			g_gui.SetStatusText("Prefab '" + name + "' gespeichert.");
+			g_gui.SetStatusText("Prefab '" + name + "' saved successfully.");
 		}
 	}
 }
@@ -107,7 +125,7 @@ void PrefabLibraryDialog::OnClickSaveCurrentSelection(wxCommandEvent& WXUNUSED(e
 void PrefabLibraryDialog::OnClickPastePrefab(wxCommandEvent& WXUNUSED(event)) {
 	int sel = prefabListBox->GetSelection();
 	if (sel == wxNOT_FOUND) {
-		wxMessageBox("Bitte wählen Sie ein Prefab aus der Liste aus!", "Hinweis", wxOK | wxICON_INFORMATION);
+		wxMessageBox("Please select a prefab from the list!", "Notice", wxOK | wxICON_INFORMATION);
 		return;
 	}
 
@@ -137,10 +155,11 @@ void PrefabLibraryDialog::OnClickPastePrefab(wxCommandEvent& WXUNUSED(event)) {
 		}
 
 		g_gui.PreparePaste();
-		g_gui.SetStatusText("Prefab '" + name + "' bereit zum Platzieren.");
+		g_gui.SetStatusText("Prefab '" + name + "' ready to stamp.");
 		EndModal(wxID_OK);
 	}
 }
+
 
 void PrefabLibraryDialog::OnClickClose(wxCommandEvent& WXUNUSED(event)) {
 	EndModal(wxID_CANCEL);

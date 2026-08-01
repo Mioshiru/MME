@@ -142,7 +142,10 @@ namespace MenuBar {
 		TFS_KEY_MANAGER,
 		TFS_NPC_EDITOR,
 		TFS_EXPORTER,
+		WIZARD_NPC,
+		WIZARD_SPECIAL_OBJECTS,
 		SHOW_MINIMAP_HUD, // New item for toggling canvas-based minimap
+
 		SELECT_RAW,
 		FLOOR_0,
 		FLOOR_1,
@@ -279,10 +282,13 @@ public:
 	void OnPrefabLibrary(wxCommandEvent& event);
 	void OnMapDiagnostic(wxCommandEvent& event);
 	void OnMapDiff(wxCommandEvent& event);
+	void OnWizardNPC(wxCommandEvent& event);
+	void OnWizardSpecialObjects(wxCommandEvent& event);
 	void OnTFSQuestGenerator(wxCommandEvent& event);
 	void OnTFSKeyManager(wxCommandEvent& event);
 	void OnTFSNPCEditor(wxCommandEvent& event);
 	void OnTFSExporter(wxCommandEvent& event);
+
 
 	// View Menu
 	void OnToolbars(wxCommandEvent& event);

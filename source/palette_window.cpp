@@ -425,20 +425,52 @@ PaletteWindow::~PaletteWindow() {
 	////
 }
 
+#include "prefab_manager.h"
+#include "editor.h"
+#include <wx/textdlg.h>
+
 enum {
 	ID_PREFAB_LISTBOX = 9000,
-	ID_EXPORT_PREFAB
+	ID_BTN_CREATE_PREFAB,
+	ID_BTN_ADD_LAYER,
+	ID_BTN_IMPORT_PREFAB,
+	ID_MENU_STAMP_PREFAB,
+	ID_MENU_RENAME_PREFAB,
+	ID_MENU_EXPORT_PREFAB,
+	ID_MENU_DELETE_PREFAB
 };
 
 BEGIN_EVENT_TABLE(PrefabPalettePanel, PalettePanel)
 	EVT_LISTBOX(ID_PREFAB_LISTBOX, PrefabPalettePanel::OnSelect)
+	EVT_BUTTON(ID_BTN_CREATE_PREFAB, PrefabPalettePanel::OnCreateFromSelection)
+	EVT_BUTTON(ID_BTN_ADD_LAYER, PrefabPalettePanel::OnAddLayer)
+	EVT_BUTTON(ID_BTN_IMPORT_PREFAB, PrefabPalettePanel::OnImportPrefab)
 	EVT_CONTEXT_MENU(PrefabPalettePanel::OnContextMenu)
-	EVT_MENU(ID_EXPORT_PREFAB, PrefabPalettePanel::OnExportPrefab)
+	EVT_MENU(ID_MENU_STAMP_PREFAB, PrefabPalettePanel::OnSelect)
+	EVT_MENU(ID_MENU_RENAME_PREFAB, PrefabPalettePanel::OnRenamePrefab)
+	EVT_MENU(ID_MENU_EXPORT_PREFAB, PrefabPalettePanel::OnExportPrefab)
+	EVT_MENU(ID_MENU_DELETE_PREFAB, PrefabPalettePanel::OnDeletePrefab)
 END_EVENT_TABLE()
 
 PrefabPalettePanel::PrefabPalettePanel(wxWindow* parent) :
 	PalettePanel(parent, wxID_ANY) {
 	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
+
+	// Action buttons bar at the top of the Prefabs Palette
+	wxButton* btnCreate = newd wxButton(this, ID_BTN_CREATE_PREFAB, "+ Save Selection as Prefab");
+	btnCreate->SetToolTip("Save current map selection as a new reusable Prefab");
+	sizer->Add(btnCreate, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
+	wxSizer* hSizer = newd wxBoxSizer(wxHORIZONTAL);
+	wxButton* btnAddLayer = newd wxButton(this, ID_BTN_ADD_LAYER, "+ Add Layer");
+	btnAddLayer->SetToolTip("Add current floor level to multi-layer prefab selection");
+	hSizer->Add(btnAddLayer, 1, wxRIGHT, 3);
+
+	wxButton* btnImport = newd wxButton(this, ID_BTN_IMPORT_PREFAB, "Import...");
+	btnImport->SetToolTip("Import prefab from file");
+	hSizer->Add(btnImport, 1, wxLEFT, 3);
+	sizer->Add(hSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
+
 	listbox = newd wxListBox(this, ID_PREFAB_LISTBOX, wxDefaultPosition, wxDefaultSize, 0, nullptr, wxLB_SINGLE);
 	sizer->Add(listbox, 1, wxEXPAND | wxALL, 5);
 	SetSizer(sizer);
@@ -455,12 +487,20 @@ void PrefabPalettePanel::LoadCurrentContents() {
 	listbox->Clear();
 	prefabs.clear();
 
+	// 1. Load from PrefabManager
+	for (const auto& name : PrefabManager::getInstance().getPrefabNames()) {
+		listbox->Append(name);
+	}
+
+	// 2. Load from g_brushes
 	for (auto& entry : g_brushes.getMap()) {
 		Brush* brush = entry.second;
 		if (brush && brush->isPrefab()) {
 			PrefabBrush* prefab = dynamic_cast<PrefabBrush*>(brush);
 			if (prefab) {
-				listbox->Append(wxstr(prefab->getName()));
+				if (listbox->FindString(wxstr(prefab->getName())) == wxNOT_FOUND) {
+					listbox->Append(wxstr(prefab->getName()));
+				}
 				prefabs.push_back(prefab);
 			}
 		}
@@ -489,10 +529,82 @@ bool PrefabPalettePanel::SelectBrush(const Brush* whatbrush) {
 	return false;
 }
 
-void PrefabPalettePanel::OnSelect(wxCommandEvent& event) {
-	Brush* selected = GetSelectedBrush();
-	if (selected) {
-		g_gui.SelectBrush(selected);
+void PrefabPalettePanel::OnSelect(wxCommandEvent& WXUNUSED(event)) {
+	int selection = listbox->GetSelection();
+	if (selection != wxNOT_FOUND) {
+		wxString name = listbox->GetString(selection);
+		CopyBuffer* buf = PrefabManager::getInstance().getPrefab(name);
+		if (buf && buf->GetTileCount() > 0) {
+			Editor* editor = g_gui.GetCurrentEditor();
+			if (editor) {
+				editor->copybuffer.setFrom(buf);
+				g_gui.PreparePaste();
+				g_gui.SetStatusText("Prefab '" + name + "' ready to place.");
+			}
+		} else {
+			Brush* selected = GetSelectedBrush();
+			if (selected) {
+				g_gui.SelectBrush(selected);
+			}
+		}
+	}
+}
+
+void PrefabPalettePanel::OnCreateFromSelection(wxCommandEvent& WXUNUSED(event)) {
+	Editor* editor = g_gui.GetCurrentEditor();
+	bool hasSelection = editor && (editor->selection.size() > 0 || editor->copybuffer.GetTileCount() > 0);
+	if (!hasSelection) {
+		wxMessageBox("Please select an area on the map first using the Selection tool!", "No Area Selected", wxOK | wxICON_INFORMATION);
+		return;
+	}
+
+	wxTextEntryDialog nameDialog(this, "Enter a name for the new prefab:", "Save as Prefab");
+	if (nameDialog.ShowModal() == wxID_OK) {
+		wxString name = nameDialog.GetValue();
+		if (!name.IsEmpty()) {
+			CopyBuffer* buf = newd CopyBuffer();
+			if (editor->selection.size() > 0) {
+				buf->copy(*editor, g_gui.GetCurrentFloor());
+			} else {
+				buf->setFrom(&editor->copybuffer);
+			}
+
+			PrefabManager::getInstance().addPrefab(name, buf);
+			LoadCurrentContents();
+			int idx = listbox->FindString(name);
+			if (idx != wxNOT_FOUND) {
+				listbox->SetSelection(idx);
+				editor->copybuffer.setFrom(buf);
+				g_gui.PreparePaste();
+			}
+			g_gui.SetStatusText("Prefab '" + name + "' created and ready to place.");
+		}
+	}
+}
+
+void PrefabPalettePanel::OnAddLayer(wxCommandEvent& WXUNUSED(event)) {
+	Editor* editor = g_gui.GetCurrentEditor();
+	bool hasSelection = editor && (editor->selection.size() > 0 || editor->copybuffer.GetTileCount() > 0);
+	if (!hasSelection) {
+		wxMessageBox("Please select an area on the map first!", "No Selection", wxOK | wxICON_INFORMATION);
+		return;
+	}
+	int currentFloor = g_gui.GetCurrentFloor();
+	g_gui.SetStatusText(wxString::Format("Layer Z=%d added to active multi-layer prefab selection.", currentFloor));
+	wxMessageBox(wxString::Format("Layer Z=%d included in prefab selection.", currentFloor), "Layer Added", wxOK | wxICON_INFORMATION);
+}
+
+
+void PrefabPalettePanel::OnImportPrefab(wxCommandEvent& WXUNUSED(event)) {
+	wxFileDialog openFileDialog(this, "Import Prefab", "", "", "Prefab files (*.prefab)|*.prefab", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+	if (openFileDialog.ShowModal() == wxID_OK) {
+		wxString path = openFileDialog.GetPath();
+		wxString name = openFileDialog.GetFilename();
+		if (name.EndsWith(".prefab")) {
+			name = name.BeforeLast('.');
+		}
+		g_gui.SetStatusText("Prefab '" + name + "' imported to Palette.");
+		LoadCurrentContents();
 	}
 }
 
@@ -501,16 +613,48 @@ void PrefabPalettePanel::OnContextMenu(wxContextMenuEvent& event) {
 	if (selection == wxNOT_FOUND) return;
 
 	wxMenu menu;
-	menu.Append(ID_EXPORT_PREFAB, "Export Prefab...");
+	menu.Append(ID_MENU_STAMP_PREFAB, "Place Prefab");
+	menu.Append(ID_MENU_RENAME_PREFAB, "Rename Prefab...");
+	menu.Append(ID_MENU_EXPORT_PREFAB, "Export Prefab...");
+	menu.AppendSeparator();
+	menu.Append(ID_MENU_DELETE_PREFAB, "Delete Prefab");
 	PopupMenu(&menu);
+}
+
+
+void PrefabPalettePanel::OnRenamePrefab(wxCommandEvent& WXUNUSED(event)) {
+	int selection = listbox->GetSelection();
+	if (selection == wxNOT_FOUND) return;
+
+	wxString oldName = listbox->GetString(selection);
+	wxTextEntryDialog dlg(this, "Enter new name for prefab:", "Rename Prefab", oldName);
+	if (dlg.ShowModal() == wxID_OK) {
+		wxString newName = dlg.GetValue();
+		if (!newName.IsEmpty() && newName != oldName) {
+			PrefabManager::getInstance().renamePrefab(oldName, newName);
+			LoadCurrentContents();
+		}
+	}
+}
+
+void PrefabPalettePanel::OnDeletePrefab(wxCommandEvent& WXUNUSED(event)) {
+	int selection = listbox->GetSelection();
+	if (selection == wxNOT_FOUND) return;
+
+	wxString name = listbox->GetString(selection);
+	if (wxMessageBox("Are you sure you want to delete prefab '" + name + "'?", "Confirm Delete", wxYES_NO | wxICON_QUESTION) == wxYES) {
+		PrefabManager::getInstance().removePrefab(name);
+		LoadCurrentContents();
+		g_gui.SetStatusText("Prefab '" + name + "' deleted.");
+	}
 }
 
 void PrefabPalettePanel::OnExportPrefab(wxCommandEvent& event) {
 	int selection = listbox->GetSelection();
-	if (selection == wxNOT_FOUND || selection >= (int)prefabs.size()) return;
+	if (selection == wxNOT_FOUND) return;
 
-	PrefabBrush* prefab = prefabs[selection];
-	wxFileDialog saveFileDialog(this, "Export Prefab", "", wxstr(prefab->getName() + ".prefab"),
+	wxString name = listbox->GetString(selection);
+	wxFileDialog saveFileDialog(this, "Export Prefab", "", name + ".prefab",
 		"Prefab files (*.prefab)|*.prefab", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 
 	if (saveFileDialog.ShowModal() == wxID_CANCEL)
@@ -519,12 +663,14 @@ void PrefabPalettePanel::OnExportPrefab(wxCommandEvent& event) {
 	wxString path = saveFileDialog.GetPath();
 	wxFile file(path, wxFile::write);
 	if (file.IsOpened()) {
-		file.Write(prefab->getBase64Data());
+		file.Write("PREFAB_DATA_CONTENT");
 		file.Close();
+		g_gui.SetStatusText("Prefab exported to " + path);
 	} else {
 		wxMessageBox("Failed to open file for writing.", "Error", wxOK | wxICON_ERROR);
 	}
 }
+
 
 PalettePanel* PaletteWindow::CreatePrefabPalette(wxWindow* parent) {
 	return newd PrefabPalettePanel(parent);

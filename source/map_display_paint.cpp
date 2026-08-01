@@ -172,12 +172,9 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	UpdateSmoothZoom();
 
 	SetCurrent(*g_gui.GetGLContext(this));
-
-// Enable VSync for smooth, tear-free rendering (butterweich)
 #ifdef __WINDOWS__
-SetVSync(true);
+	SetVSync(g_settings.getBoolean(Config::V_SYNC));
 #endif
-
 	static bool auto_scaled = false;
 	if (!auto_scaled) {
 		AutoScalePerformanceSettings();
@@ -1043,8 +1040,7 @@ SetVSync(true);
 	editor.SendNodeRequests();
 	
 	g_gui.RefreshMinimapPanel();
-	
-	
+
 	PerformanceLogger::EndFrame();
 }
 
