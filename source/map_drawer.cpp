@@ -644,13 +644,40 @@ void MapDrawer::DrawBrush() {
           int cx = (mouse_map_x + x) * TileSize - view_scroll_x -
                    getFloorAdjustment(floor);
           bool inside = false;
+          bool is_wall = brush && brush->isWall();
+          int bsize = g_gui.GetBrushSize();
           if (g_gui.GetBrushShape() == BRUSHSHAPE_SQUARE) {
-            inside = (x >= -g_gui.GetBrushSize() && x <= g_gui.GetBrushSize() &&
-                      y >= -g_gui.GetBrushSize() && y <= g_gui.GetBrushSize());
+            bool in_box = (x >= -bsize && x <= bsize && y >= -bsize && y <= bsize);
+            if (in_box) {
+              if (is_wall) {
+                inside = (bsize == 0) || (std::abs(x) == bsize || std::abs(y) == bsize);
+              } else {
+                inside = true;
+              }
+            }
           } else if (g_gui.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
-            // [PERF] Squared distance comparison instead of sqrt()
-            double threshold = g_gui.GetBrushSize() + 0.005;
-            inside = (double(x * x) + double(y * y) < threshold * threshold);
+            double threshold = bsize + 0.005;
+            bool in_circle = (double(x * x) + double(y * y) < threshold * threshold);
+            if (in_circle) {
+              if (is_wall) {
+                if (bsize == 0) {
+                  inside = true;
+                } else {
+                  static const int dx4[] = {-1, 1, 0, 0};
+                  static const int dy4[] = {0, 0, -1, 1};
+                  for (int i = 0; i < 4; ++i) {
+                    int nx = x + dx4[i];
+                    int ny = y + dy4[i];
+                    if (double(nx * nx) + double(ny * ny) >= threshold * threshold) {
+                      inside = true;
+                      break;
+                    }
+                  }
+                }
+              } else {
+                inside = true;
+              }
+            }
           }
           if (inside) {
             if (has_preview) {

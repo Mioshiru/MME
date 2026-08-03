@@ -211,7 +211,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 }
 
 MapPopupMenu::MapPopupMenu(MapEditor& map_editor_ref) :
-	wxMenu("Map Context"), editor(map_editor_ref) {
+	wxMenu(), editor(map_editor_ref) {
 }
 
 MapPopupMenu::~MapPopupMenu() {
@@ -219,8 +219,6 @@ MapPopupMenu::~MapPopupMenu() {
 }
 
 void MapPopupMenu::Update() {
-	SetTitle("Map Context");
-
 	// Clear the menu of all items
 	while (GetMenuItemCount() != 0) {
 		wxMenuItem* m_item = FindItemByPosition(0);
@@ -341,8 +339,10 @@ void MapPopupMenu::Update() {
 					Append(MAP_POPUP_MENU_SELECT_COLLECTION_BRUSH, "Select Collection", "Use this collection");
 				}
 
-				AppendSeparator();
-				Append(MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
+				if (tile->hasGround() || topSelectedItem || topItem || topCreature || topSpawn) {
+					AppendSeparator();
+					Append(MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
+				}
 			} else {
 				bool has_items_added = false;
 				if (topCreature) {
@@ -351,6 +351,7 @@ void MapPopupMenu::Update() {
 				}
 
 				if (topSpawn) {
+					if (has_items_added) AppendSeparator();
 					Append(MAP_POPUP_MENU_SELECT_SPAWN_BRUSH, "Select Spawn", "Select the spawn brush");
 					has_items_added = true;
 				}
@@ -364,17 +365,6 @@ void MapPopupMenu::Update() {
 
 				if (hasCollection || (tile->getGroundBrush() && tile->getGroundBrush()->hasCollection())) {
 					Append(MAP_POPUP_MENU_SELECT_COLLECTION_BRUSH, "Select Collection", "Use this collection");
-				}
-
-				if (tile->hasGround() || topCreature || topSpawn) {
-					AppendSeparator();
-					Append(MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
-				}
-
-				if (editor.IsLive()) {
-					AppendSeparator();
-					Append(MAP_POPUP_MENU_QUICK_PING, "Signalpunkt setzen (Ping)", "Platziert einen hervorgehobenen Signalpunkt für Mitspieler");
-					Append(MAP_POPUP_MENU_ADD_ANNOTATION, "Anmerkung / Notiz hinzufügen", "Platziert eine bleibende Notiz an dieser Position");
 				}
 
 				Town* clicked_town = nullptr;
@@ -391,6 +381,11 @@ void MapPopupMenu::Update() {
 					Append(MAP_POPUP_MENU_EDIT_TOWN, "Edit Town", "Edit this town");
 				} else {
 					Append(MAP_POPUP_MENU_CREATE_TOWN, "Create Town", "Create a town here");
+				}
+
+				if (tile->hasGround() || topSelectedItem || topItem || topCreature || topSpawn) {
+					AppendSeparator();
+					Append(MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
 				}
 			}
 
@@ -410,11 +405,6 @@ void MapPopupMenu::Update() {
 			if (rotatable_items_selected) {
 				Append(MAP_POPUP_MENU_ROTATE, "&Rotate items", "Rotate the selected items");
 			}
-
-			AppendSeparator();
-
-			wxMenuItem* browseTile = Append(MAP_POPUP_MENU_BROWSE_TILE, "Browse Field", "Navigate from tile items");
-			browseTile->Enable(anything_selected);
 
 			// Add Lua Context Menu Items
 			const auto& menuItems = g_luaScripts.getContextMenuItems();

@@ -55,7 +55,7 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 	tileset_choice = newd wxChoice(this, PALETTE_TILESET_CHOICE);
 	ts_sizer->Add(tileset_choice, 0, wxEXPAND | wxBOTTOM, 5);
 
-	wxChoicebook* tmp_choicebook = newd wxChoicebook(this, wxID_ANY, wxDefaultPosition, wxSize(180, 250));
+	wxChoicebook* tmp_choicebook = newd wxChoicebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	ts_sizer->Add(tmp_choicebook, 1, wxEXPAND);
 	topsizer->Add(ts_sizer, 1, wxEXPAND | wxALL, 5);
 
@@ -119,7 +119,7 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 	}
 	tmp_choicebook->GetChoiceCtrl()->Hide();
 
-	SetSizerAndFit(topsizer);
+	SetSizer(topsizer);
 
 	choicebook = tmp_choicebook;
 }
@@ -490,17 +490,23 @@ void BrushPanel::Filter(const wxString& query) {
 }
 
 void BrushPanel::InvalidateContents() {
-	Freeze();
-	sizer->Clear(true);
-	loaded = false;
-	brushbox = nullptr;
 	if (tileset) {
 		all_brushes = tileset->brushlist;
 		std::sort(all_brushes.begin(), all_brushes.end(), [](const Brush* a, const Brush* b) {
 			return a->getName() < b->getName();
 		});
 	}
-	Thaw();
+	if (loaded && brushbox) {
+		if (BrushIconBox* iconbox = dynamic_cast<BrushIconBox*>(brushbox->GetSelfWindow())) {
+			iconbox->SetBrushes(all_brushes);
+		}
+	} else {
+		Freeze();
+		sizer->Clear(true);
+		loaded = false;
+		brushbox = nullptr;
+		Thaw();
+	}
 }
 
 void BrushPanel::LoadContents() {
@@ -522,9 +528,11 @@ void BrushPanel::LoadContents() {
 		default:
 			break;
 	}
-	ASSERT(brushbox != nullptr);
 	sizer->Add(brushbox->GetSelfWindow(), 1, wxEXPAND);
-	Fit();
+	Layout();
+	if (BrushIconBox* iconbox = dynamic_cast<BrushIconBox*>(brushbox->GetSelfWindow())) {
+		iconbox->UpdateLayout();
+	}
 	if (!search_query.IsEmpty()) {
 		brushbox->Filter(search_query);
 	} else {
@@ -703,6 +711,7 @@ void BrushIconBox::Filter(const wxString& query) {
 
 void BrushIconBox::OnSize(wxSizeEvent& event) {
 	UpdateLayout();
+	Refresh();
 	event.Skip();
 }
 
@@ -1006,7 +1015,9 @@ void BrushIconBox::OnRightClick(wxMouseEvent& event) {
 				while ((w = w->GetParent()) && (pw = dynamic_cast<PaletteWindow*>(const_cast<wxWindow*>(w))) == nullptr)
 					;
 				if (pw) {
-					pw->RefreshFavoritesBox();
+					pw->CallAfter([pw]() {
+						pw->RefreshFavoritesBox();
+					});
 				}
 			});
 

@@ -629,6 +629,21 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	last_click_map_z = floor;
 
 	if (drawing) {
+		Brush* current_brush = g_gui.GetCurrentBrush();
+		if (event.ControlDown() && current_brush && current_brush->isDoodad()) {
+			DoodadBrush* doodad = static_cast<DoodadBrush*>(current_brush);
+			if (doodad->getMaxVariation() > 1) {
+				int current_var = g_gui.GetBrushVariation();
+				int next_var = (current_var + 1) % doodad->getMaxVariation();
+				g_gui.SetBrushVariation(next_var);
+			} else {
+				g_gui.FillDoodadPreviewBuffer();
+			}
+			dragging_draw = false;
+			CallAfter([this]() { Refresh(); });
+			return;
+		}
+
     editor.setDeferBorders(true);
     dragging_draw = !g_gui.IsFillBrushMode();
     rectangle_mode = event.ShiftDown() && !g_gui.IsFillBrushMode();
@@ -1860,8 +1875,12 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     }
 
   } else {
-    for (int y = -g_gui.GetBrushSize(); y <= g_gui.GetBrushSize(); y++) {
-      for (int x = -g_gui.GetBrushSize(); x <= g_gui.GetBrushSize(); x++) {
+    Brush *brush = g_gui.GetCurrentBrush();
+    bool is_wall = brush && brush->isWall();
+    int brush_size = g_gui.GetBrushSize();
+
+    for (int y = -brush_size; y <= brush_size; y++) {
+      for (int x = -brush_size; x <= brush_size; x++) {
         int tx = mouse_map_x + x;
         int ty = mouse_map_y + y;
         if (tx <= 0 || ty <= 0 || tx >= map_width || ty >= map_height) {
@@ -1869,14 +1888,32 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
         }
 
         if (g_gui.GetBrushShape() == BRUSHSHAPE_SQUARE) {
-          if (tilestodraw) {
-            tilestodraw->push_back(Position(tx, ty, floor));
+          bool is_border = (brush_size == 0) || (std::abs(x) == brush_size || std::abs(y) == brush_size);
+          if (!is_wall || is_border) {
+            if (tilestodraw) {
+              tilestodraw->push_back(Position(tx, ty, floor));
+            }
           }
         } else if (g_gui.GetBrushShape() == BRUSHSHAPE_CIRCLE) {
           double distance = sqrt(double(x * x) + double(y * y));
-          if (distance < g_gui.GetBrushSize() + 0.005) {
-            if (tilestodraw) {
-              tilestodraw->push_back(Position(tx, ty, floor));
+          if (distance < brush_size + 0.005) {
+            bool is_border = (brush_size == 0);
+            if (!is_border && is_wall) {
+              static const int dx4[] = {-1, 1, 0, 0};
+              static const int dy4[] = {0, 0, -1, 1};
+              for (int i = 0; i < 4; ++i) {
+                int nx = x + dx4[i];
+                int ny = y + dy4[i];
+                if (sqrt(double(nx * nx) + double(ny * ny)) >= brush_size + 0.005) {
+                  is_border = true;
+                  break;
+                }
+              }
+            }
+            if (!is_wall || is_border) {
+              if (tilestodraw) {
+                tilestodraw->push_back(Position(tx, ty, floor));
+              }
             }
           }
         }

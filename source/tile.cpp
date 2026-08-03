@@ -332,9 +332,6 @@ void Tile::select() {
 	if (size() == 0) {
 		return;
 	}
-	if (ground) {
-		ground->select();
-	}
 	if (spawn) {
 		spawn->select();
 	}
@@ -348,6 +345,10 @@ void Tile::select() {
 	while (it != items.end()) {
 		(*it)->select();
 		++it;
+	}
+
+	if (items.empty() && !spawn && !creature && ground) {
+		ground->select();
 	}
 
 	statflags |= TILESTATE_SELECTED;

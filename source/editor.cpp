@@ -1244,17 +1244,22 @@ void MapEditor::destroySelection() {
 		BatchAction* batch = actionQueue->createBatch(ACTION_DELETE_TILES);
 		Action* action = actionQueue->createAction(batch);
 
+		bool ground_deleted = false;
 		for (TileSet::iterator it = selection.begin(); it != selection.end(); ++it) {
 			tile_count++;
 
 			Tile* tile = *it;
 			Tile* newtile = tile->deepCopy(map);
 
+			bool had_ground = (newtile->ground != nullptr);
 			ItemVector tile_selection = newtile->popSelectedItems();
 			for (ItemVector::iterator iit = tile_selection.begin(); iit != tile_selection.end(); ++iit) {
 				++item_count;
 				// Delete the items from the tile
 				delete *iit;
+			}
+			if (had_ground && newtile->ground == nullptr) {
+				ground_deleted = true;
 			}
 
 			if (newtile->creature && newtile->creature->isSelected()) {
@@ -1293,12 +1298,14 @@ void MapEditor::destroySelection() {
 
 				if (tile) {
 					Tile* new_tile = tile->deepCopy(map);
-					new_tile->borderize(&map);
+					if (ground_deleted) {
+						new_tile->borderize(&map);
+					}
 					new_tile->wallize(&map);
 					new_tile->tableize(&map);
 					new_tile->carpetize(&map);
 					action->addChange(newd Change(new_tile));
-				} else {
+				} else if (ground_deleted) {
 					Tile* new_tile = map.allocator(location);
 					new_tile->borderize(&map);
 					if (new_tile->size()) {
@@ -1397,9 +1404,18 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 					action->addChange(newd Change(new_tile));
 				}
 			} else {
-				if (tile && !tile->isBlocking()) {
+				bool is_wall_blocking = false;
+				if (tile) {
+					for (Item* item : tile->items) {
+						if (item && item->getWallBrush()) {
+							is_wall_blocking = true;
+							break;
+						}
+					}
+				}
+				if (!is_wall_blocking) {
 					bool place = true;
-					if (!doodad_brush->placeOnDuplicate() && !alt) {
+					if (tile && !doodad_brush->placeOnDuplicate() && !alt) {
 						for (ItemVector::const_iterator iter = tile->items.begin(); iter != tile->items.end(); ++iter) {
 							if (doodad_brush->ownsItem(*iter)) {
 								place = false;
@@ -1408,7 +1424,7 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 						}
 					}
 					if (place) {
-						Tile* new_tile = tile->deepCopy(map);
+						Tile* new_tile = tile ? tile->deepCopy(map) : map.allocator(location);
 						removeDuplicateWalls(buffer_tile, new_tile);
 						doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
 						new_tile->merge(buffer_tile);
@@ -1762,25 +1778,52 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		// Commit changes to map
 		batch->addAndCommitAction(action);
 
-		// Do borders!
-		action = actionQueue->createAction(batch);
-		for (PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
-			Tile* tile = map.getTile(*it);
-			if (brush->isTable()) {
-				if (tile && tile->hasTable()) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->tableize(&map);
-					action->addChange(newd Change(new_tile));
+		// Do borders (tableize / carpetize)!
+		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+			action = actionQueue->createAction(batch);
+
+			std::unordered_set<uint64_t> border_set;
+			PositionVector border_positions;
+			auto encode_bpos = [](int x, int y, int z) -> uint64_t {
+				return (static_cast<uint64_t>(z) << 48) |
+				       (static_cast<uint64_t>(x & 0xFFFFFF) << 24) |
+				        static_cast<uint64_t>(y & 0xFFFFFF);
+			};
+			auto add_bpos = [&](const Position& pos) {
+				if (pos.x <= 0 || pos.y <= 0) return;
+				uint64_t key = encode_bpos(pos.x, pos.y, pos.z);
+				if (border_set.insert(key).second) {
+					border_positions.push_back(pos);
 				}
-			} else if (brush->isCarpet()) {
-				if (tile && tile->hasCarpet()) {
-					Tile* new_tile = tile->deepCopy(map);
-					new_tile->carpetize(&map);
-					action->addChange(newd Change(new_tile));
+			};
+
+			for (const Position& pos : tilestodraw) {
+				for (int dx = -1; dx <= 1; ++dx) {
+					for (int dy = -1; dy <= 1; ++dy) {
+						add_bpos(Position(pos.x + dx, pos.y + dy, pos.z));
+					}
 				}
 			}
+			for (const Position& pos : tilestoborder) {
+				add_bpos(pos);
+			}
+
+			for (const Position& pos : border_positions) {
+				Tile* tile = map.getTile(pos);
+				if (tile) {
+					if (brush->isTable() && tile->hasTable()) {
+						Tile* new_tile = tile->deepCopy(map);
+						new_tile->tableize(&map);
+						action->addChange(newd Change(new_tile));
+					} else if (brush->isCarpet() && tile->hasCarpet()) {
+						Tile* new_tile = tile->deepCopy(map);
+						new_tile->carpetize(&map);
+						action->addChange(newd Change(new_tile));
+					}
+				}
+			}
+			batch->addAndCommitAction(action);
 		}
-		batch->addAndCommitAction(action);
 
 		if (use_snapshot) {
 			snapshot_action->captureAfter();
