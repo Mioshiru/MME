@@ -31,19 +31,22 @@ BEGIN_EVENT_TABLE(HouseWizardDialog, wxDialog)
 	EVT_LEAVE_WINDOW(HouseWizardDialog::OnMouseLeave)
 END_EVENT_TABLE()
 
-HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t default_town_id) :
-	wxDialog(parent, wxID_ANY, "Let's create a House", wxDefaultPosition, wxSize(380, 240), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t default_town_id, House* existing_house) :
+	wxDialog(parent, wxID_ANY, existing_house ? wxString::Format("Edit House: %s", existing_house->name.c_str()) : wxString("Let's create a House"), wxDefaultPosition, wxSize(380, 240), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	map(map),
-	draft_house(nullptr),
+	draft_house(existing_house),
+	is_editing(existing_house != nullptr),
 	current_step(1),
 	step1_panel(nullptr),
 	step2_panel(nullptr),
 	step3_panel(nullptr) {
 
 	ASSERT(map);
-	draft_house = newd House(*map);
-	draft_house->setID(map->houses.getEmptyID());
-	map->houses.addHouse(draft_house);
+	if (!is_editing) {
+		draft_house = newd House(*map);
+		draft_house->setID(map->houses.getEmptyID());
+		map->houses.addHouse(draft_house);
+	}
 
 	SetBackgroundColour(wxColour(16, 28, 48));
 	SetForegroundColour(wxColour(240, 245, 255));
@@ -66,7 +69,7 @@ HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t defaul
 
 	// House Name
 	grid1->Add(newd wxStaticText(step1_panel, wxID_ANY, "House Name:"), 0, wxALIGN_CENTER_VERTICAL);
-	std::string default_name = "House #" + std::to_string(draft_house->getID());
+	std::string default_name = is_editing ? draft_house->name : ("House #" + std::to_string(draft_house->getID()));
 	name_field = newd wxTextCtrl(step1_panel, wxID_ANY, wxstr(default_name));
 	name_field->SetBackgroundColour(wxColour(10, 20, 35));
 	name_field->SetForegroundColour(wxColour(240, 245, 255));
@@ -78,13 +81,14 @@ HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t defaul
 	town_choice->SetBackgroundColour(wxColour(10, 20, 35));
 	town_choice->SetForegroundColour(wxColour(240, 245, 255));
 
+	uint32_t target_town_id = is_editing ? draft_house->townid : default_town_id;
 	int select_idx = 0;
 	if (map->towns.count() > 0) {
 		int idx = 0;
 		for (const auto& pair : map->towns) {
 			const Town* town = pair.second;
 			town_choice->Append(wxstr(town->getName()), reinterpret_cast<void*>(static_cast<uintptr_t>(town->getID())));
-			if (town->getID() == default_town_id) {
+			if (town->getID() == target_town_id) {
 				select_idx = idx;
 			}
 			++idx;
@@ -97,7 +101,7 @@ HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t defaul
 
 	// Rent
 	grid1->Add(newd wxStaticText(step1_panel, wxID_ANY, "Rent (Gold):"), 0, wxALIGN_CENTER_VERTICAL);
-	rent_field = newd wxTextCtrl(step1_panel, wxID_ANY, "0");
+	rent_field = newd wxTextCtrl(step1_panel, wxID_ANY, wxString::Format("%d", is_editing ? draft_house->rent : 0));
 	rent_field->SetBackgroundColour(wxColour(10, 20, 35));
 	rent_field->SetForegroundColour(wxColour(240, 245, 255));
 	grid1->Add(rent_field, 1, wxEXPAND);
@@ -105,6 +109,9 @@ HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t defaul
 	// Guildhall
 	grid1->Add(newd wxStaticText(step1_panel, wxID_ANY, "Guildhall:"), 0, wxALIGN_CENTER_VERTICAL);
 	guildhall_checkbox = newd wxCheckBox(step1_panel, wxID_ANY, "Is Guildhall");
+	if (is_editing) {
+		guildhall_checkbox->SetValue(draft_house->guildhall);
+	}
 	grid1->Add(guildhall_checkbox, 0, wxALIGN_CENTER_VERTICAL);
 
 	step1_sizer->Add(grid1, 1, wxEXPAND | wxALL, 8);
@@ -419,7 +426,7 @@ void HouseWizardDialog::OnClickOK(wxCommandEvent& evt) {
 }
 
 void HouseWizardDialog::cancelWizard() {
-	if (draft_house && map) {
+	if (!is_editing && draft_house && map) {
 		map->houses.removeHouse(draft_house);
 		draft_house = nullptr;
 	}

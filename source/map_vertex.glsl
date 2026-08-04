@@ -20,10 +20,9 @@ void main() {
         vColor.a *= 0.85;
     }
 
-    // GPU-side pulse animation for dynamic objects (flag 2.0)
+    // Dynamic objects (flag 2.0) - no vertical displacement
     if (aShaderData == 2.0) {
-        float pulse = sin(uTime * 4.0) * 0.5 + 0.5;
-        pos.y -= pulse * 2.0;
+        // Reserved for sprite animation flags without vertex displacement
     }
 
     vTexCoord   = aTexCoord;

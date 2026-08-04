@@ -1308,6 +1308,22 @@ void GUI::SelectBrushInternal(Brush *brush) {
     return;
   }
 
+  if (!current_brush->isGround()) {
+    if (brush_size != 0 || brush_shape != BRUSHSHAPE_SQUARE) {
+      SetBrushSizeInternal(0);
+      brush_shape = BRUSHSHAPE_SQUARE;
+      for (auto &palette : palettes) {
+        palette->OnUpdateBrushSize(brush_shape, brush_size);
+      }
+      if (size_panel) {
+        size_panel->OnUpdateBrushSize(brush_shape, brush_size);
+      }
+      if (root && root->GetAuiToolBar()) {
+        root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
+      }
+    }
+  }
+
   brush_variation = min(brush_variation, brush->getMaxVariation());
   FillDoodadPreviewBuffer();
   if (brush->isDoodad()) {

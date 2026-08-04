@@ -17,7 +17,7 @@ class House;
 
 class HouseWizardDialog : public wxDialog {
 public:
-	HouseWizardDialog(wxWindow* parent, Map* map, uint32_t default_town_id = 0);
+	HouseWizardDialog(wxWindow* parent, Map* map, uint32_t default_town_id = 0, House* existing_house = nullptr);
 	virtual ~HouseWizardDialog();
 
 	House* getCreatedHouse() const { return draft_house; }
@@ -48,6 +48,7 @@ protected:
 private:
 	Map* map;
 	House* draft_house;
+	bool is_editing;
 	int current_step;
 
 	// UI panels for 3 steps

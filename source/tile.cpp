@@ -316,6 +316,15 @@ void Tile::addItem(Item* item) {
 				}
 				++it;
 			}
+		} else if (item->isCarpet()) {
+			it = items.begin();
+			while (it != items.end()) {
+				if ((*it)->isAlwaysOnBottom() || (*it)->isBorder() || (*it)->isCarpet()) {
+					++it;
+				} else {
+					break;
+				}
+			}
 		} else {
 			it = items.end();
 		}

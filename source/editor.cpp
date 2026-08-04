@@ -1684,6 +1684,9 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 					} else {
 						g_gui.GetCurrentBrush()->draw(&map, new_tile, nullptr);
 					}
+					if (brush->isEraser() || brush->isGround()) {
+						tilestoborder.push_back(*it);
+					}
 				} else {
 					g_gui.GetCurrentBrush()->undraw(&map, new_tile);
 					tilestoborder.push_back(*it);
@@ -1728,7 +1731,10 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 						new_tile->tableize(&map);
 						new_tile->carpetize(&map);
 					}
-					new_tile->borderize(&map);
+					new_tile->cleanBorders();
+					if (new_tile->ground) {
+						new_tile->borderize(&map);
+					}
 					action->addChange(newd Change(new_tile));
 				} else {
 					Tile* new_tile = map.allocator(location);
@@ -1738,7 +1744,10 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 						// new_tile->tableize(map);
 						// new_tile->carpetize(map);
 					}
-					new_tile->borderize(&map);
+					new_tile->cleanBorders();
+					if (new_tile->ground) {
+						new_tile->borderize(&map);
+					}
 					if (new_tile->size() > 0) {
 						action->addChange(newd Change(new_tile));
 					} else {

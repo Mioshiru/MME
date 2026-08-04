@@ -162,8 +162,7 @@ void main() {
         vColor.a *= 0.85;
     }
     if (aShaderData == 2.0) {
-        float pulse = sin(uTime * 4.0) * 0.5 + 0.5;
-        pos.y -= pulse * 2.0;
+        // Dynamic objects - no vertical vertex displacement
     }
     vTexCoord   = aTexCoord;
     gl_Position = gl_ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);

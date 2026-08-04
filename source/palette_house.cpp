@@ -434,9 +434,9 @@ void HousePalettePanel::OnClickEditHouse(wxCommandEvent& event) {
 	}
 	House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
 	if (house) {
-		wxDialog* d = newd EditHouseDialog(g_gui.root, map, house);
+		HouseWizardDialog* d = newd HouseWizardDialog(g_gui.root, map, 0, house);
 		int ret = d->ShowModal();
-		if (ret == 1) {
+		if (ret == wxID_OK) {
 			// Something changed, change name of house
 			house_list->SetString(selection, wxstr(house->getDescription()));
 			house_list->Sort();

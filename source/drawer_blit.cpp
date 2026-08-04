@@ -57,7 +57,7 @@ void MapDrawer::BlitItem(int& sx, int& sy, const Position& pos, Item* item, bool
 	// Kleine 1x1 Doodads werden für Hardware-Instancing registriert statt einzeln ins VBO geschrieben
 	if (zoom > 2.0f && it.doodad_brush && spr->width == 1 && spr->height == 1) {
 		int tex = spr->getHardwareID(0, 0, 0, -1, pos.x%spr->pattern_x, pos.y%spr->pattern_y, pos.z%spr->pattern_z, item->getFrame());
-		g_pending_instances[tex].push_back({ (float)sx, (float)sy, (uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a, 1.0f });
+		g_pending_instances[tex].push_back({ (float)sx, (float)sy, (uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a, g_vbo_current_shader_flag });
 		return;
 	}
 
