@@ -99,7 +99,13 @@ void CopyBuffer::copy(Editor& editor, int floor) {
 		TileLocation* newlocation = tiles->createTileL(tile->getX(), tile->getY(), tile->getZ());
 		Tile* copied_tile = tiles->allocator(newlocation);
 
-		if (tile->ground) {
+		bool ground_sel = tile->ground && tile->ground->isSelected();
+		bool creature_sel = tile->creature && tile->creature->isSelected();
+		bool spawn_sel = tile->spawn && tile->spawn->isSelected();
+		ItemVector sel_items = tile->getSelectedItems();
+		bool has_sub_selection = ground_sel || creature_sel || spawn_sel || !sel_items.empty();
+
+		if (tile->ground && (!has_sub_selection || ground_sel)) {
 			copied_tile->house_id = tile->house_id;
 			copied_tile->setMapFlags(tile->getMapFlags());
 			copied_tile->addItem(tile->ground->deepCopy());
@@ -107,14 +113,16 @@ void CopyBuffer::copy(Editor& editor, int floor) {
 		}
 
 		for (ItemVector::iterator iit = tile->items.begin(); iit != tile->items.end(); ++iit) {
-			++item_count;
-			copied_tile->addItem((*iit)->deepCopy());
+			if (!has_sub_selection || (*iit)->isSelected()) {
+				++item_count;
+				copied_tile->addItem((*iit)->deepCopy());
+			}
 		}
 
-		if (tile->creature) {
+		if (tile->creature && (!has_sub_selection || creature_sel)) {
 			copied_tile->creature = tile->creature->deepCopy();
 		}
-		if (tile->spawn) {
+		if (tile->spawn && (!has_sub_selection || spawn_sel)) {
 			copied_tile->spawn = tile->spawn->deepCopy();
 		}
 
@@ -159,30 +167,47 @@ void CopyBuffer::cut(Editor& editor, int floor) {
 		Tile* newtile = tile->deepCopy(editor.map);
 		Tile* copied_tile = tiles->allocator(tile->getLocation());
 
+		bool ground_sel = tile->ground && tile->ground->isSelected();
+		bool creature_sel = tile->creature && tile->creature->isSelected();
+		bool spawn_sel = tile->spawn && tile->spawn->isSelected();
+		ItemVector sel_items = tile->getSelectedItems();
+		bool has_sub_selection = ground_sel || creature_sel || spawn_sel || !sel_items.empty();
+
 		if (newtile->ground) {
-			copied_tile->house_id = newtile->house_id;
-			newtile->house_id = 0;
-			copied_tile->setMapFlags(tile->getMapFlags());
-			newtile->setMapFlags(TILESTATE_NONE);
-			copied_tile->addItem(newtile->ground);
-			newtile->ground = nullptr;
-			item_count++;
+			if (!has_sub_selection || ground_sel) {
+				copied_tile->house_id = newtile->house_id;
+				newtile->house_id = 0;
+				copied_tile->setMapFlags(tile->getMapFlags());
+				newtile->setMapFlags(TILESTATE_NONE);
+				copied_tile->addItem(newtile->ground);
+				newtile->ground = nullptr;
+				item_count++;
+			}
 		}
 
+		ItemVector remaining_items;
 		for (ItemVector::iterator iit = newtile->items.begin(); iit != newtile->items.end(); ++iit) {
-			item_count++;
-			copied_tile->addItem(*iit);
+			if (!has_sub_selection || (*iit)->isSelected()) {
+				item_count++;
+				copied_tile->addItem(*iit);
+			} else {
+				remaining_items.push_back(*iit);
+			}
 		}
-		newtile->items.clear();
+		newtile->items = remaining_items;
 
 		if (newtile->creature) {
-			copied_tile->creature = newtile->creature;
-			newtile->creature = nullptr;
+			if (!has_sub_selection || creature_sel) {
+				copied_tile->creature = newtile->creature;
+				newtile->creature = nullptr;
+			}
 		}
 
 		if (newtile->spawn) {
-			copied_tile->spawn = newtile->spawn;
-			newtile->spawn = nullptr;
+			if (!has_sub_selection || spawn_sel) {
+				copied_tile->spawn = newtile->spawn;
+				newtile->spawn = nullptr;
+			}
 		}
 
 		tiles->setTile(copied_tile->getPosition(), copied_tile);

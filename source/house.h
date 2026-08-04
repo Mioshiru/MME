@@ -55,6 +55,15 @@ public:
 	Position getExit() const {
 		return exit;
 	}
+	const PositionList& getTiles() const {
+		return tiles;
+	}
+	Position getFirstTilePosition() const {
+		if (!tiles.empty()) {
+			return tiles.front();
+		}
+		return Position();
+	}
 	uint8_t getEmptyDoorID() const;
 	Position getDoorPositionByID(uint8_t id) const;
 

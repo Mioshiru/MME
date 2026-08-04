@@ -847,9 +847,7 @@ bool IOMapOTBM::loadMap(Map& map, NodeFileReadHandle& f) {
 	for (BinaryNode* mapNode = mapHeaderNode->getChild(); mapNode != nullptr; mapNode = mapNode->advance()) {
 		++nodes_loaded;
 		if (nodes_loaded % 100 == 0) {
-			if (!g_gui.SetLoadDone(static_cast<int32_t>(100.0 * f.tell() / f.size()))) {
-				return false; // Abbruch durch User
-			}
+			g_gui.SetLoadDone(static_cast<int32_t>(100.0 * f.tell() / f.size()));
 			wxSafeYield(); // Verhindert "Keine Rückmeldung"
 		}
 
@@ -1058,20 +1056,44 @@ bool IOMapOTBM::loadMap(Map& map, NodeFileReadHandle& f) {
 }
 
 bool IOMapOTBM::loadSpawns(Map& map, const FileName& dir) {
-	std::string fn = (const char*)(dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME).mb_str(wxConvUTF8));
-	fn += map.spawnfile;
+	wxFileName fn;
+	fn.Assign(wxstr(map.spawnfile));
+	wxString dir_path = dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
 
-	FileName filename(wxstr(fn));
-	if (!filename.FileExists()) {
-		warnings.push_back("IOMapOTBM::loadSpawns: File not found.");
-		return false;
+	wxString filepath;
+	if (fn.IsAbsolute()) {
+		filepath = fn.GetFullPath();
+	} else {
+		filepath = dir_path + fn.GetFullName();
 	}
 
-	// has to be declared again as encoding-specific characters break loading there
-	std::string encoded_path = (const char*)(dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME).mb_str(wxConvUTF8));
-	encoded_path += map.spawnfile;
+	FileName filename_obj(filepath);
+	if (!filename_obj.FileExists()) {
+		// Fallback 1: Try with backup tilde extension (e.g. atlantica-spawn.xml~)
+		wxString fallback1 = filepath + "~";
+		if (wxFileExists(fallback1)) {
+			filepath = fallback1;
+		} else {
+			// Fallback 2: Try mapname-spawn.xml
+			wxString fallback2 = dir_path + dir.GetName() + "-spawn.xml";
+			if (wxFileExists(fallback2)) {
+				filepath = fallback2;
+			} else {
+				// Fallback 3: Try mapname-spawn.xml~
+				wxString fallback3 = fallback2 + "~";
+				if (wxFileExists(fallback3)) {
+					filepath = fallback3;
+				} else {
+					warnings.push_back("IOMapOTBM::loadSpawns: File not found.");
+					return false;
+				}
+			}
+		}
+	}
+
+	std::string str_path = (const char*)filepath.mb_str(wxConvUTF8);
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(encoded_path.c_str());
+	pugi::xml_parse_result result = doc.load_file(str_path.c_str());
 	if (!result) {
 		warnings.push_back("IOMapOTBM::loadSpawns: File loading error.");
 		return false;
@@ -1210,20 +1232,44 @@ bool IOMapOTBM::loadSpawns(Map& map, pugi::xml_document& doc) {
 }
 
 bool IOMapOTBM::loadHouses(Map& map, const FileName& dir) {
-	std::string fn = (const char*)(dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME).mb_str(wxConvUTF8));
-	fn += map.housefile;
+	wxFileName fn;
+	fn.Assign(wxstr(map.housefile));
+	wxString dir_path = dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
 
-	FileName filename(wxstr(fn));
-	if (!filename.FileExists()) {
-		warnings.push_back("IOMapOTBM::loadHouses: File not found.");
-		return false;
+	wxString filepath;
+	if (fn.IsAbsolute()) {
+		filepath = fn.GetFullPath();
+	} else {
+		filepath = dir_path + fn.GetFullName();
 	}
 
-	// has to be declared again as encoding-specific characters break loading there
-	std::string encoded_path = (const char*)(dir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME).mb_str(wxConvUTF8));
-	encoded_path += map.housefile;
+	FileName filename_obj(filepath);
+	if (!filename_obj.FileExists()) {
+		// Fallback 1: Try with backup tilde extension (e.g. atlantica-house.xml~)
+		wxString fallback1 = filepath + "~";
+		if (wxFileExists(fallback1)) {
+			filepath = fallback1;
+		} else {
+			// Fallback 2: Try mapname-house.xml
+			wxString fallback2 = dir_path + dir.GetName() + "-house.xml";
+			if (wxFileExists(fallback2)) {
+				filepath = fallback2;
+			} else {
+				// Fallback 3: Try mapname-house.xml~
+				wxString fallback3 = fallback2 + "~";
+				if (wxFileExists(fallback3)) {
+					filepath = fallback3;
+				} else {
+					warnings.push_back("IOMapOTBM::loadHouses: File not found.");
+					return false;
+				}
+			}
+		}
+	}
+
+	std::string str_path = (const char*)filepath.mb_str(wxConvUTF8);
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file(encoded_path.c_str());
+	pugi::xml_parse_result result = doc.load_file(str_path.c_str());
 	if (!result) {
 		warnings.push_back("IOMapOTBM::loadHouses: File loading error.");
 		return false;
@@ -1244,17 +1290,24 @@ bool IOMapOTBM::loadHouses(Map& map, pugi::xml_document& doc) {
 			continue;
 		}
 
-		House* house = nullptr;
+		uint32_t houseid = 0;
 		if ((attribute = houseNode.attribute("houseid"))) {
-			house = map.houses.getHouse(attribute.as_uint());
-			if (!house) {
-				break;
-			}
+			houseid = attribute.as_uint();
+		}
+		if (houseid == 0) {
+			continue;
+		}
+
+		House* house = map.houses.getHouse(houseid);
+		if (!house) {
+			house = newd House(map);
+			house->setID(houseid);
+			map.houses.addHouse(house);
 		}
 
 		if ((attribute = houseNode.attribute("name"))) {
 			house->name = attribute.as_string();
-		} else {
+		} else if (house->name.empty()) {
 			house->name = "House #" + std::to_string(house->getID());
 		}
 
@@ -1263,7 +1316,7 @@ bool IOMapOTBM::loadHouses(Map& map, pugi::xml_document& doc) {
 			houseNode.attribute("entryy").as_int(),
 			houseNode.attribute("entryz").as_int()
 		);
-		if (exitPosition.x != 0 && exitPosition.y != 0 && exitPosition.z != 0) {
+		if (exitPosition.x != 0 || exitPosition.y != 0 || exitPosition.z != 0) {
 			house->setExit(exitPosition);
 		}
 
@@ -1277,9 +1330,6 @@ bool IOMapOTBM::loadHouses(Map& map, pugi::xml_document& doc) {
 
 		if ((attribute = houseNode.attribute("townid"))) {
 			house->townid = attribute.as_uint();
-		} else {
-			warning("House %d has no town! House was removed.", house->getID());
-			map.houses.removeHouse(house);
 		}
 	}
 	return true;

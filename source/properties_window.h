@@ -33,6 +33,7 @@ public:
 
 	void OnClickOK(wxCommandEvent&);
 	void OnClickCancel(wxCommandEvent&);
+	void OnClose(wxCloseEvent&);
 	void OnClickAddAttribute(wxCommandEvent&);
 	void OnClickRemoveAttribute(wxCommandEvent&);
 	void OnClickTown(wxCommandEvent&);
@@ -73,6 +74,7 @@ protected:
 	wxSpinCtrl* unique_id_field;
 	wxSpinCtrl* count_field;
 	wxTextCtrl* text_field;
+	wxChoice* depot_town_field;
 
 	DECLARE_EVENT_TABLE()
 };

@@ -196,7 +196,7 @@ Position House::getDoorPositionByID(uint8_t id) const {
 std::string House::getDescription() {
 	std::ostringstream os;
 	os << name;
-	os << " (ID:" << id << "; Rent: " << rent << ")";
+	os << " (ID: " << id << "; Rent: " << rent << "; Tiles: " << tiles.size() << ")";
 	return os.str();
 }
 

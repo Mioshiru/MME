@@ -63,11 +63,11 @@ public:
 	void OnTownChange(wxCommandEvent& event);
 	void OnListBoxChange(wxCommandEvent& event);
 	void OnListBoxDoubleClick(wxCommandEvent& event);
-	void OnClickHouseBrushButton(wxCommandEvent& event);
-	void OnClickSelectExitButton(wxCommandEvent& event);
+	void OnListBoxContextMenu(wxContextMenuEvent& event);
 	void OnClickAddHouse(wxCommandEvent& event);
 	void OnClickEditHouse(wxCommandEvent& event);
 	void OnClickRemoveHouse(wxCommandEvent& event);
+	void OnClickSetExit(wxCommandEvent& event);
 
 #ifdef __APPLE__
 	// Used for detecting a deselect
@@ -78,11 +78,11 @@ protected:
 	Map* map;
 	wxChoice* town_choice;
 	SortableListBox* house_list;
-	wxToggleButton* house_brush_button;
-	wxToggleButton* select_position_button;
 	wxButton* add_house_button;
 	wxButton* edit_house_button;
 	wxButton* remove_house_button;
+	wxToggleButton* set_exit_button;
+	bool is_exit_mode;
 
 	// Used for ugly hack
 	bool do_resize_on_display;

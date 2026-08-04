@@ -1462,6 +1462,9 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 
 		House* house = map.houses.getHouse(house_exit_brush->getHouseID());
 		if (!house) {
+			house = house_exit_brush->getHouse();
+		}
+		if (!house) {
 			return;
 		}
 
@@ -2021,6 +2024,9 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 	} else if (brush->isHouseExit()) {
 		HouseExitBrush* house_exit_brush = brush->asHouseExit();
 		House* house = map.houses.getHouse(house_exit_brush->getHouseID());
+		if (!house) {
+			house = house_exit_brush->getHouse();
+		}
 		if (house && tilestodraw.size() > 0) {
 			Position pos = tilestodraw.front();
 			if (house_exit_brush->canDraw(&map, pos)) {

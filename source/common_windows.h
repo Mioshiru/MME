@@ -308,6 +308,7 @@ public:
 
 	void acquireLock();
 	void releaseLock();
+	void clearReferences();
 
 protected:
 	const Map* edit_map;

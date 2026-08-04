@@ -37,6 +37,7 @@ public:
 
 	void OnClickOK(wxCommandEvent&);
 	void OnClickCancel(wxCommandEvent&);
+	void OnClose(wxCloseEvent&);
 
 	void Update();
 

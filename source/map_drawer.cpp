@@ -37,6 +37,29 @@ inline int getFloorAdjustment(int floor) {
   }
 }
 
+// Returns a unique color for each house based on its ID.
+// Uses a palette of 12 well-distinguishable colors so adjacent houses
+// can be told apart visually.
+struct HouseColor { uint8_t r, g, b; };
+
+static HouseColor getHouseColor(uint32_t houseId) {
+  static const HouseColor palette[12] = {
+    { 30,  80, 200},  // Blue
+    {200,  50,  50},  // Red
+    { 50, 180,  80},  // Green
+    {150,  50, 180},  // Purple
+    {220, 140,  30},  // Orange
+    { 30, 180, 200},  // Cyan
+    {200,  80, 140},  // Rose
+    {140, 200,  30},  // Yellow-Green
+    {170,  30,  80},  // Deep Red
+    { 30, 150, 140},  // Teal
+    {200, 170,  50},  // Gold
+    { 80,  50, 200},  // Indigo
+  };
+  return palette[houseId % 12];
+}
+
 #include "copybuffer.h"
 #include "editor.h"
 #include "graphics.h"
@@ -59,6 +82,7 @@ inline int getFloorAdjustment(int floor) {
 #include "renderer.h"
 #include "spawn_brush.h"
 #include "table_brush.h"
+#include "town.h"
 #include "wall_brush.h"
 #include "waypoint_brush.h"
 
@@ -1460,8 +1484,7 @@ void MapDrawer::DrawMap() {
               }
             }
 
-            if (needs_rebuild && !options.dragging && !canvas->isPasting() &&
-                !only_colors) {
+            if (needs_rebuild && !options.dragging && !only_colors) {
               if (translated) {
                 glPopMatrix();
                 translated = false;
@@ -1735,10 +1758,13 @@ void MapDrawer::DrawMap() {
               }
               if (tile->isHouseTile() && options.show_houses) {
                 if ((int)tile->getHouseID() == current_house_id) {
-                  r /= 2;
+                  r = uint8_t(r * 0.7f);
+                  g = uint8_t(g * 0.7f);
+                  b = uint8_t(std::min(255, int(b * 1.3f)));
                 } else {
-                  r /= 2;
-                  g /= 2;
+                  r = uint8_t(r * 0.75f);
+                  g = uint8_t(g * 0.75f);
+                  b = uint8_t(std::min(255, int(b * 1.2f)));
                 }
               } else if (options.show_special_tiles && tile->isPZ()) {
                 r /= 2;
@@ -1758,6 +1784,16 @@ void MapDrawer::DrawMap() {
                 g /= 2;
               }
               BlitItem(draw_x, draw_y, tile, tile->ground, true, r, g, b, 160);
+
+              if (options.show_houses && tile->isHouseTile()) {
+                if ((int)tile->getHouseID() == current_house_id) {
+                  // Selected house: bright blue overlay
+                  BlitSquare(draw_x, draw_y, 0, 90, 220, 90);
+                } else {
+                  // Non-selected house: subtle dark blue overlay
+                  BlitSquare(draw_x, draw_y, 0, 35, 120, 80);
+                }
+              }
             }
 
             // Draw items on the tile
@@ -2416,10 +2452,13 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f, int pass) {
 
     if (options.show_houses && tile->isHouseTile()) {
       if ((int)tile->getHouseID() == current_house_id) {
-        r /= 2;
+        r = uint8_t(r * 0.7f);
+        g = uint8_t(g * 0.7f);
+        b = uint8_t(std::min(255, int(b * 1.3f)));
       } else {
-        r /= 2;
-        g /= 2;
+        r = uint8_t(r * 0.75f);
+        g = uint8_t(g * 0.75f);
+        b = uint8_t(std::min(255, int(b * 1.2f)));
       }
     } else if (showspecial && tile->isPZ()) {
       r /= 2;
@@ -2472,6 +2511,16 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f, int pass) {
 
         BlitItem(draw_x, draw_y, tile, tile->ground, false, r, g, b);
       }
+
+      if (options.show_houses && tile->isHouseTile()) {
+        if ((int)tile->getHouseID() == current_house_id) {
+          // Selected house: bright blue overlay
+          BlitSquare(draw_x, draw_y, 0, 90, 220, 90);
+        } else {
+          // Non-selected house: subtle dark blue overlay
+          BlitSquare(draw_x, draw_y, 0, 35, 120, 80);
+        }
+      }
       
       if (options.always_show_zones && (r != 255 || g != 255 || b != 255)) {
         DrawRawBrush(draw_x, draw_y, &g_items[SPRITE_ZONE], r, g, b, 60);
@@ -2515,18 +2564,7 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f, int pass) {
         if ((*it)->isBorder()) {
           BlitItem(draw_x, draw_y, tile, *it, false, r, g, b);
         } else {
-          r = 255, g = 255, b = 255;
-
-          if (options.extended_house_shader && options.show_houses &&
-              tile->isHouseTile()) {
-            if ((int)tile->getHouseID() == current_house_id) {
-              r /= 2;
-            } else {
-              r /= 2;
-              g /= 2;
-            }
-          }
-          BlitItem(draw_x, draw_y, tile, *it, false, r, g, b);
+          BlitItem(draw_x, draw_y, tile, *it, false, 255, 255, 255);
         }
       }
       // monster/npc on tile

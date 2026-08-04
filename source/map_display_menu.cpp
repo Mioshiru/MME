@@ -115,7 +115,9 @@ void MapCanvas::OnSelectMoveTo(wxCommandEvent& WXUNUSED(event)) {
 		return;
 	}
 
-	int ret = w->ShowModal(); // unique_ptr verwaltet dies jetzt
+	int ret = w->ShowModal();
+	ObjectPropertiesWindowBase* propBase = dynamic_cast<ObjectPropertiesWindowBase*>(w);
+	if (propBase) propBase->clearReferences();
 	if (ret != 0) {
 		Action* action = editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
 		action->addChange(newd Change(new_tile));
@@ -189,7 +191,7 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 			}
 		}
 		if (new_item) {
-			w = new PropertiesWindow(g_gui.root, &editor.map, new_tile, new_item); 
+			w = newd PropertiesWindow(g_gui.root, &editor.map, new_tile, new_item); 
 		}
 	}
 
@@ -199,6 +201,8 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 	}
 
 	int ret = w->ShowModal();
+	ObjectPropertiesWindowBase* propBase = dynamic_cast<ObjectPropertiesWindowBase*>(w);
+	if (propBase) propBase->clearReferences();
 	if (ret != 0) {
 		Action* action = editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
 		action->addChange(newd Change(new_tile));
@@ -226,6 +230,17 @@ void MapPopupMenu::Update() {
 	}
 
 	bool anything_selected = editor.selection.size() != 0;
+
+	if (anything_selected) {
+		Append(MAP_POPUP_MENU_CUT, "Cut\tCtrl+X", "Cut selected tiles/items");
+		Append(MAP_POPUP_MENU_COPY, "Copy\tCtrl+C", "Copy selected tiles/items");
+	}
+	if (editor.copybuffer.canPaste()) {
+		Append(MAP_POPUP_MENU_PASTE, "Paste\tCtrl+V", "Paste copied tiles/items");
+	}
+	if (anything_selected || editor.copybuffer.canPaste()) {
+		AppendSeparator();
+	}
 
 	if (anything_selected) {
 		if (editor.selection.size() == 1) {

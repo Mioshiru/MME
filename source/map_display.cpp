@@ -630,7 +630,7 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 
 	if (drawing) {
 		Brush* current_brush = g_gui.GetCurrentBrush();
-		if (event.ControlDown() && current_brush && current_brush->isDoodad()) {
+		if (event.AltDown() && current_brush && current_brush->isDoodad()) {
 			DoodadBrush* doodad = static_cast<DoodadBrush*>(current_brush);
 			if (doodad->getMaxVariation() > 1) {
 				int current_var = g_gui.GetBrushVariation();

@@ -310,12 +310,12 @@ END_EVENT_TABLE()
 
 
 PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets) :
-	wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(255, 250)),
+	wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(180, 255)),
 	choicebook(nullptr),
 	terrain_palette(nullptr),
 	doodad_palette(nullptr),
-	item_palette(nullptr),
 	collection_palette(nullptr),
+	item_palette(nullptr),
 	creature_palette(nullptr),
 	house_palette(nullptr),
 	waypoint_palette(nullptr),
@@ -325,7 +325,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	minimap_panel(nullptr),
 	palette_choice(nullptr),
 	search_box(nullptr) {
-	SetMinSize(wxSize(120, 150));
+	SetMinSize(wxSize(180, 255));
 	SetBackgroundColour(wxColor(10, 20, 35));
 
 	palette_choice = newd wxChoice(this, wxID_ANY);
@@ -342,7 +342,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 		}
 	});
 
-	choicebook = newd wxChoicebook(this, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(255, 250));
+	choicebook = newd wxChoicebook(this, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(180, 250));
 	choicebook->SetBackgroundColour(wxColor(10, 20, 35));
 	if (auto* choice_ctrl = choicebook->GetChoiceCtrl()) {
 		choice_ctrl->Hide();
@@ -391,7 +391,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	sizer->Add(palette_choice, 0, wxEXPAND | wxALL, 5);
 	sizer->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
 
-	choicebook->SetMinSize(wxSize(120, 150));
+	choicebook->SetMinSize(wxSize(180, 250));
 	sizer->Add(choicebook, 1, wxEXPAND);
 
 	for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {
@@ -860,7 +860,7 @@ bool PaletteWindow::OnSelectBrush(const Brush* whatbrush, PaletteType primary) {
 		return true;
 	}
 
-	if (whatbrush->isHouse() && house_palette) {
+	if ((whatbrush->isHouse() || whatbrush->isHouseExit()) && house_palette) {
 		house_palette->SelectBrush(whatbrush);
 		SelectPage(TILESET_HOUSE);
 		return true;

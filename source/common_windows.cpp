@@ -1242,6 +1242,15 @@ Item* ObjectPropertiesWindowBase::getItemBeingEdited() {
 	return edit_item;
 }
 
+void ObjectPropertiesWindowBase::clearReferences() {
+	releaseLock();
+	edit_tile = nullptr;
+	edit_item = nullptr;
+	edit_creature = nullptr;
+	edit_spawn = nullptr;
+	edit_map = nullptr;
+}
+
 // ============================================================================
 // Edit Towns Dialog
 

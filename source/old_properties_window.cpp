@@ -40,6 +40,7 @@ BEGIN_EVENT_TABLE(OldPropertiesWindow, wxDialog)
 EVT_SET_FOCUS(OldPropertiesWindow::OnFocusChange)
 EVT_BUTTON(wxID_OK, OldPropertiesWindow::OnClickOK)
 EVT_BUTTON(wxID_CANCEL, OldPropertiesWindow::OnClickCancel)
+EVT_CLOSE(OldPropertiesWindow::OnClose)
 END_EVENT_TABLE()
 
 static constexpr int OUTFIT_COLOR_MAX = 133;
@@ -897,6 +898,10 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 
 void OldPropertiesWindow::OnClickCancel(wxCommandEvent& WXUNUSED(event)) {
 	// Just close this window
+	EndModal(0);
+}
+
+void OldPropertiesWindow::OnClose(wxCloseEvent&) {
 	EndModal(0);
 }
 

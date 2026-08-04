@@ -58,6 +58,7 @@ public:
 	}
 
 	void setHouse(House* house);
+	House* getHouse() const { return house_ptr; }
 
 	uint32_t getHouseID() const;
 	virtual int getLookID() const {
@@ -69,6 +70,7 @@ public:
 
 protected:
 	uint32_t draw_house;
+	House* house_ptr;
 };
 
 #endif

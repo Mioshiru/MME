@@ -97,6 +97,7 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 		}
 	} else {
 		for (TilesetContainer::const_iterator iter = tilesets.begin(); iter != tilesets.end(); ++iter) {
+			if (iter->second->name == "Favorites") continue;
 			const TilesetCategory* tcg = iter->second->getCategory(category);
 			if (tcg && tcg->size() > 0) {
 				BrushPanel* panel = newd BrushPanel(tmp_choicebook);
@@ -432,7 +433,8 @@ BrushPanel::BrushPanel(wxWindow* parent) :
 	loaded(false),
 	list_type(BRUSHLIST_LISTBOX) {
 	sizer = newd wxBoxSizer(wxVERTICAL);
-	SetSizerAndFit(sizer);
+	SetSizer(sizer);
+	SetMinSize(wxSize(180, 200));
 }
 
 BrushPanel::~BrushPanel() {
@@ -500,12 +502,6 @@ void BrushPanel::InvalidateContents() {
 		if (BrushIconBox* iconbox = dynamic_cast<BrushIconBox*>(brushbox->GetSelfWindow())) {
 			iconbox->SetBrushes(all_brushes);
 		}
-	} else {
-		Freeze();
-		sizer->Clear(true);
-		loaded = false;
-		brushbox = nullptr;
-		Thaw();
 	}
 }
 
@@ -733,7 +729,7 @@ void BrushIconBox::UpdateLayout() {
 	if (columns < 1) columns = 1;
 
 	int rows = (visible_brushes.size() + columns - 1) / columns;
-	int height = rows * btn_width;
+	int height = std::max(150, rows * btn_width);
 
 	wxSize cur_virt = GetVirtualSize();
 	if (cur_virt.x != client_width || cur_virt.y != height) {

@@ -7,6 +7,7 @@
 #include "settings.h"
 #include "complexitem.h"
 #include "creature.h"
+#include "town.h"
 #include "performance_logger.h"
 #include "live_server.h"
 #include "live_socket.h"
@@ -959,6 +960,21 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					// 4. Placed NPC / Monster name
 					if (tile->creature) {
 						bubbles.push_back({ "", tile->creature->getName(), ImVec4(0.6f, 0.8f, 1.0f, 1.0f), ImVec4(0.3f, 0.6f, 0.8f, 1.0f) });
+					}
+
+					// 5. Town Spawn / Temple Name
+					if (g_settings.getBoolean(Config::SHOW_TOWNS) && tile->isTownExit(editor.map)) {
+						for (const auto& pair : editor.map.towns) {
+							Town* town = pair.second;
+							if (town && town->getTemplePosition() == tile->getPosition()) {
+								std::string town_name = town->getName();
+								if (town_name.empty()) {
+									town_name = "Town #" + std::to_string(town->getID());
+								}
+								bubbles.push_back({ "Town Spawn", town_name, ImVec4(1.0f, 0.85f, 0.3f, 1.0f), ImVec4(0.85f, 0.65f, 0.1f, 1.0f) });
+								break;
+							}
+						}
 					}
 
 					if (bubbles.empty()) continue;

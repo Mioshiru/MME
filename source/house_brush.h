@@ -54,6 +54,7 @@ public:
 	}
 
 	void setHouse(House* house);
+	House* getHouse() const { return draw_house; }
 
 	uint32_t getHouseID() const;
 	virtual int getLookID() const {

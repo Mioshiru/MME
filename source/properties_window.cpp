@@ -36,6 +36,7 @@
 BEGIN_EVENT_TABLE(PropertiesWindow, wxDialog)
 EVT_BUTTON(wxID_OK, PropertiesWindow::OnClickOK)
 EVT_BUTTON(wxID_CANCEL, PropertiesWindow::OnClickCancel)
+EVT_CLOSE(PropertiesWindow::OnClose)
 
 EVT_BUTTON(ITEM_PROPERTIES_ADD_ATTRIBUTE, PropertiesWindow::OnClickAddAttribute)
 EVT_BUTTON(ITEM_PROPERTIES_REMOVE_ATTRIBUTE, PropertiesWindow::OnClickRemoveAttribute)
@@ -51,6 +52,8 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 	action_id_field(nullptr),
 	unique_id_field(nullptr),
 	count_field(nullptr),
+	text_field(nullptr),
+	depot_town_field(nullptr),
 	waypoint_name_field(nullptr),
 	currentPanel(nullptr) {
 	ASSERT(edit_item);
@@ -193,6 +196,37 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 		gridsizer->Add(text_field, wxSizerFlags(1).Expand());
 	} else {
 		text_field = nullptr;
+	}
+
+	if (Depot* depot = dynamic_cast<Depot*>(edit_item)) {
+		addLabel("Depot Town:");
+		depot_town_field = newd wxChoice(panel, wxID_ANY);
+		depot_town_field->SetBackgroundColour(wxColour(16, 28, 48));
+		depot_town_field->SetForegroundColour(wxColour(240, 245, 255));
+
+		int to_select_index = 0;
+		if (edit_map) {
+			for (const auto& pair : edit_map->towns) {
+				const Town* town = pair.second;
+				if (town) {
+					if (town->getID() == depot->getDepotID()) {
+						to_select_index = depot_town_field->GetCount();
+					}
+					depot_town_field->Append(wxstr(town->getName()), reinterpret_cast<void*>(static_cast<uintptr_t>(town->getID())));
+				}
+			}
+			if (to_select_index == 0 && depot->getDepotID() != 0) {
+				depot_town_field->Append("Undefined Town (id:" + i2ws(depot->getDepotID()) + ")", reinterpret_cast<void*>(static_cast<uintptr_t>(depot->getDepotID())));
+			}
+		}
+		depot_town_field->Append("No Town", reinterpret_cast<void*>(static_cast<uintptr_t>(0)));
+		if (depot->getDepotID() == 0) {
+			to_select_index = depot_town_field->GetCount() - 1;
+		}
+		depot_town_field->SetSelection(to_select_index);
+		gridsizer->Add(depot_town_field, wxSizerFlags(1).Expand());
+	} else {
+		depot_town_field = nullptr;
 	}
 
 	if (edit_item->isGroundTile() && !edit_item->hasProperty(BLOCKSOLID)) {
@@ -395,6 +429,13 @@ void PropertiesWindow::saveGeneralPanel() {
 	if (text_field && (edit_item->canHoldText() || edit_item->canHoldDescription())) {
 		edit_item->setText(nstr(text_field->GetValue()));
 	}
+	if (depot_town_field) {
+		Depot* depot = dynamic_cast<Depot*>(edit_item);
+		if (depot && depot_town_field->GetSelection() != wxNOT_FOUND) {
+			uint16_t selected_town_id = static_cast<uint16_t>(reinterpret_cast<uintptr_t>(depot_town_field->GetClientData(depot_town_field->GetSelection())));
+			depot->setDepotID(selected_town_id);
+		}
+	}
 }
 
 void PropertiesWindow::saveContainerPanel() {
@@ -529,6 +570,10 @@ void PropertiesWindow::OnClickTown(wxCommandEvent&) {
 }
 
 void PropertiesWindow::OnClickCancel(wxCommandEvent&) {
+	EndModal(0);
+}
+
+void PropertiesWindow::OnClose(wxCloseEvent&) {
 	EndModal(0);
 }
 
