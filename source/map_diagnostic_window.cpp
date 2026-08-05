@@ -11,13 +11,17 @@
 #include <wx/sizer.h>
 #include <set>
 
+#include "style_manager.h"
+
 enum {
 	DIAG_BTN_SCAN = wxID_HIGHEST + 300,
+	DIAG_BTN_FIX,
 	DIAG_LIST_CTRL
 };
 
 BEGIN_EVENT_TABLE(MapDiagnosticDialog, wxDialog)
 EVT_BUTTON(DIAG_BTN_SCAN, MapDiagnosticDialog::OnClickScan)
+EVT_BUTTON(DIAG_BTN_FIX, MapDiagnosticDialog::OnClickAutoFix)
 EVT_LIST_ITEM_SELECTED(DIAG_LIST_CTRL, MapDiagnosticDialog::OnItemSelect)
 EVT_BUTTON(wxID_CANCEL, MapDiagnosticDialog::OnClickClose)
 END_EVENT_TABLE()
@@ -25,6 +29,9 @@ END_EVENT_TABLE()
 MapDiagnosticDialog::MapDiagnosticDialog(wxWindow* parent, Editor& editor) :
 	wxDialog(parent, wxID_ANY, "Map Diagnostic & Health Scanner", wxDefaultPosition, wxSize(640, 480), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	editor(editor) {
+
+	SetBackgroundColour(wxColour(16, 28, 48));
+	SetForegroundColour(wxColour(240, 245, 255));
 
 	wxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
 
@@ -34,22 +41,27 @@ MapDiagnosticDialog::MapDiagnosticDialog(wxWindow* parent, Editor& editor) :
 	headerFont.SetPointSize(12);
 	headerFont.SetWeight(wxFONTWEIGHT_BOLD);
 	header->SetFont(headerFont);
-	header->SetForegroundColour(wxColor(180, 140, 50));
+	header->SetForegroundColour(wxColor(240, 210, 120));
 	topsizer->Add(header, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
 
 	issueListCtrl = new wxListCtrl(this, DIAG_LIST_CTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
 	issueListCtrl->InsertColumn(0, "Kategorie", wxLIST_FORMAT_LEFT, 140);
 	issueListCtrl->InsertColumn(1, "Position", wxLIST_FORMAT_LEFT, 100);
 	issueListCtrl->InsertColumn(2, "Beschreibung", wxLIST_FORMAT_LEFT, 350);
+	issueListCtrl->SetBackgroundColour(wxColour(10, 20, 35));
+	issueListCtrl->SetForegroundColour(wxColour(240, 245, 255));
 
 	topsizer->Add(issueListCtrl, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
 
 	wxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
 	buttonSizer->Add(new wxButton(this, DIAG_BTN_SCAN, "Scan starten"), 0, wxRIGHT, 10);
+	buttonSizer->Add(new wxButton(this, DIAG_BTN_FIX, "Auto-Fix All"), 0, wxRIGHT, 10);
 	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Schließen"), 0);
 
 	topsizer->Add(buttonSizer, 0, wxALIGN_RIGHT | wxALL, 10);
 	SetSizerAndFit(topsizer);
+
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 MapDiagnosticDialog::~MapDiagnosticDialog() {
@@ -123,6 +135,29 @@ void MapDiagnosticDialog::runDiagnostics() {
 
 void MapDiagnosticDialog::OnClickScan(wxCommandEvent& WXUNUSED(event)) {
 	runDiagnostics();
+}
+
+void MapDiagnosticDialog::autoFixAll() {
+	Map& map = editor.map;
+	int fixed_count = 0;
+
+	for (const auto& issue : issues) {
+		Tile* tile = map.getTile(issue.pos);
+		if (!tile) continue;
+
+		if (issue.category == "Orphan House Tile" && tile->getHouseID() != 0) {
+			tile->setHouseID(0);
+			fixed_count++;
+		}
+	}
+
+	map.doChange();
+	g_gui.SetStatusText(wxString::Format("Auto-Fix beendet: %d Probleme automatisch behoben.", fixed_count));
+	runDiagnostics();
+}
+
+void MapDiagnosticDialog::OnClickAutoFix(wxCommandEvent& WXUNUSED(event)) {
+	autoFixAll();
 }
 
 void MapDiagnosticDialog::OnItemSelect(wxListEvent& event) {

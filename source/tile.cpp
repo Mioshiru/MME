@@ -576,6 +576,17 @@ void Tile::addBorderItem(Item* item) {
 		return;
 	}
 	ASSERT(item->isBorder());
+
+	// Floor Change Protection:
+	// If tile contains a floor change item (stairs, ladder, hole, trapdoor),
+	// skip adding borders over the entrance/opening
+	for (Item* existing : items) {
+		if (existing && g_items[existing->getID()].isFloorChange()) {
+			delete item;
+			return;
+		}
+	}
+
 	items.insert(items.begin(), item);
 }
 
@@ -589,12 +600,11 @@ GroundBrush* Tile::getGroundBrush() const {
 }
 
 void Tile::cleanBorders() {
-	ItemVector::iterator it;
-
-	it = items.begin();
+	ItemVector::iterator it = items.begin();
 	while (it != items.end()) {
-		if ((*it)->isBorder()) {
-			delete *it;
+		Item* item = *it;
+		if (item->isBorder() || g_items[item->getID()].isOptionalBorder) {
+			delete item;
 			it = items.erase(it);
 		} else {
 			// Borders should only be on the bottom, we can ignore the rest of the items

@@ -309,9 +309,11 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
           const ItemType& rotated_type = g_items[itemtype.rotateTo];
           if (rotated_type.raw_brush) {
             g_gui.SelectBrush(rotated_type.raw_brush);
-            Refresh();
-            return;
+          } else {
+            raw_brush->setItemID(itemtype.rotateTo);
           }
+          Refresh();
+          return;
         }
       } else if (brush->isDoodad()) {
         DoodadBrush* doodad = static_cast<DoodadBrush*>(brush);

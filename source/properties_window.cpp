@@ -23,6 +23,7 @@
 #include "town.h"
 #include "editor.h"
 #include "gui.h"
+#include "style_manager.h"
 
 #include "gui_ids.h"
 #include "complexitem.h"
@@ -115,6 +116,8 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 
 	SetSizerAndFit(topSizer);
 	Centre(wxBOTH);
+
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 PropertiesWindow::~PropertiesWindow() {
@@ -170,6 +173,31 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 	unique_id_field = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getUniqueID()), wxDefaultPosition, wxSize(-1, 24), wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getUniqueID());
 	styleSpin(unique_id_field);
 	gridsizer->Add(unique_id_field, wxSizerFlags(1).Expand());
+
+	if (edit_item->isDoor()) {
+		addLabel("Locked Door:");
+		locked_door_checkbox = newd wxCheckBox(panel, wxID_ANY, "Abgeschlossen / Locked (Action ID 100)");
+		locked_door_checkbox->SetForegroundColour(wxColour(240, 245, 255));
+		locked_door_checkbox->SetValue(edit_item->getActionID() == 100);
+		
+		locked_door_checkbox->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& evt) {
+			if (evt.IsChecked()) {
+				action_id_field->SetValue(100);
+			} else if (action_id_field->GetValue() == 100) {
+				action_id_field->SetValue(0);
+			}
+		});
+
+		action_id_field->Bind(wxEVT_SPINCTRL, [this](wxCommandEvent& evt) {
+			if (locked_door_checkbox) {
+				locked_door_checkbox->SetValue(action_id_field->GetValue() == 100);
+			}
+		});
+
+		gridsizer->Add(locked_door_checkbox, wxSizerFlags(1).Expand());
+	} else {
+		locked_door_checkbox = nullptr;
+	}
 
 	if (edit_item->isStackable() || edit_item->isCharged() || edit_item->isFluidContainer() || edit_item->isSplash()) {
 		int max_count = 100;
@@ -417,7 +445,9 @@ void PropertiesWindow::OnNotebookPageChanged(wxNotebookEvent& evt) {
 }
 
 void PropertiesWindow::saveGeneralPanel() {
-	if (action_id_field) {
+	if (locked_door_checkbox && locked_door_checkbox->IsChecked()) {
+		edit_item->setActionID(100);
+	} else if (action_id_field) {
 		edit_item->setActionID(action_id_field->GetValue());
 	}
 	if (unique_id_field) {

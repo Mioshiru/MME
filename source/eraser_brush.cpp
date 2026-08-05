@@ -52,14 +52,24 @@ void EraserBrush::undraw(BaseMap* map, Tile* tile) {
 void EraserBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 	if (!tile) return;
 	tile->unsetMapFlags(TILESTATE_PROTECTIONZONE | TILESTATE_NOPVP | TILESTATE_NOLOGOUT | TILESTATE_PVPZONE);
+
+	bool leave_ground = g_settings.getInteger(Config::ERASER_LEAVE_GROUND);
+
 	for (ItemVector::iterator item_iter = tile->items.begin(); item_iter != tile->items.end();) {
 		Item* item = *item_iter;
-		if (item->isComplex() && g_settings.getInteger(Config::ERASER_LEAVE_UNIQUE)) {
+		bool is_complex_protected = item->isComplex() && g_settings.getInteger(Config::ERASER_LEAVE_UNIQUE);
+		bool is_border_protected = leave_ground && (item->isBorder() || g_items[item->getID()].isOptionalBorder);
+
+		if (is_complex_protected || is_border_protected) {
 			++item_iter;
 		} else {
 			delete item;
 			item_iter = tile->items.erase(item_iter);
 		}
+	}
+	if (leave_ground) {
+		// Keep ground tile intact
+		return;
 	}
 	if (tile->ground) {
 		if (g_settings.getInteger(Config::ERASER_LEAVE_UNIQUE) && tile->ground->isComplex()) {

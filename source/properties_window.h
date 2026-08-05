@@ -75,6 +75,7 @@ protected:
 	wxSpinCtrl* count_field;
 	wxTextCtrl* text_field;
 	wxChoice* depot_town_field;
+	wxCheckBox* locked_door_checkbox;
 
 	DECLARE_EVENT_TABLE()
 };

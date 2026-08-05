@@ -1068,9 +1068,9 @@ void MainMenuBar::OnToggleAutomagic(wxCommandEvent& WXUNUSED(event)) {
 	g_settings.setInteger(Config::USE_AUTOMAGIC, IsItemChecked(MenuBar::AUTOMAGIC));
 	g_settings.setInteger(Config::BORDER_IS_GROUND, IsItemChecked(MenuBar::AUTOMAGIC));
 	if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-		g_gui.SetStatusText("Automagic enabled.");
+		g_gui.SetStatusText("Automagic: AN (Auto-Bordering aktiv)");
 	} else {
-		g_gui.SetStatusText("Automagic disabled.");
+		g_gui.SetStatusText("Automagic: AUS (Manuelles Bordering aktiv)");
 	}
 }
 

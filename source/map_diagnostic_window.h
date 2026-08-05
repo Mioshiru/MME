@@ -21,11 +21,13 @@ public:
 	virtual ~MapDiagnosticDialog();
 
 	void OnClickScan(wxCommandEvent& event);
+	void OnClickAutoFix(wxCommandEvent& event);
 	void OnItemSelect(wxListEvent& event);
 	void OnClickClose(wxCommandEvent& event);
 
 private:
 	void runDiagnostics();
+	void autoFixAll();
 
 	Editor& editor;
 	wxListCtrl* issueListCtrl;

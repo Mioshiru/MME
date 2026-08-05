@@ -80,6 +80,58 @@ void RAWBrush::undraw(BaseMap* map, Tile* tile) {
 	}
 }
 
+#include "brush_enums.h"
+
+void RAWBrush::setItemID(uint16_t id) {
+	ItemType& it = g_items[id];
+	if (it.id != 0) {
+		itemtype = &it;
+	}
+}
+
+static void autoAlignHangableItem(BaseMap* map, Tile* tile, Item* item) {
+	if (!item || !tile) return;
+	const ItemType& it = g_items[item->getID()];
+	if (it.rotateTo == 0) return;
+	if (!it.isHangable && !it.hookEast && !it.hookSouth) return;
+
+	bool is_horizontal_wall = false;
+	bool is_vertical_wall = false;
+
+	auto checkTileWalls = [&](Tile* t) {
+		if (!t) return;
+		for (Item* tile_item : t->items) {
+			if (tile_item->isWall()) {
+				BorderType bt = tile_item->getWallAlignment();
+				if (bt == NORTH_HORIZONTAL || bt == SOUTH_HORIZONTAL || bt == WALL_HORIZONTAL) {
+					is_horizontal_wall = true;
+				} else if (bt == EAST_HORIZONTAL || bt == WEST_HORIZONTAL || bt == WALL_VERTICAL) {
+					is_vertical_wall = true;
+				}
+			}
+		}
+	};
+
+	checkTileWalls(tile);
+	if (!is_horizontal_wall && !is_vertical_wall && map && tile->getPosition().isValid()) {
+		Position p = tile->getPosition();
+		if (p.y > 0) checkTileWalls(map->getTile(p.x, p.y - 1, p.z));
+		if (p.x > 0) checkTileWalls(map->getTile(p.x - 1, p.y, p.z));
+	}
+
+	const ItemType& rot_it = g_items[it.rotateTo];
+
+	if (is_horizontal_wall && !is_vertical_wall) {
+		if (it.hookEast || (!it.hookSouth && rot_it.hookSouth)) {
+			item->setID(it.rotateTo);
+		}
+	} else if (is_vertical_wall && !is_horizontal_wall) {
+		if (it.hookSouth || (!it.hookEast && rot_it.hookEast)) {
+			item->setID(it.rotateTo);
+		}
+	}
+}
+
 void RAWBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 	if (!itemtype) {
 		return;
@@ -97,7 +149,9 @@ void RAWBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 			}
 		}
 	}
-	tile->addItem(Item::Create(itemtype->id));
+	Item* new_item = Item::Create(itemtype->id);
+	autoAlignHangableItem(map, tile, new_item);
+	tile->addItem(new_item);
 }
 
 bool RAWBrush::isWall() const {

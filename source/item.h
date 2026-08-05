@@ -278,7 +278,7 @@ public:
 	}
 	bool isRoteable() const {
 		const ItemType& it = g_items[id];
-		return it.rotable && it.rotateTo;
+		return (it.rotable || it.isHangable || it.rotateTo != 0) && (it.rotateTo != 0);
 	}
 	void doRotate() {
 		if (isRoteable()) {

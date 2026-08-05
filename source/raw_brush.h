@@ -51,6 +51,7 @@ public:
 		return itemtype;
 	}
 	uint16_t getItemID() const;
+	void setItemID(uint16_t id);
 
 protected:
 	ItemType* itemtype;

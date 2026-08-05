@@ -592,7 +592,6 @@ void ActionQueue::addBatch(BatchAction* batch, int stacking_delay) {
 			BatchAction* lastAction = actions.back();
 			if (lastAction->type == batch->type && g_settings.getInteger(Config::GROUP_ACTIONS) && time(nullptr) - stacking_delay < lastAction->timestamp) {
 				lastAction->merge(batch);
-				lastAction->timestamp = time(nullptr);
 				memory_size -= lastAction->memsize();
 				memory_size += lastAction->memsize(true);
 				delete batch;

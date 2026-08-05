@@ -22,6 +22,7 @@
 #include "items.h"
 #include "brush.h"
 #include "raw_brush.h"
+#include "style_manager.h"
 
 BEGIN_EVENT_TABLE(FindItemDialog, wxDialog)
 EVT_TIMER(wxID_ANY, FindItemDialog::OnInputTimer)
@@ -208,6 +209,8 @@ FindItemDialog::FindItemDialog(wxWindow* parent, const wxString& title, bool onl
 	invalid_item->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(FindItemDialog::OnPropertyChange), NULL, this);
 
 	items_list->Connect(wxEVT_LISTBOX_DCLICK, wxCommandEventHandler(FindItemDialog::OnClickOK), NULL, this);
+
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 FindItemDialog::~FindItemDialog() {
