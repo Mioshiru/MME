@@ -10,3 +10,7 @@ MME is an ambitious fork of the legendary Remere's Map Editor (RME), designed fo
     *   **Vector Graphics (NanoVG/NanoSVG):** Crisp, scalable vector-based user interfaces.
 *   **🎲 Procedural Generation:** Leverage built-in noise generation algorithms (*FastNoiseLite*) to generate organic terrains and caves programmatically.
 *   **📦 Seamless Building with VCPKG:** Full package manager integration for hassle-free compilation on Windows, Linux, and macOS.
+
+<img width="316" height="329" alt="Screenshot 2026-08-07 235628" src="https://github.com/user-attachments/assets/9af65675-d4bc-4f26-9319-37d088def780" />
+<img width="2559" height="1390" alt="Screenshot 2026-08-07 235729" src="https://github.com/user-attachments/assets/6228ac78-ece2-482d-9fd9-6308ce46eff0" />
+<img width="2559" height="1391" alt="Screenshot 2026-08-08 000459" src="https://github.com/user-attachments/assets/9e2cb227-cbbf-451e-ae10-bd2b53321ff1" />
