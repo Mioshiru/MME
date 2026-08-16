@@ -40,6 +40,7 @@ public:
 	void createOtherTileset();
 	void saveFavorites();
 	void loadFavorites();
+	void rebuildFavorites();
 	void addToTileset(std::string tilesetName, int itemId, TilesetCategoryType categoryType);
 
 	bool isInTileset(Item* item, std::string tileset) const;

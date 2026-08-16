@@ -282,84 +282,117 @@
 
 	<tileset name="Nature">
 		<terrain>
-			<brush name="mountain"/>
-			<brush name="snowy mountain"/>
-			<brush name="ice mountain"/>
-			<brush name="earth mountain"/>
-			<brush name="grotto"/>
-			<brush name="crystal wall"/>
-			<brush name="basalt"/>
-			<brush name="mossy wall mountain"/>
-			<brush name="muddy mountain"/>
-			<brush name="swamp clay mountain"/>
-			<brush name="purple crystal mountain"/>
-			<brush name="sandstone mountain"/>
-			<brush name="seacrest mountain"/>
-			<brush name="earth"/>
-			<brush name="earth (stone border)"/>
-			<brush name="clear water"/>
-			<brush name="sea"/>
-			<brush name="walkable sea"/>
-			<brush name="small brook"/>
-			<brush name="shallow water"/>
-			<brush name="dirty water"/>
-			<brush name="blood water"/>
-			<brush name="white gravel"/>
+			<separator name="Grasslands & Forests"/>
 			<brush name="grass"/>
 			<brush name="grass (alternate border)"/>
 			<brush name="dark grass"/>
-			<brush name="jungle grass"/>
 			<brush name="dried grass"/>
 			<brush name="lush grass"/>
-			<brush name="mossy floor"/>
 			<brush name="forest floor"/>
-			<brush name="krailos grass"/>
+			<brush name="mossy floor"/>
 			<brush name="tree leaves"/>
-			<brush name="teal leaves"/>
-			<brush name="yellow leaves"/>
 			<brush name="green leaves"/>
-			<brush name="cave"/>
-			<brush name="cave (alternate border)"/>
-			<brush name="dirt"/>
+			<brush name="white gravel"/>
+			<brush name="gravel"/>
+			<brush name="loose gravel"/>
+			<brush name="earth"/>
+			<brush name="earth (stone border)"/>
 			<brush name="earth ground"/>
-			<brush name="jungle dirt"/>
-			<brush name="dark dirt"/>
-			<brush name="melting ground"/>
-			<brush name="lava"/>
-			<brush name="lava (rock soil & cave ground)"/>
-			<brush name="tar pit"/>
-			<brush name="brown sand"/>
-			<brush name="dirt mud"/>
-			<brush name="muddy sand"/>
-			<brush name="unknown2"/>
-			<brush name="crystal dirt"/>
+			<brush name="earth floor"/>
+			<brush name="dirt"/>
 			<brush name="light dirt"/>
-			<brush name="cake tile"/>
-			<brush name="krailos dirt"/>
+			<brush name="unknown2"/>
+			<separator name="Mountains & Cliffs"/>
+			<brush name="mountain"/>
+			<brush name="mountain ground"/>
+			<brush name="dirt mountain ground"/>
+			<brush name="snowy mountain"/>
+			<brush name="ice mountain"/>
+			<brush name="earth mountain"/>
+			<brush name="sandstone mountain"/>
+			<brush name="mossy wall mountain"/>
+			<brush name="muddy mountain"/>
+			<brush name="swamp clay mountain"/>
+			<brush name="grotto"/>
+			<brush name="crystal wall"/>
+			<brush name="purple crystal mountain"/>
+			<brush name="basalt"/>
+			<brush name="small basalt wall"/>
+			<brush name="seacrest mountain"/>
+			<separator name="Waters, Rivers & Coasts"/>
+			<brush name="clear water"/>
+			<brush name="sea"/>
+			<brush name="walkable sea"/>
+			<brush name="shallow water"/>
+			<brush name="small brook"/>
+			<brush name="dirty water"/>
+			<brush name="blood water"/>
+			<brush name="muddy water"/>
+			<brush name="fog"/>
+			<separator name="Desert & Steppe"/>
 			<brush name="sand"/>
 			<brush name="sand (thick border)"/>
 			<brush name="pink sand"/>
 			<brush name="dark sand"/>
+			<brush name="brown sand"/>
 			<brush name="dry earth"/>
 			<brush name="mud sand"/>
+			<brush name="muddy sand"/>
 			<brush name="sand gravel"/>
-			<brush name="loose gravel"/>
-			<brush name="gravel"/>
-			<brush name="ice floe"/>
+			<brush name="krailos grass"/>
+			<brush name="krailos dirt"/>
+			<brush name="krailos orange"/>
+			<brush name="krailos yellow"/>
+			<brush name="krailos purple"/>
+			<brush name="tar pit"/>
+			<separator name="Snow & Ice"/>
 			<brush name="snow"/>
 			<brush name="ice"/>
-			<brush name="light swampdirt"/>
+			<brush name="ice floe"/>
+			<brush name="frozen mud"/>
+			<brush name="frozen mud (thick border)"/>
+			<brush name="darkest mud"/>
+			<separator name="Swamp & Jungle"/>
 			<brush name="swamp"/>
 			<brush name="dark swamp"/>
 			<brush name="walkable swamp"/>
 			<brush name="venore swamp"/>
-			<brush name="muddy water"/>
-			<brush name="acid"/>
+			<brush name="light swampdirt"/>
 			<brush name="muddy floor"/>
 			<brush name="venore muddy floor"/>
+			<brush name="dirt mud"/>
+			<brush name="purple mud"/>
+			<brush name="jungle grass"/>
+			<brush name="jungle dirt"/>
+			<brush name="teal leaves"/>
+			<brush name="yellow leaves"/>
+			<brush name="branch floor"/>
+			<brush name="mossy railing"/>
+			<brush name="mushroom railing"/>
 			<brush name="unknown5"/>
 			<brush name="unknown6"/>
-			<brush name="fog"/>
+			<separator name="Caves, Lava & Underground"/>
+			<brush name="cave"/>
+			<brush name="cave (alternate border)"/>
+			<brush name="dark dirt"/>
+			<brush name="rock soil"/>
+			<brush name="rocky ground"/>
+			<brush name="melting ground"/>
+			<brush name="lava"/>
+			<brush name="lava (rock soil & cave ground)"/>
+			<brush name="acid"/>
+			<brush name="dark spikes"/>
+			<brush name="red spikes"/>
+			<brush name="rocky red floor"/>
+			<brush name="slime fungus"/>
+			<brush name="mold floor"/>
+			<brush name="mushroom sponge"/>
+			<brush name="salt floor"/>
+			<brush name="basalt floor"/>
+			<separator name="Crystals, Hive & Dimensions"/>
+			<brush name="crystal dirt"/>
+			<brush name="crystal floor"/>
+			<brush name="scattered crystals"/>
 			<brush name="hive structure"/>
 			<brush name="red hive structure"/>
 			<brush name="dark hive structure"/>
@@ -367,53 +400,29 @@
 			<brush name="bland honeycomb floor"/>
 			<brush name="big bland honeycomb floor"/>
 			<brush name="big colourful honeycomb floor"/>
-			<brush name="mountain ground"/>
-			<brush name="rock soil"/>
-			<brush name="rocky ground"/>
-			<brush name="frozen mud"/>
-			<brush name="frozen mud (thick border)"/>
-			<brush name="darkest mud"/>
-			<brush name="purple mud"/>
-			<brush name="earth floor"/>
-			<brush name="dirt mountain ground"/>
-			<brush name="mysterious ground"/>
-			<brush name="dark spikes"/>
-			<brush name="red spikes"/>
 			<brush name="dark scaled ground"/>
 			<brush name="dark scaled ground (colours)"/>
-			<brush name="slime fungus"/>
-			<brush name="rocky red floor"/>
-			<brush name="deepling spawn"/>
-			<brush name="blue sea floor"/>
-			<brush name="brown sea floor"/>
-			<brush name="unknowndeepling"/>
-			<brush name="crystal floor"/>
-			<brush name="scattered crystals"/>
-			<brush name="basalt floor"/>
-			<brush name="mold floor"/>
-			<brush name="mushroom sponge"/>
-			<brush name="salt floor"/>
-			<brush name="cookie floor"/>
-			<brush name="branch floor"/>
-			<brush name="unknown4"/>
-			<brush name="unknown7"/>
-			<brush name="ocean floor"/>
-			<brush name="serpent seacrest ground"/>
-			<brush name="krailos orange"/>
-			<brush name="krailos yellow"/>
-			<brush name="krailos purple"/>
+			<brush name="mysterious ground"/>
 			<brush name="vortex floor1"/>
 			<brush name="vortex floor2"/>
 			<brush name="vortex floor3"/>
 			<brush name="vortex floor4"/>
-			<brush name="void"/>
 			<brush name="hoard of gold"/>
 			<brush name="green hoard of gold"/>
-			<brush name="small basalt wall"/>
-			<brush name="mossy railing"/>
-			<brush name="mushroom railing"/>
+			<brush name="cake tile"/>
+			<brush name="cookie floor"/>
+			<brush name="void"/>
+			<brush name="unknown4"/>
+			<brush name="unknown7"/>
+			<separator name="Ocean & Underwater"/>
+			<brush name="ocean floor"/>
+			<brush name="blue sea floor"/>
+			<brush name="brown sea floor"/>
+			<brush name="deepling spawn"/>
+			<brush name="serpent seacrest ground"/>
+			<brush name="unknowndeepling"/>
 		</terrain>
-		<doodad>
+			<doodad>
 			<brush name="green trees"/>
 			<brush name="alternate trees"/>
 			<brush name="birch trees"/>
@@ -742,6 +751,27 @@
 			<brush name="red crystal geode"/>
 			<item id="17592"/>
 			<item id="17589"/>
+		
+			<brush name="snowy dead trees"/>
+			<brush name="snowy alive trees"/>
+			<brush name="snowy rocks"/>
+			<brush name="small snowy rocks"/>
+			<brush name="ice floe"/>
+			<brush name="snow drift"/>
+			<brush name="iceberg"/>
+			<brush name="floating ice"/>
+			<brush name="frozen human (warrior)"/>
+			<brush name="frozen human (wizard female)"/>
+			<brush name="frozen human (wizard male)"/>
+			<brush name="frozen human (druid)"/>
+			<brush name="frozen human (mage)"/>
+			<brush name="snowman"/>
+			<brush name="ice hut"/>
+			<brush name="hanging ice"/>
+			<brush name="frozen railing1"/>
+			<brush name="frozen railing2"/>
+			<item id="6966"/>
+			<brush name="husky sled"/>
 		</doodad>
 		<raw>
 			<item fromid="386" toid="391"/>
@@ -952,8 +982,9 @@
 		</raw>
 	</tileset>
 
-	<tileset name="Nature - Tiny Borders">
+	<tileset name="Tiny Borders">
 		<terrain>
+			<separator name="Nature Tiny Borders"/>
 			<brush name="cave dirt wall (tiny)"/>
 			<brush name="cave stone wall (tiny)"/>
 			<brush name="sea (tiny)"/>
@@ -1053,11 +1084,7 @@
 			<brush name="krailos orange (tiny)"/>
 			<brush name="krailos yellow (tiny)"/>
 			<brush name="krailos purple (tiny)"/>
-		</terrain>
-	</tileset>
-
-	<tileset name="City Grounds - Tiny Borders">
-		<terrain>
+			<separator name="City Grounds Tiny Borders"/>
 			<brush name="dark cobblestone (tiny)"/>
 			<brush name="ugly cobblestone (tiny)"/>
 			<brush name="yellow pavement (tiny)"/>
@@ -1088,52 +1115,6 @@
 			<brush name="light brick fittings (tiny)"/>
 			<brush name="dark brick fittings (tiny)"/>
 		</terrain>
-	</tileset>
-
-	<tileset name="Snow">
-		<terrain>
-			<brush name="sea"/>
-			<brush name="walkable sea"/>
-			<brush name="mountain"/>
-			<brush name="snowy mountain"/>
-			<brush name="icy mountain"/>
-			<brush name="icy earth"/>
-			<brush name="snowy ramp"/>
-			<brush name="ramp"/>
-			<brush name="snow"/>
-			<brush name="ice"/>
-			<brush name="ice floe"/>
-			<brush name="white gravel"/>
-			<brush name="ice stone floor"/>
-			<brush name="mountain ground"/>
-			<brush name="rock soil"/>
-			<brush name="rocky ground"/>
-			<brush name="frozen mud"/>
-			<brush name="frozen mud (thick border)"/>
-		</terrain>
-		<doodad>
-			<brush name="snowy dead trees"/>
-			<brush name="snowy alive trees"/>
-			<brush name="dead trees"/>
-			<brush name="snowy rocks"/>
-			<brush name="small snowy rocks"/>
-			<brush name="ice floe"/>
-			<brush name="snow drift"/>
-			<brush name="iceberg"/>
-			<brush name="floating ice"/>
-			<brush name="frozen human (warrior)"/>
-			<brush name="frozen human (wizard female)"/>
-			<brush name="frozen human (wizard male)"/>
-			<brush name="frozen human (druid)"/>
-			<brush name="frozen human (mage)"/>
-			<brush name="snowman"/>
-			<brush name="ice hut"/>
-			<brush name="hanging ice"/>
-			<brush name="frozen railing1"/>
-			<brush name="frozen railing2"/>
-			<item id="6966"/>
-			<brush name="husky sled"/>
-		</doodad>
 	</tileset>
 
 	<tileset name="City Grounds">
@@ -1216,8 +1197,9 @@
 			<brush name="deepling floor ornaments"/>
 		</terrain>
 	</tileset>
-	<tileset name="City Walls">
+		<tileset name="City Walls">
 		<terrain>
+			<separator name="Walls &amp; Archways"/>
 			<brush name="rock wall"/>
 			<brush name="brick wall"/>
 			<brush name="brick wall arch"/>
@@ -1295,6 +1277,7 @@
 			<brush name="steel rebar"/>
 			<brush name="pink rebar"/>
 			<brush name="dark steel rebar"/>
+			<separator name="Railings &amp; Balconies"/>
 			<brush name="sandstone railing"/>
 			<brush name="sandy stone railing"/>
 			<brush name="white stone railing1"/>
@@ -1331,6 +1314,187 @@
 			<brush name="krailos spikes1"/>
 			<brush name="krailos spikes2"/>
 		</terrain>
+	</tileset>
+
+	<tileset name="Stairs / Ramps / Ladders">
+		<terrain>
+			<separator name="Ramps"/>
+			<brush name="ramp"/>
+			<brush name="snowy ramp"/>
+			<brush name="earth ramp"/>
+			<brush name="grotto ramp"/>
+			<brush name="purple grotto ramp"/>
+			<brush name="basalt ramp"/>
+			<brush name="mossy ramp"/>
+			<brush name="muddy ramp"/>
+			<brush name="swamp clay ramp"/>
+			<brush name="sandstone ramp"/>
+			<brush name="pyramid ramp"/>
+			<brush name="bamboo ramp"/>
+			<brush name="box ramp"/>
+			<separator name="Mountain Holes &amp; Caves"/>
+			<brush name="mountain hole - filled"/>
+			<brush name="mountain hole - empty"/>
+			<brush name="snow hole - filled"/>
+			<brush name="snow hole - empty"/>
+			<brush name="earth hole - filled"/>
+			<brush name="earth hole - empty"/>
+			<brush name="basalt hole"/>
+			<brush name="mossy hole"/>
+			<brush name="muddy hole - filled"/>
+			<brush name="muddy hole - empty"/>
+			<brush name="swamp clay hole - filled"/>
+			<brush name="swamp clay hole - empty"/>
+			<brush name="sandstone hole - filled"/>
+			<brush name="sandstone hole - empty"/>
+			<brush name="large hole"/>
+			<brush name="large hole tops"/>
+			<brush name="cave entrance1"/>
+			<brush name="cave entrance2"/>
+			<brush name="cave entrance3"/>
+			<brush name="tunnel entrance"/>
+			<brush name="grass stone pile"/>
+			<brush name="sand stone pile"/>
+			<brush name="ice stone pile"/>
+			<separator name="Stairs &amp; Stairways"/>
+			<brush name="white stairs"/>
+			<brush name="brown stairs"/>
+			<brush name="stone stairs1"/>
+			<brush name="wooden stairs"/>
+			<brush name="hand made stairs"/>
+			<brush name="deepling stairs"/>
+			<brush name="venorean stairs"/>
+			<brush name="roshamuul stairs"/>
+			<brush name="ruined stairs1"/>
+			<brush name="ruined stairs2"/>
+			<brush name="oramond stairs1"/>
+			<brush name="oramond stairs2"/>
+			<brush name="stone stairs2"/>
+			<brush name="stone stairway"/>
+			<brush name="black stone stairs"/>
+			<brush name="gray stone stairs"/>
+			<brush name="open coffin stairs"/>
+			<separator name="Ladders &amp; Trapdoors"/>
+			<brush name="ladder"/>
+			<brush name="wooden ladder hole"/>
+			<brush name="wooden trapdoor"/>
+			<brush name="stairs down"/>
+			<brush name="trapdoor down"/>
+			<brush name="trapdoor ladder down"/>
+			<brush name="black stone trapdoor"/>
+			<brush name="gray stone trapdoor"/>
+			<brush name="deepling stairhole"/>
+			<brush name="mushroom corkscrew hole"/>
+			<brush name="roshamuul hole"/>
+			<brush name="oramond hole1"/>
+			<brush name="oramond hole2"/>
+		</terrain>
+		<raw>
+			<!-- Stairs -->
+			<item fromid="1385"/>
+			<item fromid="5258"/>
+			<item fromid="1396"/>
+			<item fromid="8709"/>
+			<item fromid="3687" toid="3688"/>
+			<item fromid="7924" toid="7925"/>
+			<item fromid="5259" toid="5260"/>
+			<item fromid="9573"/>
+			<item id="12694"/>
+			<item id="12696"/>
+			<item id="17766"/>
+			<item fromid="19674" toid="19675"/>
+			<item fromid="22587" toid="22590"/>
+			<item fromid="21924" toid="21925"/>
+			<item fromid="22476" toid="22477"/>
+			<item fromid="22558" toid="22559"/>
+			<item fromid="22862" toid="22867"/>
+			<item fromid="23121" toid="23126"/>
+			<item fromid="25221" toid="25222"/>
+
+			<!-- Ladders -->
+			<item fromid="1386"/>
+			<item fromid="3678"/>
+			<item fromid="5543"/>
+			<item fromid="8599"/>
+			<item fromid="22845" toid="22846"/>
+
+			<!-- Ramps -->
+			<item fromid="9745" toid="9746"/>
+			<item fromid="1388" toid="1395"/>
+			<item fromid="6909" toid="6916"/>
+			<item fromid="8372" toid="8379"/>
+			<item fromid="17557" toid="17564"/>
+			<item fromid="17731" toid="17738"/>
+			<item fromid="18960" toid="18975"/>
+			<item fromid="20967" toid="20974"/>
+			<item fromid="15179" toid="15186"/>
+			<item fromid="23933" toid="23940"/>
+			<item fromid="1398" toid="1405"/>
+			<item fromid="3679" toid="3686"/>
+			<item fromid="15029" toid="15064"/>
+			<item fromid="15536" toid="15539"/>
+
+			<!-- Holes -->
+			<item fromid="383" toid="385"/>
+			<item fromid="392"/>
+			<item fromid="418"/>
+			<item fromid="468" toid="470"/>
+			<item fromid="481" toid="485"/>
+			<item fromid="489"/>
+			<item fromid="5731"/>
+			<item fromid="7932" toid="7933"/>
+			<item id="7938"/>
+			<item fromid="8249" toid="8252"/>
+			<item fromid="8254" toid="8259"/>
+			<item fromid="8380" toid="8385"/>
+			<item fromid="13189" toid="13190"/>
+			<item fromid="19518" toid="19519"/>
+			<item fromid="26019" toid="26020"/>
+
+			<!-- Stairs / Ladder Down -->
+			<item fromid="369" toid="370"/>
+			<item fromid="408"/>
+			<item fromid="409"/>
+			<item fromid="410" toid="411"/>
+			<item fromid="423"/>
+			<item fromid="427" toid="429"/>
+			<item fromid="432" toid="433"/>
+			<item fromid="3135" toid="3138"/>
+			<item fromid="3219" toid="3220"/>
+			<item fromid="4834" toid="4837"/>
+			<item fromid="8276" toid="8277"/>
+			<item fromid="8279" toid="8286"/>
+			<item fromid="9574"/>
+			<item fromid="9606"/>
+			<item fromid="9846"/>
+			<item fromid="17768" toid="17772"/>
+			<item fromid="22593" toid="22597"/>
+			<item id="22794"/>
+			<item fromid="22840" toid="22844"/>
+			<item fromid="22859" toid="22861"/>
+			<item id="23405"/>
+			<item id="23510"/>
+
+			<!-- Other -->
+			<item fromid="430"/>
+			<item fromid="461" toid="462"/>
+			<item fromid="475" toid="476"/>
+			<item fromid="924"/>
+			<item fromid="5081"/>
+			<item fromid="6173" toid="6174"/>
+			<item fromid="6127" toid="6130"/>
+			<item fromid="479" toid="480"/>
+			<item fromid="6917" toid="6924"/>
+			<item fromid="8559" toid="8566"/>
+			<item fromid="7524" toid="7525"/>
+			<item id="8260"/>
+			<item fromid="8202" toid="8203"/>
+			<item fromid="8210" toid="8213"/>
+			<item fromid="18529" toid="18536"/>
+			<item fromid="18976" toid="18983"/>
+			<item fromid="19065" toid="19072"/>
+			<item fromid="20959" toid="20966"/>
+		</raw>
 	</tileset>
 
 	<tileset name="Roofs">
@@ -1446,100 +1610,6 @@
 			<item fromid="23165" toid="23258"/>
 			<item fromid="25114" toid="25149"/>
 		</raw>
-	</tileset>
-
-	<tileset name="Stairs / Ramps / Ladders">
-		<terrain>
-			<item fromid="459"/>
-			<brush name="ramp"/>						-- ramp --
-			<brush name="snowy ramp"/>
-			<brush name="earth ramp"/>
-			<brush name="grotto ramp"/>
-			<brush name="purple grotto ramp"/>
-			<brush name="basalt ramp"/>
-			<brush name="mossy ramp"/>
-			<brush name="muddy ramp"/>
-			<brush name="swamp clay ramp"/>
-			<brush name="sandstone ramp"/>
-			<brush name="mountain hole - filled"/>
-			<brush name="mountain hole - empty"/>
-			<brush name="snow hole - filled"/>
-			<brush name="snow hole - empty"/>
-			<brush name="earth hole - filled"/>
-			<brush name="earth hole - empty"/>
-			<brush name="basalt hole"/>
-			<brush name="mossy hole"/>
-			<brush name="muddy hole - filled"/>
-			<brush name="muddy hole - empty"/>
-			<brush name="swamp clay hole - filled"/>
-			<brush name="swamp clay hole - empty"/>
-			<brush name="sandstone hole - filled"/>
-			<brush name="sandstone hole - empty"/>
-			<brush name="pyramid ramp"/>
-			<brush name="bamboo ramp"/>
-			<brush name="white stairs"/>				-- city stairs --
-			<brush name="brown stairs"/>
-			<brush name="stone stairs1"/>
-			<brush name="wooden stairs"/>
-			<item fromid="9573"/>
-			<brush name="hand made stairs"/>
-			<brush name="deepling stairs"/>
-			<item fromid="17766"/>
-			<brush name="venorean stairs"/>
-			<brush name="roshamuul stairs"/>
-			<brush name="ruined stairs1"/>
-			<brush name="ruined stairs2"/>
-			<brush name="oramond stairs1"/>
-			<brush name="oramond stairs2"/>
-			<brush name="stone stairs2"/>
-			<brush name="box ramp"/>
-			<brush name="stone stairway"/>				-- city stairs hole --
-			<brush name="black stone stairs"/>
-			<brush name="black stone trapdoor"/>
-			<brush name="gray stone stairs"/>
-			<brush name="gray stone trapdoor"/>
-			<item fromid="432" toid="433"/>
-			<item fromid="9574"/>
-			<item fromid="9846"/>
-			<brush name="deepling stairhole"/>
-			<brush name="mushroom corkscrew hole"/>
-			<brush name="roshamuul hole"/>
-			<item fromid="22593"/>
-			<brush name="oramond hole1"/>
-			<item fromid="22840"/>
-			<brush name="oramond hole2"/>
-			<item fromid="1386"/>						-- ladder --
-			<item fromid="3678"/>
-			<item fromid="5543"/>
-			<item fromid="8599"/>
-			<brush name="ladder"/>
-			<brush name="wooden ladder hole"/>			-- ladder hole --
-			<brush name="wooden trapdoor"/>
-			<brush name="stairs down"/>
-			<brush name="trapdoor down"/>
-			<brush name="trapdoor ladder down"/>
-			<brush name="trapdoor ladder down"/>
-			<brush name="open coffin stairs"/>			-- random entrances --
-			<item fromid="8260"/>
-			<brush name="cave entrance1"/>
-			<brush name="cave entrance2"/>
-			<brush name="cave entrance3"/>
-			<item fromid="383"/>						-- cave hole --
-			<brush name="grass stone pile"/>
-			<brush name="sand stone pile"/>
-			<brush name="ice stone pile"/>
-			<brush name="large hole"/>
-			<brush name="large hole tops"/>
-			<brush name="tunnel entrance"/>
-			<item fromid="13190"/>
-			<item fromid="19519"/>
-			<item fromid="26020"/>
-			<item fromid="384"/>						-- rope spot --
-			<item fromid="418"/>
-			<item fromid="13189"/>
-			<item fromid="19518"/>
-			<item fromid="26019"/>
-		</terrain>
 	</tileset>
 
 	<tileset name="Boats">
@@ -4349,115 +4419,6 @@
 		</doodad_and_raw>
 	</tileset>
 
-	<tileset name="Stairs / Ramps / Ladders">
-		<raw>
-			<!-- Stairs -->
-			<item fromid="1385"/>
-			<item fromid="5258"/>
-			<item fromid="1396"/>
-			<item fromid="8709"/>
-			<item fromid="3687" toid="3688"/>
-			<item fromid="7924" toid="7925"/>
-			<item fromid="5259" toid="5260"/>
-			<item fromid="9573"/>
-			<item id="12694"/>
-			<item id="12696"/>
-			<item id="17766"/>
-			<item fromid="19674" toid="19675"/>
-			<item fromid="22587" toid="22590"/>
-			<item fromid="21924" toid="21925"/>
-			<item fromid="22476" toid="22477"/>
-			<item fromid="22558" toid="22559"/>
-			<item fromid="22862" toid="22867"/>
-			<item fromid="23121" toid="23126"/>
-			<item fromid="25221" toid="25222"/>
-
-			<!-- Ladders -->
-			<item fromid="1386"/>
-			<item fromid="3678"/>
-			<item fromid="5543"/>
-			<item fromid="8599"/>
-			<item fromid="22845" toid="22846"/>
-
-			<!-- Ramps -->
-			<item fromid="9745" toid="9746"/>
-			<item fromid="1388" toid="1395"/>
-			<item fromid="6909" toid="6916"/>
-			<item fromid="8372" toid="8379"/>
-			<item fromid="17557" toid="17564"/>
-			<item fromid="17731" toid="17738"/>
-			<item fromid="18960" toid="18975"/>
-			<item fromid="20967" toid="20974"/>
-			<item fromid="15179" toid="15186"/>
-			<item fromid="23933" toid="23940"/>
-			<item fromid="1398" toid="1405"/>
-			<item fromid="3679" toid="3686"/>
-			<item fromid="15029" toid="15064"/>
-			<item fromid="15536" toid="15539"/>
-
-			<!-- Holes -->
-			<item fromid="383" toid="385"/>
-			<item fromid="392"/>
-			<item fromid="418"/>
-			<item fromid="468" toid="470"/>
-			<item fromid="481" toid="485"/>
-			<item fromid="489"/>
-			<item fromid="5731"/>
-			<item fromid="7932" toid="7933"/>
-			<item id="7938"/>
-			<item fromid="8249" toid="8252"/>
-			<item fromid="8254" toid="8259"/>
-			<item fromid="8380" toid="8385"/>
-			<item fromid="13189" toid="13190"/>
-			<item fromid="19518" toid="19519"/>
-			<item fromid="26019" toid="26020"/>
-
-			<!-- Stairs / Ladder Down -->
-			<item fromid="369" toid="370"/>
-			<item fromid="408"/>
-			<item fromid="409"/>
-			<item fromid="410" toid="411"/>
-			<item fromid="423"/>
-			<item fromid="427" toid="429"/>
-			<item fromid="432" toid="433"/>
-			<item fromid="3135" toid="3138"/>
-			<item fromid="3219" toid="3220"/>
-			<item fromid="4834" toid="4837"/>
-			<item fromid="8276" toid="8277"/>
-			<item fromid="8279" toid="8286"/>
-			<item fromid="9574"/>
-			<item fromid="9606"/>
-			<item fromid="9846"/>
-			<item fromid="17768" toid="17772"/>
-			<item fromid="22593" toid="22597"/>
-			<item id="22794"/>
-			<item fromid="22840" toid="22844"/>
-			<item fromid="22859" toid="22861"/>
-			<item id="23405"/>
-			<item id="23510"/>
-
-			<!-- Other -->
-			<item fromid="430"/>
-			<item fromid="461" toid="462"/>
-			<item fromid="475" toid="476"/>
-			<item fromid="924"/>
-			<item fromid="5081"/>
-			<item fromid="6173" toid="6174"/>
-			<item fromid="6127" toid="6130"/>
-			<item fromid="479" toid="480"/>
-			<item fromid="6917" toid="6924"/>
-			<item fromid="8559" toid="8566"/>
-			<item fromid="7524" toid="7525"/>
-			<item id="8260"/>
-			<item fromid="8202" toid="8203"/>
-			<item fromid="8210" toid="8213"/>
-			<item fromid="18529" toid="18536"/>
-			<item fromid="18976" toid="18983"/>
-			<item fromid="19065" toid="19072"/>
-			<item fromid="20959" toid="20966"/>
-		</raw>
-	</tileset>
-
 	<tileset name="Addon and Quest Items">
 		<items>
 			<item fromid="2344" toid="2349"/>
@@ -5056,7 +5017,7 @@
 			<item fromid="18613" toid="18615"/>
 			<item id="18617"/>
 			<item id="18624"/>
-			<item fromid="18626" toid="18627"/>
+			<ite fromid="18626" toid="18627"/>
 			<item id="18629"/>
 			<item fromid="18653" toid="18654"/>
 			<item fromid="18641" toid="18642"/>

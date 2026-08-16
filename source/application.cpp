@@ -50,23 +50,6 @@
 #include <windows.h>
 #endif
 
-#include <mutex>
-
-std::vector<std::string> g_active_actions_stack;
-static std::mutex g_actions_stack_mutex;
-
-void PushActiveAction(const std::string& action) {
-  std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
-  g_active_actions_stack.push_back(action);
-}
-
-void PopActiveAction() {
-  std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
-  if (!g_active_actions_stack.empty()) {
-    g_active_actions_stack.pop_back();
-  }
-}
-
 namespace {
 wxBitmap LoadApplicationBitmap() {
   wxBitmap bitmap;
@@ -533,11 +516,6 @@ MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
              << modInfo << " (address 0x"
              << exceptionInfo->ExceptionRecord->ExceptionAddress << ")"
              << std::endl;
-    err_file << "Active actions stack (last first):" << std::endl;
-    std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
-    for (auto it = g_active_actions_stack.rbegin(); it != g_active_actions_stack.rend(); ++it) {
-      err_file << "  - " << *it << std::endl;
-    }
     err_file.close();
   }
   return EXCEPTION_EXECUTE_HANDLER;
@@ -556,28 +534,10 @@ void LogErrorToFile(const std::string &message) {
 void Application::OnFatalException() {
   LogErrorToFile("FATAL ERROR: Structured Exception (e.g. Access "
                  "Violation/Crash) occurred in the application!");
-  std::ofstream err_file("error.log", std::ios::app);
-  if (err_file.is_open()) {
-    err_file << "Active actions stack (last first):" << std::endl;
-    std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
-    for (auto it = g_active_actions_stack.rbegin(); it != g_active_actions_stack.rend(); ++it) {
-      err_file << "  - " << *it << std::endl;
-    }
-    err_file.close();
-  }
 }
 
 void Application::OnUnhandledException() {
   LogErrorToFile("UNHANDLED EXCEPTION: An unhandled C++ exception occurred!");
-  std::ofstream err_file("error.log", std::ios::app);
-  if (err_file.is_open()) {
-    err_file << "Active actions stack (last first):" << std::endl;
-    std::lock_guard<std::mutex> lock(g_actions_stack_mutex);
-    for (auto it = g_active_actions_stack.rbegin(); it != g_active_actions_stack.rend(); ++it) {
-      err_file << "  - " << *it << std::endl;
-    }
-    err_file.close();
-  }
 }
 
 bool Application::OnExceptionInMainLoop() {

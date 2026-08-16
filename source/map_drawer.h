@@ -239,7 +239,7 @@ protected:
                   int size = 0);
   void DrawRawBrush(int screenx, int screeny, ItemType *itemType, uint8_t r,
                     uint8_t g, uint8_t b, uint8_t alpha);
-  void DrawTile(TileLocation *tile, Floor *f = nullptr, int pass = 0);
+  void DrawTile(TileLocation *tile, Floor *f = nullptr);
   void DrawBrushIndicator(int x, int y, Brush *brush, uint8_t r, uint8_t g,
                           uint8_t b);
   void DrawHookIndicator(int x, int y, const ItemType &type);

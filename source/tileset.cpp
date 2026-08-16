@@ -184,7 +184,13 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings) {
 	}
 
 	const std::string& nodeName = as_lower_str(node.name());
-	if (nodeName == "brush") {
+	if (nodeName == "separator") {
+		std::string label = node.attribute("name").as_string();
+		SeparatorBrush* sep = newd SeparatorBrush(label);
+		tileset.brushes.addBrush(sep);
+		brushlist.push_back(sep);
+		return;
+	} else if (nodeName == "brush") {
 		if (!(attribute = node.attribute("name"))) {
 			return;
 		}

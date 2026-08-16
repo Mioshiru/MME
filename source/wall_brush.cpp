@@ -433,8 +433,7 @@ void WallBrush::doWalls(BaseMap* map, Tile* tile) {
 		}
 		// Skip if either the wall has no brush
 		if (!wall_brush) {
-			items_to_add.push_back(wall);
-			it = tile->items.erase(it);
+			++it;
 			continue;
 		}
 		// or if it's a decoration brush.

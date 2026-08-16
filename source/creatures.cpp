@@ -354,7 +354,7 @@ bool CreatureDatabase::importXMLFromOT(const FileName& filename, wxString& error
 					if (creatureType->isNpc) {
 						tileSet = g_materials.tilesets["NPCs"];
 					} else {
-						tileSet = g_materials.tilesets["Others"];
+						tileSet = g_materials.tilesets["Creatures"];
 					}
 					ASSERT(tileSet != nullptr);
 

@@ -1689,23 +1689,12 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
 		Action* action = actionQueue->createAction(batch);
 
-		std::set<Position> border_set;
-		auto add_border_pos = [&](int center_x, int center_y, int center_z) {
-			for (int dy = -1; dy <= 1; ++dy) {
-				for (int dx = -1; dx <= 1; ++dx) {
-					border_set.insert(Position(center_x + dx, center_y + dy, center_z));
-				}
-			}
-		};
-
-		bool ground_deleted = false;
 		for (PositionVector::const_iterator it = tilestodraw.begin(); it != tilestodraw.end(); ++it) {
 			TileLocation* location = map.createTileL(*it);
 			Tile* tile = location->get();
 			if (tile) {
-				bool had_ground = (tile->ground != nullptr);
 				Tile* new_tile = tile->deepCopy(map);
-				if (g_settings.getInteger(Config::USE_AUTOMAGIC) && brush->isGround()) {
+				if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
 					new_tile->cleanBorders();
 				}
 				if (dodraw) {
@@ -1722,15 +1711,9 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 					} else {
 						g_gui.GetCurrentBrush()->draw(&map, new_tile, nullptr);
 					}
-					if (brush->isEraser() || brush->isGround()) {
-						add_border_pos(it->x, it->y, it->z);
-					}
 				} else {
 					g_gui.GetCurrentBrush()->undraw(&map, new_tile);
-					add_border_pos(it->x, it->y, it->z);
-				}
-				if (had_ground && new_tile->ground == nullptr) {
-					ground_deleted = true;
+					tilestoborder.push_back(*it);
 				}
 				action->addChange(newd Change(new_tile));
 			} else if (dodraw) {
@@ -1748,9 +1731,6 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 				} else {
 					g_gui.GetCurrentBrush()->draw(&map, new_tile, nullptr);
 				}
-				if (brush->isEraser() || brush->isGround()) {
-					add_border_pos(it->x, it->y, it->z);
-				}
 				action->addChange(newd Change(new_tile));
 			}
 		}
@@ -1758,9 +1738,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		// Commit changes to map
 		batch->addAndCommitAction(action);
 
-		if (g_settings.getInteger(Config::USE_AUTOMAGIC) && (brush->isGround() || ground_deleted)) {
-			tilestoborder.assign(border_set.begin(), border_set.end());
-
+		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
 			// Do borders!
 			action = actionQueue->createAction(batch);
 			for (PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
@@ -1773,20 +1751,14 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 						new_tile->tableize(&map);
 						new_tile->carpetize(&map);
 					}
-					new_tile->cleanBorders();
-					if (new_tile->ground) {
-						new_tile->borderize(&map);
-					}
+					new_tile->borderize(&map);
 					action->addChange(newd Change(new_tile));
 				} else {
 					Tile* new_tile = map.allocator(location);
 					if (brush->isEraser()) {
 						// There are no carpets/tables/walls on empty tiles...
 					}
-					new_tile->cleanBorders();
-					if (new_tile->ground) {
-						new_tile->borderize(&map);
-					}
+					new_tile->borderize(&map);
 					if (new_tile->size() > 0) {
 						action->addChange(newd Change(new_tile));
 					} else {

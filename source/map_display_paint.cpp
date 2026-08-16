@@ -8,7 +8,6 @@
 #include "complexitem.h"
 #include "creature.h"
 #include "town.h"
-#include "performance_logger.h"
 #include "live_server.h"
 #include "live_socket.h"
 #include "live_client.h"
@@ -149,10 +148,8 @@ void AutoScalePerformanceSettings() {
 }
 
 void MapCanvas::OnPaint(wxPaintEvent& event) {
-	PerformanceLogger::BeginFrame();
 	wxPaintDC dc(this); // Must always be created in EVT_PAINT to validate the region
 	if (!drawer) {
-		PerformanceLogger::EndFrame();
 		return;
 	}
 
@@ -906,15 +903,104 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					Tile* tile = editor.map.getTile(x, y, floor);
 					if (!tile) continue;
 
+					struct ContainerItemInfo {
+						uint16_t id;
+						int count;
+					};
+
 					struct BubbleData {
 						std::string header;
 						std::string content;
 						ImVec4 header_color;
 						ImVec4 border_color;
+						std::vector<ContainerItemInfo> container_items;
 					};
 					std::vector<BubbleData> bubbles;
 
-					// 1. Sign / Book texts
+					// 1. Containers / Chests with items inside
+					auto check_container = [&](Item* item) {
+						if (item && item->isContainer()) {
+							// Filter out corpses, dead bodies, and slain monster remains
+							if (item->typeExists()) {
+								const std::string& lname = as_lower_str(item->getName());
+								if (lname.find("corpse") != std::string::npos ||
+									lname.find("dead") != std::string::npos ||
+									lname.find("slain") != std::string::npos ||
+									lname.find("remains") != std::string::npos ||
+									lname.find("body") != std::string::npos) {
+									return;
+								}
+							}
+
+							Container* c = dynamic_cast<Container*>(item);
+							if (c) {
+								// Only show pop-up if container holds items or has action/unique ID
+								if (c->getItemCount() == 0 && c->getActionID() == 0 && c->getUniqueID() == 0) {
+									return;
+								}
+
+								BubbleData b;
+								b.header = "Chest";
+								b.header_color = ImVec4(0.95f, 0.70f, 0.30f, 1.0f); // Warm Gold/Amber
+								b.border_color = ImVec4(0.85f, 0.55f, 0.20f, 1.0f);
+
+								std::string content;
+								uint16_t aid = c->getActionID();
+								uint16_t uid = c->getUniqueID();
+								if (aid > 0) {
+									content += "Action ID: " + std::to_string(aid);
+								}
+								if (uid > 0) {
+									if (!content.empty()) content += "\n";
+									content += "Unique ID: " + std::to_string(uid);
+								}
+								b.content = content;
+
+								for (size_t i = 0; i < c->getItemCount(); ++i) {
+									Item* sub = c->getItem(i);
+									if (sub) {
+										b.container_items.push_back({ sub->getID(), sub->getCount() });
+									}
+								}
+								bubbles.push_back(b);
+							}
+						}
+					};
+					check_container(tile->ground);
+					for (Item* item : tile->items) {
+						check_container(item);
+					}
+
+					// 2. Teleport Destination
+					for (Item* item : tile->items) {
+						if (item) {
+							if (Teleport* tp = dynamic_cast<Teleport*>(item)) {
+								const Position& dest = tp->getDestination();
+								std::string dest_str = "Destination: " + std::to_string(dest.x) + ", " + std::to_string(dest.y) + ", " + std::to_string(dest.z);
+								bubbles.push_back({ "Teleport", dest_str, ImVec4(0.35f, 0.75f, 0.95f, 1.0f), ImVec4(0.20f, 0.55f, 0.85f, 1.0f) });
+							}
+						}
+					}
+
+					// 3. Action ID / Unique ID (for non-containers)
+					auto check_item_ids = [&](Item* item) {
+						if (item && !item->isContainer()) {
+							uint16_t aid = item->getActionID();
+							uint16_t uid = item->getUniqueID();
+							if (aid > 0 || uid > 0) {
+								std::string aid_str = aid > 0 ? "Action ID: " + std::to_string(aid) : "";
+								std::string uid_str = uid > 0 ? "Unique ID: " + std::to_string(uid) : "";
+								std::string content = aid_str + (aid > 0 && uid > 0 ? "\n" : "") + uid_str;
+								bubbles.push_back({ "Attributes", content, ImVec4(0.9f, 0.65f, 0.35f, 1.0f), ImVec4(0.75f, 0.45f, 0.2f, 1.0f) });
+							}
+						}
+					};
+					check_item_ids(tile->ground);
+					for (Item* item : tile->items) {
+						check_item_ids(item);
+					}
+
+					// 4. Sign / Book texts
 					auto check_item_text = [&](Item* item) {
 						if (item) {
 							std::string text = item->getText();
@@ -928,40 +1014,6 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 						check_item_text(item);
 					}
 
-					// 2. Teleport Destination
-					for (Item* item : tile->items) {
-						if (item) {
-							if (Teleport* tp = dynamic_cast<Teleport*>(item)) {
-								const Position& dest = tp->getDestination();
-								std::string dest_str = std::to_string(dest.x) + ", " + std::to_string(dest.y) + ", " + std::to_string(dest.z);
-								bubbles.push_back({ "Destination", dest_str, ImVec4(0.8f, 0.5f, 0.9f, 1.0f), ImVec4(0.6f, 0.3f, 0.7f, 1.0f) });
-							}
-						}
-					}
-
-					// 3. Action ID / Unique ID
-					auto check_item_ids = [&](Item* item) {
-						if (item) {
-							uint16_t aid = item->getActionID();
-							uint16_t uid = item->getUniqueID();
-							if (aid > 0 || uid > 0) {
-								std::string aid_str = aid > 0 ? "Action ID: " + std::to_string(aid) : "";
-								std::string uid_str = uid > 0 ? "Unique ID: " + std::to_string(uid) : "";
-								std::string content = aid_str + (aid > 0 && uid > 0 ? "\n" : "") + uid_str;
-								bubbles.push_back({ "Attributes", content, ImVec4(0.9f, 0.6f, 0.4f, 1.0f), ImVec4(0.7f, 0.45f, 0.25f, 1.0f) });
-							}
-						}
-					};
-					check_item_ids(tile->ground);
-					for (Item* item : tile->items) {
-						check_item_ids(item);
-					}
-
-					// 4. Placed NPC / Monster name
-					if (tile->creature) {
-						bubbles.push_back({ "", tile->creature->getName(), ImVec4(0.6f, 0.8f, 1.0f, 1.0f), ImVec4(0.3f, 0.6f, 0.8f, 1.0f) });
-					}
-
 					// 5. Town Spawn / Temple Name
 					if (g_settings.getBoolean(Config::SHOW_TOWNS) && tile->isTownExit(editor.map)) {
 						for (const auto& pair : editor.map.towns) {
@@ -971,7 +1023,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 								if (town_name.empty()) {
 									town_name = "Town #" + std::to_string(town->getID());
 								}
-								bubbles.push_back({ "Town Spawn", town_name, ImVec4(1.0f, 0.85f, 0.3f, 1.0f), ImVec4(0.85f, 0.65f, 0.1f, 1.0f) });
+								bubbles.push_back({ "Town Spawn", town_name, ImVec4(0.4f, 0.9f, 0.55f, 1.0f), ImVec4(0.25f, 0.7f, 0.35f, 1.0f) });
 								break;
 							}
 						}
@@ -991,8 +1043,11 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 					for (const auto& bubble : bubbles) {
 						std::string text_to_draw = bubble.content;
-						ImVec2 text_size = ImGui::CalcTextSize(text_to_draw.c_str());
-						
+						ImVec2 text_size(0, 0);
+						if (!text_to_draw.empty()) {
+							text_size = ImGui::CalcTextSize(text_to_draw.c_str());
+						}
+
 						float header_height = 0.0f;
 						ImVec2 header_size(0, 0);
 						if (!bubble.header.empty()) {
@@ -1000,8 +1055,24 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 							header_height = header_size.y + 4.0f;
 						}
 
-						float box_w = std::max(text_size.x, header_size.x) + 12.0f;
-						float box_h = text_size.y + header_height + 8.0f;
+						// Calculate Grid dimensions for Container Items
+						float icon_size = 28.0f;
+						float icon_gap = 4.0f;
+						int items_per_row = 5;
+						float grid_w = 0.0f;
+						float grid_h = 0.0f;
+
+						if (!bubble.container_items.empty()) {
+							int total = (int)bubble.container_items.size();
+							int cols = std::min(total, items_per_row);
+							int rows = (total + items_per_row - 1) / items_per_row;
+							grid_w = cols * icon_size + (cols - 1) * icon_gap;
+							grid_h = rows * icon_size + (rows - 1) * icon_gap;
+						}
+
+						float box_w = std::max({ text_size.x, header_size.x, grid_w }) + 16.0f;
+						float content_h = text_size.y + (text_size.y > 0.0f ? 4.0f : 0.0f) + (grid_h > 0.0f ? grid_h + 6.0f : 0.0f);
+						float box_h = header_height + content_h + 8.0f;
 
 						float box_x1 = bubble_x - box_w / 2.0f;
 						float box_y1 = bubble_y - box_h;
@@ -1009,28 +1080,70 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 						float box_y2 = bubble_y;
 
 						// Draw shadow
-						draw_list->AddRectFilled(ImVec2(box_x1 + 2.0f, box_y1 + 2.0f), ImVec2(box_x2 + 2.0f, box_y2 + 2.0f), IM_COL32(0, 0, 0, 120), 4.0f);
+						draw_list->AddRectFilled(ImVec2(box_x1 + 2.5f, box_y1 + 2.5f), ImVec2(box_x2 + 2.5f, box_y2 + 2.5f), IM_COL32(0, 0, 0, 140), 5.0f);
 
 						// Draw translucent background (glassmorphic dark look)
-						draw_list->AddRectFilled(ImVec2(box_x1, box_y1), ImVec2(box_x2, box_y2), IM_COL32(20, 22, 28, 225), 4.0f);
+						draw_list->AddRectFilled(ImVec2(box_x1, box_y1), ImVec2(box_x2, box_y2), IM_COL32(18, 20, 26, 235), 5.0f);
 
 						// Draw border
-						ImU32 border_col = IM_COL32((int)(bubble.border_color.x * 255), (int)(bubble.border_color.y * 255), (int)(bubble.border_color.z * 255), 255);
-						draw_list->AddRect(ImVec2(box_x1, box_y1), ImVec2(box_x2, box_y2), border_col, 4.0f, 0, 1.0f);
+						ImU32 border_col = IM_COL32((int)(bubble.border_color.x * 255), (int)(bubble.border_color.y * 255), (int)(bubble.border_color.z * 255), 230);
+						draw_list->AddRect(ImVec2(box_x1, box_y1), ImVec2(box_x2, box_y2), border_col, 5.0f, 0, 1.2f);
+
+						float current_y = box_y1 + 4.0f;
 
 						// Draw header if present
-						float current_y = box_y1 + 4.0f;
 						if (!bubble.header.empty()) {
 							ImU32 header_col = IM_COL32((int)(bubble.header_color.x * 255), (int)(bubble.header_color.y * 255), (int)(bubble.header_color.z * 255), 255);
-							draw_list->AddText(ImVec2(box_x1 + 6.0f, current_y), header_col, bubble.header.c_str());
-							
+							draw_list->AddText(ImVec2(box_x1 + 8.0f, current_y), header_col, bubble.header.c_str());
+
 							// Draw separator line under header
-							draw_list->AddLine(ImVec2(box_x1 + 4.0f, current_y + header_size.y + 1.0f), ImVec2(box_x2 - 4.0f, current_y + header_size.y + 1.0f), border_col, 0.8f);
+							draw_list->AddLine(ImVec2(box_x1 + 6.0f, current_y + header_size.y + 2.0f), ImVec2(box_x2 - 6.0f, current_y + header_size.y + 2.0f), IM_COL32(80, 85, 100, 140), 1.0f);
 							current_y += header_height;
 						}
 
-						// Draw body text
-						draw_list->AddText(ImVec2(box_x1 + 6.0f, current_y), IM_COL32(240, 240, 240, 255), text_to_draw.c_str());
+						// Draw body text if present
+						if (!text_to_draw.empty()) {
+							draw_list->AddText(ImVec2(box_x1 + 8.0f, current_y), IM_COL32(235, 235, 240, 255), text_to_draw.c_str());
+							current_y += text_size.y + 4.0f;
+						}
+
+						// Draw Container Items Grid if present
+						if (!bubble.container_items.empty()) {
+							float start_grid_x = box_x1 + 8.0f;
+							float start_grid_y = current_y + 2.0f;
+							for (size_t i = 0; i < bubble.container_items.size(); ++i) {
+								int r = (int)i / items_per_row;
+								int c = (int)i % items_per_row;
+								float ix1 = start_grid_x + c * (icon_size + icon_gap);
+								float iy1 = start_grid_y + r * (icon_size + icon_gap);
+								float ix2 = ix1 + icon_size;
+								float iy2 = iy1 + icon_size;
+
+								// Dark background slot for each item
+								draw_list->AddRectFilled(ImVec2(ix1, iy1), ImVec2(ix2, iy2), IM_COL32(10, 12, 16, 220), 3.0f);
+								draw_list->AddRect(ImVec2(ix1, iy1), ImVec2(ix2, iy2), IM_COL32(65, 70, 85, 180), 3.0f, 0, 1.0f);
+
+								uint16_t item_id = bubble.container_items[i].id;
+								int item_count = bubble.container_items[i].count;
+
+								if (g_items.typeExists(item_id) && g_items[item_id].sprite) {
+									GLuint texid = g_items[item_id].sprite->getHardwareID(0, 0, 0, -1, 0, 0, 0, 0);
+									if (texid != 0) {
+										draw_list->AddImage((ImTextureID)texid, ImVec2(ix1 + 2.0f, iy1 + 2.0f), ImVec2(ix2 - 2.0f, iy2 - 2.0f));
+									}
+								}
+
+								// Count badge if > 1
+								if (item_count > 1) {
+									std::string count_str = "+" + std::to_string(item_count);
+									ImVec2 csize = ImGui::CalcTextSize(count_str.c_str());
+									float tx = ix2 - csize.x - 2.0f;
+									float ty = iy2 - csize.y - 1.0f;
+									draw_list->AddRectFilled(ImVec2(tx - 1.0f, ty - 1.0f), ImVec2(ix2, iy2), IM_COL32(0, 0, 0, 200), 2.0f);
+									draw_list->AddText(ImVec2(tx, ty), IM_COL32(255, 215, 0, 255), count_str.c_str());
+								}
+							}
+						}
 
 						bubble_y -= box_h + 4.0f;
 					}
@@ -1042,13 +1155,11 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 	ImGui::Render();
 	{
-		PROFILE_SCOPE("ImGui::RenderDrawData");
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 
 	// Swap buffer
 	{
-		PROFILE_SCOPE("SwapBuffers");
 		SwapBuffers();
 	}
 
@@ -1056,8 +1167,6 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	editor.SendNodeRequests();
 	
 	g_gui.RefreshMinimapPanel();
-
-	PerformanceLogger::EndFrame();
 }
 
 int MapCanvas::GetHoveredRadialSlice() const {
@@ -1083,17 +1192,17 @@ int MapCanvas::GetHoveredRadialSlice() const {
 	}
 	
 	float angle = std::atan2(dy, dx);
-	if (angle < 0) angle += 2.0f * PI;
+	if (angle < 0) angle += 2.0f * static_cast<float>(PI);
 	
 	int N = 9;
 	if (tool_wheel_sub_menu == 1) N = 5;
 	else if (tool_wheel_sub_menu == 2) N = 5;
 	else if (tool_wheel_sub_menu == 3) N = 3;
 
-	float adjusted_angle = angle + PI / 2.0f + (PI / N);
-	if (adjusted_angle >= 2.0f * PI) adjusted_angle -= 2.0f * PI;
+	float adjusted_angle = angle + static_cast<float>(PI) / 2.0f + (static_cast<float>(PI) / N);
+	if (adjusted_angle >= 2.0f * static_cast<float>(PI)) adjusted_angle -= 2.0f * static_cast<float>(PI);
 	
-	int slice = (int)(adjusted_angle / (2.0f * PI / N)) % N;
+	int slice = (int)(adjusted_angle / (2.0f * static_cast<float>(PI) / N)) % N;
 	return slice;
 }
 

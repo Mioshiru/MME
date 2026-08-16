@@ -39,7 +39,7 @@ wxBitmap LoadLandingPageBitmap(const wxBitmap& fallback_logo) {
 	}
 
 	wxArrayString candidates;
-	wxString exe_dir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
+	wxString exe_dir = GUI::GetExecDirectory();
 	wxString cwd = wxGetCwd();
 	candidates.Add(exe_dir + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
 	candidates.Add(exe_dir + wxFILE_SEP_PATH + ".." + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "editor_icon.png");
@@ -322,8 +322,7 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	scrollWin->SetScrollRate(0, 15);
 
 	wxBoxSizer* slotsSizer = newd wxBoxSizer(wxVERTICAL);
-	wxFileName exeDir(wxStandardPaths::Get().GetExecutablePath());
-	wxString basePath = exeDir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
+	wxString basePath = GUI::GetExecDirectory();
 	for (size_t i = 1; i <= 50; ++i) {
 		wxString file;
 		wxString slot_dir = basePath + wxString::Format("Saves/Slot %zu", i);
@@ -519,9 +518,8 @@ void RecentItem::OnMouseClick(const wxMouseEvent& event) {
 	wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
 	if (m_item_text.empty()) {
 		action_event.SetId(wxID_NEW);
-		// Build absolute path to slot directory based on executable location
-		wxFileName exeDir(wxStandardPaths::Get().GetExecutablePath());
-		wxString basePath = exeDir.GetPath(wxPATH_GET_SEPARATOR | wxPATH_GET_VOLUME);
+		// Build absolute path to slot directory based on application root directory
+		wxString basePath = GUI::GetExecDirectory();
 		action_event.SetString(basePath + wxString::Format("Saves/Slot %d", m_slot_index + 1));
 	} else {
 		// Load the map immediately on populated slot (full absolute path already stored)

@@ -289,65 +289,70 @@ void MainToolBar::UpdateButtons() {
 }
 
 void MainToolBar::UpdateBrushButtons() {
+	static const int tool_ids[] = {
+		PALETTE_TERRAIN_SELECTION_TOOL,
+		PALETTE_TERRAIN_MAGIC_WAND_TOOL,
+		PALETTE_TERRAIN_PENCIL_TOOL,
+		PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL,
+		PALETTE_TERRAIN_BUCKET_TOOL,
+		PALETTE_TERRAIN_ERASER,
+		PALETTE_TERRAIN_PZ_TOOL,
+		PALETTE_TERRAIN_NOPVP_TOOL,
+		PALETTE_TERRAIN_NOLOGOUT_TOOL,
+		PALETTE_TERRAIN_PVPZONE_TOOL,
+		PALETTE_TERRAIN_NORMAL_DOOR,
+		PALETTE_TERRAIN_LOCKED_DOOR,
+		PALETTE_TERRAIN_MAGIC_DOOR,
+		PALETTE_TERRAIN_QUEST_DOOR,
+		PALETTE_TERRAIN_HATCH_DOOR,
+		PALETTE_TERRAIN_WINDOW_DOOR,
+		PALETTE_TERRAIN_PREFAB_CREATOR_TOOL
+	};
+	for (int id : tool_ids) {
+		if (brushes_toolbar->FindTool(id)) {
+			brushes_toolbar->ToggleTool(id, false);
+		}
+	}
+
 	Brush* brush = g_gui.GetCurrentBrush();
 	const bool fill_mode = g_gui.IsFillBrushMode();
 	const bool selection_mode = g_gui.IsSelectionMode();
 
-	if (brush && !selection_mode) {
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_SELECTION_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PENCIL_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PZ_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOPVP_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOLOGOUT_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PVPZONE_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_LOCKED_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_MAGIC_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_QUEST_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, false);
-
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PENCIL_TOOL, !fill_mode && brush && 
-			brush != g_gui.eraser && brush != g_gui.optional_brush && brush != g_gui.prefab_creator_brush &&
-			brush != g_gui.pz_brush && brush != g_gui.rook_brush && brush != g_gui.nolog_brush && brush != g_gui.pvp_brush &&
-			brush != g_gui.normal_door_brush && brush != g_gui.locked_door_brush && brush != g_gui.magic_door_brush && brush != g_gui.quest_door_brush &&
-			brush != g_gui.hatch_door_brush && brush != g_gui.window_door_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, brush == g_gui.optional_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, fill_mode);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, brush == g_gui.eraser);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PZ_TOOL, brush == g_gui.pz_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOPVP_TOOL, brush == g_gui.rook_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOLOGOUT_TOOL, brush == g_gui.nolog_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PVPZONE_TOOL, brush == g_gui.pvp_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_DOOR, brush == g_gui.normal_door_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_LOCKED_DOOR, brush == g_gui.locked_door_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_MAGIC_DOOR, brush == g_gui.magic_door_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_QUEST_DOOR, brush == g_gui.quest_door_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, brush == g_gui.hatch_door_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, brush == g_gui.window_door_brush);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, brush == g_gui.prefab_creator_brush);
+	if (selection_mode) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_SELECTION_TOOL, true);
+	} else if (fill_mode) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, true);
+	} else if (brush == g_gui.eraser) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, true);
+	} else if (brush == g_gui.optional_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, true);
+	} else if (brush == g_gui.pz_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PZ_TOOL, true);
+	} else if (brush == g_gui.rook_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOPVP_TOOL, true);
+	} else if (brush == g_gui.nolog_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOLOGOUT_TOOL, true);
+	} else if (brush == g_gui.pvp_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PVPZONE_TOOL, true);
+	} else if (brush == g_gui.normal_door_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_DOOR, true);
+	} else if (brush == g_gui.locked_door_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_LOCKED_DOOR, true);
+	} else if (brush == g_gui.magic_door_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_MAGIC_DOOR, true);
+	} else if (brush == g_gui.quest_door_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_QUEST_DOOR, true);
+	} else if (brush == g_gui.hatch_door_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, true);
+	} else if (brush == g_gui.window_door_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, true);
+	} else if (brush == g_gui.prefab_creator_brush) {
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, true);
 	} else {
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_SELECTION_TOOL, selection_mode);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PENCIL_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_BUCKET_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_ERASER, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PZ_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOPVP_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NOLOGOUT_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PVPZONE_TOOL, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_NORMAL_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_LOCKED_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_MAGIC_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_QUEST_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_HATCH_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_WINDOW_DOOR, false);
-		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, false);
+		brushes_toolbar->ToggleTool(PALETTE_TERRAIN_PENCIL_TOOL, true);
 	}
+
+	brushes_toolbar->Refresh();
 	g_gui.GetAuiManager()->Update();
 }
 

@@ -1654,7 +1654,7 @@
 		<border align="inner" to="snowy mountain" id="53"/>
 		<border align="inner" to="none" id="3"/>
 		<border align="outer" to="none" id="51"/>
-		<border align="outer" id="10"/>
+		<border align="outer" id="29"/>
 		<border align="inner" id="3"/>
 		<optional id="29"/>
 	</brush>

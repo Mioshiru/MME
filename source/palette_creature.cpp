@@ -165,7 +165,7 @@ void CreaturePalettePanel::OnUpdate() {
 		const TilesetCategory* tsc = iter->second->getCategory(TILESET_CREATURE);
 		if (tsc && tsc->size() > 0) {
 			tileset_choice->Append(wxstr(iter->second->name), const_cast<TilesetCategory*>(tsc));
-		} else if (iter->second->name == "NPCs" || iter->second->name == "Others") {
+		} else if (iter->second->name == "NPCs" || iter->second->name == "Creatures") {
 			Tileset* ts = const_cast<Tileset*>(iter->second);
 			TilesetCategory* rtsc = ts->getCategory(TILESET_CREATURE);
 			tileset_choice->Append(wxstr(ts->name), rtsc);

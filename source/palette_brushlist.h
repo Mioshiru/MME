@@ -73,7 +73,12 @@ public:
 	virtual wxCoord OnMeasureItem(size_t n) const;
 
 	void OnKey(wxKeyEvent& event);
+	void OnLeftDown(wxMouseEvent& event);
 	void Filter(const wxString& query) override;
+	void UpdateVisibleList();
+
+protected:
+	wxString current_query;
 
 	DECLARE_EVENT_TABLE();
 };
@@ -107,9 +112,21 @@ public:
 
 	void UpdateLayout();
 
+	struct BrushItemPos {
+		Brush* brush = nullptr;
+		int x = 0;
+		int y = 0;
+		int width = 0;
+		int height = 0;
+		bool is_separator = false;
+		bool is_collapsed = false;
+		std::string label;
+	};
+
 protected:
 	RenderSize icon_size;
 	Brush* selected_brush = nullptr;
+	std::vector<BrushItemPos> item_layout;
 
 	DECLARE_EVENT_TABLE();
 };

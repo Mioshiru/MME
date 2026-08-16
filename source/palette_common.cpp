@@ -807,7 +807,7 @@ void BrushButton::OnKey(wxKeyEvent& event) {
 }
 
 static void AddFavoriteBrush(Brush* brush) {
-	if (!brush) return;
+	if (!brush || brush->isSeparator()) return;
 	Tileset* favs = g_materials.tilesets["Favorites"];
 	if (!favs) return;
 
@@ -816,32 +816,12 @@ static void AddFavoriteBrush(Brush* brush) {
 		catFav->brushlist.push_back(brush);
 	}
 
-	TilesetCategoryType subType = TILESET_TERRAIN;
-	if (brush->isCreature()) {
-		CreatureBrush* cb = static_cast<CreatureBrush*>(brush);
-		if (cb && cb->getType() && cb->getType()->isNpc) {
-			subType = TILESET_NPC;
-		} else {
-			subType = TILESET_CREATURE;
-		}
-	} else if (brush->isDoodad()) {
-		subType = TILESET_DOODAD;
-	} else if (brush->isRaw()) {
-		subType = TILESET_ITEM;
-	} else {
-		subType = TILESET_TERRAIN;
-	}
-
-	TilesetCategory* catSub = favs->getCategory(subType);
-	if (catSub && !catSub->containsBrush(brush)) {
-		catSub->brushlist.push_back(brush);
-	}
-
+	g_materials.rebuildFavorites();
 	g_materials.saveFavorites();
 }
 
 static void RemoveFavoriteBrush(Brush* brush) {
-	if (!brush) return;
+	if (!brush || brush->isSeparator()) return;
 	Tileset* favs = g_materials.tilesets["Favorites"];
 	if (!favs) return;
 
@@ -852,6 +832,7 @@ static void RemoveFavoriteBrush(Brush* brush) {
 		}
 	}
 
+	g_materials.rebuildFavorites();
 	g_materials.saveFavorites();
 }
 

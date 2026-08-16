@@ -44,7 +44,7 @@ EVT_MENU(CONTAINER_POPUP_MENU_REMOVE, ContainerItemButton::OnRemoveItem)
 END_EVENT_TABLE()
 
 ContainerItemButton::ContainerItemButton(wxWindow* parent, bool large, int _index, const Map* map, Item* item) :
-	ItemButton(parent, (large ? RENDER_SIZE_32x32 : RENDER_SIZE_16x16), (item ? item->getClientID() : 0)),
+	ItemButton(parent, (large ? RENDER_SIZE_32x32 : RENDER_SIZE_16x16), (item ? item->getID() : 0)),
 	edit_map(map),
 	edit_item(item),
 	index(_index) {
@@ -53,6 +53,15 @@ ContainerItemButton::ContainerItemButton(wxWindow* parent, bool large, int _inde
 
 ContainerItemButton::~ContainerItemButton() {
 	////
+}
+
+void ContainerItemButton::setItem(Item* item) {
+	edit_item = item;
+	if (edit_item && edit_item->typeExists()) {
+		SetSprite(edit_item->getClientID());
+	} else {
+		SetSprite(0);
+	}
 }
 
 void ContainerItemButton::OnMouseDoubleLeftClick(wxMouseEvent& WXUNUSED(event)) {
@@ -152,15 +161,6 @@ void ContainerItemButton::OnRemoveItem(wxCommandEvent& WXUNUSED(event)) {
 	ObjectPropertiesWindowBase* propertyWindow = getParentContainerWindow();
 	if (propertyWindow) {
 		propertyWindow->Update();
-	}
-}
-
-void ContainerItemButton::setItem(Item* item) {
-	edit_item = item;
-	if (edit_item) {
-		SetSprite(edit_item->getClientID());
-	} else {
-		SetSprite(0);
 	}
 }
 

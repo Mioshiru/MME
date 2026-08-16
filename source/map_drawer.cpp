@@ -67,7 +67,6 @@ static HouseColor getHouseColor(uint32_t houseId) {
 #include "live_socket.h"
 #include "map_display.h"
 #include "map_drawer.h"
-#include "performance_logger.h"
 #include "settings.h"
 #include "sprites.h"
 
@@ -1076,18 +1075,14 @@ void MapDrawer::Release() {
 }
 
 void MapDrawer::Draw() {
-  PROFILE_SCOPE("MapDrawer::DrawTotal");
   last_bound_texture = -1;
   {
-    PROFILE_SCOPE("MapDrawer::DrawBackground");
     DrawBackground();
   }
   {
-    PROFILE_SCOPE("MapDrawer::DrawMap");
     DrawMap();
   }
   if (options.isDrawLight()) {
-    PROFILE_SCOPE("MapDrawer::DrawLight");
     DrawLight();
   }
 
@@ -1099,7 +1094,6 @@ void MapDrawer::Draw() {
 
   DrawDraggingShadow();
   {
-    PROFILE_SCOPE("MapDrawer::DrawHigherFloors");
     DrawHigherFloors();
   }
   bool overlayHasTooltips = false;
@@ -1129,7 +1123,6 @@ void MapDrawer::Draw() {
     }
   }
   if (options.show_tooltips || overlayHasTooltips) {
-    PROFILE_SCOPE("MapDrawer::DrawTooltips");
     DrawTooltips();
   }
 }
@@ -1513,12 +1506,10 @@ void MapDrawer::DrawMap() {
               view_scroll_x = 0;
               view_scroll_y = 0;
 
-              for (int pass = 1; pass <= 2; ++pass) {
-                for (int map_x = 0; map_x < 4; ++map_x) {
-                  for (int map_y = 0; map_y < 4; ++map_y) {
-                    TileLocation *location = nd->getTile(map_x, map_y, map_z);
-                    DrawTile(location, f, pass);
-                  }
+              for (int map_x = 0; map_x < 4; ++map_x) {
+                for (int map_y = 0; map_y < 4; ++map_y) {
+                  TileLocation *location = nd->getTile(map_x, map_y, map_z);
+                  DrawTile(location, f);
                 }
               }
 
@@ -1559,7 +1550,6 @@ void MapDrawer::DrawMap() {
             }
 
             if (f->vbo_id != 0 && !f->is_empty && !only_colors) {
-              PROFILE_SCOPE("MapDrawer::DrawChunkVBO");
               if (!translated) {
                 glPushMatrix();
                 glTranslatef(-view_scroll_x, -view_scroll_y, 0);
@@ -2391,7 +2381,7 @@ void MapDrawer::WriteTooltip(Waypoint *waypoint, std::ostringstream &stream) {
   stream << "wp: " << waypoint->name << "\n";
 }
 
-void MapDrawer::DrawTile(TileLocation *location, Floor *f, int pass) {
+void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
   if (!location) {
     return;
   }
@@ -2478,98 +2468,94 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f, int pass) {
     }
   }
 
-  if (pass == 0 || pass == 1) {
-    if (only_colors) {
-      if (as_minimap) {
-        uint8_t color = tile->getMiniMapColor();
-        r = (uint8_t)(int(color / 36) % 6 * 51);
-        g = (uint8_t)(int(color / 6) % 6 * 51);
-        b = (uint8_t)(color % 6 * 51);
-        BlitSquare(draw_x, draw_y, r, g, b, 255);
-      } else if (r != 255 || g != 255 || b != 255) {
-        BlitSquare(draw_x, draw_y, r, g, b, 128);
+  if (only_colors) {
+    if (as_minimap) {
+      uint8_t color = tile->getMiniMapColor();
+      r = (uint8_t)(int(color / 36) % 6 * 51);
+      g = (uint8_t)(int(color / 6) % 6 * 51);
+      b = (uint8_t)(color % 6 * 51);
+      BlitSquare(draw_x, draw_y, r, g, b, 255);
+    } else if (r != 255 || g != 255 || b != 255) {
+      BlitSquare(draw_x, draw_y, r, g, b, 128);
+    }
+  } else {
+    if (tile->ground) {
+      if (options.show_preview && zoom <= 1.5) {
+        tile->ground->animate();
       }
-    } else {
-      if (tile->ground) {
-        if (options.show_preview && zoom <= 1.5) {
-          tile->ground->animate();
-        }
-        if (tile->ground->getID() != 0) {
-          ItemType& type = g_items[tile->ground->getID()];
-          if (type.sprite && type.sprite->animator) {
-            if (f) {
-              f->has_animations = true;
-            }
+      if (tile->ground->getID() != 0) {
+        ItemType& type = g_items[tile->ground->getID()];
+        if (type.sprite && type.sprite->animator) {
+          if (f) {
+            f->has_animations = true;
           }
         }
-
-        if (f && tile->ground->hasLight()) {
-          SpriteLight sl = tile->ground->getLight();
-          f->lights.push_back({map_x, map_y, map_z, sl.intensity, sl.color});
-        }
-
-        BlitItem(draw_x, draw_y, tile, tile->ground, false, r, g, b);
       }
 
-      if (options.show_houses && tile->isHouseTile()) {
-        if ((int)tile->getHouseID() == current_house_id) {
-          // Selected house: bright blue overlay
-          BlitSquare(draw_x, draw_y, 0, 90, 220, 90);
-        } else {
-          // Non-selected house: subtle dark blue overlay
-          BlitSquare(draw_x, draw_y, 0, 35, 120, 80);
-        }
+      if (f && tile->ground->hasLight()) {
+        SpriteLight sl = tile->ground->getLight();
+        f->lights.push_back({map_x, map_y, map_z, sl.intensity, sl.color});
       }
-      
-      if (options.always_show_zones && (r != 255 || g != 255 || b != 255)) {
-        DrawRawBrush(draw_x, draw_y, &g_items[SPRITE_ZONE], r, g, b, 60);
-      }
+
+      BlitItem(draw_x, draw_y, tile, tile->ground, false, r, g, b);
     }
 
-    if (options.show_tooltips && map_z == floor && tile->ground) {
-      WriteTooltip(tile->ground, tooltip);
+    if (options.show_houses && tile->isHouseTile()) {
+      if ((int)tile->getHouseID() == current_house_id) {
+        // Selected house: bright blue overlay
+        BlitSquare(draw_x, draw_y, 0, 90, 220, 90);
+      } else {
+        // Non-selected house: subtle dark blue overlay
+        BlitSquare(draw_x, draw_y, 0, 35, 120, 80);
+      }
     }
+    
+    if (options.always_show_zones && (r != 255 || g != 255 || b != 255)) {
+      DrawRawBrush(draw_x, draw_y, &g_items[SPRITE_ZONE], r, g, b, 60);
+    }
+  }
+
+  if (options.show_tooltips && map_z == floor && tile->ground) {
+    WriteTooltip(tile->ground, tooltip);
   }
   // end filters for ground tile
 
-  if (pass == 0 || pass == 2) {
-    if (!only_colors) {
-      if (true) {
-      // items on tile
-      for (ItemVector::iterator it = tile->items.begin();
-           it != tile->items.end(); it++) {
-        // item tooltip
-        if (options.show_tooltips && map_z == floor) {
-          WriteTooltip(*it, tooltip, tile->isHouseTile());
-        }
+  if (!only_colors) {
+    // items on tile
+    for (ItemVector::iterator it = tile->items.begin();
+         it != tile->items.end(); it++) {
+      // item tooltip
+      if (options.show_tooltips && map_z == floor) {
+        WriteTooltip(*it, tooltip, tile->isHouseTile());
+      }
 
-        // item animation
-        if (options.show_preview && zoom <= 1.5) {
-          (*it)->animate();
-        }
-        if ((*it)->getID() != 0) {
-          ItemType& type = g_items[(*it)->getID()];
-          if (type.sprite && type.sprite->animator) {
-            if (f) f->has_animations = true;
-          }
-        }
-
-        if (f && (*it)->hasLight()) {
-          SpriteLight sl = (*it)->getLight();
-          f->lights.push_back({map_x, map_y, map_z, sl.intensity, sl.color});
-        }
-
-        // item sprite
-        if ((*it)->isBorder()) {
-          BlitItem(draw_x, draw_y, tile, *it, false, r, g, b);
-        } else {
-          BlitItem(draw_x, draw_y, tile, *it, false, 255, 255, 255);
+      // item animation
+      if (options.show_preview && zoom <= 1.5) {
+        (*it)->animate();
+      }
+      if ((*it)->getID() != 0) {
+        ItemType& type = g_items[(*it)->getID()];
+        if (type.sprite && type.sprite->animator) {
+          if (f) f->has_animations = true;
         }
       }
-      // monster/npc on tile
-      if (tile->creature && options.show_creatures) {
-        BlitCreature(draw_x, draw_y, tile->creature);
+
+      if (f && (*it)->hasLight()) {
+        SpriteLight sl = (*it)->getLight();
+        f->lights.push_back({map_x, map_y, map_z, sl.intensity, sl.color});
       }
+
+      // item sprite
+      if ((*it)->isBorder()) {
+        BlitItem(draw_x, draw_y, tile, *it, false, r, g, b);
+      } else {
+        BlitItem(draw_x, draw_y, tile, *it, false, 255, 255, 255);
+      }
+    }
+
+    // monster/npc on tile
+    if (tile->creature && options.show_creatures) {
+      BlitCreature(draw_x, draw_y, tile->creature);
     }
 
     if (zoom <= 1.5) {
@@ -2625,7 +2611,6 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f, int pass) {
       }
       tooltip.str("");
     }
-  }
   }
 }
 

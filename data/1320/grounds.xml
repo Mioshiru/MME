@@ -1142,7 +1142,7 @@
 		<border align="outer" id="126"/>
 	</brush>
 
-	<brush name="grassy cobblestone" type="ground" server_lookid="791" z-order="1">
+	<brush name="grassy cobblestone" type="ground" server_lookid="791" z-order="1500">
 		<item id="791" chance="1000"/>
 	</brush>
 
@@ -1160,7 +1160,7 @@
 		<border align="inner" to="none" id="1"/>
 	</brush>
 
-	<brush name="mountain ground" type="ground" server_lookid="918" z-order="1">
+	<brush name="mountain ground" type="ground" server_lookid="918" z-order="2500">
 		<item id="918" chance="1000"/>
 
 		<border align="inner" to="sea" id="47"/>
@@ -1674,7 +1674,7 @@
 		<border align="inner" to="snowy mountain" id="53"/>
 		<border align="inner" to="none" id="3"/>
 		<border align="outer" to="none" id="51"/>
-		<border align="outer" id="10"/>
+		<border align="outer" id="29"/>
 		<border align="inner" id="3"/>
 		<optional id="29"/>
 	</brush>
@@ -2154,7 +2154,7 @@
 
 	</brush>
 
-	<brush name="dark tiled sandstone" type="ground" server_lookid="412" z-order="1">
+	<brush name="dark tiled sandstone" type="ground" server_lookid="412" z-order="7500">
 		<item id="412" chance="1"/>
 
 		<friend name="all"/>
@@ -2233,7 +2233,7 @@
 		<friend name="all"/>
 	</brush>
 
-	<brush name="drawbridge" type="ground" server_lookid="1284" z-order="1">
+	<brush name="drawbridge" type="ground" server_lookid="1284" z-order="7800">
 		<item id="1284" chance="1"/>
 
 		<friend name="all"/>
@@ -2291,7 +2291,7 @@
 		<friend name="all"/>
 	</brush>
 
-	<brush name="dark wooden floor" type="ground" server_lookid="3139" z-order="1">
+	<brush name="dark wooden floor" type="ground" server_lookid="3139" z-order="8500">
 		<item id="3139" chance="1"/>
 
 		<border align="outer" to="none" id="40"/>

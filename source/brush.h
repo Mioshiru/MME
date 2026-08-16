@@ -200,8 +200,14 @@ public:
 	virtual bool isPrefab() const {
 		return false;
 	}
+	virtual bool isSeparator() const {
+		return false;
+	}
 
 	virtual RAWBrush* asRaw() {
+		return nullptr;
+	}
+	virtual class SeparatorBrush* asSeparator() {
 		return nullptr;
 	}
 	virtual DoodadBrush* asDoodad() {
@@ -493,6 +499,48 @@ public:
 	}
 	virtual int getLookID() const;
 	virtual std::string getName() const;
+};
+
+//=============================================================================
+// SeparatorBrush, displays visual divider line and collapsible sections in palettes
+class SeparatorBrush : public Brush {
+public:
+	SeparatorBrush(const std::string& _label = "", bool _collapsed = false) :
+		label(_label), collapsed(_collapsed) {}
+	virtual ~SeparatorBrush() {}
+
+	virtual bool isSeparator() const override {
+		return true;
+	}
+	virtual SeparatorBrush* asSeparator() override {
+		return this;
+	}
+
+	virtual std::string getName() const override {
+		return label;
+	}
+	virtual int getLookID() const override {
+		return 0;
+	}
+	virtual bool canDraw(BaseMap* map, const Position& position) const override {
+		return false;
+	}
+	virtual void draw(BaseMap* map, Tile* tile, void* parameter = nullptr) override {}
+	virtual void undraw(BaseMap* map, Tile* tile) override {}
+
+	bool isCollapsed() const {
+		return collapsed;
+	}
+	void setCollapsed(bool c) {
+		collapsed = c;
+	}
+	void toggleCollapsed() {
+		collapsed = !collapsed;
+	}
+
+protected:
+	std::string label;
+	bool collapsed = false;
 };
 
 //=============================================================================

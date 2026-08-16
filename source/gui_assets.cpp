@@ -19,6 +19,10 @@ wxString GUI::GetDataDirectory() {
 	try {
 		exec_directory = dynamic_cast<wxStandardPaths&>(wxStandardPaths::Get()).GetExecutablePath();
 	} catch (const std::bad_cast) { throw; }
+	const auto& dirs = exec_directory.GetDirs();
+	if (!dirs.empty() && (dirs.back() == "DLLs" || dirs.back() == "bin")) {
+		exec_directory.RemoveLastDir();
+	}
 	exec_directory.AppendDir("data");
 	return exec_directory.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
 }
@@ -28,6 +32,10 @@ wxString GUI::GetExecDirectory() {
 	try {
 		exec_directory = dynamic_cast<wxStandardPaths&>(wxStandardPaths::Get()).GetExecutablePath();
 	} catch (const std::bad_cast) { wxLogError("Could not fetch executable directory."); }
+	const auto& dirs = exec_directory.GetDirs();
+	if (!dirs.empty() && (dirs.back() == "DLLs" || dirs.back() == "bin")) {
+		exec_directory.RemoveLastDir();
+	}
 	return exec_directory.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
 }
 

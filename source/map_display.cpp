@@ -51,8 +51,6 @@
 #include "tile.h"
 #include "tileset_window.h"
 
-
-#include "performance_logger.h"
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 
@@ -646,7 +644,8 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 			return;
 		}
 
-    editor.setDeferBorders(true);
+    // Live automagic bordering during mouse drag: do not defer borders
+    // editor.setDeferBorders(true);
     dragging_draw = !g_gui.IsFillBrushMode();
     rectangle_mode = event.ShiftDown() && !g_gui.IsFillBrushMode();
     if (g_gui.IsFillBrushMode()) {

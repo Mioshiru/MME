@@ -757,11 +757,18 @@
 	</border>
 
 	<border id="62">
-		<borderitem edge="s"	item="5233"/>
-		<borderitem edge="n"	item="5235"/>
-		<borderitem edge="w"	item="5240"/>
-		<borderitem edge="cnw"	item="5241"/>
-		<borderitem edge="csw"	item="5239"/>
+		<borderitem edge="n"   item="17842"/>
+		<borderitem edge="e"   item="17686"/>
+		<borderitem edge="s"   item="17694"/>
+		<borderitem edge="w"   item="17720"/>
+		<borderitem edge="cnw" item="17724"/>
+		<borderitem edge="cne" item="17726"/>
+		<borderitem edge="csw" item="17725"/>
+		<borderitem edge="cse" item="17701"/>
+		<borderitem edge="dnw" item="17727"/>
+		<borderitem edge="dne" item="17726"/>
+		<borderitem edge="dsw" item="17726"/>
+		<borderitem edge="dse" item="17703"/>
 	</border>
 
 	<border id="63">

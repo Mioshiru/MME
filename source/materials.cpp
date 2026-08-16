@@ -30,8 +30,24 @@
 #include "brush.h"
 #include "creature_brush.h"
 #include "raw_brush.h"
+#include "client_version.h"
 
 Materials g_materials;
+
+static wxFileName GetFavoritesFilePath() {
+	ClientVersionID verId = g_gui.GetCurrentVersionID();
+	if (verId != CLIENT_VERSION_NONE) {
+		if (ClientVersion* cv = ClientVersion::get(verId)) {
+			FileName dataPath = cv->getDataPath();
+			return wxFileName(dataPath.GetPath(), "favorites.xml");
+		}
+	}
+	if (ClientVersion* latest = ClientVersion::getLatestVersion()) {
+		FileName dataPath = latest->getDataPath();
+		return wxFileName(dataPath.GetPath(), "favorites.xml");
+	}
+	return wxFileName(g_gui.GetDataDirectory(), "favorites.xml");
+}
 
 Materials::Materials() {
 	////
@@ -235,12 +251,12 @@ void Materials::createOtherTileset() {
 	Tileset* others;
 	Tileset* npc_tileset;
 
-	if (tilesets["Others"] != nullptr) {
-		others = tilesets["Others"];
+	if (tilesets["Creatures"] != nullptr) {
+		others = tilesets["Creatures"];
 		others->clear();
 	} else {
-		others = newd Tileset(g_brushes, "Others");
-		tilesets["Others"] = others;
+		others = newd Tileset(g_brushes, "Creatures");
+		tilesets["Creatures"] = others;
 	}
 
 	if (tilesets["Favorites"] == nullptr) {
@@ -314,6 +330,109 @@ void Materials::createOtherTileset() {
 	loadFavorites();
 }
 
+void Materials::rebuildFavorites() {
+	Tileset* favs = tilesets["Favorites"];
+	if (!favs) return;
+
+	TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+	if (!catFav) return;
+
+	// Collect unique real brushes (ignoring any existing separators)
+	std::vector<Brush*> terrain_favs;
+	std::vector<Brush*> wall_favs;
+	std::vector<Brush*> doodad_favs;
+	std::vector<Brush*> item_favs;
+	std::vector<Brush*> monster_favs;
+	std::vector<Brush*> npc_favs;
+	std::vector<Brush*> other_favs;
+
+	std::set<Brush*> seen;
+
+	for (TilesetCategory* cat : favs->categories) {
+		for (Brush* b : cat->brushlist) {
+			if (!b || b->isSeparator()) continue;
+			if (seen.find(b) != seen.end()) continue;
+			seen.insert(b);
+
+			if (b->isCreature()) {
+				CreatureBrush* cb = static_cast<CreatureBrush*>(b);
+				if (cb && cb->getType() && cb->getType()->isNpc) {
+					npc_favs.push_back(b);
+				} else {
+					monster_favs.push_back(b);
+				}
+			} else if (b->isWall()) {
+				wall_favs.push_back(b);
+			} else if (b->isDoodad() || b->isTable() || b->isCarpet() || wxstr(b->getName()).Lower().Contains("ladder")) {
+				doodad_favs.push_back(b);
+			} else if (b->isRaw()) {
+				item_favs.push_back(b);
+			} else if (b->isGround() || b->isTerrain() || b->isOptionalBorder()) {
+				terrain_favs.push_back(b);
+			} else {
+				other_favs.push_back(b);
+			}
+		}
+	}
+
+	// Update subcategories
+	if (TilesetCategory* c = favs->getCategory(TILESET_TERRAIN)) {
+		c->brushlist = terrain_favs;
+	}
+	if (TilesetCategory* c = favs->getCategory(TILESET_DOODAD)) {
+		c->brushlist = doodad_favs;
+	}
+	if (TilesetCategory* c = favs->getCategory(TILESET_ITEM)) {
+		c->brushlist = item_favs;
+	}
+	if (TilesetCategory* c = favs->getCategory(TILESET_CREATURE)) {
+		c->brushlist = monster_favs;
+	}
+	if (TilesetCategory* c = favs->getCategory(TILESET_NPC)) {
+		c->brushlist = npc_favs;
+	}
+
+	// Build "All Favorites" with collapsible separators
+	catFav->brushlist.clear();
+
+	static SeparatorBrush sep_terrain("Terrain");
+	static SeparatorBrush sep_walls("Walls & Railings");
+	static SeparatorBrush sep_doodads("Doodads");
+	static SeparatorBrush sep_items("Items");
+	static SeparatorBrush sep_monsters("Monsters");
+	static SeparatorBrush sep_npcs("NPCs");
+	static SeparatorBrush sep_other("Other");
+
+	if (!terrain_favs.empty()) {
+		catFav->brushlist.push_back(&sep_terrain);
+		catFav->brushlist.insert(catFav->brushlist.end(), terrain_favs.begin(), terrain_favs.end());
+	}
+	if (!wall_favs.empty()) {
+		catFav->brushlist.push_back(&sep_walls);
+		catFav->brushlist.insert(catFav->brushlist.end(), wall_favs.begin(), wall_favs.end());
+	}
+	if (!doodad_favs.empty()) {
+		catFav->brushlist.push_back(&sep_doodads);
+		catFav->brushlist.insert(catFav->brushlist.end(), doodad_favs.begin(), doodad_favs.end());
+	}
+	if (!item_favs.empty()) {
+		catFav->brushlist.push_back(&sep_items);
+		catFav->brushlist.insert(catFav->brushlist.end(), item_favs.begin(), item_favs.end());
+	}
+	if (!monster_favs.empty()) {
+		catFav->brushlist.push_back(&sep_monsters);
+		catFav->brushlist.insert(catFav->brushlist.end(), monster_favs.begin(), monster_favs.end());
+	}
+	if (!npc_favs.empty()) {
+		catFav->brushlist.push_back(&sep_npcs);
+		catFav->brushlist.insert(catFav->brushlist.end(), npc_favs.begin(), npc_favs.end());
+	}
+	if (!other_favs.empty()) {
+		catFav->brushlist.push_back(&sep_other);
+		catFav->brushlist.insert(catFav->brushlist.end(), other_favs.begin(), other_favs.end());
+	}
+}
+
 void Materials::saveFavorites() {
 	Tileset* favs = tilesets["Favorites"];
 	if (!favs) return;
@@ -323,15 +442,19 @@ void Materials::saveFavorites() {
 
 	const TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
 	if (catFav) {
+		std::set<std::string> saved_names;
 		for (Brush* b : catFav->brushlist) {
-			if (b && !b->getName().empty()) {
-				pugi::xml_node item = root.append_child("brush");
-				item.append_attribute("name") = b->getName().c_str();
+			if (b && !b->isSeparator() && !b->getName().empty()) {
+				if (saved_names.find(b->getName()) == saved_names.end()) {
+					saved_names.insert(b->getName());
+					pugi::xml_node item = root.append_child("brush");
+					item.append_attribute("name") = b->getName().c_str();
+				}
 			}
 		}
 	}
 
-	wxFileName fn(wxStandardPaths::Get().GetUserDataDir(), "favorites.xml");
+	wxFileName fn = GetFavoritesFilePath();
 	if (!wxDirExists(fn.GetPath())) {
 		wxFileName::Mkdir(fn.GetPath(), 511, wxPATH_MKDIR_FULL);
 	}
@@ -339,8 +462,15 @@ void Materials::saveFavorites() {
 }
 
 void Materials::loadFavorites() {
-	wxFileName fn(wxStandardPaths::Get().GetUserDataDir(), "favorites.xml");
-	if (!wxFileExists(fn.GetFullPath())) return;
+	wxFileName fn = GetFavoritesFilePath();
+	if (!fn.FileExists()) {
+		wxFileName fallbackFn(wxStandardPaths::Get().GetUserDataDir(), "favorites.xml");
+		if (fallbackFn.FileExists()) {
+			fn = fallbackFn;
+		} else {
+			return;
+		}
+	}
 
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_file(fn.GetFullPath().mb_str());
@@ -349,42 +479,22 @@ void Materials::loadFavorites() {
 	pugi::xml_node root = doc.child("favorites");
 	if (!root) return;
 
+	Tileset* favs = tilesets["Favorites"];
+	if (!favs) return;
+	TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+	if (!catFav) return;
+
 	for (pugi::xml_node item = root.child("brush"); item; item = item.next_sibling("brush")) {
 		const char* brush_name = item.attribute("name").as_string();
 		if (brush_name && strlen(brush_name) > 0) {
 			Brush* b = g_brushes.getBrush(brush_name);
-			if (b) {
-				Tileset* favs = tilesets["Favorites"];
-				if (favs) {
-					TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
-					if (catFav && !catFav->containsBrush(b)) {
-						catFav->brushlist.push_back(b);
-					}
-
-					TilesetCategoryType subType = TILESET_TERRAIN;
-					if (b->isCreature()) {
-						CreatureBrush* cb = static_cast<CreatureBrush*>(b);
-						if (cb && cb->getType() && cb->getType()->isNpc) {
-							subType = TILESET_NPC;
-						} else {
-							subType = TILESET_CREATURE;
-						}
-					} else if (b->isDoodad()) {
-						subType = TILESET_DOODAD;
-					} else if (b->isRaw()) {
-						subType = TILESET_ITEM;
-					} else {
-						subType = TILESET_TERRAIN;
-					}
-
-					TilesetCategory* catSub = favs->getCategory(subType);
-					if (catSub && !catSub->containsBrush(b)) {
-						catSub->brushlist.push_back(b);
-					}
-				}
+			if (b && !b->isSeparator() && !catFav->containsBrush(b)) {
+				catFav->brushlist.push_back(b);
 			}
 		}
 	}
+
+	rebuildFavorites();
 }
 
 bool Materials::unserializeTileset(pugi::xml_node node, wxArrayString& warnings) {
