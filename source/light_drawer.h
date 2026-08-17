@@ -33,7 +33,7 @@ public:
 	LightDrawer();
 	virtual ~LightDrawer();
 
-	void draw(int map_x, int map_y, int end_x, int end_y, int scroll_x, int scroll_y, bool fog);
+	void draw(int map_x, int map_y, int end_x, int end_y, int scroll_x, int scroll_y);
 
 	void setGlobalLightColor(uint8_t color);
 	void addLight(int map_x, int map_y, int map_z, const SpriteLight& light);

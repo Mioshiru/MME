@@ -204,6 +204,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(MAP_REMOVE_UNREACHABLE_TILES, wxITEM_NORMAL, OnMapRemoveUnreachable);
 	MAKE_ACTION(MAP_CLEANUP, wxITEM_NORMAL, OnMapCleanup);
 	MAKE_ACTION(MAP_CLEAN_HOUSE_ITEMS, wxITEM_NORMAL, OnMapCleanHouseItems);
+	MAKE_ACTION(TOGGLE_NO_HOTKEYS, wxITEM_CHECK, OnToggleNoHotkeys);
 	MAKE_ACTION(MAP_PROPERTIES, wxITEM_NORMAL, OnMapProperties);
 	MAKE_ACTION(MAP_STATISTICS, wxITEM_NORMAL, OnMapStatistics);
 
@@ -249,8 +250,6 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(SHOW_TOWNS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(ALWAYS_SHOW_ZONES, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(EXT_HOUSE_SHADER, wxITEM_CHECK, OnChangeViewSettings);
-
-	MAKE_ACTION(EXPERIMENTAL_FOG, wxITEM_CHECK, OnChangeViewSettings); // experimental
 
 	MAKE_ACTION(NEW_PALETTE, wxITEM_NORMAL, OnNewPalette); // This is not used in the current UI design
 	MAKE_ACTION(TAKE_SCREENSHOT, wxITEM_NORMAL, OnTakeScreenshot);
@@ -516,6 +515,7 @@ void MainMenuBar::Update() {
 	EnableItem(MAP_REMOVE_UNREACHABLE_TILES, is_local);
 	EnableItem(CLEAR_INVALID_HOUSES, is_local);
 	EnableItem(CLEAR_MODIFIED_STATE, is_local);
+	EnableItem(TOGGLE_NO_HOTKEYS, true);
 
 	EnableItem(EDIT_TOWNS, has_map);
 	EnableItem(EDIT_ITEMS, false);
@@ -612,8 +612,8 @@ void MainMenuBar::LoadValues() {
 	CheckItem(SHOW_ONLY_MODIFIED, g_settings.getBoolean(Config::SHOW_ONLY_MODIFIED_TILES));
 	CheckItem(SHOW_HOUSES, g_settings.getBoolean(Config::SHOW_HOUSES));
 	CheckItem(SHOW_PATHING, g_settings.getBoolean(Config::SHOW_BLOCKING));
-	CheckItem(SHOW_TOOLTIPS, g_settings.getBoolean(Config::SHOW_TOOLTIPS));
-	CheckItem(SHOW_TEXT_BUBBLES, g_settings.getBoolean(Config::SHOW_TEXT_BUBBLES));
+	CheckItem(SHOW_TOOLTIPS, g_settings.getBoolean(Config::SHOW_TOOLTIPS) || g_settings.getBoolean(Config::SHOW_TEXT_BUBBLES));
+	CheckItem(SHOW_TEXT_BUBBLES, g_settings.getBoolean(Config::SHOW_TOOLTIPS) || g_settings.getBoolean(Config::SHOW_TEXT_BUBBLES));
 	CheckItem(SHOW_PREVIEW, g_settings.getBoolean(Config::SHOW_PREVIEW));
 	CheckItem(SHOW_FPS, g_settings.getBoolean(Config::SHOW_FPS));
 	CheckItem(SHOW_WALL_HOOKS, g_settings.getBoolean(Config::SHOW_WALL_HOOKS));
@@ -623,6 +623,7 @@ void MainMenuBar::LoadValues() {
 
 	CheckItem(MenuBar::SHOW_MINIMAP_HUD, g_settings.getBoolean(Config::MINIMAP_VISIBLE)); // Check the new minimap HUD item
 	CheckItem(SHOW_MINIMAP_HUD, g_settings.getBoolean(Config::MINIMAP_VISIBLE));
+	CheckItem(TOGGLE_NO_HOTKEYS, g_settings.getBoolean(Config::NO_HOTKEYS_MODE));
 }
 
 void MainMenuBar::LoadRecentFiles() {
@@ -704,58 +705,47 @@ bool MainMenuBar::Load(const FileName& path, wxArrayString& warnings, wxString& 
 	}
 
 #ifdef __LINUX__
-	const int count = 44;
-	wxAcceleratorEntry entries[count];
+	std::vector<wxAcceleratorEntry> entries;
 	// Edit
-	entries[0].Set(wxACCEL_CTRL, (int)'Z', MAIN_FRAME_MENU + MenuBar::UNDO);
-	entries[1].Set(wxACCEL_CTRL | wxACCEL_SHIFT, (int)'Z', MAIN_FRAME_MENU + MenuBar::REDO);
-	entries[2].Set(wxACCEL_CTRL, (int)'F', MAIN_FRAME_MENU + MenuBar::FIND_ITEM);
-	entries[3].Set(wxACCEL_CTRL | wxACCEL_SHIFT, (int)'F', MAIN_FRAME_MENU + MenuBar::REPLACE_ITEMS);
-	entries[4].Set(wxACCEL_NORMAL, (int)'A', MAIN_FRAME_MENU + MenuBar::AUTOMAGIC);
-	entries[5].Set(wxACCEL_CTRL, (int)'B', MAIN_FRAME_MENU + MenuBar::BORDERIZE_SELECTION);
-	entries[6].Set(wxACCEL_NORMAL, (int)'P', MAIN_FRAME_MENU + MenuBar::GOTO_PREVIOUS_POSITION);
-	entries[7].Set(wxACCEL_CTRL, (int)'G', MAIN_FRAME_MENU + MenuBar::GOTO_POSITION);
-	entries[8].Set(wxACCEL_NORMAL, (int)'J', MAIN_FRAME_MENU + MenuBar::JUMP_TO_BRUSH);
-	entries[9].Set(wxACCEL_CTRL, (int)'X', MAIN_FRAME_MENU + MenuBar::CUT);
-	entries[10].Set(wxACCEL_CTRL, (int)'C', MAIN_FRAME_MENU + MenuBar::COPY);
-	entries[11].Set(wxACCEL_CTRL, (int)'V', MAIN_FRAME_MENU + MenuBar::PASTE);
+	entries.emplace_back(wxACCEL_CTRL, (int)'Z', MAIN_FRAME_MENU + MenuBar::UNDO);
+	entries.emplace_back(wxACCEL_CTRL | wxACCEL_SHIFT, (int)'Z', MAIN_FRAME_MENU + MenuBar::REDO);
+	entries.emplace_back(wxACCEL_CTRL, (int)'F', MAIN_FRAME_MENU + MenuBar::FIND_ITEM);
+	entries.emplace_back(wxACCEL_CTRL | wxACCEL_SHIFT, (int)'F', MAIN_FRAME_MENU + MenuBar::REPLACE_ITEMS);
+	entries.emplace_back(wxACCEL_CTRL, (int)'B', MAIN_FRAME_MENU + MenuBar::BORDERIZE_SELECTION);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'P', MAIN_FRAME_MENU + MenuBar::GOTO_PREVIOUS_POSITION);
+	entries.emplace_back(wxACCEL_CTRL, (int)'G', MAIN_FRAME_MENU + MenuBar::GOTO_POSITION);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'J', MAIN_FRAME_MENU + MenuBar::JUMP_TO_BRUSH);
+	entries.emplace_back(wxACCEL_CTRL, (int)'X', MAIN_FRAME_MENU + MenuBar::CUT);
+	entries.emplace_back(wxACCEL_CTRL, (int)'C', MAIN_FRAME_MENU + MenuBar::COPY);
+	entries.emplace_back(wxACCEL_CTRL, (int)'V', MAIN_FRAME_MENU + MenuBar::PASTE);
 	// View
-	entries[12].Set(wxACCEL_CTRL, (int)'=', MAIN_FRAME_MENU + MenuBar::ZOOM_IN);
-	entries[13].Set(wxACCEL_CTRL, (int)'-', MAIN_FRAME_MENU + MenuBar::ZOOM_OUT);
-	entries[14].Set(wxACCEL_CTRL, (int)'0', MAIN_FRAME_MENU + MenuBar::ZOOM_NORMAL);
-	entries[15].Set(wxACCEL_NORMAL, (int)'Q', MAIN_FRAME_MENU + MenuBar::SHOW_SHADE);
-	entries[16].Set(wxACCEL_CTRL, (int)'W', MAIN_FRAME_MENU + MenuBar::SHOW_ALL_FLOORS);
-	entries[17].Set(wxACCEL_NORMAL, (int)'Q', MAIN_FRAME_MENU + MenuBar::GHOST_ITEMS);
-	entries[18].Set(wxACCEL_CTRL, (int)'L', MAIN_FRAME_MENU + MenuBar::GHOST_HIGHER_FLOORS);
-	entries[19].Set(wxACCEL_SHIFT, (int)'I', MAIN_FRAME_MENU + MenuBar::SHOW_INGAME_BOX);
-	entries[20].Set(wxACCEL_SHIFT, (int)'L', MAIN_FRAME_MENU + MenuBar::SHOW_LIGHTS);
-	entries[21].Set(wxACCEL_SHIFT, (int)'G', MAIN_FRAME_MENU + MenuBar::SHOW_GRID);
-	entries[22].Set(wxACCEL_NORMAL, (int)'V', MAIN_FRAME_MENU + MenuBar::HIGHLIGHT_ITEMS);
-	entries[23].Set(wxACCEL_NORMAL, (int)'X', MAIN_FRAME_MENU + MenuBar::HIGHLIGHT_LOCKED_DOORS);
-	entries[24].Set(wxACCEL_NORMAL, (int)'F', MAIN_FRAME_MENU + MenuBar::SHOW_CREATURES);
-	entries[25].Set(wxACCEL_NORMAL, (int)'S', MAIN_FRAME_MENU + MenuBar::SHOW_SPAWNS);
-	entries[26].Set(wxACCEL_NORMAL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_SPECIAL);
-	entries[27].Set(wxACCEL_SHIFT, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_AS_MINIMAP);
-	entries[28].Set(wxACCEL_CTRL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_COLORS);
-	entries[29].Set(wxACCEL_CTRL, (int)'M', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_MODIFIED);
-	entries[30].Set(wxACCEL_CTRL, (int)'H', MAIN_FRAME_MENU + MenuBar::SHOW_HOUSES);
-	entries[31].Set(wxACCEL_NORMAL, (int)'O', MAIN_FRAME_MENU + MenuBar::SHOW_PATHING);
-	entries[32].Set(wxACCEL_NORMAL, (int)'Y', MAIN_FRAME_MENU + MenuBar::SHOW_TOOLTIPS);
-	entries[33].Set(wxACCEL_NORMAL, (int)'L', MAIN_FRAME_MENU + MenuBar::SHOW_PREVIEW);
-	entries[34].Set(wxACCEL_NORMAL, (int)'K', MAIN_FRAME_MENU + MenuBar::SHOW_WALL_HOOKS);
+	entries.emplace_back(wxACCEL_CTRL, (int)'=', MAIN_FRAME_MENU + MenuBar::ZOOM_IN);
+	entries.emplace_back(wxACCEL_CTRL, (int)'-', MAIN_FRAME_MENU + MenuBar::ZOOM_OUT);
+	entries.emplace_back(wxACCEL_CTRL, (int)'0', MAIN_FRAME_MENU + MenuBar::ZOOM_NORMAL);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'Q', MAIN_FRAME_MENU + MenuBar::SHOW_SHADE);
+	entries.emplace_back(wxACCEL_CTRL, (int)'W', MAIN_FRAME_MENU + MenuBar::SHOW_ALL_FLOORS);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'Q', MAIN_FRAME_MENU + MenuBar::GHOST_ITEMS);
+	entries.emplace_back(wxACCEL_CTRL, (int)'L', MAIN_FRAME_MENU + MenuBar::GHOST_HIGHER_FLOORS);
+	entries.emplace_back(wxACCEL_SHIFT, (int)'I', MAIN_FRAME_MENU + MenuBar::SHOW_INGAME_BOX);
+	entries.emplace_back(wxACCEL_SHIFT, (int)'L', MAIN_FRAME_MENU + MenuBar::SHOW_LIGHTS);
+	entries.emplace_back(wxACCEL_SHIFT, (int)'G', MAIN_FRAME_MENU + MenuBar::SHOW_GRID);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'V', MAIN_FRAME_MENU + MenuBar::HIGHLIGHT_ITEMS);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'X', MAIN_FRAME_MENU + MenuBar::HIGHLIGHT_LOCKED_DOORS);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'F', MAIN_FRAME_MENU + MenuBar::SHOW_CREATURES);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_SPECIAL);
+	entries.emplace_back(wxACCEL_SHIFT, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_AS_MINIMAP);
+	entries.emplace_back(wxACCEL_CTRL, (int)'E', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_COLORS);
+	entries.emplace_back(wxACCEL_CTRL, (int)'M', MAIN_FRAME_MENU + MenuBar::SHOW_ONLY_MODIFIED);
+	entries.emplace_back(wxACCEL_CTRL, (int)'H', MAIN_FRAME_MENU + MenuBar::SHOW_HOUSES);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'O', MAIN_FRAME_MENU + MenuBar::SHOW_PATHING);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'Y', MAIN_FRAME_MENU + MenuBar::SHOW_TOOLTIPS);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'L', MAIN_FRAME_MENU + MenuBar::SHOW_PREVIEW);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'K', MAIN_FRAME_MENU + MenuBar::SHOW_WALL_HOOKS);
 
 	// Window
-	entries[35].Set(wxACCEL_NORMAL, (int)'M', MAIN_FRAME_MENU + MenuBar::WIN_MINIMAP);
-	entries[36].Set(wxACCEL_NORMAL, (int)'T', MAIN_FRAME_MENU + MenuBar::SELECT_TERRAIN);
-	entries[37].Set(wxACCEL_NORMAL, (int)'D', MAIN_FRAME_MENU + MenuBar::SELECT_DOODAD);
-	entries[38].Set(wxACCEL_NORMAL, (int)'I', MAIN_FRAME_MENU + MenuBar::SELECT_ITEM);
-	entries[39].Set(wxACCEL_NORMAL, (int)'N', MAIN_FRAME_MENU + MenuBar::SELECT_COLLECTION);
-	entries[40].Set(wxACCEL_NORMAL, (int)'H', MAIN_FRAME_MENU + MenuBar::SELECT_HOUSE);
-	entries[41].Set(wxACCEL_NORMAL, (int)'C', MAIN_FRAME_MENU + MenuBar::SELECT_CREATURE);
-	entries[42].Set(wxACCEL_NORMAL, (int)'W', MAIN_FRAME_MENU + MenuBar::SELECT_WAYPOINT);
-	entries[43].Set(wxACCEL_NORMAL, (int)'R', MAIN_FRAME_MENU + MenuBar::SELECT_RAW);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'M', MAIN_FRAME_MENU + MenuBar::WIN_MINIMAP);
 
-	wxAcceleratorTable accelerator(count, entries);
+	wxAcceleratorTable accelerator((int)entries.size(), entries.data());
 	frame->SetAcceleratorTable(accelerator);
 #endif
 
@@ -843,8 +833,20 @@ wxObject* MainMenuBar::LoadItem(pugi::xml_node node, wxMenu* parent, wxArrayStri
 
 		const std::string& action = attribute.as_string();
 		std::string hotkey = node.attribute("hotkey").as_string();
+
+		bool is_single_letter = false;
 		if (!hotkey.empty()) {
-			hotkey = '\t' + hotkey;
+			if (hotkey.length() == 1 && ((hotkey[0] >= 'A' && hotkey[0] <= 'Z') || (hotkey[0] >= 'a' && hotkey[0] <= 'z'))) {
+				is_single_letter = true;
+			}
+		}
+
+		if (!hotkey.empty()) {
+			if (!is_single_letter || !g_settings.getBoolean(Config::NO_HOTKEYS_MODE)) {
+				hotkey = '\t' + hotkey;
+			} else {
+				hotkey = "";
+			}
 		}
 
 		const std::string& help = node.attribute("help").as_string();
@@ -1270,16 +1272,15 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event) {
 	g_settings.setInteger(Config::HIGHLIGHT_ITEMS, IsItemChecked(MenuBar::HIGHLIGHT_ITEMS));
 	g_settings.setInteger(Config::HIGHLIGHT_LOCKED_DOORS, IsItemChecked(MenuBar::HIGHLIGHT_LOCKED_DOORS));
 	g_settings.setInteger(Config::SHOW_BLOCKING, IsItemChecked(MenuBar::SHOW_PATHING));
-	g_settings.setInteger(Config::SHOW_TOOLTIPS, IsItemChecked(MenuBar::SHOW_TOOLTIPS));
-	g_settings.setInteger(Config::SHOW_TEXT_BUBBLES, IsItemChecked(MenuBar::SHOW_TEXT_BUBBLES));
+	bool show_tt = IsItemChecked(MenuBar::SHOW_TOOLTIPS);
+	g_settings.setInteger(Config::SHOW_TOOLTIPS, show_tt);
+	g_settings.setInteger(Config::SHOW_TEXT_BUBBLES, show_tt);
 	g_settings.setInteger(Config::SHOW_PREVIEW, IsItemChecked(MenuBar::SHOW_PREVIEW));
 	g_settings.setInteger(Config::SHOW_FPS, IsItemChecked(MenuBar::SHOW_FPS));
 	g_settings.setInteger(Config::SHOW_WALL_HOOKS, IsItemChecked(MenuBar::SHOW_WALL_HOOKS));
 	g_settings.setInteger(Config::SHOW_TOWNS, IsItemChecked(MenuBar::SHOW_TOWNS));
 	g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, IsItemChecked(MenuBar::ALWAYS_SHOW_ZONES));
 	g_settings.setInteger(Config::EXT_HOUSE_SHADER, IsItemChecked(MenuBar::EXT_HOUSE_SHADER));
-
-	g_settings.setInteger(Config::EXPERIMENTAL_FOG, IsItemChecked(MenuBar::EXPERIMENTAL_FOG));
 
 	g_gui.RefreshView();
 	// g_gui.UpdateMinimap(true); // No longer needed, minimap is canvas-based and refreshes with view
@@ -1783,5 +1784,24 @@ void MainMenuBar::OnWizardNPC(wxCommandEvent& WXUNUSED(event)) {
 void MainMenuBar::OnWizardSpecialObjects(wxCommandEvent& WXUNUSED(event)) {
 	SpecialObjectsWizardDialog dialog(frame);
 	dialog.ShowModal();
+}
+
+void MainMenuBar::OnToggleNoHotkeys(wxCommandEvent& WXUNUSED(event)) {
+	bool current = g_settings.getBoolean(Config::NO_HOTKEYS_MODE);
+	g_settings.setInteger(Config::NO_HOTKEYS_MODE, !current ? 1 : 0);
+	CheckItem(MenuBar::TOGGLE_NO_HOTKEYS, !current);
+	if (!current) {
+		g_gui.SetStatusText("No Hotkeys Mode: AN (Einzeltasten-Hotkeys deaktiviert)");
+	} else {
+		g_gui.SetStatusText("No Hotkeys Mode: AUS (Einzeltasten-Hotkeys aktiv)");
+	}
+
+	FileName filename(g_gui.getFoundDataDirectory() + "menubar.xml");
+	if (!filename.FileExists()) {
+		filename = FileName(GUI::GetDataDirectory() + "menubar.xml");
+	}
+	wxArrayString warnings;
+	wxString error;
+	Load(filename, warnings, error);
 }
 

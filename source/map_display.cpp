@@ -289,6 +289,26 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
       Refresh();
       return;
     }
+    if (event.GetKeyCode() == 'Z' || event.GetKeyCode() == 'z') {
+      if (event.ShiftDown()) {
+        if (editor.actionQueue && editor.actionQueue->canRedo()) {
+          editor.actionQueue->redo();
+        }
+      } else {
+        if (editor.actionQueue && editor.actionQueue->canUndo()) {
+          editor.actionQueue->undo();
+        }
+      }
+      Refresh();
+      return;
+    }
+    if (event.GetKeyCode() == 'Y' || event.GetKeyCode() == 'y') {
+      if (editor.actionQueue && editor.actionQueue->canRedo()) {
+        editor.actionQueue->redo();
+      }
+      Refresh();
+      return;
+    }
   }
 
   if (event.GetKeyCode() == WXK_DELETE || event.GetKeyCode() == WXK_NUMPAD_DELETE) {
@@ -297,7 +317,7 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     return;
   }
 
-  if (!event.ControlDown() && (event.GetKeyCode() == 'R' || event.GetKeyCode() == 'r' || event.GetKeyCode() == 'Z' || event.GetKeyCode() == 'z')) {
+  if (!g_settings.getBoolean(Config::NO_HOTKEYS_MODE) && !event.ControlDown() && (event.GetKeyCode() == 'R' || event.GetKeyCode() == 'r' || event.GetKeyCode() == 'Z' || event.GetKeyCode() == 'z')) {
     Brush* brush = g_gui.GetCurrentBrush();
     if (brush) {
       if (brush->isRaw()) {
@@ -419,18 +439,22 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
 			return;
 		}
 		case 'A':
+		case 'a':
       map_window->ScrollRelative(-pan_step, 0);
       Refresh();
       return;
     case 'D':
+    case 'd':
       map_window->ScrollRelative(pan_step, 0);
       Refresh();
       return;
     case 'W':
+    case 'w':
       map_window->ScrollRelative(0, -pan_step);
       Refresh();
       return;
     case 'S':
+    case 's':
       map_window->ScrollRelative(0, pan_step);
       Refresh();
       return;
@@ -1734,8 +1758,31 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     int max_x = map_width - 1;
     int max_y = map_height - 1;
 
+    auto is_mountain_ground_tile = [&](Tile* t) -> bool {
+      if (!t || !t->ground) return false;
+      if (t->getGroundBrush()) {
+        const std::string name = as_lower_str(t->getGroundBrush()->getName());
+        if (name.find("mountain") != std::string::npos || name.find("cliff") != std::string::npos || name.find("rock") != std::string::npos) {
+          return true;
+        }
+      }
+      if (t->ground->typeExists()) {
+        const std::string name = as_lower_str(t->ground->getName());
+        if (name.find("mountain") != std::string::npos || name.find("cliff") != std::string::npos) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     const bool fill_empty = (start_tile == nullptr || start_tile->ground == nullptr);
-    if (fill_empty) {
+    bool fill_mountain_top = false;
+    if (fill_empty && floor < MAP_LAYERS - 1) {
+      Tile* lower_start = editor.map.getTile(start.x, start.y, floor + 1);
+      fill_mountain_top = is_mountain_ground_tile(lower_start);
+    }
+
+    if (fill_empty && !fill_mountain_top) {
       int screen_start_x, screen_start_y;
       int screen_end_x, screen_end_y;
       ScreenToMap(0, 0, &screen_start_x, &screen_start_y);
@@ -1784,7 +1831,15 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
       Tile *tile = editor.map.getTile(current);
       bool tile_has_ground = (tile != nullptr && tile->ground != nullptr);
 
-      if (fill_empty) {
+      if (fill_mountain_top) {
+        if (tile_has_ground) {
+          continue;
+        }
+        Tile* lower_tile = editor.map.getTile(current.x, current.y, current.z + 1);
+        if (!is_mountain_ground_tile(lower_tile)) {
+          continue;
+        }
+      } else if (fill_empty) {
         if (tile_has_ground) {
           continue;
         }
@@ -1802,7 +1857,14 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
         if (nx >= min_x && nx <= max_x && ny >= min_y && ny <= max_y) {
           if (!is_visited(nx, ny)) {
             set_visited(nx, ny);
-            queue.push(Position(nx, ny, current.z));
+            if (fill_mountain_top) {
+              Tile* neighbor_lower = editor.map.getTile(nx, ny, current.z + 1);
+              if (is_mountain_ground_tile(neighbor_lower)) {
+                queue.push(Position(nx, ny, current.z));
+              }
+            } else {
+              queue.push(Position(nx, ny, current.z));
+            }
           }
         }
       }

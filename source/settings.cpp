@@ -252,8 +252,11 @@ void Settings::IO(IOMode mode) {
 	String(MULTIPLAYER_NAME, "Player");
 	Int(MERGE_MOVE, 0);
 	Int(MERGE_PASTE, 0);
-	Int(UNDO_SIZE, 3); // Standardmäßig 3 Schritte
-	Int(UNDO_MEM_SIZE, 40);
+	Int(UNDO_SIZE, 5); // Speichert die letzten 5 Schritte für Undo / Redo
+	Int(UNDO_MEM_SIZE, 60);
+	Int(ERASER_LEAVE_GROUND, 0);
+	Int(ERASER_LEAVE_UNIQUE, 0);
+	Int(NO_HOTKEYS_MODE, 0);
 	Int(GROUP_ACTIONS, 1);
 	Int(SELECTION_TYPE, SELECT_CURRENT_FLOOR);
 	Int(COMPENSATED_SELECT, 1);
@@ -370,9 +373,6 @@ void Settings::IO(IOMode mode) {
 	String(TOOLBAR_POSITION_LAYOUT, "");
 	String(TOOLBAR_SIZES_LAYOUT, "");
 
-	// experimental
-	section("experimental");
-	Int(EXPERIMENTAL_FOG, 0);
 
 	section("");
 	Int(GOTO_WEBSITE_ON_BOOT, 0);

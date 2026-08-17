@@ -1576,24 +1576,6 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, bool alt, bool d
 	}
 #endif
 
-	bool use_snapshot = (tilestodraw.size() > 1000);
-	RME::Core::SnapshotAction* snapshot_action = nullptr;
-	if (use_snapshot) {
-		int min_x = 0xFFFF, min_y = 0xFFFF, max_x = 0, max_y = 0;
-		for (const auto& pos : tilestodraw) {
-			min_x = std::min(min_x, pos.x);
-			min_y = std::min(min_y, pos.y);
-			max_x = std::max(max_x, pos.x);
-			max_y = std::max(max_y, pos.y);
-		}
-		min_x = std::max(0, min_x - 1);
-		min_y = std::max(0, min_y - 1);
-		max_x = std::min(static_cast<int>(map.width) - 1, max_x + 1);
-		max_y = std::min(static_cast<int>(map.height) - 1, max_y + 1);
-
-		snapshot_action = newd RME::Core::SnapshotAction(*this, map, min_x, min_y, max_x - min_x + 1, max_y - min_y + 1);
-	}
-
 	Action* action = actionQueue->createAction(ACTION_DRAW);
 
 	if (brush->isOptionalBorder()) {
@@ -1644,14 +1626,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, bool alt, bool d
 			}
 		}
 	}
-	if (use_snapshot) {
-		action->commit(nullptr);
-		snapshot_action->captureAfter();
-		delete action;
-		addAction(snapshot_action, 2);
-	} else {
-		addAction(action, 2);
-	}
+	addAction(action, 2);
 }
 
 void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& tilestoborder, bool alt, bool dodraw) {
@@ -1663,26 +1638,6 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 	Brush* brush = g_gui.GetCurrentBrush();
 	if (!brush) {
 		return;
-	}
-
-	bool use_snapshot = (tilestodraw.size() > 1000);
-	RME::Core::SnapshotAction* snapshot_action = nullptr;
-	if (use_snapshot) {
-		int min_x = 0xFFFF, min_y = 0xFFFF, max_x = 0, max_y = 0;
-		for (const auto& pos : tilestodraw) {
-			min_x = std::min(min_x, pos.x); min_y = std::min(min_y, pos.y);
-			max_x = std::max(max_x, pos.x); max_y = std::max(max_y, pos.y);
-		}
-		for (const auto& pos : tilestoborder) {
-			min_x = std::min(min_x, pos.x); min_y = std::min(min_y, pos.y);
-			max_x = std::max(max_x, pos.x); max_y = std::max(max_y, pos.y);
-		}
-		min_x = std::max(0, min_x - 2);
-		min_y = std::max(0, min_y - 2);
-		max_x = std::min(static_cast<int>(map.width) - 1, max_x + 2);
-		max_y = std::min(static_cast<int>(map.height) - 1, max_y + 2);
-
-		snapshot_action = newd RME::Core::SnapshotAction(*this, map, min_x, min_y, max_x - min_x + 1, max_y - min_y + 1);
 	}
 
 	if (brush->isGround() || brush->isEraser()) {
@@ -1769,13 +1724,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 			batch->addAndCommitAction(action);
 		}
 
-		if (use_snapshot) {
-			snapshot_action->captureAfter();
-			delete batch;
-			addAction(snapshot_action, 2);
-		} else {
-			addBatch(batch, 2);
-		}
+		addBatch(batch, 2);
 	} else if (brush->isTable() || brush->isCarpet()) {
 		BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
 		Action* action = actionQueue->createAction(batch);
@@ -1848,13 +1797,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 			batch->addAndCommitAction(action);
 		}
 
-		if (use_snapshot) {
-			snapshot_action->captureAfter();
-			delete batch;
-			addAction(snapshot_action, 2);
-		} else {
-			addBatch(batch, 2);
-		}
+		addBatch(batch, 2);
 	} else if (brush->isDoor()) {
 		// NOTE: isDoor() must be checked BEFORE isWall() because DoorBrush::isWall() returns true.
 		// If isWall() is checked first, door brushes incorrectly enter the wall code path
@@ -2034,13 +1977,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 
 		}
 
-		if (use_snapshot) {
-			snapshot_action->captureAfter();
-			delete batch;
-			addAction(snapshot_action, 2);
-		} else {
-			actionQueue->addBatch(batch, 2);
-		}
+		actionQueue->addBatch(batch, 2);
 	} else if (brush->isHouseExit()) {
 		HouseExitBrush* house_exit_brush = brush->asHouseExit();
 		House* house = map.houses.getHouse(house_exit_brush->getHouseID());

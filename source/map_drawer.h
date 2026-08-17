@@ -112,8 +112,6 @@ struct DrawingOptions {
   bool always_show_zones;
   bool extended_house_shader;
 
-  bool experimental_fog;
-
   bool operator!=(const DrawingOptions &other) const {
     return transparent_floors != other.transparent_floors ||
            transparent_items != other.transparent_items ||
@@ -141,8 +139,7 @@ struct DrawingOptions {
            hide_items_when_zoomed != other.hide_items_when_zoomed ||
            show_towns != other.show_towns ||
            always_show_zones != other.always_show_zones ||
-           extended_house_shader != other.extended_house_shader ||
-           experimental_fog != other.experimental_fog;
+           extended_house_shader != other.extended_house_shader;
   }
 };
 

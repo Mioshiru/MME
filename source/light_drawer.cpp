@@ -30,7 +30,7 @@ LightDrawer::~LightDrawer() {
 	lights.clear();
 }
 
-void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x, int scroll_y, bool fog) {
+void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x, int scroll_y) {
 	if (texture == 0) {
 		createGLTexture();
 	}
@@ -43,10 +43,7 @@ void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x,
 	int draw_height = h * TileSize;
 
 	glDisable(GL_TEXTURE_2D);
-
-	if (!fog) {
-		glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
-	}
+	glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
 	
 	// Draw the global ambient darkening
 	uint8_t ambient_alpha = static_cast<uint8_t>(255 * (1.0f - g_settings.getFloat(Config::LIGHT_AMBIENT)));
@@ -124,16 +121,6 @@ void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x,
 
 	glDisable(GL_TEXTURE_2D);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	if (fog) {
-		glColor4ub(10, 10, 10, 80);
-		glBegin(GL_QUADS);
-		glVertex2f(draw_x, draw_y);
-		glVertex2f(draw_x + draw_width, draw_y);
-		glVertex2f(draw_x + draw_width, draw_y + draw_height);
-		glVertex2f(draw_x, draw_y + draw_height);
-		glEnd();
-	}
 	glColor4ub(255, 255, 255, 255);
 }
 

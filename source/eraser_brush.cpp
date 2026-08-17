@@ -21,6 +21,8 @@
 #include "sprites.h"
 #include "basemap.h"
 #include "settings.h"
+#include "creature.h"
+#include "spawn.h"
 
 //=============================================================================
 // Eraser brush
@@ -66,6 +68,14 @@ void EraserBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 			delete item;
 			item_iter = tile->items.erase(item_iter);
 		}
+	}
+	if (tile->creature) {
+		delete tile->creature;
+		tile->creature = nullptr;
+	}
+	if (tile->spawn) {
+		delete tile->spawn;
+		tile->spawn = nullptr;
 	}
 	if (leave_ground) {
 		// Keep ground tile intact

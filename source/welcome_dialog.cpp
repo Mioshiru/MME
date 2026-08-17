@@ -361,6 +361,14 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	load_custom_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
 	bottomSizer->Add(load_custom_button, 0, wxALIGN_CENTER_VERTICAL);
 
+	bottomSizer->AddSpacer(FROM_DIP(this, 15));
+
+	wxSize join_button_size = FROM_DIP(this, wxSize(130, 48));
+	auto* join_button = newd WelcomeDialogButton(this, wxDefaultPosition, join_button_size, button_base_colour, "Join...");
+	join_button->SetAction(wxID_MORE);
+	join_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+	bottomSizer->Add(join_button, 0, wxALIGN_CENTER_VERTICAL);
+
 	// Removed checkbox
 
 	rootSizer->Add(bottomSizer, 0, wxALIGN_CENTER_HORIZONTAL);

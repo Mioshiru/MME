@@ -1308,7 +1308,7 @@ void GUI::SelectBrushInternal(Brush *brush) {
     return;
   }
 
-  if (!current_brush->isGround()) {
+  if (!current_brush->isGround() && !current_brush->isEraser()) {
     if (brush_size != 0 || brush_shape != BRUSHSHAPE_SQUARE) {
       SetBrushSizeInternal(0);
       brush_shape = BRUSHSHAPE_SQUARE;

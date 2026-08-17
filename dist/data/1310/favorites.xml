@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<favorites>
+	<brush name="dirt" />
+	<brush name="mountain" />
+	<brush name="sea" />
+	<brush name="sand" />
+	<brush name="mountain ground" />
+	<brush name="cobblestone" />
+	<brush name="gray stone tiles" />
+	<brush name="gray stone tiles pressed" />
+	<brush name="white marble floor" />
+	<brush name="earth" />
+	<brush name="mossy wall mountain" />
+	<brush name="white gravel" />
+	<brush name="rocky ground" />
+	<brush name="rock soil" />
+	<brush name="cave" />
+	<brush name="rock wall" />
+	<brush name="framework wall" />
+	<brush name="green trees" />
+	<brush name="blueberry bushes" />
+	<brush name="venorean grass tufts" />
+	<brush name="normal bed" />
+	<brush name="large mossy rocks" />
+	<brush name="small mossy rocks" />
+	<brush name="mossy ramp" />
+	<brush name="ramp" />
+</favorites>

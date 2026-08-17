@@ -280,8 +280,6 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			options.show_towns = g_settings.getBoolean(Config::SHOW_TOWNS);
 			options.always_show_zones = g_settings.getBoolean(Config::ALWAYS_SHOW_ZONES);
 			options.extended_house_shader = g_settings.getBoolean(Config::EXT_HOUSE_SHADER);
-
-			options.experimental_fog = g_settings.getBoolean(Config::EXPERIMENTAL_FOG);
 		}
 
 		options.dragging = boundbox_selection;
@@ -870,7 +868,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	}
 
 	// Rendering stacked speech bubbles / tooltips for sign texts, teleport destinations, creature names, action/unique IDs
-	if (g_settings.getBoolean(Config::SHOW_TEXT_BUBBLES) && g_gui.IsRenderingEnabled()) {
+	if ((g_settings.getBoolean(Config::SHOW_TOOLTIPS) || g_settings.getBoolean(Config::SHOW_TEXT_BUBBLES)) && g_gui.IsRenderingEnabled()) {
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(io.DisplaySize);

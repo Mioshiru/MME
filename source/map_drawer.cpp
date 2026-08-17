@@ -2345,7 +2345,10 @@ void MapDrawer::WriteTooltip(Item *item, std::ostringstream &stream,
   }
 
   Teleport *tp = dynamic_cast<Teleport *>(item);
-  if (unique == 0 && action == 0 && doorId == 0 && text.empty() && !tp) {
+  Container *container = dynamic_cast<Container *>(item);
+  size_t itemCount = container ? container->getItemCount() : 0;
+
+  if (unique == 0 && action == 0 && doorId == 0 && text.empty() && !tp && itemCount == 0) {
     return;
   }
 
@@ -2353,7 +2356,11 @@ void MapDrawer::WriteTooltip(Item *item, std::ostringstream &stream,
     stream << "\n";
   }
 
-  stream << "id: " << id << "\n";
+  stream << "id: " << id;
+  if (!item->getName().empty()) {
+    stream << " (" << item->getName() << ")";
+  }
+  stream << "\n";
 
   if (action > 0) {
     stream << "aid: " << action << "\n";
@@ -2371,6 +2378,27 @@ void MapDrawer::WriteTooltip(Item *item, std::ostringstream &stream,
     const Position &dest = tp->getDestination();
     stream << "destination: " << dest.x << ", " << dest.y << ", " << dest.z
            << "\n";
+  }
+  if (container && itemCount > 0) {
+    stream << "contains: " << itemCount << " item(s)\n";
+    for (size_t i = 0; i < itemCount && i < 10; ++i) {
+      if (Item *sub = container->getItem(i)) {
+        stream << " - " << sub->getName();
+        if (sub->isStackable() && sub->getSubtype() > 1) {
+          stream << " (" << static_cast<int>(sub->getSubtype()) << "x)";
+        }
+        if (sub->getActionID() > 0) {
+          stream << " [aid:" << sub->getActionID() << "]";
+        }
+        if (sub->getUniqueID() > 0) {
+          stream << " [uid:" << sub->getUniqueID() << "]";
+        }
+        stream << "\n";
+      }
+    }
+    if (itemCount > 10) {
+      stream << " ... +" << (itemCount - 10) << " more\n";
+    }
   }
 }
 
@@ -2617,7 +2645,7 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
 void MapDrawer::DrawLight() {
   // draw in-game light
   light_drawer->draw(start_x, start_y, end_x, end_y, view_scroll_x,
-                     view_scroll_y, options.experimental_fog);
+                     view_scroll_y);
 }
 
 void MapDrawer::MakeTooltip(int screenx, int screeny, const std::string &text,
