@@ -2,14 +2,14 @@
 
 ---
 
-## 🚀 Release v1.9 (Latest Release)
+## 🚀 Release v1.8 (Latest Release)
 
-### 🌟 Highlights & New Features
+### 🌟 Major Highlights & New Features
 
 #### 🏔️ Smart Mountain Plateau Fill (Upper-Floor Autoborder)
-* **Floor-Aware Bucket Fill:** Filling on higher elevations (e.g. Floor 6 directly over a mountain base on Floor 7) automatically detects the underlying mountain footprint.
-* **Border Exclusion:** The plateau algorithm strictly adheres to solid mountain ground tiles (`tile->ground`) and excludes sloped border items, preventing accidental overflow beyond cliff edges.
-* **Instant Auto-Bordering:** The upper plateau area is automatically populated and bordered in a single action.
+* **Floor-Aware Bucket Fill:** Filling on higher elevations (e.g. Floor 6 directly over a mountain foundation on Floor 7) automatically detects the underlying mountain shape.
+* **Strict Border Exclusion:** The plateau algorithm strictly matches solid mountain ground tiles (`tile->ground`) and excludes sloped border skirts, preventing accidental overflow beyond cliff edges.
+* **Instant Auto-Bordering:** The upper plateau area is automatically generated and cleanly bordered in a single action.
 
 #### 🔄 Complete Undo (`Ctrl + Z`) & Redo (`Ctrl + Y`) Re-Architecture
 * **Reliable Multi-Step History:** Restored native `BatchAction` records for all fill, draw, and erasure operations, guaranteeing 100% reliable Undo and Redo without memory bloat or canvas freezing.
@@ -21,27 +21,17 @@
 * **Complete Entity Wiping:** Erasing comprehensively removes ground tiles, decorative items, containers, creatures, spawns, and tile flags.
 * **Terrain Protection Option:** Retains optional ground preservation mode (`ERASER_LEAVE_GROUND`) when selective cleanup is desired.
 
-#### 🚫 "No Hotkeys" Mode (`Edit -> Map Tools -> No Hotkeys Mode`)
+#### 🚫 "No Hotkeys" Mode (`Tools -> Map Tools -> No Hotkeys Mode`)
 * **Single-Letter Hotkey Suppression:** Disables single-letter shortcut keys (such as `O`, `A`, `P`, `J`, `R`, `Z`) to prevent accidental tool switches while navigating or mapping.
 * **Essential Keys Preserved:** Number keys `1`–`7` (brush sizing), WASD camera navigation, arrow keys, Tab, Delete, and all modifier combinations (`Ctrl + Z`, `Ctrl + Y`, `Ctrl + C`, `Ctrl + V`, `Ctrl + F`, `Shift + Q`) remain fully active.
 * **Persistent Setting:** Saved and loaded automatically in user configuration.
 
-#### 🖥️ UI & Workflow Restorations
-* **Show FPS Toggle:** Restored the `View -> Show FPS` menu toggle to display real-time framerate statistics on the canvas.
-* **Dedicated Multiplayer Menu:** Reintroduced the `Multiplayer` top-level menu (*Start Server / Host*, *Join Server*, *Disconnect*, *Help*).
-* **Welcome Screen "Join..." Button:** Replaced the join button on the landing page for quick access to multiplayer sessions with custom IP, port, and username.
-* **Isolated Distribution Layout:** All external third-party `.dll` binaries in the release package are organized into a dedicated `DLLs/` folder, ensuring `MME.exe` is prominent and accessible. Map saves are located in `Saves/` at the root folder, and favorites are stored version-specifically in `data/`.
-
----
-
-## 📦 Release v1.8
-
-### 📁 Interactive Collapsible Palette Sections
+#### 📁 Interactive Collapsible Palette Sections
 * **Clean & Structured:** Tilesets are organized into logical sections with divider lines and category headers.
 * **Interactive Accordion Toggles:** Each section features an interactive toggle arrow (▼ / ▶) to collapse or expand sections in both Icon View and List View.
 * **Smart Filter Search:** Typing into the search bar automatically searches across collapsed sections, instantly expanding matching brushes.
 
-### ⭐ Favorites 2.0 with Automatic Categorization
+#### ⭐ Favorites 2.0 with Automatic Categorization & Slot Sync
 * **Auto-Categorized Sections:** The All Favorites overview groups favorited brushes into clean sections:
   * ── **Terrain** ── (Grounds, Mountains, Grass, Sand, etc.)
   * ── **Walls & Railings** ── (Walls, Fences, Railings)
@@ -49,9 +39,10 @@
   * ── **Items** ── (RAW items and objects)
   * ── **Monsters** ── (Creatures & Monsters)
   * ── **NPCs** ── (NPC characters)
+* **Slot-Specific Synchronization:** Favorites are automatically stored directly within each map's save slot folder, with seamless fallback to client version defaults.
 * **Real-Time Palette Sync:** Adding or removing favorites via right-click context menus instantly updates and organizes the palette live.
 
-### 🎨 Tileset Restructuring & Cleanup
+#### 🎨 Tileset Restructuring & Cleanup
 * **Unified Nature Tileset:** All biomes consolidated into a single master tileset divided into clear categories:
   * Grasslands & Forests
   * Mountains & Cliffs
@@ -66,10 +57,34 @@
 * **Split City Walls:** Divided into *Walls & Archways* and *Railings & Balconies*.
 * **Structured Stairs & Ladders:** Organized into *Ramps*, *Mountain Holes & Caves*, *Stairs & Stairways*, and *Ladders & Trapdoors*.
 
-### 🛠️ Autoborder Engine Fixes
+#### 🛠️ Autoborder Engine Fixes
 * **Mountain 919 Autoborder Fix:** Fixed South/East border generation (items 4471 and 4472) and corrected Z-order transitions between base mountain and dirt/ground layers.
 * **Mossy Wall Mountain Fix:** Corrected South-West corner placement (item 17726) across all mossy wall variations.
-* **Cross-Version Parity:** Consistent tileset definitions across client versions 8.54 through 13.30.
+* **Cross-Version Parity:** Consistent tileset definitions across client versions 8.54 through 13.30 without startup warning modals.
+
+#### 📻 Built-In Fantasy Radio Player (`Tools -> Radio`)
+* **Dedicated Stream Player:** Built-in streaming audio player with full Rainwave and RPGamers Radio station channels:
+  * 🎵 **ALL** (`https://rainwave.cc/all/`) – The complete Rainwave game music playlist
+  * 🎮 **GAME** (`https://rainwave.cc/game/`) – Original video game soundtracks (SNES & newer)
+  * 👾 **CHIPTUNE** (`https://rainwave.cc/chiptune/`) – Original & video game chiptune tracks
+  * 🎸 **OC REMIX** (`https://rainwave.cc/ocremix/`) – Official OverClocked ReMix tracks
+  * 🎼 **COVERS** (`https://rainwave.cc/covers/`) – Official & fan-created video game music covers
+  * ☕ **CHILL** (`https://rainwave.cc/chill/`) – Cozy, ambient & calm background melodies
+  * ⚔️ **RPG** (`https://www.rpgamers.net/radio/`) – RPGamers Radio epic soundscapes & anthems
+* **Sleek Dockable & Transparent Window:** Crisp vector icons for Play/Pause, Stop, Mute, Volume slider, and real-time station selector.
+* **Docking & Opacity Control:** Seamlessly switch between a floating window with customizable transparency (25%–100%) or dock directly into the editor interface.
+* **Interactive Voting Support:** One-click `Web Radio` button to open the live voting station directly in your browser.
+
+#### 🗺️ Palette Minimap Enhancements
+* **Intelligent Multi-Palette Minimap:** The first opened palette displays the navigation minimap, while additional palette windows (`Window -> New Palette`) cleanly hide it by default to maximize brush space.
+* **In-Palette Minimap Controls:** Added instant `Hide Minimap` button and right-click context menu options (*Hide Minimap in this Palette*, *Dock to Canvas*).
+
+#### 🖥️ UI & Menu Reorganization
+* **Reorganized Tools Menu:** Consolidated all TFS wizards (*NPC & Shop Wizard*, *Quest & Key Generator*, *Special Objects*, *TFS Exporter*), generators (*Procedural Map Generator*, *Prefab Library*), diagnostics, radio player, and maintenance tools under a top-level **Tools** menu.
+* **Dedicated Multiplayer Menu:** Reintroduced top-level **Multiplayer** menu (*Start Server / Host*, *Join Server*, *Disconnect*, *Help*) with port 3074 as default.
+* **Show FPS Toggle:** Restored `View -> Show FPS` to display real-time framerate statistics on the map canvas.
+* **Welcome Screen "Join..." Button:** Replaced the join button on the landing page for quick access to multiplayer sessions with custom IP, port, and username.
+* **Isolated Distribution Layout:** All external third-party `.dll` binaries in the release package are organized into a dedicated `DLLs/` folder, ensuring `MME.exe` is prominent and accessible. Map saves are located in `Saves/` at the root folder.
 
 ---
 

@@ -176,7 +176,7 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 
 	if (edit_item->isDoor()) {
 		addLabel("Locked Door:");
-		locked_door_checkbox = newd wxCheckBox(panel, wxID_ANY, "Abgeschlossen / Locked (Action ID 100)");
+		locked_door_checkbox = newd wxCheckBox(panel, wxID_ANY, "Locked (Action ID 100)");
 		locked_door_checkbox->SetForegroundColour(wxColour(240, 245, 255));
 		locked_door_checkbox->SetValue(edit_item->getActionID() == 100);
 		

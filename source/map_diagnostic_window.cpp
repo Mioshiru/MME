@@ -36,7 +36,7 @@ MapDiagnosticDialog::MapDiagnosticDialog(wxWindow* parent, Editor& editor) :
 	wxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
 
 	// Title
-	wxStaticText* header = new wxStaticText(this, wxID_ANY, "Map Analyse & Qualitätsprüfung");
+	wxStaticText* header = new wxStaticText(this, wxID_ANY, "Map Analysis & Quality Check");
 	wxFont headerFont = header->GetFont();
 	headerFont.SetPointSize(12);
 	headerFont.SetWeight(wxFONTWEIGHT_BOLD);
@@ -45,18 +45,18 @@ MapDiagnosticDialog::MapDiagnosticDialog(wxWindow* parent, Editor& editor) :
 	topsizer->Add(header, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
 
 	issueListCtrl = new wxListCtrl(this, DIAG_LIST_CTRL, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
-	issueListCtrl->InsertColumn(0, "Kategorie", wxLIST_FORMAT_LEFT, 140);
+	issueListCtrl->InsertColumn(0, "Category", wxLIST_FORMAT_LEFT, 140);
 	issueListCtrl->InsertColumn(1, "Position", wxLIST_FORMAT_LEFT, 100);
-	issueListCtrl->InsertColumn(2, "Beschreibung", wxLIST_FORMAT_LEFT, 350);
+	issueListCtrl->InsertColumn(2, "Description", wxLIST_FORMAT_LEFT, 350);
 	issueListCtrl->SetBackgroundColour(wxColour(10, 20, 35));
 	issueListCtrl->SetForegroundColour(wxColour(240, 245, 255));
 
 	topsizer->Add(issueListCtrl, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
 
 	wxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-	buttonSizer->Add(new wxButton(this, DIAG_BTN_SCAN, "Scan starten"), 0, wxRIGHT, 10);
+	buttonSizer->Add(new wxButton(this, DIAG_BTN_SCAN, "Start Scan"), 0, wxRIGHT, 10);
 	buttonSizer->Add(new wxButton(this, DIAG_BTN_FIX, "Auto-Fix All"), 0, wxRIGHT, 10);
-	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Schließen"), 0);
+	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Close"), 0);
 
 	topsizer->Add(buttonSizer, 0, wxALIGN_RIGHT | wxALL, 10);
 	SetSizerAndFit(topsizer);
@@ -87,7 +87,7 @@ void MapDiagnosticDialog::runDiagnostics() {
 					DiagnosticIssue issue;
 					issue.pos = pos;
 					issue.category = "Orphan Spawn";
-					issue.description = "Spawn befindet sich auf keinem begehbaren Boden!";
+					issue.description = "Spawn is located on a tile without walkable ground!";
 					issues.push_back(issue);
 				}
 
@@ -104,7 +104,7 @@ void MapDiagnosticDialog::runDiagnostics() {
 								DiagnosticIssue issue;
 								issue.pos = pos;
 								issue.category = "Duplicate UID";
-								issue.description = wxString::Format("UniqueID %d ist mehrfach vergeben!", uid);
+								issue.description = wxString::Format("UniqueID %d is assigned multiple times!", uid);
 								issues.push_back(issue);
 							} else {
 								usedUids.insert(uid);
@@ -117,7 +117,7 @@ void MapDiagnosticDialog::runDiagnostics() {
 					DiagnosticIssue issue;
 					issue.pos = pos;
 					issue.category = "Floating Wall";
-					issue.description = "Wandsegment ohne Ground-Tile darunter!";
+					issue.description = "Wall segment without underlying ground tile!";
 					issues.push_back(issue);
 				}
 			}
@@ -130,7 +130,7 @@ void MapDiagnosticDialog::runDiagnostics() {
 		issueListCtrl->SetItem(idx, 2, issues[i].description);
 	}
 
-	g_gui.SetStatusText(wxString::Format("Scan beendet: %d mögliche Probleme gefunden.", (int)issues.size()));
+	g_gui.SetStatusText(wxString::Format("Scan finished: %d potential issues found.", (int)issues.size()));
 }
 
 void MapDiagnosticDialog::OnClickScan(wxCommandEvent& WXUNUSED(event)) {
@@ -152,7 +152,7 @@ void MapDiagnosticDialog::autoFixAll() {
 	}
 
 	map.doChange();
-	g_gui.SetStatusText(wxString::Format("Auto-Fix beendet: %d Probleme automatisch behoben.", fixed_count));
+	g_gui.SetStatusText(wxString::Format("Auto-Fix finished: %d issues automatically resolved.", fixed_count));
 	runDiagnostics();
 }
 

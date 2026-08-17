@@ -66,16 +66,50 @@ public:
 		view_box_chk->Bind(wxEVT_CHECKBOX, &MinimapPanel::OnToggleViewBox, this);
 
 		// Button to dock back to canvas
-		dock_btn = new wxButton(this, wxID_ANY, "Dock to Canvas", wxPoint(5, 227), wxSize(170, 20));
+		dock_btn = new wxButton(this, wxID_ANY, "Canvas", wxPoint(5, 227), wxSize(80, 22));
+		dock_btn->SetToolTip("Dock minimap back onto the map canvas");
 		dock_btn->SetBackgroundColour(wxColour(10, 20, 35));
 		dock_btn->SetForegroundColour(wxColour(180, 150, 50));
 		dock_btn->Bind(wxEVT_BUTTON, &MinimapPanel::OnDockToCanvas, this);
 
+		// Button to hide minimap from this palette
+		hide_btn = new wxButton(this, wxID_ANY, "Hide Minimap", wxPoint(90, 227), wxSize(85, 22));
+		hide_btn->SetToolTip("Hide minimap in this palette window");
+		hide_btn->SetBackgroundColour(wxColour(10, 20, 35));
+		hide_btn->SetForegroundColour(wxColour(180, 150, 50));
+		hide_btn->Bind(wxEVT_BUTTON, &MinimapPanel::OnHideFromPalette, this);
+
 		Bind(wxEVT_PAINT, &MinimapPanel::OnPaint, this);
 		Bind(wxEVT_LEFT_DOWN, &MinimapPanel::OnLeftDown, this);
+		Bind(wxEVT_RIGHT_DOWN, &MinimapPanel::OnRightDown, this);
 		Bind(wxEVT_MOTION, &MinimapPanel::OnMouseMove, this);
 		Bind(wxEVT_LEFT_UP, &MinimapPanel::OnLeftUp, this);
 		Bind(wxEVT_MOUSEWHEEL, &MinimapPanel::OnMouseWheel, this);
+	}
+
+	void OnHideFromPalette(wxCommandEvent& WXUNUSED(event)) {
+		wxWindow* parent = GetParent();
+		if (auto* pw = dynamic_cast<PaletteWindow*>(parent)) {
+			pw->SetAllowMinimap(false);
+		}
+	}
+
+	void OnRightDown(wxMouseEvent& event) {
+		wxMenu menu;
+		menu.Append(101, "Hide Minimap in this Palette");
+		menu.Append(102, "Dock to Canvas");
+		Bind(wxEVT_MENU, [this](wxCommandEvent& ev) {
+			if (ev.GetId() == 101) {
+				wxWindow* parent = GetParent();
+				if (auto* pw = dynamic_cast<PaletteWindow*>(parent)) {
+					pw->SetAllowMinimap(false);
+				}
+			} else if (ev.GetId() == 102) {
+				g_settings.setInteger(Config::MINIMAP_DOCK_STYLE, 0);
+				g_gui.RefreshPalettes();
+			}
+		});
+		PopupMenu(&menu);
 	}
 
 	void UpdateTownList() {
@@ -175,8 +209,9 @@ public:
 
 		// Position controls below the 180x180 minimap image
 		town_choice->Move(5, 185);
-		view_box_chk->Move(5, 210);
-		dock_btn->Move(5, 230);
+		view_box_chk->Move(5, 208);
+		dock_btn->Move(5, 228);
+		hide_btn->Move(90, 228);
 
 		// Draw the minimap image
 		wxImage img(180, 180, canvas->minimap_pixels, true);
@@ -294,6 +329,7 @@ private:
 	wxChoice* town_choice;
 	wxCheckBox* view_box_chk;
 	wxButton* dock_btn;
+	wxButton* hide_btn;
 };
 
 // ============================================================================
@@ -1050,7 +1086,7 @@ void PaletteWindow::OnUpdate(Map* map) {
 }
 
 void PaletteWindow::UpdateMinimapVisibility() {
-	bool show_minimap = g_settings.getBoolean(Config::MINIMAP_VISIBLE) &&
+	bool show_minimap = allow_minimap && g_settings.getBoolean(Config::MINIMAP_VISIBLE) &&
 		(g_settings.getInteger(Config::MINIMAP_DOCK_STYLE) == 1);
 	if (minimap_panel) {
 		if (minimap_panel->Show(show_minimap)) {

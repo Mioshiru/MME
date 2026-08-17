@@ -145,6 +145,7 @@ namespace MenuBar {
 		TFS_EXPORTER,
 		WIZARD_NPC,
 		WIZARD_SPECIAL_OBJECTS,
+		TOOLS_RADIO_PLAYER,
 		SHOW_MINIMAP_HUD, // New item for toggling canvas-based minimap
 
 		SELECT_RAW,
@@ -326,7 +327,8 @@ public:
 	void OnGotoWebsite(wxCommandEvent& event);
 	void OnAbout(wxCommandEvent& event);
 
-	// Scripts Menu
+	// Scripts & Tools Menu
+	void OnRadioPlayer(wxCommandEvent& event);
 	void OnScriptsOpenFolder(wxCommandEvent& event);
 	void OnScriptsReload(wxCommandEvent& event);
 	void OnScriptsManager(wxCommandEvent& event);

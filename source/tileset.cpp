@@ -213,7 +213,7 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings) {
 				brush->setCollection();
 			}
 		} else {
-			warnings.push_back("Brush \"" + wxString(attribute.as_string(), wxConvUTF8) + "\" doesn't exist.");
+			// Silently skip brushes not present in this client version's definitions
 		}
 	} else if (nodeName == "item") {
 		uint16_t fromId = 0, toId = 0;

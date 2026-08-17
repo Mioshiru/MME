@@ -147,6 +147,11 @@ protected:
 public:
 	wxPanel* minimap_panel = nullptr;
 	void UpdateMinimapVisibility();
+	void SetAllowMinimap(bool allow) { allow_minimap = allow; UpdateMinimapVisibility(); }
+	bool AllowsMinimap() const { return allow_minimap; }
+
+private:
+	bool allow_minimap = true;
 
 	DECLARE_EVENT_TABLE()
 };

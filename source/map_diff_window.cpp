@@ -41,16 +41,16 @@ MapDiffDialog::MapDiffDialog(wxWindow* parent, Editor& editor) :
 	wxFlexGridSizer* grid = new wxFlexGridSizer(2, 10, 10);
 	grid->AddGrowableCol(1);
 
-	grid->Add(new wxStaticText(this, wxID_ANY, "Referenz Map Datei:"), 0, wxALIGN_CENTER_VERTICAL);
-	filePicker = new wxFilePickerCtrl(this, wxID_ANY, "", "Zweite Map auswählen", "*.otbm", wxDefaultPosition, wxDefaultSize, wxFLP_OPEN | wxFLP_FILE_MUST_EXIST);
+	grid->Add(new wxStaticText(this, wxID_ANY, "Reference Map File:"), 0, wxALIGN_CENTER_VERTICAL);
+	filePicker = new wxFilePickerCtrl(this, wxID_ANY, "", "Select Second Map", "*.otbm", wxDefaultPosition, wxDefaultSize, wxFLP_OPEN | wxFLP_FILE_MUST_EXIST);
 	grid->Add(filePicker, 1, wxEXPAND);
 
 	topsizer->Add(grid, 1, wxEXPAND | wxALL, 15);
 
 	wxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-	buttonSizer->Add(new wxButton(this, DIFF_BTN_COMPARE, "Vergleichen"), 0, wxRIGHT, 10);
-	buttonSizer->Add(new wxButton(this, DIFF_BTN_CLEAR, "Overlay löschen"), 0, wxRIGHT, 10);
-	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Schließen"), 0);
+	buttonSizer->Add(new wxButton(this, DIFF_BTN_COMPARE, "Compare"), 0, wxRIGHT, 10);
+	buttonSizer->Add(new wxButton(this, DIFF_BTN_CLEAR, "Clear Overlay"), 0, wxRIGHT, 10);
+	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Close"), 0);
 
 	topsizer->Add(buttonSizer, 0, wxALIGN_RIGHT | wxALL, 10);
 	SetSizerAndFit(topsizer);
@@ -62,7 +62,7 @@ MapDiffDialog::~MapDiffDialog() {
 void MapDiffDialog::OnClickCompare(wxCommandEvent& WXUNUSED(event)) {
 	wxFileName fn(filePicker->GetPath());
 	if (!fn.FileExists()) {
-		wxMessageBox("Bitte wählen Sie eine gültige OTBM-Map-Datei aus!", "Datei nicht gefunden", wxOK | wxICON_ERROR);
+		wxMessageBox("Please select a valid OTBM map file!", "File Not Found", wxOK | wxICON_ERROR);
 		return;
 	}
 
@@ -101,7 +101,7 @@ void MapDiffDialog::OnClickCompare(wxCommandEvent& WXUNUSED(event)) {
 
 	isDiffModeActive = true;
 	g_gui.RefreshView();
-	g_gui.SetStatusText(wxString::Format("Map Diff beendet: %d Hinzufügungen, %d Entfernungen.", (int)addedPositions.size(), (int)removedPositions.size()));
+	g_gui.SetStatusText(wxString::Format("Map Diff finished: %d additions, %d removals.", (int)addedPositions.size(), (int)removedPositions.size()));
 	EndModal(wxID_OK);
 }
 
@@ -110,7 +110,7 @@ void MapDiffDialog::OnClickClear(wxCommandEvent& WXUNUSED(event)) {
 	removedPositions.clear();
 	isDiffModeActive = false;
 	g_gui.RefreshView();
-	g_gui.SetStatusText("Map Diff Overlay entfernt.");
+	g_gui.SetStatusText("Map Diff overlay cleared.");
 	EndModal(wxID_CANCEL);
 }
 

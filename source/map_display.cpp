@@ -2395,7 +2395,7 @@ void MapCanvas::OnAddAnnotation(wxCommandEvent &event) {
   int map_y = last_click_map_y;
   Position pos(map_x, map_y, floor);
 
-  wxTextEntryDialog dialog(this, "Geben Sie eine Anmerkung / Notiz für diese Position ein:", "Map Annotation hinzufügen");
+  wxTextEntryDialog dialog(this, "Enter a note / annotation for this map position:", "Add Map Annotation");
   if (dialog.ShowModal() == wxID_OK) {
     wxString text = dialog.GetValue();
     if (!text.IsEmpty()) {

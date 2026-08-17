@@ -72,14 +72,6 @@
 			<item name="Randomize Selection" action="RANDOMIZE_SELECTION" help="Randomizes the ground tiles of the selected area."/>
 			<item name="Randomize Map" action="RANDOMIZE_MAP" help="Randomizes all tiles of the entire map."/>
 		</menu>
-		<menu name="Map Tools">
-			<item name="Remove all Corpses..." action="MAP_REMOVE_CORPSES" help="Removes all corpses from the map."/>
-			<item name="Remove all Unreachable Tiles..." action="MAP_REMOVE_UNREACHABLE_TILES" help="Removes all tiles that cannot be reached (or seen) by the player from the map."/>
-			<item name="Clear Invalid Houses" action="CLEAR_INVALID_HOUSES" help="Clears house tiles not belonging to any house."/>
-			<item name="Clear Modified State" action="CLEAR_MODIFIED_STATE" help="Clears the modified state from all tiles."/>
-			<separator/>
-			<item name="No Hotkeys Mode" action="TOGGLE_NO_HOTKEYS" help="Disables single-letter hotkeys to prevent conflicts while mapping."/>
-		</menu>
 	</menu>
 
 	<menu name="Search">
@@ -208,13 +200,39 @@
 		</menu>
 	</menu>
 
-	<menu name="Scripts" special="SCRIPTS">
-		<item name="Script Manager..." action="SCRIPTS_MANAGER" help="Show/hide the Script Manager window."/>
+	<menu name="Tools">
+		<menu name="TFS &amp; Wizards">
+			<item name="NPC &amp; Shop Wizard..." action="WIZARD_NPC" help="Create TFS 1.6 NPCs, custom dialogues, and shop buy/sell offers."/>
+			<item name="Quest &amp; Key Generator..." action="TFS_QUEST_GENERATOR" help="Setup quest chests, doors, and key Action IDs."/>
+			<item name="Special Objects Wizard..." action="WIZARD_SPECIAL_OBJECTS" help="Interactive generator for complex interactive map objects."/>
+			<item name="TFS Exporter..." action="TFS_EXPORTER" help="Export generated XML and RevScript Lua scripts to your server data folder."/>
+		</menu>
+		<menu name="Generators &amp; Analysis">
+			<item name="Procedural Map Generator..." action="TOOLS_PROCEDURAL_GENERATOR" help="Generate organic terrain and caves with FastNoiseLite."/>
+			<item name="Prefab &amp; Template Library..." action="TOOLS_PREFAB_LIBRARY" help="Manage, stamp, and export reusable building prefabs."/>
+			<separator/>
+			<item name="Map Diagnostic &amp; Health Scanner..." action="TOOLS_MAP_DIAGNOSTIC" help="Scan for duplicate UIDs, floating walls, and orphaned spawns."/>
+			<item name="Map Diff / Version Comparison..." action="TOOLS_MAP_DIFF" help="Compare changes between two map versions visually."/>
+		</menu>
 		<separator/>
-		<item name="Open Scripts Folder" action="SCRIPTS_OPEN_FOLDER" help="Open the scripts folder in file explorer."/>
-		<item name="Reload Scripts" hotkey="Ctrl+Shift+F5" action="SCRIPTS_RELOAD" help="Reload all scripts from disk."/>
+		<menu name="Map Tools">
+			<item name="Remove all Corpses..." action="MAP_REMOVE_CORPSES" help="Removes all corpses from the map."/>
+			<item name="Remove all Unreachable Tiles..." action="MAP_REMOVE_UNREACHABLE_TILES" help="Removes all tiles that cannot be reached (or seen) by the player from the map."/>
+			<item name="Clear Invalid Houses" action="CLEAR_INVALID_HOUSES" help="Clears house tiles not belonging to any house."/>
+			<item name="Clear Modified State" action="CLEAR_MODIFIED_STATE" help="Clears the modified state from all tiles."/>
+			<separator/>
+			<item name="No Hotkeys Mode" action="TOGGLE_NO_HOTKEYS" help="Disables single-letter hotkeys to prevent conflicts while mapping."/>
+		</menu>
 		<separator/>
-		<!-- Scripts are loaded dynamically below this point -->
+		<item name="Radio" action="TOOLS_RADIO_PLAYER" help="Fantasy web radio player with Rainwave &amp; RPG streams."/>
+		<separator/>
+		<menu name="Lua Scripts" special="SCRIPTS">
+			<item name="Script Manager..." action="SCRIPTS_MANAGER" help="Show/hide the Script Manager window."/>
+			<item name="Open Scripts Folder" action="SCRIPTS_OPEN_FOLDER" help="Open the scripts folder in file explorer."/>
+			<item name="Reload Scripts" hotkey="Ctrl+Shift+F5" action="SCRIPTS_RELOAD" help="Reload all scripts from disk."/>
+			<separator/>
+			<!-- Scripts are loaded dynamically below this point -->
+		</menu>
 	</menu>
 
 	<menu name="About">

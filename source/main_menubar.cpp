@@ -48,6 +48,7 @@
 #include "lua/lua_script_manager.h"
 #include "lua/lua_scripts_window.h"
 #include "otc_export.h"
+#include "radio_player.h"
 #include "procedural_generator_window.h"
 #include "prefab_manager.h"
 #include "map_diagnostic_window.h"
@@ -263,6 +264,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(TOOLS_PREFAB_LIBRARY, wxITEM_NORMAL, OnPrefabLibrary);
 	MAKE_ACTION(TOOLS_MAP_DIAGNOSTIC, wxITEM_NORMAL, OnMapDiagnostic);
 	MAKE_ACTION(TOOLS_MAP_DIFF, wxITEM_NORMAL, OnMapDiff);
+	MAKE_ACTION(TOOLS_RADIO_PLAYER, wxITEM_NORMAL, OnRadioPlayer);
 	MAKE_ACTION(WIZARD_NPC, wxITEM_NORMAL, OnWizardNPC);
 	MAKE_ACTION(WIZARD_SPECIAL_OBJECTS, wxITEM_NORMAL, OnWizardSpecialObjects);
 	MAKE_ACTION(TFS_QUEST_GENERATOR, wxITEM_NORMAL, OnTFSQuestGenerator);
@@ -346,6 +348,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	frame->Connect(TOOLS_PREFAB_LIBRARY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnPrefabLibrary), nullptr, this);
 	frame->Connect(TOOLS_MAP_DIAGNOSTIC, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiagnostic), nullptr, this);
 	frame->Connect(TOOLS_MAP_DIFF, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiff), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_RADIO_PLAYER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnRadioPlayer), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::WIZARD_NPC, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnWizardNPC), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::WIZARD_SPECIAL_OBJECTS, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnWizardSpecialObjects), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_QUEST_GENERATOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSQuestGenerator), nullptr, this);
@@ -1070,9 +1073,9 @@ void MainMenuBar::OnToggleAutomagic(wxCommandEvent& WXUNUSED(event)) {
 	g_settings.setInteger(Config::USE_AUTOMAGIC, IsItemChecked(MenuBar::AUTOMAGIC));
 	g_settings.setInteger(Config::BORDER_IS_GROUND, IsItemChecked(MenuBar::AUTOMAGIC));
 	if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
-		g_gui.SetStatusText("Automagic: AN (Auto-Bordering aktiv)");
+		g_gui.SetStatusText("Automagic: ON (Auto-bordering active)");
 	} else {
-		g_gui.SetStatusText("Automagic: AUS (Manuelles Bordering aktiv)");
+		g_gui.SetStatusText("Automagic: OFF (Manual bordering active)");
 	}
 }
 
@@ -1520,12 +1523,11 @@ void MainMenuBar::OnHelpLive(wxCommandEvent& event) {
 	wxString helpText = 
 		"To Host a Multiplayer Session:\n\n"
 		"1. Open the map you want to edit with others.\n"
-		"2. Go to File -> Live Multiplayer -> Host Server...\n"
-		"3. Enter a Server Name and Port (default is 7171).\n"
-		"4. (Optional) Click 'Try Router Mapping' to open the port automatically using UPnP.\n"
-		"5. Click 'OK' to start hosting.\n"
-		"6. Click 'Copy Invite' to share your IP and port with others.\n\n"
-		"Other users can then join by selecting 'Join Server...' and entering your invite address.";
+		"2. Go to Multiplayer -> Start Server (Host)...\n"
+		"3. Enter a Server Name and Port (default is 3074).\n"
+		"4. Click 'Start Host' to start hosting.\n"
+		"5. Click 'Copy Invite' to share your IP and port with others.\n\n"
+		"Other users can join by selecting 'Join Server...' from the Multiplayer menu or clicking 'Join...' on the Welcome screen.";
 	g_gui.PopupDialog("How to Host", helpText, wxOK);
 }
 
@@ -1791,9 +1793,9 @@ void MainMenuBar::OnToggleNoHotkeys(wxCommandEvent& WXUNUSED(event)) {
 	g_settings.setInteger(Config::NO_HOTKEYS_MODE, !current ? 1 : 0);
 	CheckItem(MenuBar::TOGGLE_NO_HOTKEYS, !current);
 	if (!current) {
-		g_gui.SetStatusText("No Hotkeys Mode: AN (Einzeltasten-Hotkeys deaktiviert)");
+		g_gui.SetStatusText("No Hotkeys Mode: ON (Single-key hotkeys disabled)");
 	} else {
-		g_gui.SetStatusText("No Hotkeys Mode: AUS (Einzeltasten-Hotkeys aktiv)");
+		g_gui.SetStatusText("No Hotkeys Mode: OFF (Single-key hotkeys enabled)");
 	}
 
 	FileName filename(g_gui.getFoundDataDirectory() + "menubar.xml");
@@ -1804,4 +1806,9 @@ void MainMenuBar::OnToggleNoHotkeys(wxCommandEvent& WXUNUSED(event)) {
 	wxString error;
 	Load(filename, warnings, error);
 }
+
+void MainMenuBar::OnRadioPlayer(wxCommandEvent& WXUNUSED(event)) {
+	RadioPlayerWindow::Toggle(frame);
+}
+
 

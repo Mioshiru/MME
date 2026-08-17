@@ -53,18 +53,17 @@
 * **Prefab & Template Library:** Save custom architectural layouts and dungeons to stamp anywhere on your map with a single click.
 * **Map Diagnostic & Error Scanner:** Automatically scan and jump to UID conflicts, floating wall segments, and orphaned spawns.
 * **Visual Map Diff Tool:** Compare two map files with intuitive green (added) and red (removed/modified) visual overlays.
+* **Built-In Fantasy Radio Player:** Stream 24/7 video game soundtracks, chiptunes, remixes, and cozy ambient music from *Rainwave* (*ALL*, *Game*, *Chiptune*, *OC ReMix*, *Covers*, *Chill*) and *RPGamers Radio* with a dockable, transparent audio player window.
 
 ---
 
-## 📸 Screenshots
+## 📸 Editor Overview
 
-| Modern Workspace & Shaders | Radial Tool Wheel (`Shift + Q`) |
-|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/6228ac78-ece2-482d-9fd9-6308ce46eff0" width="100%"/> | <img src="https://github.com/user-attachments/assets/9af65675-d4bc-4f26-9319-37d088def780" width="100%"/> |
+![MME Workspace Overview](docs/mme_editor_overview.jpg)
 
-| ImGui Minimap & High-DPI UI | TFS Wizard & Map Tools |
+| Game Slot Save Manager & Welcome Screen | ImGui Minimap & High-DPI UI |
 |:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/9e2cb227-cbbf-451e-ae10-bd2b53321ff1" width="100%"/> | <img src="https://github.com/user-attachments/assets/6228ac78-ece2-482d-9fd9-6308ce46eff0" width="100%"/> |
+| <img src="docs/mme_welcome_page.png" width="100%"/> | <img src="https://github.com/user-attachments/assets/9e2cb227-cbbf-451e-ae10-bd2b53321ff1" width="100%"/> |
 
 ---
 

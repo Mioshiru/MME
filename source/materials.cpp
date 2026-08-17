@@ -35,6 +35,16 @@
 Materials g_materials;
 
 static wxFileName GetFavoritesFilePath() {
+	if (g_gui.IsEditorOpen()) {
+		Editor* ed = g_gui.GetCurrentEditor();
+		if (ed && !ed->map.getFilename().empty()) {
+			wxFileName mapFn(ed->map.getFilename());
+			wxString dir = mapFn.GetPath();
+			if (!dir.empty() && wxDirExists(dir)) {
+				return wxFileName(dir, "favorites.xml");
+			}
+		}
+	}
 	ClientVersionID verId = g_gui.GetCurrentVersionID();
 	if (verId != CLIENT_VERSION_NONE) {
 		if (ClientVersion* cv = ClientVersion::get(verId)) {
@@ -459,10 +469,36 @@ void Materials::saveFavorites() {
 		wxFileName::Mkdir(fn.GetPath(), 511, wxPATH_MKDIR_FULL);
 	}
 	doc.save_file(fn.GetFullPath().mb_str());
+
+	// Also sync to client version folder as default/backup
+	ClientVersionID verId = g_gui.GetCurrentVersionID();
+	if (verId != CLIENT_VERSION_NONE) {
+		if (ClientVersion* cv = ClientVersion::get(verId)) {
+			wxFileName verFn(cv->getDataPath().GetPath(), "favorites.xml");
+			if (verFn.GetFullPath() != fn.GetFullPath()) {
+				if (!wxDirExists(verFn.GetPath())) {
+					wxFileName::Mkdir(verFn.GetPath(), 511, wxPATH_MKDIR_FULL);
+				}
+				doc.save_file(verFn.GetFullPath().mb_str());
+			}
+		}
+	}
 }
 
 void Materials::loadFavorites() {
 	wxFileName fn = GetFavoritesFilePath();
+	if (!fn.FileExists()) {
+		// Fallback to client version folder
+		ClientVersionID verId = g_gui.GetCurrentVersionID();
+		if (verId != CLIENT_VERSION_NONE) {
+			if (ClientVersion* cv = ClientVersion::get(verId)) {
+				wxFileName verFn(cv->getDataPath().GetPath(), "favorites.xml");
+				if (verFn.FileExists()) {
+					fn = verFn;
+				}
+			}
+		}
+	}
 	if (!fn.FileExists()) {
 		wxFileName fallbackFn(wxStandardPaths::Get().GetUserDataDir(), "favorites.xml");
 		if (fallbackFn.FileExists()) {

@@ -6,6 +6,8 @@
 #include <wx/app.h>
 #include <wx/display.h>
 #include <wx/statline.h>
+#include <wx/dir.h>
+#include <wx/filefn.h>
 
 #include "gui.h"
 #include "main_menubar.h"
@@ -204,6 +206,10 @@ PaletteWindow *GUI::CreatePalette() {
 
   std::string p_name = "Palette_" + std::to_string(palettes.size() + 1);
   auto *palette = newd PaletteWindow(root, g_materials.tilesets);
+  if (!palettes.empty()) {
+    // Only the first opened palette has the minimap by default; subsequent palettes have it hidden
+    palette->SetAllowMinimap(false);
+  }
   aui_manager->AddPane(palette, wxAuiPaneInfo()
                                     .Name(wxstr(p_name))
                                     .Caption("Palette")
@@ -712,7 +718,55 @@ void GUI::OnWelcomeDialogAction(wxCommandEvent &event) {
       }
     }
 
-    LoadMap(FileName(event.GetString()));
+    wxString src_path = event.GetString();
+    wxFileName src_fn(src_path);
+
+    // Find next available save slot (1 to 50)
+    wxString basePath = GUI::GetExecDirectory();
+    wxString target_slot_dir;
+    for (size_t i = 1; i <= 50; ++i) {
+      wxString slot_dir = basePath + wxString::Format("Saves/Slot %zu", i);
+      bool slot_occupied = false;
+      if (wxDir::Exists(slot_dir)) {
+        wxDir dir(slot_dir);
+        wxString filename;
+        if (dir.GetFirst(&filename, "*.otbm", wxDIR_FILES)) {
+          slot_occupied = true;
+        }
+      }
+      if (!slot_occupied) {
+        target_slot_dir = slot_dir;
+        break;
+      }
+    }
+
+    if (target_slot_dir.empty()) {
+      target_slot_dir = basePath + "Saves/Slot 1";
+    }
+
+    if (!wxDir::Exists(target_slot_dir)) {
+      wxFileName::Mkdir(target_slot_dir, 511, wxPATH_MKDIR_FULL);
+    }
+
+    // Target map path preserving the original .otbm filename
+    wxString dest_map_path = target_slot_dir + "/" + src_fn.GetFullName();
+    if (src_path != dest_map_path) {
+      wxCopyFile(src_path, dest_map_path, true);
+
+      // Also copy associated files if present (e.g. -house.xml, -spawn.xml)
+      wxString src_dir = src_fn.GetPath();
+      wxString base_name = src_fn.GetName();
+      wxString src_house = src_dir + "/" + base_name + "-house.xml";
+      if (wxFileExists(src_house)) {
+        wxCopyFile(src_house, target_slot_dir + "/" + base_name + "-house.xml", true);
+      }
+      wxString src_spawn = src_dir + "/" + base_name + "-spawn.xml";
+      if (wxFileExists(src_spawn)) {
+        wxCopyFile(src_spawn, target_slot_dir + "/" + base_name + "-spawn.xml", true);
+      }
+    }
+
+    LoadMap(FileName(dest_map_path));
   }
 }
 

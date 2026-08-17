@@ -21,6 +21,7 @@
 #include "editor.h"
 #include "settings.h"
 #include "brush.h"
+#include "radio_player.h"
 #include "pngfiles.h"
 #include "artprovider.h"
 #include <wx/artprov.h>
@@ -250,7 +251,6 @@ MainToolBar::~MainToolBar() {
 	brushes_toolbar->Unbind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
 	z_choice->Unbind(wxEVT_CHOICE, &MainToolBar::OnZChoiceChanged, this);
 	sizes_toolbar->Unbind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnSizesButtonClick, this);
-
 }
 
 void MainToolBar::UpdateButtons() {
@@ -434,17 +434,6 @@ void MainToolBar::LoadPerspective() {
 
 	if (wxAuiManager* manager = g_gui.GetAuiManager()) {
 		manager->Update();
-		
-		LogErrorToFile("=== AUI Panes Diagnostics ===");
-		wxAuiPaneInfoArray& panes = manager->GetAllPanes();
-		for (int i = 0, count = panes.GetCount(); i < count; ++i) {
-			wxAuiPaneInfo& pane = panes.Item(i);
-			LogErrorToFile(wxString::Format("Pane: name='%s', is_toolbar=%d, is_shown=%d, is_valid=%d, rect=(%d, %d, %d, %d), row=%d, col=%d",
-				pane.name.c_str(), pane.IsToolbar(), pane.IsShown(), pane.IsOk(),
-				pane.rect.x, pane.rect.y, pane.rect.width, pane.rect.height,
-				pane.dock_row, pane.dock_pos).ToStdString());
-		}
-		LogErrorToFile("=============================");
 	}
 }
 
@@ -627,10 +616,10 @@ wxAuiPaneInfo& MainToolBar::GetPane(ToolBarID id) {
 			return manager->GetPane(POSITION_BAR_NAME);
 		case TOOLBAR_SIZES:
 			return manager->GetPane(SIZES_BAR_NAME);
-
 		default:
 			return wxAuiNullPaneInfo;
 	}
 }
+
 
 
