@@ -34,6 +34,9 @@ public:
 	bool isCarpet() const {
 		return true;
 	}
+	virtual bool isTerrain() const override {
+		return true;
+	}
 	CarpetBrush* asCarpet() {
 		return static_cast<CarpetBrush*>(this);
 	}

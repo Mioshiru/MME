@@ -59,7 +59,7 @@
 
 ## 📸 Editor Overview
 
-![MME Workspace Overview](docs/mme_editor_overview.jpg)
+[![MME Workspace Overview](docs/mme_editor_overview.png)](docs/mme_editor_overview.png)
 
 | Game Slot Save Manager & Welcome Screen | ImGui Minimap & High-DPI UI |
 |:---:|:---:|
