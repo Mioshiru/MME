@@ -24,8 +24,8 @@
 // Version info
 // xxyyzzt (major, minor, subversion)
 #define __RME_VERSION_MAJOR__ 1
-#define __RME_VERSION_MINOR__ 6
-#define __RME_SUBVERSION__ 0
+#define __RME_VERSION_MINOR__ 8
+#define __RME_SUBVERSION__ 1
 
 #define __LIVE_NET_VERSION__ 7
 
@@ -38,7 +38,7 @@
 	__RME_SUBVERSION__                      \
 )
 
-#define __SITE_URL__ "https://github.com/OTAcademy/RME"
+#define __SITE_URL__ "https://github.com/Mioshiru/MME"
 
 // #define __PRERELEASE__ 1
 
@@ -52,8 +52,8 @@
 	#define __RME_VERSION__ std::string(i2s(__RME_VERSION_MAJOR__) + "." + i2s(__RME_VERSION_MINOR__) + "." + i2s(__RME_SUBVERSION__) + " (Pre-release)")
 	#define __W_RME_VERSION__ (wxString() << __RME_VERSION_MAJOR__ << "." << __RME_VERSION_MINOR__ << "." << __RME_SUBVERSION__ << " (Pre-release)")
 #else
-	#define __RME_VERSION__ std::string("1.6 (by Mioshiro)")
-	#define __W_RME_VERSION__ wxString("1.6 (by Mioshiro)")
+	#define __RME_VERSION__ std::string("1.8.5 Beta (by Mioshiro)")
+	#define __W_RME_VERSION__ wxString("1.8.5 Beta (by Mioshiro)")
 #endif
 // OS
 

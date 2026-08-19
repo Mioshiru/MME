@@ -29,6 +29,7 @@ public:
 
 	void OnClickOK(wxCommandEvent&);
 	void OnClickLicense(wxCommandEvent&);
+	void OnClickUpdate(wxCommandEvent&);
 
 	void OnTetris(wxCommandEvent&);
 	void OnSnake(wxCommandEvent&);

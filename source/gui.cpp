@@ -51,7 +51,7 @@ GUI::GUI()
       loaded_version(CLIENT_VERSION_NONE), mode(SELECTION_MODE), pasting(false),
       hotkeys_enabled(true), current_brush(nullptr), previous_brush(nullptr),
       brush_shape(BRUSHSHAPE_SQUARE), brush_size(0), brush_variation(0),
-      creature_spawntime(0), fill_brush_mode(false), magic_wand_mode(false), draw_locked_doors(false),
+      creature_spawntime(0), fill_brush_mode(false), draw_locked_doors(false),
       use_custom_thickness(false), custom_thickness_mod(0.0),
       progressBar(nullptr), disabled_counter(0) {
   doodad_buffer_map = newd BaseMap();
@@ -177,6 +177,14 @@ void GUI::RefreshPalettes(Map *m, bool usedefault) {
   SelectBrush();
 }
 
+void GUI::RefreshFavoritesBox() {
+  for (auto &palette : palettes) {
+    if (palette) {
+      palette->RefreshFavoritesBox();
+    }
+  }
+}
+
 void GUI::RefreshMinimapPanel() {
   for (auto &palette : palettes) {
     if (palette && palette->minimap_panel && palette->minimap_panel->IsShown()) {
@@ -206,20 +214,44 @@ PaletteWindow *GUI::CreatePalette() {
 
   std::string p_name = "Palette_" + std::to_string(palettes.size() + 1);
   auto *palette = newd PaletteWindow(root, g_materials.tilesets);
-  if (!palettes.empty()) {
+  if (palettes.empty()) {
+    aui_manager->AddPane(palette, wxAuiPaneInfo()
+                                      .Name(wxstr(p_name))
+                                      .Caption("Palette")
+                                      .Left()
+                                      .Layer(1)
+                                      .Position(1)
+                                      .CloseButton(true)
+                                      .Floatable(true)
+                                      .Dockable(true)
+                                      .LeftDockable(true)
+                                      .RightDockable(true)
+                                      .TopDockable(true)
+                                      .BottomDockable(true)
+                                      .BestSize(255, 450)
+                                      .MinSize(wxSize(200, 150))
+                                      .Show(true));
+  } else {
     // Only the first opened palette has the minimap by default; subsequent palettes have it hidden
     palette->SetAllowMinimap(false);
+    wxPoint float_pos = root->ClientToScreen(wxPoint(300 + static_cast<int>(palettes.size() * 30), 120 + static_cast<int>(palettes.size() * 30)));
+    aui_manager->AddPane(palette, wxAuiPaneInfo()
+                                      .Name(wxstr(p_name))
+                                      .Caption("Palette")
+                                      .Float()
+                                      .FloatingPosition(float_pos)
+                                      .FloatingSize(wxSize(260, 480))
+                                      .CloseButton(true)
+                                      .Floatable(true)
+                                      .Dockable(true)
+                                      .LeftDockable(true)
+                                      .RightDockable(true)
+                                      .TopDockable(true)
+                                      .BottomDockable(true)
+                                      .BestSize(255, 450)
+                                      .MinSize(wxSize(200, 150))
+                                      .Show(true));
   }
-  aui_manager->AddPane(palette, wxAuiPaneInfo()
-                                    .Name(wxstr(p_name))
-                                    .Caption("Palette")
-                                    .Left()
-                                    .Layer(1)
-                                    .Position(static_cast<int>(palettes.size() + 1))
-                                    .CloseButton(true)
-                                    .BestSize(255, 450)
-                                    .MinSize(wxSize(255, 200))
-                                    .Show(true));
 
   // NOTE: Collections Palette / Tileset panel intentionally removed.
   // Only the main Terrain Palette (left) is retained for a lean UI.
@@ -766,7 +798,15 @@ void GUI::OnWelcomeDialogAction(wxCommandEvent &event) {
       }
     }
 
+    // Automatically apply modern palette design
+    g_settings.setString(Config::PALETTE_TERRAIN_STYLE, "large icons");
+    g_settings.setString(Config::PALETTE_COLLECTION_STYLE, "large icons");
+    g_settings.setString(Config::PALETTE_DOODAD_STYLE, "large icons");
+    g_settings.setString(Config::PALETTE_ITEM_STYLE, "large icons");
+    g_settings.setString(Config::PALETTE_RAW_STYLE, "listbox");
+
     LoadMap(FileName(dest_map_path));
+    RefreshPalettes();
   }
 }
 
@@ -1045,8 +1085,6 @@ void GUI::SetDrawingMode() {
     return;
   }
 
-  magic_wand_mode = false;
-
   std::set<MapTab *> al;
   for (int idx = 0; idx < tabbook->GetTabCount(); ++idx) {
     EditorTab *editorTab = tabbook->GetTab(idx);
@@ -1084,26 +1122,7 @@ void GUI::SetFillBrushMode(bool enabled) {
 
   fill_brush_mode = enabled;
   if (fill_brush_mode) {
-    magic_wand_mode = false;
     SetDrawingMode();
-  }
-
-  if (root && root->GetAuiToolBar()) {
-    root->GetAuiToolBar()->UpdateBrushButtons();
-  }
-
-  RefreshView();
-}
-
-void GUI::SetMagicWandMode(bool enabled) {
-  if (magic_wand_mode == enabled) {
-    return;
-  }
-
-  magic_wand_mode = enabled;
-  if (magic_wand_mode) {
-    fill_brush_mode = false;
-    SetSelectionMode();
   }
 
   if (root && root->GetAuiToolBar()) {
@@ -1578,7 +1597,76 @@ long GUI::PopupDialog(wxWindow *parent, wxString title, wxString text,
     return wxID_ANY;
   }
 
-  wxMessageDialog dlg(parent, text, title, style);
+  if (!parent) parent = root;
+
+  // Modern Fantasy Dark-Themed Popup Dialog
+  wxDialog dlg(parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize,
+               wxDEFAULT_DIALOG_STYLE | wxCENTRE);
+  dlg.SetBackgroundColour(wxColor(10, 15, 25)); // Deep midnight background
+
+  wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
+
+  // Content text
+  wxStaticText* msg_label = new wxStaticText(&dlg, wxID_ANY, text);
+  msg_label->SetForegroundColour(wxColor(220, 225, 235));
+  msg_label->SetFont(wxFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+  main_sizer->Add(msg_label, 1, wxEXPAND | wxALL, 20);
+
+  // Button bar
+  wxBoxSizer* btn_sizer = new wxBoxSizer(wxHORIZONTAL);
+  btn_sizer->AddStretchSpacer();
+
+  long ret_val = wxID_OK;
+  if ((style & wxYES_NO) == wxYES_NO) {
+    wxButton* yes_btn = new wxButton(&dlg, wxID_YES, "Yes");
+    yes_btn->SetBackgroundColour(wxColor(25, 45, 75));
+    yes_btn->SetForegroundColour(wxColor(255, 215, 0));
+    yes_btn->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+
+    wxButton* no_btn = new wxButton(&dlg, wxID_NO, "No");
+    no_btn->SetBackgroundColour(wxColor(30, 35, 45));
+    no_btn->SetForegroundColour(wxColor(180, 190, 205));
+
+    btn_sizer->Add(yes_btn, 0, wxRIGHT, 10);
+    btn_sizer->Add(no_btn, 0, wxRIGHT, (style & wxCANCEL) ? 10 : 5);
+
+    yes_btn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { dlg.EndModal(wxID_YES); });
+    no_btn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { dlg.EndModal(wxID_NO); });
+
+    if (style & wxCANCEL) {
+      wxButton* cancel_btn = new wxButton(&dlg, wxID_CANCEL, "Cancel");
+      cancel_btn->SetBackgroundColour(wxColor(30, 35, 45));
+      cancel_btn->SetForegroundColour(wxColor(180, 190, 205));
+      btn_sizer->Add(cancel_btn, 0, wxRIGHT, 5);
+      cancel_btn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { dlg.EndModal(wxID_CANCEL); });
+    }
+  } else if (style & wxOK) {
+    wxButton* ok_btn = new wxButton(&dlg, wxID_OK, "OK");
+    ok_btn->SetBackgroundColour(wxColor(25, 45, 75));
+    ok_btn->SetForegroundColour(wxColor(255, 215, 0));
+    ok_btn->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+    btn_sizer->Add(ok_btn, 0, wxRIGHT, (style & wxCANCEL) ? 10 : 5);
+    ok_btn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { dlg.EndModal(wxID_OK); });
+
+    if (style & wxCANCEL) {
+      wxButton* cancel_btn = new wxButton(&dlg, wxID_CANCEL, "Cancel");
+      cancel_btn->SetBackgroundColour(wxColor(30, 35, 45));
+      cancel_btn->SetForegroundColour(wxColor(180, 190, 205));
+      btn_sizer->Add(cancel_btn, 0, wxRIGHT, 5);
+      cancel_btn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { dlg.EndModal(wxID_CANCEL); });
+    }
+  } else {
+    wxButton* ok_btn = new wxButton(&dlg, wxID_OK, "OK");
+    ok_btn->SetBackgroundColour(wxColor(25, 45, 75));
+    ok_btn->SetForegroundColour(wxColor(255, 215, 0));
+    btn_sizer->Add(ok_btn, 0, wxRIGHT, 5);
+    ok_btn->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) { dlg.EndModal(wxID_OK); });
+  }
+
+  main_sizer->Add(btn_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
+
+  dlg.SetSizerAndFit(main_sizer);
+  dlg.CentreOnParent();
   return dlg.ShowModal();
 }
 
@@ -1594,16 +1682,20 @@ void GUI::ListDialog(wxWindow *parent, wxString title,
     return;
   }
 
+  if (!parent) parent = root;
   wxArrayString list_items(param_items);
 
-  // Create the window
+  // Create the styled window
   wxDialog *dlg =
       newd wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize,
                     wxRESIZE_BORDER | wxCAPTION | wxCLOSE_BOX);
+  dlg->SetBackgroundColour(wxColor(10, 15, 25));
 
   wxSizer *sizer = newd wxBoxSizer(wxVERTICAL);
   wxListBox *item_list = newd wxListBox(dlg, wxID_ANY, wxDefaultPosition,
                                         wxDefaultSize, 0, nullptr, wxLB_SINGLE);
+  item_list->SetBackgroundColour(wxColor(15, 22, 36));
+  item_list->SetForegroundColour(wxColor(220, 225, 235));
   item_list->SetMinSize(wxSize(500, 300));
 
   for (size_t i = 0; i != list_items.GetCount();) {
@@ -1618,13 +1710,18 @@ void GUI::ListDialog(wxWindow *parent, wxString title,
     item_list->Append(list_items[i]);
     ++i;
   }
-  sizer->Add(item_list, 1, wxEXPAND);
+  sizer->Add(item_list, 1, wxEXPAND | wxALL, 10);
 
   wxSizer *stdsizer = newd wxBoxSizer(wxHORIZONTAL);
-  stdsizer->Add(newd wxButton(dlg, wxID_OK, "OK"), wxSizerFlags(1).Center());
-  sizer->Add(stdsizer, wxSizerFlags(0).Center());
+  wxButton* ok_btn = newd wxButton(dlg, wxID_OK, "OK");
+  ok_btn->SetBackgroundColour(wxColor(25, 45, 75));
+  ok_btn->SetForegroundColour(wxColor(255, 215, 0));
+  ok_btn->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+  stdsizer->Add(ok_btn, wxSizerFlags(1).Center());
+  sizer->Add(stdsizer, wxSizerFlags(0).Center().Border(wxBOTTOM, 10));
 
   dlg->SetSizerAndFit(sizer);
+  dlg->CentreOnParent();
 
   // Show the window
   dlg->ShowModal();
@@ -1632,23 +1729,33 @@ void GUI::ListDialog(wxWindow *parent, wxString title,
 }
 
 void GUI::ShowTextBox(wxWindow *parent, wxString title, wxString content) {
+  if (!parent) parent = root;
   wxDialog *dlg =
       newd wxDialog(parent, wxID_ANY, title, wxDefaultPosition, wxDefaultSize,
                     wxRESIZE_BORDER | wxCAPTION | wxCLOSE_BOX);
+  dlg->SetBackgroundColour(wxColor(10, 15, 25));
+
   wxSizer *topsizer = newd wxBoxSizer(wxVERTICAL);
   wxTextCtrl *text_field =
       newd wxTextCtrl(dlg, wxID_ANY, content, wxDefaultPosition, wxDefaultSize,
                       wxTE_MULTILINE | wxTE_READONLY);
+  text_field->SetBackgroundColour(wxColor(15, 22, 36));
+  text_field->SetForegroundColour(wxColor(220, 225, 235));
   text_field->SetMinSize(wxSize(400, 550));
-  topsizer->Add(text_field, wxSizerFlags(5).Expand());
+  topsizer->Add(text_field, wxSizerFlags(5).Expand().Border(wxALL, 10));
 
   wxSizer *choicesizer = newd wxBoxSizer(wxHORIZONTAL);
-  choicesizer->Add(newd wxButton(dlg, wxID_CANCEL, "OK"),
-                   wxSizerFlags(1).Center());
-  topsizer->Add(choicesizer, wxSizerFlags(0).Center());
+  wxButton* ok_btn = newd wxButton(dlg, wxID_CANCEL, "OK");
+  ok_btn->SetBackgroundColour(wxColor(25, 45, 75));
+  ok_btn->SetForegroundColour(wxColor(255, 215, 0));
+  ok_btn->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+  choicesizer->Add(ok_btn, wxSizerFlags(1).Center());
+  topsizer->Add(choicesizer, wxSizerFlags(0).Center().Border(wxBOTTOM, 10));
   dlg->SetSizerAndFit(topsizer);
+  dlg->CentreOnParent();
 
   dlg->ShowModal();
+  delete dlg;
 }
 
 RME_Rendering::RenderBackend *GUI::GetRenderBackend() {

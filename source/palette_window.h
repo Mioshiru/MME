@@ -114,6 +114,7 @@ public:
 	void OnSwitchingPage(wxChoicebookEvent& event);
 	void OnPageChanged(wxChoicebookEvent& event);
 	void OnSearchTextChanged(wxCommandEvent& event);
+	void OnSize(wxSizeEvent& event);
 	// Forward key events to the parent window (The Map Window)
 	void OnKey(wxKeyEvent& event);
 	void OnClose(wxCloseEvent&);
@@ -149,9 +150,13 @@ public:
 	void UpdateMinimapVisibility();
 	void SetAllowMinimap(bool allow) { allow_minimap = allow; UpdateMinimapVisibility(); }
 	bool AllowsMinimap() const { return allow_minimap; }
+	void SetHorizontalLayout(bool horizontal);
+	bool IsHorizontalLayout() const { return is_horizontal; }
+	void CheckAndUpdateOrientation();
 
 private:
 	bool allow_minimap = true;
+	bool is_horizontal = false;
 
 	DECLARE_EVENT_TABLE()
 };

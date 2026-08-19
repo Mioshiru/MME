@@ -644,15 +644,87 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	light_sizer->Add(light_intensity_slider, 1, wxEXPAND);
 	visual_group->Add(light_sizer, 0, wxEXPAND | wxALL, 8);
 
-	wxBoxSizer* scale_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	scale_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "UI / Icon Scale (%):"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+	wxStaticBoxSizer* scale_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "UI & Icon Scaling (Scale 1 to 10)");
+
 	int cur_scale = g_settings.getInteger(Config::UI_SCALE);
 	if (cur_scale < 100) cur_scale = 100;
 	if (cur_scale > 200) cur_scale = 200;
-	ui_scale_slider = newd wxSlider(visual_panel, wxID_ANY, cur_scale, 100, 200, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_LABELS);
-	ui_scale_slider->SetToolTip("Adjusts the size of the toolbar and palette icons (100% to 200%).");
-	scale_sizer->Add(ui_scale_slider, 1, wxEXPAND);
-	visual_group->Add(scale_sizer, 0, wxEXPAND | wxALL, 8);
+	int cur_level = std::max(1, std::min(10, (cur_scale - 100) / 10 + 1));
+
+	wxBoxSizer* slider_row = newd wxBoxSizer(wxHORIZONTAL);
+	slider_row->Add(newd wxStaticText(visual_panel, wxID_ANY, "Scale Level:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+
+	ui_scale_slider = newd wxSlider(visual_panel, wxID_ANY, cur_level, 1, 10, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_AUTOTICKS);
+	ui_scale_slider->SetToolTip("Adjust UI scale from 1 (Smallest / 100%) to 10 (Largest / 200%).");
+	slider_row->Add(ui_scale_slider, 1, wxEXPAND | wxRIGHT, 10);
+
+	ui_scale_level_txt = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_level, 100 + (cur_level - 1) * 11));
+	ui_scale_level_txt->SetForegroundColour(wxColor(255, 205, 50));
+	ui_scale_level_txt->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	slider_row->Add(ui_scale_level_txt, 0, wxALIGN_CENTER_VERTICAL);
+	scale_group->Add(slider_row, 0, wxEXPAND | wxALL, 6);
+
+	// Interactive Live Preview Panel showing sample palette tiles
+	wxBoxSizer* preview_row = newd wxBoxSizer(wxHORIZONTAL);
+	preview_row->Add(newd wxStaticText(visual_panel, wxID_ANY, "Live Preview:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+
+	ui_scale_preview_panel = newd wxPanel(visual_panel, wxID_ANY, wxDefaultPosition, wxSize(220, 75));
+	ui_scale_preview_panel->SetBackgroundColour(wxColor(10, 15, 25));
+	ui_scale_preview_panel->Bind(wxEVT_PAINT, [this](wxPaintEvent&) {
+		if (!ui_scale_preview_panel) return;
+		wxPaintDC dc(ui_scale_preview_panel);
+		dc.SetBackground(wxBrush(wxColor(10, 15, 25)));
+		dc.Clear();
+
+		int level = ui_scale_slider ? ui_scale_slider->GetValue() : 1;
+		int scale_pct = 100 + (level - 1) * 11;
+		if (scale_pct > 200) scale_pct = 200;
+
+		int btn_w = 36 * scale_pct / 100;
+		int spr_w = 32 * scale_pct / 100;
+		int offset = (btn_w - spr_w) / 2;
+
+		int start_x = 10;
+		int y = (75 - btn_w) / 2;
+		if (y < 2) y = 2;
+
+		// Draw 3 preview tiles (Sample Grass, Dirt, Cobblestone)
+		wxColor sample_colors[3] = { wxColor(65, 125, 45), wxColor(120, 85, 45), wxColor(85, 95, 105) };
+		const char* sample_labels[3] = { "Grass", "Dirt", "Stone" };
+
+		for (int i = 0; i < 3; ++i) {
+			int x = start_x + i * (btn_w + 6);
+			if (x + btn_w > 215) break;
+
+			// Base tile box
+			dc.SetBrush(wxBrush(sample_colors[i]));
+			dc.SetPen(wxPen(wxColor(30, 45, 65), 1));
+			dc.DrawRectangle(x, y, btn_w, btn_w);
+
+			// Tile inner texture simulation
+			dc.SetPen(wxPen(wxColor(255, 255, 255, 40), 1));
+			dc.DrawLine(x + 2, y + 2, x + btn_w - 2, y + 2);
+			dc.DrawLine(x + 2, y + 2, x + 2, y + btn_w - 2);
+
+			if (i == 0) {
+				// Highlight selected tile with our new gold & black double frame
+				dc.SetPen(wxPen(wxColor(0, 0, 0), 2, wxSOLID));
+				dc.SetBrush(*wxTRANSPARENT_BRUSH);
+				dc.DrawRectangle(x, y, btn_w, btn_w);
+				dc.SetPen(wxPen(wxColor(255, 205, 50), 2, wxSOLID));
+				dc.DrawRectangle(x + 1, y + 1, btn_w - 2, btn_w - 2);
+			}
+		}
+	});
+
+	ui_scale_slider->Bind(wxEVT_SLIDER, [this](wxCommandEvent&) {
+		UpdateScalePreview();
+	});
+
+	preview_row->Add(ui_scale_preview_panel, 1, wxEXPAND);
+	scale_group->Add(preview_row, 0, wxEXPAND | wxALL, 6);
+
+	visual_group->Add(scale_group, 0, wxEXPAND | wxALL, 6);
 
 	visual_sizer->Add(visual_group, 1, wxEXPAND | wxALL, 10);
 	visual_panel->SetSizer(visual_sizer);
@@ -1072,7 +1144,9 @@ void PreferencesWindow::Apply() {
 		int old_scale = g_settings.getInteger(Config::UI_SCALE);
 		if (old_scale < 100) old_scale = 100;
 		if (old_scale > 200) old_scale = 200;
-		int new_scale = ui_scale_slider->GetValue();
+		int level = ui_scale_slider->GetValue();
+		int new_scale = 100 + (level - 1) * 11;
+		if (new_scale > 200) new_scale = 200;
 		if (old_scale != new_scale) {
 			g_settings.setInteger(Config::UI_SCALE, new_scale);
 			must_restart = true;
@@ -1266,4 +1340,14 @@ void PreferencesWindow::UpdateScanStatus() {
 		open_folder_btn->GetParent()->Layout();
 	}
 	Layout();
+}
+
+void PreferencesWindow::UpdateScalePreview() {
+	if (!ui_scale_slider || !ui_scale_level_txt || !ui_scale_preview_panel) return;
+	int level = ui_scale_slider->GetValue();
+	int scale_pct = 100 + (level - 1) * 11;
+	if (scale_pct > 200) scale_pct = 200;
+
+	ui_scale_level_txt->SetLabel(wxString::Format("Level %d (%d%%)", level, scale_pct));
+	ui_scale_preview_panel->Refresh();
 }

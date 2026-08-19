@@ -809,3 +809,37 @@ void WallDecorationBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 		++iter;
 	}
 }
+
+bool WallBrush::hasWallId(uint16_t id) const {
+	if (id == 0) return false;
+	for (int i = 0; i < 17; ++i) {
+		for (const auto& wt : wall_items[i].items) {
+			if (wt.id == id) return true;
+		}
+		for (const auto& dt : door_items[i]) {
+			if (dt.id == id) return true;
+		}
+	}
+	return false;
+}
+
+uint16_t WallBrush::getWallItem(uint32_t alignment) const {
+	if (alignment < 17 && !wall_items[alignment].items.empty()) {
+		return wall_items[alignment].items.front().id;
+	}
+	if (alignment == WALL_HORIZONTAL || alignment == WALL_EAST_END || alignment == WALL_WEST_END) {
+		if (!wall_items[WALL_HORIZONTAL].items.empty()) {
+			return wall_items[WALL_HORIZONTAL].items.front().id;
+		}
+	}
+	if (alignment == WALL_VERTICAL || alignment == WALL_NORTH_END || alignment == WALL_SOUTH_END) {
+		if (!wall_items[WALL_VERTICAL].items.empty()) {
+			return wall_items[WALL_VERTICAL].items.front().id;
+		}
+	}
+	if (!wall_items[WALL_NORTHWEST_DIAGONAL].items.empty()) {
+		return wall_items[WALL_NORTHWEST_DIAGONAL].items.front().id;
+	}
+	return 0;
+}
+

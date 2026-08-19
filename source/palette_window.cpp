@@ -339,6 +339,7 @@ BEGIN_EVENT_TABLE(PaletteWindow, wxPanel)
 EVT_CHOICEBOOK_PAGE_CHANGING(PALETTE_CHOICEBOOK, PaletteWindow::OnSwitchingPage)
 EVT_CHOICEBOOK_PAGE_CHANGED(PALETTE_CHOICEBOOK, PaletteWindow::OnPageChanged)
 EVT_CLOSE(PaletteWindow::OnClose)
+EVT_SIZE(PaletteWindow::OnSize)
 EVT_TEXT(PALETTE_SEARCH_BOX, PaletteWindow::OnSearchTextChanged)
 EVT_KEY_DOWN(PaletteWindow::OnKey)
 END_EVENT_TABLE()
@@ -902,83 +903,89 @@ bool PaletteWindow::OnSelectBrush(const Brush* whatbrush, PaletteType primary) {
 		return true;
 	}
 
-	// Priority 1: Check Favorites FIRST if primary is TILESET_FAVORITE or if currently on Favorites page or if brush is in Favorites
-	if (primary == TILESET_FAVORITE || GetSelectedPage() == TILESET_FAVORITE) {
+	// Priority 1: Check requested primary palette FIRST if specified
+	if (primary == TILESET_TERRAIN) {
+		if (terrain_palette && terrain_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_TERRAIN);
+			return true;
+		}
+	} else if (primary == TILESET_DOODAD) {
+		if (doodad_palette && doodad_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_DOODAD);
+			return true;
+		}
+	} else if (primary == TILESET_COLLECTION) {
+		if (collection_palette && collection_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_COLLECTION);
+			return true;
+		}
+	} else if (primary == TILESET_ITEM) {
+		if (item_palette && item_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_ITEM);
+			return true;
+		}
+	} else if (primary == TILESET_CREATURE) {
+		if (creature_palette && creature_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_CREATURE);
+			return true;
+		}
+	} else if (primary == TILESET_RAW) {
+		if (raw_palette && raw_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_RAW);
+			return true;
+		}
+	} else if (primary == TILESET_PREFAB) {
+		if (prefab_palette && prefab_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_PREFAB);
+			return true;
+		}
+	} else if (primary == TILESET_FAVORITE) {
 		if (favorites_palette && favorites_palette->SelectBrush(whatbrush)) {
 			SelectPage(TILESET_FAVORITE);
 			return true;
 		}
 	}
 
-	// Always test if brush is in Favorites before falling back to default palettes
-	if (favorites_palette && favorites_palette->SelectBrush(whatbrush)) {
-		SelectPage(TILESET_FAVORITE);
-		return true;
+	// If currently on Favorites page or brush is in Favorites
+	if (GetSelectedPage() == TILESET_FAVORITE) {
+		if (favorites_palette && favorites_palette->SelectBrush(whatbrush)) {
+			SelectPage(TILESET_FAVORITE);
+			return true;
+		}
 	}
 
-	switch (primary) {
-		case TILESET_TERRAIN: {
-			// This is already searched first
-			break;
-		}
-		case TILESET_DOODAD: {
-			// Ok, search doodad before terrain
-			if (doodad_palette && doodad_palette->SelectBrush(whatbrush)) {
-				SelectPage(TILESET_DOODAD);
-				return true;
-			}
-			break;
-		}
-		case TILESET_COLLECTION: {
-			if (collection_palette && collection_palette->SelectBrush(whatbrush)) {
-				SelectPage(TILESET_COLLECTION);
-				return true;
-			}
-		}
-		case TILESET_ITEM: {
-			if (item_palette && item_palette->SelectBrush(whatbrush)) {
-				SelectPage(TILESET_ITEM);
-				return true;
-			}
-			break;
-		}
-		case TILESET_CREATURE: {
-			if (creature_palette && creature_palette->SelectBrush(whatbrush)) {
-				SelectPage(TILESET_CREATURE);
-				return true;
-			}
-			break;
-		}
-		case TILESET_RAW: {
-			if (raw_palette && raw_palette->SelectBrush(whatbrush)) {
-				SelectPage(TILESET_RAW);
-				return true;
-			}
-			break;
-		}
-		case TILESET_PREFAB: {
-			if (prefab_palette && prefab_palette->SelectBrush(whatbrush)) {
-				SelectPage(TILESET_PREFAB);
-				return true;
-			}
-			break;
-		}
-		default:
-			break;
-	}
-
-	// Test if it's a terrain brush
+	// Fallback to all palettes in standard order
 	if (terrain_palette && terrain_palette->SelectBrush(whatbrush)) {
 		SelectPage(TILESET_TERRAIN);
 		return true;
 	}
-
-	// Test if it's a doodad brush
-	if (primary != TILESET_DOODAD) {
-		if (doodad_palette && doodad_palette->SelectBrush(whatbrush)) {
-			SelectPage(TILESET_DOODAD);
-			return true;
-		}
+	if (doodad_palette && doodad_palette->SelectBrush(whatbrush)) {
+		SelectPage(TILESET_DOODAD);
+		return true;
+	}
+	if (item_palette && item_palette->SelectBrush(whatbrush)) {
+		SelectPage(TILESET_ITEM);
+		return true;
+	}
+	if (collection_palette && collection_palette->SelectBrush(whatbrush)) {
+		SelectPage(TILESET_COLLECTION);
+		return true;
+	}
+	if (creature_palette && creature_palette->SelectBrush(whatbrush)) {
+		SelectPage(TILESET_CREATURE);
+		return true;
+	}
+	if (raw_palette && raw_palette->SelectBrush(whatbrush)) {
+		SelectPage(TILESET_RAW);
+		return true;
+	}
+	if (prefab_palette && prefab_palette->SelectBrush(whatbrush)) {
+		SelectPage(TILESET_PREFAB);
+		return true;
+	}
+	if (favorites_palette && favorites_palette->SelectBrush(whatbrush)) {
+		SelectPage(TILESET_FAVORITE);
+		return true;
 	}
 
 	// Test if it's an item brush
@@ -1105,6 +1112,73 @@ void PaletteWindow::OnKey(wxKeyEvent& event) {
 	if (g_gui.GetCurrentTab() != nullptr) {
 		g_gui.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
 	}
+}
+
+void PaletteWindow::OnSize(wxSizeEvent& event) {
+	CheckAndUpdateOrientation();
+	event.Skip();
+}
+
+void PaletteWindow::CheckAndUpdateOrientation() {
+	int w = GetClientSize().x;
+	int h = GetClientSize().y;
+	if (w <= 0 || h <= 0) return;
+
+	// When docked Top/Bottom or resized wide, width is significantly greater than height (e.g. w > h * 1.2 and w >= 320)
+	bool should_be_horizontal = (w >= 320 && w > h * 1.15f);
+	if (should_be_horizontal != is_horizontal) {
+		SetHorizontalLayout(should_be_horizontal);
+	}
+}
+
+void PaletteWindow::SetHorizontalLayout(bool horizontal) {
+	is_horizontal = horizontal;
+
+	wxSizer* old_sizer = GetSizer();
+	if (old_sizer) {
+		old_sizer->Clear(false); // don't delete child windows
+		delete old_sizer;
+	}
+
+	if (horizontal) {
+		// Horizontal layout (for top / bottom docking):
+		// Left side: Header panel containing category selector and search box
+		// Center: Choicebook expanding to fill the width
+		// Right: Minimap panel (if visible)
+		wxBoxSizer* main_sizer = new wxBoxSizer(wxHORIZONTAL);
+
+		wxBoxSizer* left_ctrls = new wxBoxSizer(wxVERTICAL);
+		left_ctrls->Add(palette_choice, 0, wxEXPAND | wxALL, 4);
+		left_ctrls->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 4);
+		main_sizer->Add(left_ctrls, 0, wxALIGN_CENTER_VERTICAL | wxALL, 2);
+
+		choicebook->SetMinSize(wxSize(200, 100));
+		main_sizer->Add(choicebook, 1, wxEXPAND | wxALL, 2);
+
+		if (minimap_panel) {
+			main_sizer->Add(minimap_panel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 4);
+		}
+
+		SetSizer(main_sizer);
+	} else {
+		// Vertical layout (for left / right docking & floating):
+		wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
+		main_sizer->Add(palette_choice, 0, wxEXPAND | wxALL, 5);
+		main_sizer->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
+
+		choicebook->SetMinSize(wxSize(180, 200));
+		main_sizer->Add(choicebook, 1, wxEXPAND);
+
+		if (minimap_panel) {
+			main_sizer->Add(minimap_panel, 0, wxALIGN_CENTER | wxALL, 10);
+		}
+
+		SetSizer(main_sizer);
+	}
+
+	UpdateMinimapVisibility();
+	Layout();
+	Refresh();
 }
 
 void PaletteWindow::OnClose(wxCloseEvent& event) {

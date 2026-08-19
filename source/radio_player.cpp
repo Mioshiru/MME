@@ -58,7 +58,7 @@ RadioManager::RadioManager() {
 	stations.push_back({
 		"RPG",
 		"RPGamers Radio - Epic roleplaying soundscapes & anthems.",
-		"http://stream.rpgamers.net:8000/rpgn.mp3",
+		"https://listen.rpgamers.net/rpgn",
 		"https://www.rpgamers.net/radio/"
 	});
 
@@ -456,10 +456,10 @@ void RadioPlayerPanel::UpdateUI() {
 	if (statusLabel) {
 		if (rm.IsPlaying()) {
 			const auto& stations = rm.GetStations();
-			statusLabel->SetLabel("● " + stations[curIdx].name);
+			statusLabel->SetLabel("Playing: " + stations[curIdx].name);
 			statusLabel->SetForegroundColour(wxColour(120, 240, 120));
 		} else {
-			statusLabel->SetLabel("● Stopped");
+			statusLabel->SetLabel("Stopped");
 			statusLabel->SetForegroundColour(wxColour(180, 180, 180));
 		}
 	}
@@ -525,63 +525,75 @@ void RadioPlayerWindow::ShowDocked(bool dock) {
 	wxAuiManager* aui = g_gui.GetAuiManager();
 	if (!aui) return;
 
+	if (!s_dockedPanelInstance) {
+		s_dockedPanelInstance = new RadioPlayerPanel(g_gui.root);
+		aui->AddPane(s_dockedPanelInstance, wxAuiPaneInfo()
+			.Name(RADIO_DOCK_PANE_NAME)
+			.Caption("Radio Player")
+			.Right()
+			.Layer(1)
+			.Position(1)
+			.CloseButton(true)
+			.Floatable(true)
+			.Dockable(true)
+			.LeftDockable(true)
+			.RightDockable(true)
+			.TopDockable(true)
+			.BottomDockable(true)
+			.BestSize(320, 110)
+			.MinSize(wxSize(260, 90))
+			.Show(true));
+	}
+
+	wxAuiPaneInfo& pane = aui->GetPane(s_dockedPanelInstance);
 	if (dock) {
-		// Hide floating dialog if present
+		pane.Show(true);
 		if (s_instance) {
 			s_instance->Hide();
 		}
-
-		if (!s_dockedPanelInstance) {
-			s_dockedPanelInstance = new RadioPlayerPanel(g_gui.root);
-			aui->AddPane(s_dockedPanelInstance, wxAuiPaneInfo()
-				.Name(RADIO_DOCK_PANE_NAME)
-				.Caption("Radio Player")
-				.Right()
-				.Layer(1)
-				.Position(1)
-				.CloseButton(true)
-				.BestSize(320, 110)
-				.MinSize(wxSize(280, 100))
-				.Show(true));
-		} else {
-			aui->GetPane(s_dockedPanelInstance).Show(true);
-		}
-		aui->Update();
-		s_dockedPanelInstance->UpdateUI();
 	} else {
-		// Undock / Show floating dialog
-		if (s_dockedPanelInstance) {
-			aui->GetPane(s_dockedPanelInstance).Show(false);
-			aui->Update();
-		}
-		if (!s_instance) {
-			s_instance = new RadioPlayerWindow(g_gui.root);
-		}
-		s_instance->Show();
-		s_instance->Raise();
-		if (s_panelInstance) {
-			s_panelInstance->UpdateUI();
-		}
+		// Float within AUI
+		pane.Show(true).Float();
 	}
+	aui->Update();
+	s_dockedPanelInstance->UpdateUI();
 }
 
 void RadioPlayerWindow::Toggle(wxWindow* parent) {
-	if (IsDocked()) {
-		// If docked, hide docked pane
-		wxAuiManager* aui = g_gui.GetAuiManager();
-		if (aui && s_dockedPanelInstance) {
-			aui->GetPane(s_dockedPanelInstance).Show(false);
-			aui->Update();
-		}
-	} else if (s_instance && s_instance->IsShown()) {
-		s_instance->Hide();
-	} else {
-		if (!s_instance) {
-			s_instance = new RadioPlayerWindow(parent ? parent : g_gui.root);
-		}
-		s_instance->Show();
-		s_instance->Raise();
+	wxAuiManager* aui = g_gui.GetAuiManager();
+	if (!aui) return;
+
+	if (!s_dockedPanelInstance) {
+		s_dockedPanelInstance = new RadioPlayerPanel(g_gui.root);
+		aui->AddPane(s_dockedPanelInstance, wxAuiPaneInfo()
+			.Name(RADIO_DOCK_PANE_NAME)
+			.Caption("Radio Player")
+			.Right()
+			.Layer(1)
+			.Position(1)
+			.CloseButton(true)
+			.Floatable(true)
+			.Dockable(true)
+			.LeftDockable(true)
+			.RightDockable(true)
+			.TopDockable(true)
+			.BottomDockable(true)
+			.BestSize(320, 110)
+			.MinSize(wxSize(260, 90))
+			.Show(true));
+		aui->Update();
+		s_dockedPanelInstance->UpdateUI();
+		return;
 	}
+
+	wxAuiPaneInfo& pane = aui->GetPane(s_dockedPanelInstance);
+	if (pane.IsShown()) {
+		pane.Show(false);
+	} else {
+		pane.Show(true);
+	}
+	aui->Update();
+	s_dockedPanelInstance->UpdateUI();
 }
 
 RadioPlayerWindow::RadioPlayerWindow(wxWindow* parent)

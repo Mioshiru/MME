@@ -237,7 +237,7 @@ bool BrushPalettePanel::SelectBrush(const Brush* whatbrush) {
 
 		panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
 		if (panel && panel->SelectBrush(whatbrush)) {
-			choicebook->ChangeSelection(iz);
+			choicebook->SetSelection(iz);
 			if (tileset_choice) {
 				tileset_choice->SetSelection(iz);
 			}
@@ -871,9 +871,12 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 		dc.DrawRectangle(x, y, btn_width, btn_width);
 
 		if (is_selected) {
-			dc.SetPen(wxPen(wxColor(180, 150, 50), 2, wxSOLID));
+			// High-contrast clear selection frame: outer dark outline + bright gold highlight frame
+			dc.SetPen(wxPen(wxColor(0, 0, 0), 2, wxSOLID));
 			dc.SetBrush(*wxTRANSPARENT_BRUSH);
-			dc.DrawRoundedRectangle(x + 1, y + 1, btn_width - 2, btn_width - 2, 4);
+			dc.DrawRectangle(x, y, btn_width, btn_width);
+			dc.SetPen(wxPen(wxColor(255, 205, 50), 2, wxSOLID));
+			dc.DrawRectangle(x + 1, y + 1, btn_width - 2, btn_width - 2);
 		} else {
 			dc.SetPen(*highlight_pen);
 			dc.DrawLine(x, y, x + btn_width - 1, y);
@@ -1015,15 +1018,7 @@ void BrushIconBox::OnRightClick(wxMouseEvent& event) {
 			} else if (ev.GetId() == 10002) {
 				RemoveFavoriteBrushIconBox(clicked_brush);
 			}
-			PaletteWindow* pw = nullptr;
-			const wxWindow* w = this;
-			while ((w = w->GetParent()) && (pw = dynamic_cast<PaletteWindow*>(const_cast<wxWindow*>(w))) == nullptr)
-				;
-			if (pw) {
-				pw->CallAfter([pw]() {
-					pw->RefreshFavoritesBox();
-				});
-			}
+			g_gui.RefreshFavoritesBox();
 		});
 
 		PopupMenu(&menu);

@@ -45,6 +45,7 @@
 #include "map_drawer.h"
 #include "old_properties_window.h"
 #include "palette_window.h"
+#include "procedural_generator_window.h"
 #include "properties_window.h"
 #include "sprites.h"
 #include "svg_icons.h"
@@ -505,38 +506,33 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
         switch (hovered) {
           case 0: // Selection
             g_gui.SetFillBrushMode(false);
-            g_gui.SetMagicWandMode(false);
             g_gui.SetSelectionMode();
             break;
           case 1: // Pencil
             g_gui.SetFillBrushMode(false);
-            g_gui.SetMagicWandMode(false);
             g_gui.SetDrawingMode();
             break;
           case 2: // Bucket
             g_gui.SetDrawingMode();
             g_gui.SetFillBrushMode(true);
             break;
-          case 3: // Magic Wand
-            g_gui.SetMagicWandMode(true);
-            break;
-          case 4: // Zones Sub-Menu
+          case 3: // Zones Sub-Menu
             tool_wheel_sub_menu = 1;
             Refresh();
             return;
-          case 5: // Doors Sub-Menu
+          case 4: // Doors Sub-Menu
             tool_wheel_sub_menu = 2;
             Refresh();
             return;
-          case 6: // Windows Sub-Menu
+          case 5: // Windows Sub-Menu
             tool_wheel_sub_menu = 3;
             Refresh();
             return;
-          case 7: // Eraser
+          case 6: // Eraser
             g_gui.SetFillBrushMode(false);
             g_gui.SelectBrush(g_gui.eraser);
             break;
-          case 8: // Prefab Creator
+          case 7: // Prefab Creator
             g_gui.SetFillBrushMode(false);
             g_gui.SelectBrush(g_gui.prefab_creator_brush);
             break;
@@ -736,10 +732,7 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 			// Single click selection
 			int mouse_map_x, mouse_map_y;
 			ScreenToMap(rubber_start_x, rubber_start_y, &mouse_map_x, &mouse_map_y);
-			if (g_gui.IsMagicWandMode()) {
-				ExecuteMagicWandSelect(mouse_map_x, mouse_map_y, floor, event.ShiftDown() || event.ControlDown());
-			} else {
-				Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+			Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
 				if (tile) {
 					editor.selection.start(Selection::INTERNAL);
 					bool is_selected = editor.selection.getTiles().count(tile) > 0;
@@ -767,7 +760,6 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 					}
 					markDirty();
 				}
-			}
 		} else {
 			// Drag select
 			int start_map_x, start_map_y;
@@ -1426,17 +1418,11 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
   ui_toolbar->addButton("Selection", RME::UI::SVG::ICON_SELECT,
                         [this]() {
                           g_gui.SetFillBrushMode(false);
-                          g_gui.SetMagicWandMode(false);
                           g_gui.SetSelectionMode();
-                        });
-  ui_toolbar->addButton("Magic Wand", RME::UI::SVG::ICON_WAND,
-                        [this]() {
-                          g_gui.SetMagicWandMode(!g_gui.IsMagicWandMode());
                         });
   ui_toolbar->addButton("Pencil", RME::UI::SVG::ICON_PENCIL,
                         [this]() {
                           g_gui.SetFillBrushMode(false);
-                          g_gui.SetMagicWandMode(false);
                           g_gui.SetDrawingMode();
                         });
   wxString bucket_icon_path = ResolveBucketIconPath();
@@ -2415,3 +2401,7 @@ void MapCanvas::OnAddAnnotation(wxCommandEvent &event) {
     }
   }
 }
+
+
+
+

@@ -32,6 +32,8 @@
 
 #include "town.h"
 #include "map.h"
+#include "gui.h"
+#include "complexitem.h"
 
 Tile::Tile(int x, int y, int z) :
 	location(nullptr),

@@ -83,6 +83,7 @@ namespace MenuBar {
 		MAP_REMOVE_CORPSES,
 		MAP_REMOVE_UNREACHABLE_TILES,
 		MAP_CLEAN_HOUSE_ITEMS,
+		ROTATE_ITEM,
 		TOGGLE_NO_HOTKEYS,
 		MAP_PROPERTIES,
 		MAP_STATISTICS,
@@ -168,6 +169,7 @@ namespace MenuBar {
 		EXTENSIONS,
 		GOTO_WEBSITE,
 		ABOUT,
+		CHECK_FOR_UPDATES,
 
 		// Scripts menu
 		SCRIPTS_OPEN_FOLDER,
@@ -274,6 +276,7 @@ public:
 	void OnMapEditMonsters(wxCommandEvent& event);
 	void OnMapCleanHouseItems(wxCommandEvent& event);
 	void OnMapCleanup(wxCommandEvent& event);
+	void OnRotateItem(wxCommandEvent& event);
 	void OnToggleNoHotkeys(wxCommandEvent& event);
 	void OnMapProperties(wxCommandEvent& event);
 	void OnMapStatistics(wxCommandEvent& event);
@@ -323,6 +326,7 @@ public:
 	void OnChangeFloor(wxCommandEvent& event);
 
 	// About Menu
+	void OnCheckForUpdates(wxCommandEvent& event);
 	void OnListExtensions(wxCommandEvent& event);
 	void OnGotoWebsite(wxCommandEvent& event);
 	void OnAbout(wxCommandEvent& event);

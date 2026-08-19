@@ -27,6 +27,7 @@
 #include "application.h"
 #include "preferences.h"
 #include "about_window.h"
+#include "mme_updater.h"
 #include "result_window.h"
 #include "extension_window.h"
 #include "find_item_window.h"
@@ -205,6 +206,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(MAP_REMOVE_UNREACHABLE_TILES, wxITEM_NORMAL, OnMapRemoveUnreachable);
 	MAKE_ACTION(MAP_CLEANUP, wxITEM_NORMAL, OnMapCleanup);
 	MAKE_ACTION(MAP_CLEAN_HOUSE_ITEMS, wxITEM_NORMAL, OnMapCleanHouseItems);
+	MAKE_ACTION(ROTATE_ITEM, wxITEM_NORMAL, OnRotateItem);
 	MAKE_ACTION(TOGGLE_NO_HOTKEYS, wxITEM_CHECK, OnToggleNoHotkeys);
 	MAKE_ACTION(MAP_PROPERTIES, wxITEM_NORMAL, OnMapProperties);
 	MAKE_ACTION(MAP_STATISTICS, wxITEM_NORMAL, OnMapStatistics);
@@ -302,6 +304,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(EXTENSIONS, wxITEM_NORMAL, OnListExtensions);
 	MAKE_ACTION(GOTO_WEBSITE, wxITEM_NORMAL, OnGotoWebsite);
 	MAKE_ACTION(ABOUT, wxITEM_NORMAL, OnAbout);
+	MAKE_ACTION(CHECK_FOR_UPDATES, wxITEM_NORMAL, OnCheckForUpdates);
 
 	// Scripts menu actions
 	MAKE_ACTION(SCRIPTS_OPEN_FOLDER, wxITEM_NORMAL, OnScriptsOpenFolder);
@@ -518,6 +521,7 @@ void MainMenuBar::Update() {
 	EnableItem(MAP_REMOVE_UNREACHABLE_TILES, is_local);
 	EnableItem(CLEAR_INVALID_HOUSES, is_local);
 	EnableItem(CLEAR_MODIFIED_STATE, is_local);
+	EnableItem(ROTATE_ITEM, has_map);
 	EnableItem(TOGGLE_NO_HOTKEYS, true);
 
 	EnableItem(EDIT_TOWNS, has_map);
@@ -1035,6 +1039,10 @@ void MainMenuBar::OnGotoWebsite(wxCommandEvent& WXUNUSED(event)) {
 void MainMenuBar::OnAbout(wxCommandEvent& WXUNUSED(event)) {
 	AboutWindow about(frame);
 	about.ShowModal();
+}
+
+void MainMenuBar::OnCheckForUpdates(wxCommandEvent& WXUNUSED(event)) {
+	MMEUpdater::Instance().CheckForUpdates(frame, true);
 }
 
 void MainMenuBar::OnUndo(wxCommandEvent& WXUNUSED(event)) {
@@ -1732,8 +1740,8 @@ void MainMenuBar::OnExportMinimap(wxCommandEvent& WXUNUSED(event)) {
 
 void MainMenuBar::OnProceduralGenerator(wxCommandEvent& WXUNUSED(event)) {
 	if (!g_gui.GetCurrentEditor()) return;
-	ProceduralGeneratorDialog dialog(frame, *g_gui.GetCurrentEditor());
-	dialog.ShowModal();
+	ProceduralGeneratorDialog* dialog = new ProceduralGeneratorDialog(frame, *g_gui.GetCurrentEditor());
+	dialog->Show(true);
 }
 
 void MainMenuBar::OnPrefabLibrary(wxCommandEvent& WXUNUSED(event)) {
@@ -1786,6 +1794,13 @@ void MainMenuBar::OnWizardNPC(wxCommandEvent& WXUNUSED(event)) {
 void MainMenuBar::OnWizardSpecialObjects(wxCommandEvent& WXUNUSED(event)) {
 	SpecialObjectsWizardDialog dialog(frame);
 	dialog.ShowModal();
+}
+
+void MainMenuBar::OnRotateItem(wxCommandEvent& event) {
+	MapTab* mapTab = g_gui.GetCurrentMapTab();
+	if (mapTab && mapTab->GetCanvas()) {
+		mapTab->GetCanvas()->OnRotateItem(event);
+	}
 }
 
 void MainMenuBar::OnToggleNoHotkeys(wxCommandEvent& WXUNUSED(event)) {

@@ -2,7 +2,48 @@
 
 ---
 
-## 🚀 Release v1.8 (Latest Release)
+## 🚀 Release v1.8.5 Beta (Latest Working Version)
+
+### 🌟 Major Highlights & New Features
+
+#### 🏰 Procedural World, Dungeon & Cave Generator Suite (`Tools -> Generators & Analysis -> Procedural Map Generator`)
+* **Native 2-Pass Autobordering Engine:** Uses RME's native `BatchAction` and `WallBrush::doWalls` / `GroundBrush::doBorders` engine. All corners (diagonal, orthogonal, T-junctions, and end caps) and ground transitions generate seamlessly as if hand-drawn by a mapper.
+* **Solid Structural Generation:** Generates clean, fully enclosed room perimeters with walkable interior floors and corridors that punch clean doorway openings without clutter.
+* **Multi-Theme Presets:** 1-Click presets for *Ancient Catacombs*, *Lava / Inferno Vault*, *Ice / Glacier Cavern*, *Desert Tomb*, and *Subterranean Sewers*.
+* **Multi-Floor & Cave Modes:** Multi-floor vertical generation and cellular automata organic cave generation with natural wall borders.
+* **Interactive Live 2D Mini-Map Preview:** Live preview canvas displaying real-time map generation before committing to the canvas.
+* **1-Click Retry Workflow:** The generation button dynamically switches to **"Retry"** to undo the previous attempt and roll a new layout with the same settings.
+* **Strict Non-Destructive Protection:** Protects player-built houses, creatures, spawns, and containers from being overwritten.
+
+#### 🔄 GitHub Releases 1-Click Update System (`About -> Check for Updates`)
+* **Automated Update Detection:** Directly queries `https://api.github.com/repos/Mioshiru/MME/releases/latest` to compare versions.
+* **In-App Download & Progress Tracking:** Downloads release archives directly inside the editor with a live progress dialog.
+* **One-Click Auto-Restart:** Extracts and updates editor binaries automatically with zero manual file replacement required.
+
+#### 📦 Locker & Depot Town Auto-Assignment
+* **Distance-Based Town Resolution:** Placing a Locker/Depot automatically calculates 3D distance to the closest temple on the active map and assigns the town ID (e.g. *Lantea*).
+* **Properties Dialog Integration:** Opening properties on a depot with town ID 0 automatically pre-selects the nearest town in the dropdown.
+
+#### 🎯 Groundbrush Selection & Palette Navigation
+* **Instant Palette Focus:** Using "Select Groundbrush" (or RAW/Wall/Doodad brush) via right-click on any map tile immediately navigates to, scrolls, and highlights the tile in the palette.
+* **Robust Unselected Tile Lookups:** Right-clicking tiles without making a prior selection now reliably resolves the clicked map tile.
+
+#### 🎡 Radial Tool Wheel Cleanup (`Shift + Q`)
+* **Synchronized 8-Tool Wheel:** Streamlined the radial menu to 8 core tools (*Selection, Pencil, Bucket, Zones, Doors, Windows, Eraser, Prefab Creator*) with 1:1 slice-to-action alignment.
+
+#### 🚫 "No Hotkeys" Mode & Rotate Item Menu Actions
+* **Prominent Menubar Placement:** "No Hotkeys Mode" is accessible directly under **`Edit`** (and `Tools -> Map Tools`) with a live checkmark indicator.
+* **Dedicated "Rotate Item (Z)" Action:** Added under **`Edit -> Rotate Item (Z)`** for effortless ramp, stair, table, and item rotation.
+
+#### 📻 Built-In Fantasy Web Radio Player (`Tools -> Radio`)
+* **24/7 Game Music Streams:** Built-in streaming audio player with full Rainwave (*ALL, Game, Chiptune, OC ReMix, Covers, Chill*) and RPGamers Radio (*RPG*) live streams.
+
+#### 🎨 Corporate Dark Navy & Gold UI Design
+* **Unified Modern Aesthetics:** Modals, wizards, dialogs, and toolbars styled in deep dark navy (`#0c1626`, `#122036`) with gold accents (`#f0d278`).
+
+---
+
+## 🚀 Release v1.8
 
 ### 🌟 Major Highlights & New Features
 

@@ -61,6 +61,31 @@
 		<item name="Copy" hotkey="Ctrl+C" action="COPY" help="Copy a part of the map."/>
 		<item name="Paste" hotkey="Ctrl+V" action="PASTE" help="Paste a part of the map."/>
 		<separator/>
+		<menu name="Selection">
+			<menu name="Selection Mode">
+				<item name="Compensate Selection" action="SELECT_MODE_COMPENSATE" help="Compensate for floor difference when selecting."/>
+				<separator/>
+				<item name="Current Floor" action="SELECT_MODE_CURRENT" help="Select only current floor."/>
+				<item name="Lower Floors" action="SELECT_MODE_LOWER" help="Select all lower floors."/>
+				<item name="Visible Floors" action="SELECT_MODE_VISIBLE" help="Select only visible floors."/>
+			</menu>
+			<separator/>
+			<item name="Replace Items on Selection" action="REPLACE_ON_SELECTION_ITEMS" help="Replace items on selected area."/>
+			<item name="Remove Item on Selection" action="REMOVE_ON_SELECTION_ITEM" help="Remove item on selected area."/>
+			<separator/>
+			<menu name="Find on Selection">
+				<item name="Find Everything" action="SEARCH_ON_SELECTION_EVERYTHING" help="Find all unique/action/text/container items."/>
+				<separator/>
+				<item name="Find Unique" action="SEARCH_ON_SELECTION_UNIQUE" help="Find all items with an unique ID on selected area."/>
+				<item name="Find Action" action="SEARCH_ON_SELECTION_ACTION" help="Find all items with an action ID on selected area."/>
+				<item name="Find Container" action="SEARCH_ON_SELECTION_CONTAINER" help="Find all containers on selected area."/>
+				<item name="Find Writeable" action="SEARCH_ON_SELECTION_WRITEABLE" help="Find all writeable items on selected area."/>
+			</menu>
+			<separator/>
+			<item name="Borderize Selection" action="BORDERIZE_SELECTION" help="Creates automatic borders in the entire selected area."/>
+			<item name="Randomize Selection" action="RANDOMIZE_SELECTION" help="Randomizes the ground tiles of the selected area."/>
+		</menu>
+		<separator/>
 		<item name="Replace Items..." hotkey="Ctrl+Shift+F" action="REPLACE_ITEMS" help="Replaces all occurrences of one item with another."/>
 		<item name="Remove Items by ID..." hotkey="Ctrl+Shift+R" action="MAP_REMOVE_ITEMS" help="Removes all items with the selected ID from the map."/>
 		<separator/>
@@ -72,55 +97,33 @@
 			<item name="Randomize Selection" action="RANDOMIZE_SELECTION" help="Randomizes the ground tiles of the selected area."/>
 			<item name="Randomize Map" action="RANDOMIZE_MAP" help="Randomizes all tiles of the entire map."/>
 		</menu>
+		<separator/>
+		<item name="Rotate Item" hotkey="Z" action="ROTATE_ITEM" help="Rotate the selected or active item (ramps, stairs, tables)."/>
+		<item name="No Hotkeys Mode" action="TOGGLE_NO_HOTKEYS" help="Disables single-letter hotkeys to prevent conflicts while mapping."/>
 	</menu>
 
-	<menu name="Search">
-		<item name="Find Item..." hotkey="Ctrl+F" action="FIND_ITEM" help="Find all instances of an item type the map."/>
-		<separator/>
-		<item name="Jump to Brush..." hotkey="J" action="JUMP_TO_BRUSH" help="Jump to a brush."/>
-		<item name="Jump to Item..." hotkey="Ctrl+J" action="JUMP_TO_ITEM_BRUSH" help="Jump to an item brush (RAW palette)."/>
-		<item name="Go to Position..." hotkey="Ctrl+G" action="GOTO_POSITION" help="Go to a specific XYZ position."/>
-		<item name="Go to Previous Position" hotkey="P" action="GOTO_PREVIOUS_POSITION" help="Go to the previous screen center position."/>
-		<separator/>
-		<item name="Find Everything" action="SEARCH_ON_MAP_EVERYTHING" help="Find all unique/action/text/container items."/>
-		<separator/>
-		<item name="Find Unique" action="SEARCH_ON_MAP_UNIQUE" help="Find all items with an unique ID on map."/>
-		<item name="Find Action" action="SEARCH_ON_MAP_ACTION" help="Find all items with an action ID on map."/>
-		<item name="Find Container" action="SEARCH_ON_MAP_CONTAINER" help="Find all containers on map."/>
-		<item name="Find Writeable" action="SEARCH_ON_MAP_WRITEABLE" help="Find all writeable items on map."/>
-	</menu>
-
-	<menu name="Map">
+	<menu name="Map &amp; Search">
 		<item name="Properties..." hotkey="Ctrl+P" action="MAP_PROPERTIES" help="Show and change the map properties."/>
 		<item name="Statistics" hotkey="F8" action="MAP_STATISTICS" help="Show map statistics."/>
 		<item name="Edit Towns" hotkey="Ctrl+T" action="EDIT_TOWNS" help="Edit towns."/>
 		<separator/>
 		<item name="Cleanup..." action="MAP_CLEANUP" help="Removes all items that do not exist in the OTB file (red tiles the server can't load)."/>
-	</menu>
-
-	<menu name="Selection">
-		<menu name="Selection Mode">
-			<item name="Compensate Selection" action="SELECT_MODE_COMPENSATE" help="Compensate for floor difference when selecting."/>
+		<separator/>
+		<menu name="Find &amp; Search">
+			<item name="Find Item..." hotkey="Ctrl+F" action="FIND_ITEM" help="Find all instances of an item type the map."/>
 			<separator/>
-			<item name="Current Floor" action="SELECT_MODE_CURRENT" help="Select only current floor."/>
-			<item name="Lower Floors" action="SELECT_MODE_LOWER" help="Select all lower floors."/>
-			<item name="Visible Floors" action="SELECT_MODE_VISIBLE" help="Select only visible floors."/>
-		</menu>
-		<separator/>
-		<item name="Replace Items on Selection" action="REPLACE_ON_SELECTION_ITEMS" help="Replace items on selected area."/>
-		<item name="Remove Item on Selection" action="REMOVE_ON_SELECTION_ITEM" help="Remove item on selected area."/>
-		<separator/>
-		<menu name="Find on Selection">
-			<item name="Find Everything" action="SEARCH_ON_SELECTION_EVERYTHING" help="Find all unique/action/text/container items."/>
+			<item name="Jump to Brush..." hotkey="J" action="JUMP_TO_BRUSH" help="Jump to a brush."/>
+			<item name="Jump to Item..." hotkey="Ctrl+J" action="JUMP_TO_ITEM_BRUSH" help="Jump to an item brush (RAW palette)."/>
+			<item name="Go to Position..." hotkey="Ctrl+G" action="GOTO_POSITION" help="Go to a specific XYZ position."/>
+			<item name="Go to Previous Position" hotkey="P" action="GOTO_PREVIOUS_POSITION" help="Go to the previous screen center position."/>
 			<separator/>
-			<item name="Find Unique" action="SEARCH_ON_SELECTION_UNIQUE" help="Find all items with an unique ID on selected area."/>
-			<item name="Find Action" action="SEARCH_ON_SELECTION_ACTION" help="Find all items with an action ID on selected area."/>
-			<item name="Find Container" action="SEARCH_ON_SELECTION_CONTAINER" help="Find all containers on selected area."/>
-			<item name="Find Writeable" action="SEARCH_ON_SELECTION_WRITEABLE" help="Find all writeable items on selected area."/>
+			<item name="Find Everything" action="SEARCH_ON_MAP_EVERYTHING" help="Find all unique/action/text/container items."/>
+			<separator/>
+			<item name="Find Unique" action="SEARCH_ON_MAP_UNIQUE" help="Find all items with an unique ID on map."/>
+			<item name="Find Action" action="SEARCH_ON_MAP_ACTION" help="Find all items with an action ID on map."/>
+			<item name="Find Container" action="SEARCH_ON_MAP_CONTAINER" help="Find all containers on map."/>
+			<item name="Find Writeable" action="SEARCH_ON_MAP_WRITEABLE" help="Find all writeable items on map."/>
 		</menu>
-		<separator/>
-		<item name="Borderize Selection" action="BORDERIZE_SELECTION" help="Creates automatic borders in the entire selected area."/>
-		<item name="Randomize Selection" action="RANDOMIZE_SELECTION" help="Randomizes the ground tiles of the selected area."/>
 	</menu>
 
 	<menu name="View">
@@ -132,6 +135,28 @@
 		<item name="Enter Fullscreen" hotkey="F11" action="TOGGLE_FULLSCREEN" help="Changes between fullscreen mode and windowed mode."/>
 		<item name="Take Screenshot" hotkey="F10" action="TAKE_SCREENSHOT" help="Saves the current view to the disk."/>
 		<item name="New View" hotkey="Ctrl+Shift+N" action="NEW_VIEW" help="Creates a new view of the current map."/>
+		<separator/>
+		<menu name="Windows &amp; Palettes">
+			<item name="Minimap" hotkey="M" action="WIN_MINIMAP" help="Displays the minimap window."/>
+			<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
+			<separator/>
+			<menu name="Palettes">
+				<item name="Terrain" action="SELECT_TERRAIN" help="Select the Terrain palette."/>
+				<item name="Doodad" action="SELECT_DOODAD" help="Select the Doodad palette."/>
+				<item name="Item" action="SELECT_ITEM" help="Select the Item palette."/>
+				<item name="Collection" action="SELECT_COLLECTION" help="Select the Collection palette."/>
+				<item name="House" action="SELECT_HOUSE" help="Select the House palette."/>
+				<item name="Creature" action="SELECT_CREATURE" help="Select the Creature palette."/>
+				<item name="Waypoint" action="SELECT_WAYPOINT" help="Select the Waypoint palette."/>
+				<item name="RAW" action="SELECT_RAW" help="Select the RAW palette."/>
+			</menu>
+			<menu name="Toolbars">
+				<item name="Brushes" action="VIEW_TOOLBARS_BRUSHES" help="Show or hide the Brushes toolbar."/>
+				<item name="Position" action="VIEW_TOOLBARS_POSITION" help="Show or hide the Position toolbar."/>
+				<item name="Sizes" action="VIEW_TOOLBARS_SIZES" help="Show or hide the Sizes toolbar."/>
+				<item name="Standard" action="VIEW_TOOLBARS_STANDARD" help="Show or hide the Standard toolbar."/>
+			</menu>
+		</menu>
 		<separator/>
 		<item name="Show all Floors" hotkey="Ctrl+W" action="SHOW_ALL_FLOORS" help="If not checked other floors are hidden."/>
 		<item name="Ghost higher floors" hotkey="Ctrl+L" action="GHOST_HIGHER_FLOORS" help="Ghost floors."/>
@@ -178,28 +203,6 @@
 		<item name="Multiplayer Help" action="LIVE_HELP" help="Instructions on how to configure and use multiplayer live editing."/>
 	</menu>
 
-	<menu name="Window">
-		<item name="Minimap" hotkey="M" action="WIN_MINIMAP" help="Displays the minimap window."/>
-		<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
-		<separator/>
-		<menu name="Palettes">
-			<item name="Terrain" action="SELECT_TERRAIN" help="Select the Terrain palette."/>
-			<item name="Doodad" action="SELECT_DOODAD" help="Select the Doodad palette."/>
-			<item name="Item" action="SELECT_ITEM" help="Select the Item palette."/>
-			<item name="Collection" action="SELECT_COLLECTION" help="Select the Collection palette."/>
-			<item name="House" action="SELECT_HOUSE" help="Select the House palette."/>
-			<item name="Creature" action="SELECT_CREATURE" help="Select the Creature palette."/>
-			<item name="Waypoint" action="SELECT_WAYPOINT" help="Select the Waypoint palette."/>
-			<item name="RAW" action="SELECT_RAW" help="Select the RAW palette."/>
-		</menu>
-		<menu name="Toolbars">
-			<item name="Brushes" action="VIEW_TOOLBARS_BRUSHES" help="Show or hide the Brushes toolbar."/>
-			<item name="Position" action="VIEW_TOOLBARS_POSITION" help="Show or hide the Position toolbar."/>
-			<item name="Sizes" action="VIEW_TOOLBARS_SIZES" help="Show or hide the Sizes toolbar."/>
-			<item name="Standard" action="VIEW_TOOLBARS_STANDARD" help="Show or hide the Standard toolbar."/>
-		</menu>
-	</menu>
-
 	<menu name="Tools">
 		<menu name="TFS &amp; Wizards">
 			<item name="NPC &amp; Shop Wizard..." action="WIZARD_NPC" help="Create TFS 1.6 NPCs, custom dialogues, and shop buy/sell offers."/>
@@ -227,7 +230,7 @@
 		<item name="Radio" action="TOOLS_RADIO_PLAYER" help="Fantasy web radio player with Rainwave &amp; RPG streams."/>
 		<separator/>
 		<menu name="Lua Scripts" special="SCRIPTS">
-			<item name="Script Manager..." action="SCRIPTS_MANAGER" help="Show/hide the Script Manager window."/>
+			<item name="Script Manager..." action="SCRIPTS_MANAGER" help="Show/hide Script Manager window."/>
 			<item name="Open Scripts Folder" action="SCRIPTS_OPEN_FOLDER" help="Open the scripts folder in file explorer."/>
 			<item name="Reload Scripts" hotkey="Ctrl+Shift+F5" action="SCRIPTS_RELOAD" help="Reload all scripts from disk."/>
 			<separator/>
@@ -236,6 +239,8 @@
 	</menu>
 
 	<menu name="About">
+		<item name="Check for Updates..." action="CHECK_FOR_UPDATES" help="Check for the latest Mios Map Editor updates on GitHub."/>
+		<separator/>
 		<item name="Extensions..." hotkey="F2" action="EXTENSIONS" help="Manage extensions."/>
 		<item name="Goto Website" hotkey="F3" action="GOTO_WEBSITE" help="Visit website."/>
 		<separator/>

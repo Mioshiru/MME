@@ -98,6 +98,7 @@ public:
   void OnSelectMoveTo(wxCommandEvent &event);
   // ---
   void OnProperties(wxCommandEvent &event);
+  void OnDetailBrushSettings(wxCommandEvent &event);
   void OnCreateTown(wxCommandEvent &event);
   void OnEditTown(wxCommandEvent &event);
   void OnScriptMenu(wxCommandEvent &event);

@@ -250,12 +250,8 @@ public:
 	void SetSelectionMode();
 	void SetDrawingMode();
 	void SetFillBrushMode(bool enabled);
-	void SetMagicWandMode(bool enabled);
 	[[nodiscard]] bool IsFillBrushMode() const {
 		return fill_brush_mode;
-	}
-	[[nodiscard]] bool IsMagicWandMode() const {
-		return magic_wand_mode;
 	}
 	[[nodiscard]] bool IsSelectionMode() const {
 		return mode == SELECTION_MODE;
@@ -403,6 +399,7 @@ public:
 	void RebuildPalettes();
 	// Refresh only updates the content (such as house/waypoint list)
 	void RefreshPalettes(Map* m = nullptr, bool usedfault = true);
+	void RefreshFavoritesBox();
 	void RefreshMinimapPanel();
 	PaletteWindow* GetActivePalette() const;
 	// Won't refresh the palette in the parameter
@@ -499,7 +496,6 @@ protected:
 	int brush_variation;
 	int creature_spawntime;
 	bool fill_brush_mode;
-	bool magic_wand_mode;
 
 	bool draw_locked_doors;
 	bool use_custom_thickness;

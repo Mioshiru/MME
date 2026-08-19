@@ -215,13 +215,41 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 		const Towns& towns = map->towns;
 		subsizer->Add(newd wxStaticText(this, wxID_ANY, "Depot ID"));
 		depot_id_field = newd wxChoice(this, wxID_ANY);
+		uint16_t cur_town_id = depot->getDepotID();
+		if (cur_town_id == 0 && towns.count() > 0) {
+			Position tile_pos = tile_parent ? tile_parent->getPosition() : Position();
+			uint32_t nearest_town_id = 0;
+			int min_dist = std::numeric_limits<int>::max();
+			for (const auto& pair : towns) {
+				const Town* town = pair.second;
+				if (town) {
+					const Position& temple = town->getTemplePosition();
+					if (temple.isValid() && tile_pos.isValid()) {
+						int dist = std::abs((int)tile_pos.x - (int)temple.x) + std::abs((int)tile_pos.y - (int)temple.y) + std::abs((int)tile_pos.z - (int)temple.z) * 5;
+						if (dist < min_dist) {
+							min_dist = dist;
+							nearest_town_id = town->getID();
+						}
+					} else if (nearest_town_id == 0) {
+						nearest_town_id = town->getID();
+					}
+				}
+			}
+			if (nearest_town_id == 0 && towns.count() > 0) {
+				nearest_town_id = towns.begin()->second->getID();
+			}
+			if (nearest_town_id > 0) {
+				cur_town_id = static_cast<uint16_t>(nearest_town_id);
+			}
+		}
+
 		int to_select_index = 0;
 		if (towns.count() > 0) {
 			bool found = false;
 			for (TownMap::const_iterator town_iter = towns.begin();
 				 town_iter != towns.end();
 				 ++town_iter) {
-				if (town_iter->second->getID() == depot->getDepotID()) {
+				if (town_iter->second->getID() == cur_town_id) {
 					found = true;
 				}
 				depot_id_field->Append(wxstr(town_iter->second->getName()), newd int(town_iter->second->getID()));
@@ -230,13 +258,13 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 				}
 			}
 			if (!found) {
-				if (depot->getDepotID() != 0) {
-					depot_id_field->Append("Undefined Town (id:" + i2ws(depot->getDepotID()) + ")", newd int(depot->getDepotID()));
+				if (cur_town_id != 0) {
+					depot_id_field->Append("Undefined Town (id:" + i2ws(cur_town_id) + ")", newd int(cur_town_id));
 				}
 			}
 		}
 		depot_id_field->Append("No Town", newd int(0));
-		if (depot->getDepotID() == 0) {
+		if (cur_town_id == 0) {
 			to_select_index = depot_id_field->GetCount() - 1;
 		}
 		depot_id_field->SetSelection(to_select_index);

@@ -100,6 +100,9 @@ public:
 
 	// Visuals & Themes
 	wxSlider* ui_scale_slider;
+	wxStaticText* ui_scale_level_txt;
+	wxPanel* ui_scale_preview_panel;
+	void UpdateScalePreview();
 	wxRadioBox* backend_radio;
 	wxRadioBox* theme_radio;
 	wxColourPickerCtrl* cursor_color_pick;

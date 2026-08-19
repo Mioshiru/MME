@@ -73,6 +73,9 @@ static uint16_t getContainerSwitchID(Item* item) {
 void MapCanvas::OnSelectCreatureBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) {
+		tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
+	}
+	if (!tile) {
 		return;
 	}
 
@@ -700,6 +703,7 @@ void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event)) {
 }
 void MapCanvas::OnSelectRAWBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
 	Item* top = tile->getTopItem();
 	if (!top) top = tile->ground;
@@ -709,13 +713,24 @@ void MapCanvas::OnSelectRAWBrush(wxCommandEvent& WXUNUSED(event)) {
 }
 void MapCanvas::OnSelectGroundBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile || !tile->ground) return;
-	if (tile->getGroundBrush()) {
-		g_gui.SelectBrush(tile->getGroundBrush(), TILESET_TERRAIN);
+	GroundBrush* gb = tile->getGroundBrush();
+	if (!gb) {
+		ItemType& it = g_items[tile->ground->getID()];
+		if (it.brush && it.brush->isGround()) {
+			gb = it.brush->asGround();
+		}
+	}
+	if (gb) {
+		g_gui.SelectBrush(gb, TILESET_TERRAIN);
+	} else if (tile->ground->getRAWBrush()) {
+		g_gui.SelectBrush(tile->ground->getRAWBrush(), TILESET_RAW);
 	}
 }
 void MapCanvas::OnSelectDoodadBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
 	Item* top = tile->getTopItem();
 	if (top && top->getDoodadBrush()) {
@@ -724,6 +739,7 @@ void MapCanvas::OnSelectDoodadBrush(wxCommandEvent& WXUNUSED(event)) {
 }
 void MapCanvas::OnSelectDoorBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
 	Item* top = tile->getTopItem();
 	if (top && top->getDoorBrush()) {
@@ -732,6 +748,7 @@ void MapCanvas::OnSelectDoorBrush(wxCommandEvent& WXUNUSED(event)) {
 }
 void MapCanvas::OnSelectWallBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
 	for (auto* item : tile->items) {
 		if (item->isWall() && item->getWallBrush()) {
@@ -742,6 +759,7 @@ void MapCanvas::OnSelectWallBrush(wxCommandEvent& WXUNUSED(event)) {
 }
 void MapCanvas::OnSelectCarpetBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
 	for (auto* item : tile->items) {
 		if (item->isCarpet() && item->getCarpetBrush()) {
@@ -752,6 +770,7 @@ void MapCanvas::OnSelectCarpetBrush(wxCommandEvent& WXUNUSED(event)) {
 }
 void MapCanvas::OnSelectTableBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
 	for (auto* item : tile->items) {
 		if (item->isTable() && item->getTableBrush()) {
@@ -763,6 +782,7 @@ void MapCanvas::OnSelectTableBrush(wxCommandEvent& WXUNUSED(event)) {
 void MapCanvas::OnSelectHouseBrush(wxCommandEvent& WXUNUSED(event)) {}
 void MapCanvas::OnSelectCollectionBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
 	Item* top = tile->getTopItem();
 	if (!top) top = tile->ground;

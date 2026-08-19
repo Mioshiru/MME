@@ -49,21 +49,30 @@
 * **One-Click TFS Exporter:** Export generated XML files and RevScript Lua scripts directly into your server's `data/` directory.
 
 ### 🎲 Procedural Generation & Quality Assurance
-* **Procedural Map Generator:** Generate organic caves, forests, islands, and rivers using customizable *FastNoiseLite* algorithms.
+* **Procedural Map & Dungeon Generator:** Generate organic caves, multi-floor dungeons, and customizable houses with native 2-pass wall and ground autobordering, clean doorways, live 2D mini-map preview, and a 1-click Retry workflow.
 * **Prefab & Template Library:** Save custom architectural layouts and dungeons to stamp anywhere on your map with a single click.
 * **Map Diagnostic & Error Scanner:** Automatically scan and jump to UID conflicts, floating wall segments, and orphaned spawns.
 * **Visual Map Diff Tool:** Compare two map files with intuitive green (added) and red (removed/modified) visual overlays.
 * **Built-In Fantasy Radio Player:** Stream 24/7 video game soundtracks, chiptunes, remixes, and cozy ambient music from *Rainwave* (*ALL*, *Game*, *Chiptune*, *OC ReMix*, *Covers*, *Chill*) and *RPGamers Radio* with a dockable, transparent audio player window.
+* **1-Click GitHub Releases Updater:** Automated release checking, in-app download progress tracking, and instant auto-restart updating from official GitHub releases.
 
 ---
 
-## 📸 Editor Overview
+## 📸 Screenshots & Showcase
 
 [![MME Workspace Overview](docs/mme_editor_overview.png)](docs/mme_editor_overview.png)
 
-| Game Slot Save Manager & Welcome Screen | ImGui Minimap & High-DPI UI |
+| Welcome & Save Slot Manager | Visual NPC & Shop Wizard |
 |:---:|:---:|
-| <img src="docs/mme_welcome_page.png" width="100%"/> | <img src="https://github.com/user-attachments/assets/9e2cb227-cbbf-451e-ae10-bd2b53321ff1" width="100%"/> |
+| <img src="docs/mme_welcome_page.png" width="100%"/> | <img src="docs/NPC%20Shop%20Wizard.png" width="100%"/> |
+
+| Quest Chest & Action ID Creator | Special Interactive Objects Wizard |
+|:---:|:---:|
+| <img src="docs/Quest%20Chest%20Creator.png" width="100%"/> | <img src="docs/Special%20Objects%20Wizard.png" width="100%"/> |
+
+| 1-Click In-App Auto Updater | Modern Radial Tool Wheel (`Shift + Q`) |
+|:---:|:---:|
+| <img src="docs/Auto%20Updater.png" width="100%"/> | <img src="https://github.com/user-attachments/assets/9e2cb227-cbbf-451e-ae10-bd2b53321ff1" width="100%"/> |
 
 ---
 

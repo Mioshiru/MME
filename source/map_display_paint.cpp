@@ -736,7 +736,6 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					{"SELECTION", radial_tex_ids[0]},
 					{"PENCIL", radial_tex_ids[1]},
 					{"BUCKET", radial_tex_ids[2]},
-					{"MAGIC WAND", radial_tex_ids[3]},
 					{"ZONES", radial_tex_ids[4]},
 					{"DOORS", radial_tex_ids[5]},
 					{"WINDOWS", radial_tex_ids[8]},

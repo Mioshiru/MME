@@ -176,9 +176,6 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	if (bucket_bitmap.IsOk()) {
 		brushes_toolbar->AddTool(PALETTE_TERRAIN_BUCKET_TOOL, wxEmptyString, bucket_bitmap, wxNullBitmap, wxITEM_CHECK, "Bucket Fill", wxEmptyString, NULL);
 	}
-	if (wand_bitmap.IsOk()) {
-		brushes_toolbar->AddTool(PALETTE_TERRAIN_MAGIC_WAND_TOOL, wxEmptyString, wand_bitmap, wxNullBitmap, wxITEM_CHECK, "Magic Wand Selection", wxEmptyString, NULL);
-	}
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_ERASER, wxEmptyString, eraser_bitmap, wxNullBitmap, wxITEM_CHECK, "Eraser", wxEmptyString, NULL);
 	if (prefab_bitmap.IsOk()) {
 		brushes_toolbar->AddTool(PALETTE_TERRAIN_PREFAB_CREATOR_TOOL, wxEmptyString, prefab_bitmap, wxNullBitmap, wxITEM_CHECK, "Prefab Creator", wxEmptyString, NULL);
@@ -263,7 +260,6 @@ void MainToolBar::UpdateButtons() {
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_PENCIL_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_BUCKET_TOOL, has_map);
-	brushes_toolbar->EnableTool(PALETTE_TERRAIN_MAGIC_WAND_TOOL, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_ERASER, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_ZONES_DROPDOWN, has_map);
 	brushes_toolbar->EnableTool(PALETTE_TERRAIN_DOORS_DROPDOWN, has_map);
@@ -291,7 +287,6 @@ void MainToolBar::UpdateButtons() {
 void MainToolBar::UpdateBrushButtons() {
 	static const int tool_ids[] = {
 		PALETTE_TERRAIN_SELECTION_TOOL,
-		PALETTE_TERRAIN_MAGIC_WAND_TOOL,
 		PALETTE_TERRAIN_PENCIL_TOOL,
 		PALETTE_TERRAIN_OPTIONAL_BORDER_TOOL,
 		PALETTE_TERRAIN_BUCKET_TOOL,
@@ -461,9 +456,6 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 		case PALETTE_TERRAIN_BUCKET_TOOL:
 			g_gui.SetDrawingMode();
 			g_gui.SetFillBrushMode(!g_gui.IsFillBrushMode());
-			break;
-		case PALETTE_TERRAIN_MAGIC_WAND_TOOL:
-			g_gui.SetMagicWandMode(!g_gui.IsMagicWandMode());
 			break;
 		case PALETTE_TERRAIN_ERASER:
 			g_gui.SelectBrush(g_gui.eraser);

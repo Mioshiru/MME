@@ -232,23 +232,51 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 		depot_town_field->SetBackgroundColour(wxColour(16, 28, 48));
 		depot_town_field->SetForegroundColour(wxColour(240, 245, 255));
 
+		uint16_t cur_town_id = depot->getDepotID();
+		if (cur_town_id == 0 && edit_map && edit_map->towns.count() > 0) {
+			Position tile_pos = edit_tile ? edit_tile->getPosition() : Position();
+			uint32_t nearest_town_id = 0;
+			int min_dist = std::numeric_limits<int>::max();
+			for (const auto& pair : edit_map->towns) {
+				const Town* town = pair.second;
+				if (town) {
+					const Position& temple = town->getTemplePosition();
+					if (temple.isValid() && tile_pos.isValid()) {
+						int dist = std::abs((int)tile_pos.x - (int)temple.x) + std::abs((int)tile_pos.y - (int)temple.y) + std::abs((int)tile_pos.z - (int)temple.z) * 5;
+						if (dist < min_dist) {
+							min_dist = dist;
+							nearest_town_id = town->getID();
+						}
+					} else if (nearest_town_id == 0) {
+						nearest_town_id = town->getID();
+					}
+				}
+			}
+			if (nearest_town_id == 0 && edit_map->towns.count() > 0) {
+				nearest_town_id = edit_map->towns.begin()->second->getID();
+			}
+			if (nearest_town_id > 0) {
+				cur_town_id = static_cast<uint16_t>(nearest_town_id);
+			}
+		}
+
 		int to_select_index = 0;
 		if (edit_map) {
 			for (const auto& pair : edit_map->towns) {
 				const Town* town = pair.second;
 				if (town) {
-					if (town->getID() == depot->getDepotID()) {
+					if (town->getID() == cur_town_id) {
 						to_select_index = depot_town_field->GetCount();
 					}
 					depot_town_field->Append(wxstr(town->getName()), reinterpret_cast<void*>(static_cast<uintptr_t>(town->getID())));
 				}
 			}
-			if (to_select_index == 0 && depot->getDepotID() != 0) {
-				depot_town_field->Append("Undefined Town (id:" + i2ws(depot->getDepotID()) + ")", reinterpret_cast<void*>(static_cast<uintptr_t>(depot->getDepotID())));
+			if (to_select_index == 0 && cur_town_id != 0) {
+				depot_town_field->Append("Undefined Town (id:" + i2ws(cur_town_id) + ")", reinterpret_cast<void*>(static_cast<uintptr_t>(cur_town_id)));
 			}
 		}
 		depot_town_field->Append("No Town", reinterpret_cast<void*>(static_cast<uintptr_t>(0)));
-		if (depot->getDepotID() == 0) {
+		if (cur_town_id == 0) {
 			to_select_index = depot_town_field->GetCount() - 1;
 		}
 		depot_town_field->SetSelection(to_select_index);
