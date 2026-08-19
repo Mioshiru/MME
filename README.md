@@ -72,7 +72,7 @@
 
 | 1-Click In-App Auto Updater | Modern Radial Tool Wheel (`Shift + Q`) |
 |:---:|:---:|
-| <img src="docs/Auto%20Updater.png" width="100%"/> | <img src="https://github.com/user-attachments/assets/9e2cb227-cbbf-451e-ae10-bd2b53321ff1" width="100%"/> |
+| <img src="docs/Auto%20Updater.png" width="100%"/> | <img src="docs/Radial%20Tool%20Wheel.png" width="100%"/> |
 
 ---
 
