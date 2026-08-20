@@ -141,8 +141,90 @@ Application::~Application() {
   // Destroy
 }
 
+#include <fstream>
+#include <wx/datetime.h>
+
+#ifdef _WIN32
+#include <psapi.h>
+#include <windows.h>
+
+std::string GetModuleInfoFromAddress(void *address) {
+  HMODULE hModule = NULL;
+  if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                         (LPCSTR)address, &hModule)) {
+    char path[MAX_PATH];
+    if (GetModuleFileNameA(hModule, path, sizeof(path))) {
+      std::string fullPath(path);
+      size_t lastSlash = fullPath.find_last_of("\\/");
+      std::string baseName = (lastSlash != std::string::npos)
+                                 ? fullPath.substr(lastSlash + 1)
+                                 : fullPath;
+      ULONG_PTR offset = (ULONG_PTR)address - (ULONG_PTR)hModule;
+      char buffer[256];
+      sprintf_s(buffer, "%s + 0x%IX", baseName.c_str(), offset);
+      return buffer;
+    }
+  }
+  return "Unknown Module";
+}
+
+LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
+  std::ofstream err_file("error.log", std::ios::app);
+  if (err_file.is_open()) {
+    std::string modInfo = GetModuleInfoFromAddress(
+        exceptionInfo->ExceptionRecord->ExceptionAddress);
+    err_file << "[" << wxDateTime::Now().FormatISOCombined(' ').ToStdString()
+             << "] FATAL UNHANDLED EXCEPTION: Code 0x" << std::hex
+             << exceptionInfo->ExceptionRecord->ExceptionCode << " in "
+             << modInfo << " (address 0x"
+             << exceptionInfo->ExceptionRecord->ExceptionAddress << ")"
+             << std::endl;
+    err_file.flush();
+    err_file.close();
+  }
+  return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
+void LogErrorToFile(const std::string &message) {
+  std::string timestamp = wxDateTime::Now().FormatISOCombined(' ').ToStdString();
+
+  // 1. Write to working directory error.log
+  {
+    std::ofstream err_file("error.log", std::ios::app);
+    if (err_file.is_open()) {
+      err_file << "[" << timestamp << "] " << message << std::endl;
+      err_file.flush();
+    }
+  }
+
+#ifdef _WIN32
+  // 2. Also write directly to the root folder (where MME.exe resides)
+  char exePath[MAX_PATH];
+  if (GetModuleFileNameA(NULL, exePath, MAX_PATH)) {
+    std::string path(exePath);
+    size_t lastSlash = path.find_last_of("\\/");
+    if (lastSlash != std::string::npos) {
+      std::string dir = path.substr(0, lastSlash);
+      size_t dllsPos = dir.rfind("\\DLLs");
+      if (dllsPos != std::string::npos) {
+        dir = dir.substr(0, dllsPos);
+      }
+      std::string rootLogPath = dir + "\\error.log";
+      std::ofstream root_err_file(rootLogPath, std::ios::app);
+      if (root_err_file.is_open()) {
+        root_err_file << "[" << timestamp << "] " << message << std::endl;
+        root_err_file.flush();
+      }
+    }
+  }
+#endif
+}
+
 bool Application::OnInit() {
 #ifdef _WIN32
+  SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
   // Enable High DPI Awareness (Per-Monitor V2)
   HMODULE user32 = GetModuleHandleA("user32.dll");
   if (user32) {
@@ -475,61 +557,6 @@ int Application::OnExit() {
   return 1;
 }
 
-#include <fstream>
-#include <wx/datetime.h>
-
-#ifdef _WIN32
-#include <psapi.h>
-#include <windows.h>
-
-
-std::string GetModuleInfoFromAddress(void *address) {
-  HMODULE hModule = NULL;
-  if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                         (LPCSTR)address, &hModule)) {
-    char path[MAX_PATH];
-    if (GetModuleFileNameA(hModule, path, sizeof(path))) {
-      std::string fullPath(path);
-      size_t lastSlash = fullPath.find_last_of("\\/");
-      std::string baseName = (lastSlash != std::string::npos)
-                                 ? fullPath.substr(lastSlash + 1)
-                                 : fullPath;
-      ULONG_PTR offset = (ULONG_PTR)address - (ULONG_PTR)hModule;
-      char buffer[256];
-      sprintf_s(buffer, "%s + 0x%IX", baseName.c_str(), offset);
-      return buffer;
-    }
-  }
-  return "Unknown Module";
-}
-
-LONG WINAPI
-MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
-  std::ofstream err_file("error.log", std::ios::app);
-  if (err_file.is_open()) {
-    std::string modInfo = GetModuleInfoFromAddress(
-        exceptionInfo->ExceptionRecord->ExceptionAddress);
-    err_file << "[" << wxDateTime::Now().FormatISOCombined(' ').ToStdString()
-             << "] FATAL UNHANDLED EXCEPTION: Code 0x" << std::hex
-             << exceptionInfo->ExceptionRecord->ExceptionCode << " in "
-             << modInfo << " (address 0x"
-             << exceptionInfo->ExceptionRecord->ExceptionAddress << ")"
-             << std::endl;
-    err_file.close();
-  }
-  return EXCEPTION_EXECUTE_HANDLER;
-}
-#endif
-
-void LogErrorToFile(const std::string &message) {
-  std::ofstream err_file("error.log", std::ios::app);
-  if (err_file.is_open()) {
-    err_file << "[" << wxDateTime::Now().FormatISOCombined(' ').ToStdString()
-             << "] " << message << std::endl;
-    err_file.close();
-  }
-}
 
 void Application::OnFatalException() {
   LogErrorToFile("FATAL ERROR: Structured Exception (e.g. Access "

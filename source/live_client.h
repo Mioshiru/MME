@@ -22,6 +22,9 @@
 #include "net_connection.h"
 
 #include <set>
+#include <deque>
+#include <mutex>
+#include <vector>
 
 class DirtyList;
 class MapTab;
@@ -40,6 +43,7 @@ public:
 
 	void close();
 	bool handleError(const boost::system::error_code& error);
+	void doWrite();
 	uint32_t getLatency() const {
 		return latency;
 	}
@@ -142,6 +146,13 @@ protected:
 	wxString connectionStatus;
 
 	bool stopped;
+
+	Position pendingFocusPos;
+	bool hasCreatedEditorTab = false;
+
+	std::deque<std::vector<uint8_t>> writeQueue;
+	std::mutex writeMutex;
+	bool isWriting = false;
 };
 
 #endif

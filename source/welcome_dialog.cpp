@@ -29,6 +29,7 @@
 #include <wx/choice.h>
 #include <wx/tokenzr.h>
 #include "live_client.h"
+#include "firewall_helper.h"
 wxDEFINE_EVENT(WELCOME_DIALOG_ACTION, wxCommandEvent);
 wxDEFINE_EVENT(WELCOME_DIALOG_DELETE_RECENT, wxCommandEvent);
 

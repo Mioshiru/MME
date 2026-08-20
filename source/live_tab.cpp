@@ -23,6 +23,7 @@
 #include "live_tab.h"
 #include "live_socket.h"
 #include "live_peer.h"
+#include "live_server.h"
 
 class myGrid : public wxGrid {
 public:
@@ -41,6 +42,8 @@ IMPLEMENT_CLASS(myGrid, wxGrid)
 
 BEGIN_EVENT_TABLE(LiveLogTab, wxPanel)
 EVT_TEXT(LIVE_CHAT_TEXTBOX, LiveLogTab::OnChat)
+EVT_GRID_CELL_RIGHT_CLICK(LiveLogTab::OnUserListRightClick)
+EVT_MENU(LIVE_KICK_PLAYER, LiveLogTab::OnKickPlayer)
 END_EVENT_TABLE()
 
 LiveLogTab::LiveLogTab(MapTabbook* aui, LiveSocket* server) :
@@ -206,11 +209,13 @@ void LiveLogTab::UpdateClientList(const std::unordered_map<uint32_t, LivePeer*>&
 	}
 
 	clients = updatedClients;
+	rowToPeerId.clear();
 	user_list->AppendRows(clients.size());
 
 	int32_t i = 0;
 	for (auto& clientEntry : clients) {
 		LivePeer* peer = clientEntry.second;
+		rowToPeerId.push_back(clientEntry.first);
 		user_list->SetCellBackgroundColour(i, 0, peer->getUsedColor());
 		user_list->SetCellValue(i, 1, i2ws((peer->getClientId() >> 1) + 1));
 		user_list->SetCellValue(i, 2, peer->getName());
@@ -218,4 +223,48 @@ void LiveLogTab::UpdateClientList(const std::unordered_map<uint32_t, LivePeer*>&
 		user_list->SetCellValue(i, 4, wxString::Format("%s | %u%% loss", peer->getConnectionStatus(), peer->getPacketLoss()));
 		++i;
 	}
+}
+
+void LiveLogTab::OnUserListRightClick(wxGridEvent& evt) {
+	// Ignore right-clicks on the log grid – only handle user_list
+	if (evt.GetEventObject() != user_list) {
+		evt.Skip();
+		return;
+	}
+
+	// Only the server/host gets the kick option
+	LiveServer* server = dynamic_cast<LiveServer*>(socket);
+	if (!server) {
+		return;
+	}
+
+	int row = evt.GetRow();
+	if (row < 0 || row >= (int)rowToPeerId.size()) {
+		return;
+	}
+
+	uint32_t peerId = rowToPeerId[row];
+	auto it = clients.find(peerId);
+	if (it == clients.end()) {
+		return;
+	}
+
+	wxString peerName = it->second->getName();
+
+	// Store the target peer ID for the menu handler
+	pendingKickPeerId = peerId;
+
+	wxMenu menu;
+	menu.Append(LIVE_KICK_PLAYER, wxString::Format("Kick '%s'", peerName));
+	PopupMenu(&menu);
+}
+
+void LiveLogTab::OnKickPlayer(wxCommandEvent& evt) {
+	LiveServer* server = dynamic_cast<LiveServer*>(socket);
+	if (!server) {
+		return;
+	}
+
+	server->kickClient(pendingKickPeerId);
+	pendingKickPeerId = 0;
 }

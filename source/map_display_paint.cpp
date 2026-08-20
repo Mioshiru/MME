@@ -242,7 +242,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		style.Colors[ImGuiCol_TabUnfocused]           = ImVec4(0.12f, 0.13f, 0.18f, 1.00f);
 		style.Colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.16f, 0.18f, 0.25f, 1.00f);
 
-		ImGui_ImplOpenGL3_Init("#version 450");
+		ImGui_ImplOpenGL3_Init(nullptr);
 		imgui_initialized = true;
 	}
 

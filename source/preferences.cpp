@@ -31,7 +31,8 @@
 
 #include "style_manager.h"
 
-#include "settings.h"
+#include "preferences.h"
+#include "firewall_helper.h"
 #include "client_version.h"
 #include "editor.h"
 
@@ -144,37 +145,6 @@ namespace {
 		dialog.CentreOnParent();
 		dialog.ShowModal();
 	}
-
-#ifdef __WINDOWS__
-	bool IsWindowsFirewallPortAllowed(int port) {
-		wxArrayString output;
-		wxArrayString errors;
-		const wxString command = wxString::Format(
-			"powershell -NoProfile -NonInteractive -Command \"$rule = Get-NetFirewallPortFilter -Protocol TCP -LocalPort %d -ErrorAction SilentlyContinue | Get-NetFirewallRule | Where-Object { $_.Enabled -eq 'True' -and $_.Direction -eq 'Inbound' -and $_.Action -eq 'Allow' } | Select-Object -First 1 -ExpandProperty DisplayName; if ($rule) { Write-Output $rule }\"",
-			port
-		);
-		const long exitCode = wxExecute(command, output, errors, wxEXEC_SYNC);
-		return exitCode == 0 && !output.empty() && !output[0].Trim().empty();
-	}
-
-	bool RequestWindowsFirewallPortRule(wxWindow* parent, int port) {
-		const wxString params = wxString::Format(
-			"advfirewall firewall add rule name=\"Remere's Map Editor Multiplayer %d\" dir=in action=allow protocol=TCP localport=%d profile=any",
-			port,
-			port
-		);
-
-		HINSTANCE result = ShellExecuteW(
-			reinterpret_cast<HWND>(parent ? parent->GetHandle() : nullptr),
-			L"runas",
-			L"netsh.exe",
-			params.wc_str(),
-			nullptr,
-			SW_SHOWNORMAL
-		);
-		return reinterpret_cast<INT_PTR>(result) > 32;
-	}
-#endif
 }
 
 BEGIN_EVENT_TABLE(PreferencesWindow, wxDialog)

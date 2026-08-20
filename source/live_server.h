@@ -37,6 +37,7 @@ public:
 
 	void acceptClient();
 	void removeClient(uint32_t id);
+	void kickClient(uint32_t id, const wxString& reason = "Kicked by host.");
 
 	//
 	void receiveHeader() { }

@@ -28,7 +28,8 @@
 LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket, uint32_t id)
     : LiveSocket(), readMessage(), server(server), socket(std::move(socket)),
       color(), latency(0), packetLoss(0), lastHeartbeat(0),
-      connectionStatus("Connecting"), id(id), clientId(0), connected(false) {
+      connectionStatus("Connecting"), id(id), clientId(0), connected(false),
+      aliveFlag(std::make_shared<std::atomic<bool>>(true)) {
   ASSERT(server != nullptr);
   boost::system::error_code error;
   this->socket.set_option(boost::asio::ip::tcp::no_delay(true), error);
@@ -43,6 +44,12 @@ LivePeer::~LivePeer() {
 }
 
 void LivePeer::close() {
+  // Mark as dead FIRST so any pending CallAfter lambdas bail out safely.
+  aliveFlag->store(false);
+  {
+    std::lock_guard<std::mutex> lock(writeMutex);
+    writeQueue.clear();
+  }
   if (connected) {
     server->broadcastChat("Server", name + " left the session.");
   }
@@ -52,8 +59,16 @@ void LivePeer::close() {
 bool LivePeer::handleError(const boost::system::error_code &error) {
   if (error) {
     connectionStatus = "Disconnected";
-    logMessage(wxString() + getHostName() + ": disconnected (" + error.message() + ").");
-    close();
+    // handleError may be called from the Asio I/O thread (receive callback).
+    // All GUI access and object lifecycle (close/delete) must happen on the main thread.
+    // Use aliveFlag so the lambda is a no-op if the peer was already deleted.
+    boost::system::error_code err = error;
+    auto flag = aliveFlag;
+    wxTheApp->CallAfter([this, err, flag]() {
+      if (!flag->load()) return; // Peer already deleted - bail out.
+      logMessage(wxString() + getHostName() + ": disconnected (" + err.message() + ").");
+      close();
+    });
     return true;
   }
   return false;
@@ -123,14 +138,56 @@ void LivePeer::receive(uint32_t packetSize) {
 }
 
 void LivePeer::send(NetworkMessage &message) {
+  if (!socket.is_open()) {
+    return;
+  }
   memcpy(&message.buffer[0], &message.size, 4);
-  auto bufferCopy = std::make_shared<std::vector<uint8_t>>(message.buffer);
+
+  std::lock_guard<std::mutex> lock(writeMutex);
+  writeQueue.emplace_back(message.buffer.begin(), message.buffer.begin() + message.size + 4);
+
+  if (!isWriting) {
+    isWriting = true;
+    doWrite();
+  }
+}
+
+void LivePeer::doWrite() {
+  // Caller or completion handler ensures isWriting is true when calling doWrite.
+  if (writeQueue.empty() || !socket.is_open()) {
+    isWriting = false;
+    return;
+  }
+
+  auto buffer = std::make_shared<std::vector<uint8_t>>(std::move(writeQueue.front()));
+  writeQueue.pop_front();
+
+  auto flag = aliveFlag;
   boost::asio::async_write(
-      socket, boost::asio::buffer(*bufferCopy, message.size + 4),
-      [this, bufferCopy](const boost::system::error_code &error,
-             size_t bytesTransferred) -> void {
+      socket, boost::asio::buffer(*buffer),
+      [this, buffer, flag](const boost::system::error_code &error, size_t /*bytesTransferred*/) {
+        if (!flag->load()) return;
         if (error) {
-          logMessage(wxString() + getHostName() + ": " + error.message());
+          {
+            std::lock_guard<std::mutex> lock(writeMutex);
+            writeQueue.clear();
+            isWriting = false;
+          }
+          // Dispatch disconnect handling to the wxWidgets main thread.
+          boost::system::error_code err = error;
+          wxTheApp->CallAfter([this, err, flag]() {
+            if (!flag->load()) return; // Peer already deleted.
+            if (!handleError(err)) {
+              logMessage(wxString() + getHostName() + ": " + err.message());
+            }
+          });
+        } else {
+          std::lock_guard<std::mutex> lock(writeMutex);
+          if (!writeQueue.empty() && socket.is_open()) {
+            doWrite();
+          } else {
+            isWriting = false;
+          }
         }
       });
 }
@@ -151,7 +208,7 @@ void LivePeer::parseLoginPacket(NetworkMessage message) {
       parseReady(message);
       break;
     default: {
-      log->Message("Invalid login packet receieved, connection severed.");
+      logMessage("Invalid login packet received, connection severed.");
       close();
       return;
     }
@@ -227,7 +284,7 @@ void LivePeer::parseEditorPacket(NetworkMessage message) {
       break;
     }
     default: {
-      log->Message("Invalid editor packet receieved, connection severed.");
+      logMessage("Invalid editor packet received, connection severed.");
       close();
       break;
     }
@@ -276,7 +333,7 @@ void LivePeer::parseHello(NetworkMessage &message) {
 
   name = wxString(nickname.c_str(), wxConvUTF8);
   g_gui.SetStatusText(name + " joined the session!");
-  log->Message(name + " (" + getHostName() + ") connected.");
+  logMessage(name + " (" + getHostName() + ") connected.");
 
   MapVersion ver = server->getEditor()->map.getVersion();
   this->mapVersion = VirtualIOMap(ver);
@@ -354,13 +411,20 @@ void LivePeer::parseReady(NetworkMessage &message) {
   send(listMsg);
 
   // Step 3: Initial Map Sync — send ALL non-empty nodes to this client
-  // This ensures the joiner sees exactly what the host has on the map.
-  int nodesSent = 0;
+  // Send start operation so the client displays a smooth loading bar and avoids redraw lag
+  NetworkMessage startOpMsg;
+  startOpMsg.write<uint8_t>(PACKET_START_OPERATION);
+  startOpMsg.write<std::string>("Downloading Map from Host...");
+  send(startOpMsg);
 
+  int nodesSent = 0;
   std::vector<QTreeNode::VisibleNode> visibleNodes;
   map.root.getVisibleLeaves(0, 0, -1, 0, 0, 65535, 65535, visibleNodes);
+  size_t totalVisible = visibleNodes.size();
+  int lastPercent = 0;
 
-  for (const auto& vn : visibleNodes) {
+  for (size_t i = 0; i < totalVisible; ++i) {
+    const auto& vn = visibleNodes[i];
     QTreeNode* node = vn.node;
     if (!node) {
       continue;
@@ -392,9 +456,24 @@ void LivePeer::parseReady(NetworkMessage &message) {
       sendNode(clientId, node, ndx, ndy, 0xFF00);
       ++nodesSent;
     }
+
+    int currentPercent = totalVisible > 0 ? static_cast<int>((i * 100) / totalVisible) : 100;
+    if (currentPercent >= lastPercent + 10 && currentPercent < 100) {
+      lastPercent = currentPercent;
+      NetworkMessage progressMsg;
+      progressMsg.write<uint8_t>(PACKET_UPDATE_OPERATION);
+      progressMsg.write<uint32_t>(currentPercent);
+      send(progressMsg);
+    }
   }
 
-  log->Message(wxString::Format("%s: Initial sync complete (%d nodes sent).", name, nodesSent));
+  // Signal completion of map synchronization
+  NetworkMessage endOpMsg;
+  endOpMsg.write<uint8_t>(PACKET_UPDATE_OPERATION);
+  endOpMsg.write<uint32_t>(100);
+  send(endOpMsg);
+
+  logMessage(wxString::Format("%s: Initial sync complete (%d nodes sent).", name, nodesSent));
 }
 
 void LivePeer::parseNodeRequest(NetworkMessage &message) {

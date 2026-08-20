@@ -164,11 +164,6 @@ void LiveSocket::receiveFloor(NetworkMessage& message, MapEditor& editor, Action
 
 	uint16_t tileBits = message.read<uint16_t>();
 	if (tileBits == 0) {
-		for (uint_fast8_t x = 0; x < 4; ++x) {
-			for (uint_fast8_t y = 0; y < 4; ++y) {
-				action->addChange(new Change(map.allocator(node->createTile(ndx * 4 + x, ndy * 4 + y, z))));
-			}
-		}
 		return;
 	}
 
@@ -190,11 +185,12 @@ void LiveSocket::receiveFloor(NetworkMessage& message, MapEditor& editor, Action
 
 			if (testFlags(tileBits, static_cast<uint64_t>(1) << ((x * 4) + y))) {
 				if (tileNode) {
-					receiveTile(tileNode, editor, action, &position);
+					Tile* tile = readTile(tileNode, editor, &position);
+					if (tile) {
+						map.setTile(position.x, position.y, position.z, tile);
+					}
 					tileNode->advance();
 				}
-			} else {
-				action->addChange(new Change(map.allocator(node->createTile(position.x, position.y, z))));
 			}
 		}
 	}
@@ -311,7 +307,8 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 		pos.z = z;
 	}
 
-	Tile* tile = map.allocator(map.createTileL(pos.x, pos.y, pos.z));
+	TileLocation* location = map.createTileL(pos.x, pos.y, pos.z);
+	Tile* tile = newd Tile(*location);
 
 	if (tileType == OTBM_HOUSETILE) {
 		uint32_t houseId;

@@ -25,6 +25,7 @@
 #include "live_server.h"
 
 class wxGrid;
+class wxGridEvent;
 
 class MapTabbook;
 class LiveSocket;
@@ -60,6 +61,8 @@ public:
 	void OnChat(wxCommandEvent& evt);
 	void OnResizeChat(wxSizeEvent& evt);
 	void OnResizeClientList(wxSizeEvent& evt);
+	void OnUserListRightClick(wxGridEvent& evt);
+	void OnKickPlayer(wxCommandEvent& evt);
 
 protected:
 	MapTabbook* aui;
@@ -68,6 +71,9 @@ protected:
 	wxTextCtrl* input;
 	wxGrid* user_list;
 
+	// Maps grid row -> peer ID for kick lookup
+	std::vector<uint32_t> rowToPeerId;
+	uint32_t pendingKickPeerId = 0;
 	std::unordered_map<uint32_t, LivePeer*> clients;
 
 	DECLARE_EVENT_TABLE();

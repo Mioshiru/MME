@@ -117,6 +117,10 @@ public: // Functions
 	void setDeferBorders(bool defer);
 	void commitBorders();
 
+	// Network stroke batching optimization
+	void setDeferNetworkSync(bool defer);
+	void flushDeferredNetworkSync();
+
 	// Draw using the current brush to the target position
 	// alt is whether the ALT key is pressed
 	void draw(const Position& offset, bool alt);
@@ -133,6 +137,9 @@ protected:
 
 	bool defer_borders;
 	PositionVector pending_borders;
+
+	bool defer_network_sync = false;
+	std::unique_ptr<DirtyList> accumulated_dirty_list;
 
 	MapEditor(const MapEditor&);
 	MapEditor& operator=(const MapEditor&);

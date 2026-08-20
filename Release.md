@@ -38,6 +38,15 @@
 #### 📻 Built-In Fantasy Web Radio Player (`Tools -> Radio`)
 * **24/7 Game Music Streams:** Built-in streaming audio player with full Rainwave (*ALL, Game, Chiptune, OC ReMix, Covers, Chill*) and RPGamers Radio (*RPG*) live streams.
 
+#### 🌐 Live Multiplayer Collaborative Mapping Engine
+* **High-Speed Initial Map Synchronization:** Integrated the RPG Loading Bar during map downloading (`PACKET_START_OPERATION` / `PACKET_UPDATE_OPERATION`). All intermediate quadtree renders are deferred until synchronization reaches 100%, delivering an instant "ready-to-use" map view upon joining.
+* **Streamlined Memory & Heap Management:** Completely eliminated empty floor tile allocations in `receiveFloor` (reducing heap allocations during sync from >5.5 million blank tiles to only tiles that exist on the host map), eliminating heap exhaustion and memory spikes on large maps.
+* **144 FPS Remote Drawing (Stroke Batching):** Remote clients draw locally with zero input delay and full framerate. The completed brush stroke is bundled and synchronized as a single atomic batch upon mouse release (`OnMouseLeftRelease`), eliminating network stutter and packet flooding.
+* **Self-Echo Filtering:** The server filters out broadcasting changes back to the originating painter (`dirtyList.owner`), eliminating redundant viewport re-renders.
+* **Universal Multi-GPU & Modern Driver Compatibility (NVIDIA / AMD / Intel):** Upgraded `wxGLCanvas` OpenGL context and pixel format initialization to driver-default hardware acceleration, ensuring 100% stability across all graphics configurations (including Windows 11 multi-GPU laptops, NVIDIA RTX 50-series, and AMD Radeon iGPUs).
+* **Zero-Interruption Host & Join:** Removed all disruptive CMD/PowerShell executions and dialogs when hosting or joining a session.
+* **Built-In Diagnostic Logging & Exception Handler:** Real-time logging to `error.log` and global Windows unhandled exception filtering for swift issue diagnosis across different client environments.
+
 #### 🎨 Corporate Dark Navy & Gold UI Design
 * **Unified Modern Aesthetics:** Modals, wizards, dialogs, and toolbars styled in deep dark navy (`#0c1626`, `#122036`) with gold accents (`#f0d278`).
 

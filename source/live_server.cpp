@@ -127,9 +127,11 @@ void LiveServer::acceptClient() {
 	}
 
 	acceptor->async_accept(*socket, [this](const boost::system::error_code& error) -> void {
-		if (error) {
-			//
-		} else {
+		if (stopped || error == boost::asio::error::operation_aborted) {
+			return;
+		}
+
+		if (!error) {
 			boost::system::error_code ec;
 			auto endpoint = socket->remote_endpoint(ec);
 			if (!ec) {
@@ -183,6 +185,30 @@ void LiveServer::removeClient(uint32_t id) {
 	clients.erase(it);
 	delete peer;
 	updateClientList();
+}
+
+void LiveServer::kickClient(uint32_t id, const wxString& reason) {
+	auto it = clients.find(id);
+	if (it == clients.end()) {
+		return;
+	}
+
+	LivePeer* peer = it->second;
+
+	// Send kick packet (enqueued – will be delivered async before socket closes)
+	NetworkMessage kickMsg;
+	kickMsg.write<uint8_t>(PACKET_KICK);
+	kickMsg.write<std::string>(nstr(reason));
+	peer->send(kickMsg);
+
+	// Broadcast departure message to remaining clients
+	broadcastChat("Server", peer->getName() + " was kicked from the session.");
+
+	if (log) {
+		log->Message(wxString::Format("Kicked %s: %s", peer->getName(), reason));
+	}
+
+	removeClient(id);
 }
 
 void LiveServer::updateCursor(const Position& position) {
@@ -271,6 +297,12 @@ void LiveServer::broadcastNodes(DirtyList& dirtyList) {
 	for (auto& clientEntry : clients) {
 		LivePeer* peer = clientEntry.second;
 		const uint32_t clientId = peer->getClientId();
+
+		// Optimierung für flüssiges Zeichnen: Sende die geänderten Nodes nicht an den
+		// Client zurück, der die Aktion selbst lokal gezeichnet und committed hat!
+		if (dirtyList.owner != 0 && clientId == dirtyList.owner) {
+			continue;
+		}
 
 		for (const auto& item : cache) {
 			// Optimierter Check: Nur senden, wenn sich der Client im Sichtbereich befindet

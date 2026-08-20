@@ -666,6 +666,7 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 
     // Live automagic bordering during mouse drag: do not defer borders
     // editor.setDeferBorders(true);
+    editor.setDeferNetworkSync(true);
     dragging_draw = !g_gui.IsFillBrushMode();
     rectangle_mode = event.ShiftDown() && !g_gui.IsFillBrushMode();
     if (g_gui.IsFillBrushMode()) {
@@ -893,6 +894,7 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 	last_click_map_z = -1;
 	if (drawing) {
 		editor.setDeferBorders(false);
+		editor.setDeferNetworkSync(false);
 	}
 	CallAfter([this]() { Refresh(); });
 }
@@ -950,6 +952,7 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
   }
 
 	if (drawing) {
+		editor.setDeferNetworkSync(true);
 		if (event.LeftIsDown()) {
 			g_gui.SetSelectionMode();
 			g_gui.SelectBrush(nullptr);
@@ -1043,6 +1046,7 @@ void MapCanvas::OnMouseRightRelease(wxMouseEvent& event) {
 	last_click_map_z = -1;
 	if (drawing) {
 		editor.setDeferBorders(false);
+		editor.setDeferNetworkSync(false);
 	}
 	CallAfter([this]() { Refresh(); });
 }
@@ -1387,19 +1391,17 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
       tool_wheel_tile_z = 7;
       minimap_zoom = 1.0f;
       memset(minimap_pixels, 0, sizeof(minimap_pixels));
+  LogErrorToFile("[MapCanvas] Constructing popup_menu and animation_timer...");
   popup_menu = newd MapPopupMenu(editor);
   animation_timer = newd AnimationTimer(this);
-  // NOTE: Do NOT start the animation timer here. The timer fires every 4ms
-  // and calls Refresh() -> OnPaint(). If it fires before drawer is constructed
-  // (line below), drawer is still nullptr -> crash. Timer is started after
-  // full initialization at the bottom of this constructor.
 
-  // SetCurrent requires a realized (shown) canvas. Guard against calling it
-  // on an unrealized canvas which can crash on some wxWidgets/Windows builds.
   if (IsShownOnScreen()) {
+    LogErrorToFile("[MapCanvas] Setting GL context...");
     SetCurrent(*g_gui.GetGLContext(this));
   }
+  LogErrorToFile("[MapCanvas] Constructing MapDrawer...");
   drawer = std::make_unique<MapDrawer>(this); // Use unique_ptr
+  LogErrorToFile("[MapCanvas] MapDrawer constructed. Initializing toolbar...");
   keyCode = WXK_NONE;
 
   // Initialisierung der Toolbar mit gespeicherten Werten aus der Config

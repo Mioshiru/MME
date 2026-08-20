@@ -46,6 +46,7 @@
 #include "materials.h"
 #include "live_client.h"
 #include "live_server.h"
+#include "firewall_helper.h"
 #include "lua/lua_script_manager.h"
 #include "lua/lua_scripts_window.h"
 #include "otc_export.h"
@@ -1420,10 +1421,11 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 	while (true) {
 		int ret = live_host_dlg->ShowModal();
 		if (ret == wxID_OK) {
+			int serverPort = port->GetValue();
 			LiveServer* liveServer = editor->StartLiveServer();
 			liveServer->setName(hostname->GetValue());
-			liveServer->setPort(port->GetValue());
-			g_settings.setInteger(Config::MULTIPLAYER_PORT, port->GetValue());
+			liveServer->setPort(serverPort);
+			g_settings.setInteger(Config::MULTIPLAYER_PORT, serverPort);
 
 			const wxString& error = liveServer->getLastError();
 			if (!error.empty()) {

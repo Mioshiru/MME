@@ -21,6 +21,12 @@
 #include "live_socket.h"
 #include "net_connection.h"
 
+#include <atomic>
+#include <deque>
+#include <memory>
+#include <mutex>
+#include <vector>
+
 class LiveServer;
 class LivePeer : public LiveSocket {
 public:
@@ -29,6 +35,7 @@ public:
 
 	void close();
 	bool handleError(const boost::system::error_code& error);
+	void doWrite();
 
 	//
 	uint32_t getId() const {
@@ -104,6 +111,14 @@ protected:
 	uint32_t clientId;
 
 	bool connected;
+
+	std::deque<std::vector<uint8_t>> writeQueue;
+	std::mutex writeMutex;
+	bool isWriting = false;
+
+	// Shared alive flag: set to false in close() before delete.
+	// All CallAfter lambdas must check this before dereferencing 'this'.
+	std::shared_ptr<std::atomic<bool>> aliveFlag;
 
 	friend class LiveLogTab;
 	friend class LiveServer;

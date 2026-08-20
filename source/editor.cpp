@@ -2095,10 +2095,46 @@ LiveServer* MapEditor::StartLiveServer() {
 	return live_server;
 }
 
+void MapEditor::setDeferNetworkSync(bool defer) {
+	defer_network_sync = defer;
+	if (!defer) {
+		flushDeferredNetworkSync();
+	}
+}
+
+void MapEditor::flushDeferredNetworkSync() {
+	if (!accumulated_dirty_list || accumulated_dirty_list->Empty()) {
+		return;
+	}
+
+	std::unique_ptr<DirtyList> toSend = std::move(accumulated_dirty_list);
+	accumulated_dirty_list.reset();
+
+	if (IsLiveClient()) {
+		live_client->sendChanges(*toSend);
+	} else if (IsLiveServer()) {
+		live_server->broadcastNodes(*toSend);
+	}
+}
+
 void MapEditor::BroadcastNodes(DirtyList& dirtyList) {
+	if (defer_network_sync) {
+		if (!accumulated_dirty_list) {
+			accumulated_dirty_list = std::make_unique<DirtyList>();
+		}
+		accumulated_dirty_list->owner = dirtyList.owner;
+		for (Change* c : dirtyList.GetChanges()) {
+			accumulated_dirty_list->AddChange(c);
+		}
+		for (const auto& pos : dirtyList.GetPosList()) {
+			accumulated_dirty_list->GetPosList().insert(pos);
+		}
+		return;
+	}
+
 	if (IsLiveClient()) {
 		live_client->sendChanges(dirtyList);
-	} else {
+	} else if (IsLiveServer()) {
 		live_server->broadcastNodes(dirtyList);
 	}
 }

@@ -114,6 +114,10 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 }
 
 void LiveClient::close() {
+	{
+		std::lock_guard<std::mutex> lock(writeMutex);
+		writeQueue.clear();
+	}
 	g_gui.latencies.erase(this);
 	if (resolver) {
 		resolver->cancel();
@@ -131,6 +135,7 @@ void LiveClient::close() {
 
 	connectionStatus = "Disconnected";
 	reconnectScheduled = false;
+	hasCreatedEditorTab = false;
 	stopped = true;
 }
 
@@ -256,13 +261,55 @@ void LiveClient::receive(uint32_t packetSize) {
 }
 
 void LiveClient::send(NetworkMessage& message) {
+	if (!socket || !socket->is_open() || stopped) {
+		return;
+	}
 	memcpy(&message.buffer[0], &message.size, 4);
-	auto bufferCopy = std::make_shared<std::vector<uint8_t>>(message.buffer);
-	boost::asio::async_write(*socket, boost::asio::buffer(*bufferCopy, message.size + 4), [this, bufferCopy](const boost::system::error_code& error, size_t bytesTransferred) -> void {
-		if (error) {
-			logMessage(wxString() + getHostName() + ": " + error.message());
-		}
-	});
+
+	std::lock_guard<std::mutex> lock(writeMutex);
+	writeQueue.emplace_back(message.buffer.begin(), message.buffer.begin() + message.size + 4);
+
+	if (!isWriting) {
+		isWriting = true;
+		doWrite();
+	}
+}
+
+void LiveClient::doWrite() {
+	// Caller or completion handler ensures isWriting is true when calling doWrite.
+	if (writeQueue.empty() || !socket || !socket->is_open() || stopped) {
+		isWriting = false;
+		return;
+	}
+
+	auto buffer = std::make_shared<std::vector<uint8_t>>(std::move(writeQueue.front()));
+	writeQueue.pop_front();
+
+	boost::asio::async_write(
+		*socket,
+		boost::asio::buffer(*buffer),
+		[this, buffer](const boost::system::error_code& error, size_t /*bytesTransferred*/) {
+			if (error) {
+				{
+					std::lock_guard<std::mutex> lock(writeMutex);
+					writeQueue.clear();
+					isWriting = false;
+				}
+				boost::system::error_code err = error;
+				wxTheApp->CallAfter([this, err]() {
+					if (!handleError(err)) {
+						logMessage(wxString() + getHostName() + ": " + err.message());
+					}
+				});
+			} else {
+				std::lock_guard<std::mutex> lock(writeMutex);
+				if (!writeQueue.empty() && socket && socket->is_open() && !stopped) {
+					doWrite();
+				} else {
+					isWriting = false;
+				}
+			}
+		});
 }
 
 void LiveClient::updateCursor(const Position& position) {
@@ -294,11 +341,18 @@ LiveLogTab* LiveClient::createLogWindow(wxWindow* parent) {
 }
 
 MapTab* LiveClient::createEditorWindow() {
+	LogErrorToFile("[LiveClient] createEditorWindow - retrieving tabbook...");
 	MapTabbook* mtb = dynamic_cast<MapTabbook*>(g_gui.tabbook);
-	ASSERT(mtb);
+	if (!mtb) {
+		LogErrorToFile("[LiveClient] createEditorWindow FAILED: g_gui.tabbook is null!");
+		return nullptr;
+	}
 
+	LogErrorToFile("[LiveClient] createEditorWindow - constructing MapTab with mapEditor=" + std::to_string((uintptr_t)mapEditor));
 	MapTab* edit = newd MapTab(mtb, mapEditor);
+	LogErrorToFile("[LiveClient] createEditorWindow - MapTab constructed successfully. Calling OnSwitchEditorMode...");
 	edit->OnSwitchEditorMode(g_gui.IsSelectionMode() ? SELECTION_MODE : DRAWING_MODE);
+	LogErrorToFile("[LiveClient] createEditorWindow - OnSwitchEditorMode complete.");
 
 	return edit;
 }
@@ -489,11 +543,15 @@ void LiveClient::parsePacket(NetworkMessage message) {
 				break;
 			case PACKET_NODE:
 				parseNode(message);
-				needsRefresh = true;
+				if (currentOperation.empty()) {
+					needsRefresh = true;
+				}
 				break;
 			case PACKET_CURSOR_UPDATE:
 				parseCursorUpdate(message);
-				needsRefresh = true;
+				if (currentOperation.empty()) {
+					needsRefresh = true;
+				}
 				break;
 			case PACKET_START_OPERATION:
 				parseStartOperation(message);
@@ -550,19 +608,16 @@ void LiveClient::parsePacket(NetworkMessage message) {
 
 void LiveClient::parseHello(NetworkMessage& message) {
 	logMessage("Connected to server.");
-	if (!mapEditor) {
-		mapEditor = newd Editor(g_gui.copybuffer, this);
-	} else {
-		mapEditor->selection.clear();
-		mapEditor->map.~Map();
-		new (&mapEditor->map) Map();
+	if (mapEditor) {
+		delete mapEditor;
 	}
+	mapEditor = newd Editor(g_gui.copybuffer, this);
 
 	Map& map = mapEditor->map;
 	map.setName("Live Map - " + message.read<std::string>());
 	map.setWidth(message.read<uint16_t>());
 	map.setHeight(message.read<uint16_t>());
-	Position focusPos = message.read<Position>();
+	pendingFocusPos = message.read<Position>();
 	map.clearChanges();
 
 	MapVersion ver;
@@ -571,15 +626,29 @@ void LiveClient::parseHello(NetworkMessage& message) {
 	map.convert(ver);
 	this->mapVersion = VirtualIOMap(ver);
 
-	if (reconnectAttempts == 0) {
-		MapTab* tab = createEditorWindow();
-		if (tab) {
-			tab->SetScreenCenterPosition(focusPos);
-		}
-	} else {
-		g_gui.SetScreenCenterPosition(focusPos);
+	if (reconnectAttempts > 0) {
+		g_gui.SetScreenCenterPosition(pendingFocusPos);
 		g_gui.RefreshView();
 		g_gui.UpdateMinimap();
+	}
+
+	// Now that the server has set connected=true and is in parseEditorPacket mode,
+	// we can safely send PACKET_REQUEST_NODES for the visible area.
+	int map_x = pendingFocusPos.x;
+	int map_y = pendingFocusPos.y;
+	int min_ndx = std::max(0, (map_x - 100) / 4);
+	int max_ndx = (map_x + 100) / 4;
+	int min_ndy = std::max(0, (map_y - 100) / 4);
+	int max_ndy = (map_y + 100) / 4;
+
+	for (int ndx = min_ndx; ndx <= max_ndx; ++ndx) {
+		for (int ndy = min_ndy; ndy <= max_ndy; ++ndy) {
+			queryNode(ndx, ndy, false);
+			queryNode(ndx, ndy, true);
+		}
+	}
+	if (!queryNodeList.empty()) {
+		sendNodeRequests();
 	}
 }
 
@@ -595,28 +664,11 @@ void LiveClient::parseKick(NetworkMessage& message) {
 }
 
 void LiveClient::parseClientAccepted(NetworkMessage& message) {
+	// Signal to the server that we are ready to receive map data.
+	// Do NOT send node requests here - the server's parseReady() sets connected=true
+	// and only then can it handle PACKET_REQUEST_NODES in parseEditorPacket.
+	// Node requests will be sent after we receive PACKET_HELLO_FROM_SERVER.
 	sendReady();
-
-	// Resync active map view nodes on reconnect
-	int map_x = 0, map_y = 0;
-	MapTab* activeTab = dynamic_cast<MapTab*>(g_gui.GetCurrentTab());
-	if (activeTab) {
-		Position centerPos = activeTab->GetScreenCenterPosition();
-		map_x = centerPos.x;
-		map_y = centerPos.y;
-	}
-	int min_ndx = std::max(0, (map_x - 100) / 4);
-	int max_ndx = (map_x + 100) / 4;
-	int min_ndy = std::max(0, (map_y - 100) / 4);
-	int max_ndy = (map_y + 100) / 4;
-
-	for (int ndx = min_ndx; ndx <= max_ndx; ++ndx) {
-		for (int ndy = min_ndy; ndy <= max_ndy; ++ndy) {
-			queryNode(ndx, ndy, false);
-			queryNode(ndx, ndy, true);
-		}
-	}
-	sendNodeRequests();
 }
 
 void LiveClient::parseChangeClientVersion(NetworkMessage& message) {
@@ -674,13 +726,12 @@ void LiveClient::parseNode(NetworkMessage& message) {
 	bool underground = ind & 1;
 
 	if (!mapEditor) {
+		LogErrorToFile("[LiveClient] Warning: Received node before map was initialized.");
 		if (log) { log->Message("Warning: Received node before map was initialized."); }
 		return;
 	}
 
-	Action* action = mapEditor->actionQueue->createAction(ACTION_REMOTE);
-	receiveNode(message, *mapEditor, action, ndx, ndy, underground);
-	mapEditor->actionQueue->addAction(action);
+	receiveNode(message, *mapEditor, nullptr, ndx, ndy, underground);
 }
 
 void LiveClient::parseCursorUpdate(NetworkMessage& message) {
@@ -696,15 +747,45 @@ void LiveClient::parseStartOperation(NetworkMessage& message) {
 	const std::string& operation = message.read<std::string>();
 
 	currentOperation = wxstr(operation);
+	LogErrorToFile("[LiveClient] Operation started: " + operation);
+	g_gui.CreateLoadBar(currentOperation);
 	g_gui.SetStatusText("Server Operation in Progress: " + currentOperation + "... (0%)");
 }
 
 void LiveClient::parseUpdateOperation(NetworkMessage& message) {
 	int32_t percent = message.read<uint32_t>();
 	if (percent >= 100) {
+		LogErrorToFile("[LiveClient] Operation 100% complete. Finalizing map synchronization...");
+		g_gui.SetLoadDone(100);
+		g_gui.DestroyLoadBar();
+		currentOperation.clear();
 		g_gui.SetStatusText("Server Operation Finished.");
+
+		if (!hasCreatedEditorTab && mapEditor) {
+			LogErrorToFile("[LiveClient] Creating Editor Window (MapTab)...");
+			hasCreatedEditorTab = true;
+			MapTab* tab = createEditorWindow();
+			if (tab) {
+				LogErrorToFile("[LiveClient] Setting initial screen focus position...");
+				tab->SetScreenCenterPosition(pendingFocusPos);
+			}
+			LogErrorToFile("[LiveClient] Updating title and palettes...");
+			g_gui.UpdateTitle();
+			g_gui.RefreshPalettes();
+			if (g_gui.root) {
+				g_gui.root->UpdateMenubar();
+				g_gui.root->Refresh();
+			}
+			LogErrorToFile("[LiveClient] Editor window initialized successfully.");
+		}
+
+		LogErrorToFile("[LiveClient] Refreshing view & minimap...");
+		g_gui.RefreshView();
+		g_gui.UpdateMinimap();
+		LogErrorToFile("[LiveClient] Initial synchronization finished 100% OK.");
 	} else {
-		g_gui.SetStatusText("Server Operation in Progress: " + currentOperation + "... (" + std::to_string(percent) + "%)");
+		g_gui.SetLoadDone(percent, currentOperation + wxString::Format(" (%d%%)", percent));
+		g_gui.SetStatusText("Server Operation in Progress: " + currentOperation + wxString::Format(" (%d%%)", percent));
 	}
 }
 
