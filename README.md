@@ -1,6 +1,5 @@
 # Mio's Map Editor (MME)
 
-[![Release](https://img.shields.io/github/v/release/Mioshiru/MME?color=gold&style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![Version](https://img.shields.io/badge/version-v1.9.0-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
