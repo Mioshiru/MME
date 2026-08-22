@@ -445,6 +445,12 @@ void GUI::RefreshView() {
 
   for (EditorTab *editorTab : editorTabs) {
     editorTab->GetWindow()->Refresh();
+    if (auto *mapTab = dynamic_cast<MapTab *>(editorTab)) {
+      if (mapTab->GetCanvas()) {
+        mapTab->GetCanvas()->markDirty();
+        mapTab->GetCanvas()->Refresh();
+      }
+    }
   }
 }
 

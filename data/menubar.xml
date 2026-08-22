@@ -124,20 +124,17 @@
 			<item name="Zoom Out" hotkey="Ctrl+-" action="ZOOM_OUT" help="Decrease the zoom."/>
 			<item name="Zoom Normal" hotkey="Ctrl+0" action="ZOOM_NORMAL" help="Normal zoom(100%)."/>
 		</menu>
-		<menu name="Windows &amp; Palettes">
-			<item name="Minimap" hotkey="M" action="SHOW_MINIMAP_HUD" help="Displays the minimap window."/>
-			<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
+		<menu name="Palettes">
+			<item name="Terrain" action="SELECT_TERRAIN" help="Select the Terrain palette."/>
+			<item name="Doodad" action="SELECT_DOODAD" help="Select the Doodad palette."/>
+			<item name="Item" action="SELECT_ITEM" help="Select the Item palette."/>
+			<item name="Collection" action="SELECT_COLLECTION" help="Select the Collection palette."/>
+			<item name="House" action="SELECT_HOUSE" help="Select the House palette."/>
+			<item name="Creature" action="SELECT_CREATURE" help="Select the Creature palette."/>
+			<item name="Waypoint" action="SELECT_WAYPOINT" help="Select the Waypoint palette."/>
+			<item name="Raw" action="SELECT_RAW" help="Select the Raw palette."/>
 			<separator/>
-			<menu name="Palettes">
-				<item name="Terrain" action="SELECT_TERRAIN" help="Select the Terrain palette."/>
-				<item name="Doodad" action="SELECT_DOODAD" help="Select the Doodad palette."/>
-				<item name="Item" action="SELECT_ITEM" help="Select the Item palette."/>
-				<item name="Collection" action="SELECT_COLLECTION" help="Select the Collection palette."/>
-				<item name="House" action="SELECT_HOUSE" help="Select the House palette."/>
-				<item name="Creature" action="SELECT_CREATURE" help="Select the Creature palette."/>
-				<item name="Waypoint" action="SELECT_WAYPOINT" help="Select the Waypoint palette."/>
-				<item name="Raw" action="SELECT_RAW" help="Select the Raw palette."/>
-			</menu>
+			<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
 		</menu>
 		<separator/>
 		<item name="Show all Floors" hotkey="Ctrl+W" action="SHOW_ALL_FLOORS" help="If not checked other floors are hidden."/>
@@ -153,7 +150,6 @@
 			<item name="Special Items" action="SHOW_SPECIAL" help="Show special tiles (unique/action/text/container) on the map."/>
 			<separator/>
 			<item name="Grid" hotkey="Ctrl+G" action="SHOW_GRID" help="Draw a grid on the screen."/>
-			<item name="In-game Box" action="SHOW_INGAME_BOX" help="Show in-game view boundary box."/>
 			<item name="Pathing" hotkey="O" action="SHOW_PATHING" help="Highlight tiles that cannot be walked on."/>
 			<item name="Wall Hooks" hotkey="K" action="SHOW_WALL_HOOKS" help="Show indicators for wall hooks."/>
 			<item name="Technical Items" action="SHOW_TECHNICAL_ITEMS" help="Show technical items on the map."/>
@@ -164,8 +160,6 @@
 			<item name="Highlight Locked Doors" hotkey="U" action="HIGHLIGHT_LOCKED_DOORS" help="Highlight doors that require key to open."/>
 			<item name="Ghost Loose Items" hotkey="G" action="GHOST_ITEMS" help="Make unmovable/loose items translucent."/>
 			<separator/>
-			<item name="Lights" action="SHOW_LIGHTS" help="Simulate ingame ambient night and light sources."/>
-			<item name="Light Strength" action="SHOW_LIGHT_STR" help="Show light radius indicators."/>
 			<item name="Preview" hotkey="L" action="SHOW_PREVIEW" help="Show preview."/>
 			<item name="Show FPS" action="SHOW_FPS" help="Toggle frames per second display on the map canvas."/>
 		</menu>

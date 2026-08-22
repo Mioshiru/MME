@@ -1269,7 +1269,11 @@ void MainMenuBar::OnTakeScreenshot(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void MainMenuBar::OnMinimapWindow(wxCommandEvent& WXUNUSED(event)) {
-	g_settings.setInteger(Config::MINIMAP_VISIBLE, IsItemChecked(MenuBar::SHOW_MINIMAP_HUD));
+	bool new_state = !g_settings.getBoolean(Config::MINIMAP_VISIBLE);
+	g_settings.setInteger(Config::MINIMAP_VISIBLE, new_state);
+	CheckItem(MenuBar::SHOW_MINIMAP_HUD, new_state);
+	g_gui.RefreshPalettes();
+	g_gui.RefreshMinimapPanel();
 	g_gui.RefreshView();
 }
 
