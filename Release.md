@@ -29,9 +29,6 @@
 * **Smart Zoom Performance Throttling (60+ FPS Always):**
   * Automatic idle & animation pausing when zooming out from 50% down to 1% (`zoom >= 1.95f`), saving 100% of idle redraw cycles for maximum speed on large maps.
 
----
-
-## 🚀 Release v1.8.8
 * **Universal Light & Fire Object Toggle ("Use"):** Dynamic detection and pairing for all street lamps (1479 $\leftrightarrow$ 1480), campfires (1421..1428), coal basins, braziers, candelabras, torches, and lanterns.
 * **Per-User Remote Favorites (Case-Insensitive):** Remote multiplayer favorites are automatically saved and loaded per nickname (e.g. `Bob`, `bob`, `BoB`) in local `.cfg` files on connect.
 * **Streamlined Settings (Preferences):** Removed redundant multiplayer tab, added discrete 1-10 level steps for Global Light Intensity (default Level 7 / 70%), adjusted UI Scaling maximum to Level 10 (170%), and integrated `"Default"` reset buttons on every tab.

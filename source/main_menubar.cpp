@@ -248,6 +248,8 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(GRID_INTENSITY_SUBTLE, wxITEM_RADIO, OnChangeViewSettings);
 	MAKE_ACTION(GRID_INTENSITY_VISIBLE, wxITEM_RADIO, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_MINIMAP_HUD, wxITEM_CHECK, OnMinimapWindow);
+	actions["WIN_MINIMAP"] = actions["SHOW_MINIMAP_HUD"];
+	actions["GHOST_LOOSE_ITEMS"] = actions["GHOST_ITEMS"];
 	MAKE_ACTION(SHOW_CREATURES, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_SPAWNS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_SPECIAL, wxITEM_CHECK, OnChangeViewSettings);
@@ -769,7 +771,7 @@ bool MainMenuBar::Load(const FileName& path, wxArrayString& warnings, wxString& 
 	entries.emplace_back(wxACCEL_NORMAL, (int)'K', MAIN_FRAME_MENU + MenuBar::SHOW_WALL_HOOKS);
 
 	// Window
-	entries.emplace_back(wxACCEL_NORMAL, (int)'M', MAIN_FRAME_MENU + MenuBar::WIN_MINIMAP);
+	entries.emplace_back(wxACCEL_NORMAL, (int)'M', MAIN_FRAME_MENU + MenuBar::SHOW_MINIMAP_HUD);
 
 	wxAcceleratorTable accelerator((int)entries.size(), entries.data());
 	frame->SetAcceleratorTable(accelerator);

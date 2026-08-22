@@ -114,20 +114,18 @@
 	</menu>
 
 	<menu name="View">
-		<item name="No Hotkeys Mode" action="TOGGLE_NO_HOTKEYS" help="Disables single-letter hotkeys to prevent conflicts while mapping."/>
-		<item name="Show Hotkeys..." action="SHOW_HOTKEYS" help="Display and configure keyboard hotkeys in Settings."/>
+		<item name="Minimap" hotkey="M" action="SHOW_MINIMAP_HUD" help="Displays the minimap HUD window on the map canvas."/>
+		<item name="New View" hotkey="Ctrl+Shift+N" action="NEW_VIEW" help="Creates a new view of the current map."/>
+		<item name="Enter Fullscreen" hotkey="F11" action="TOGGLE_FULLSCREEN" help="Changes between fullscreen mode and windowed mode."/>
+		<item name="Take Screenshot" hotkey="F10" action="TAKE_SCREENSHOT" help="Saves the current view to the disk."/>
 		<separator/>
 		<menu name="Zoom">
 			<item name="Zoom In" hotkey="Ctrl++" action="ZOOM_IN" help="Increase the zoom."/>
 			<item name="Zoom Out" hotkey="Ctrl+-" action="ZOOM_OUT" help="Decrease the zoom."/>
 			<item name="Zoom Normal" hotkey="Ctrl+0" action="ZOOM_NORMAL" help="Normal zoom(100%)."/>
 		</menu>
-		<item name="Enter Fullscreen" hotkey="F11" action="TOGGLE_FULLSCREEN" help="Changes between fullscreen mode and windowed mode."/>
-		<item name="Take Screenshot" hotkey="F10" action="TAKE_SCREENSHOT" help="Saves the current view to the disk."/>
-		<item name="New View" hotkey="Ctrl+Shift+N" action="NEW_VIEW" help="Creates a new view of the current map."/>
-		<separator/>
 		<menu name="Windows &amp; Palettes">
-			<item name="Minimap" hotkey="M" action="WIN_MINIMAP" help="Displays the minimap window."/>
+			<item name="Minimap" hotkey="M" action="SHOW_MINIMAP_HUD" help="Displays the minimap window."/>
 			<item name="New Palette" action="NEW_PALETTE" help="Creates a new palette."/>
 			<separator/>
 			<menu name="Palettes">
@@ -142,40 +140,46 @@
 			</menu>
 		</menu>
 		<separator/>
+		<item name="Show all Floors" hotkey="Ctrl+W" action="SHOW_ALL_FLOORS" help="If not checked other floors are hidden."/>
+		<item name="Ghost higher floors" hotkey="Ctrl+L" action="GHOST_HIGHER_FLOORS" help="Ghost floors."/>
+		<item name="Shade" hotkey="Q" action="SHOW_SHADE" help="Draw shadow on floors below the current one."/>
 		<separator/>
 		<menu name="Show">
-			<item name="Animations" hotkey="L" action="SHOW_ANIMATIONS" help="Show animations on the map."/>
 			<item name="Creatures" hotkey="F" action="SHOW_CREATURES" help="Show creatures on the map."/>
 			<item name="Spawns" hotkey="S" action="SHOW_SPAWNS" help="Show creature spawns on the map."/>
-			<item name="Special Items" action="SHOW_SPECIAL" help="Show special tiles (unique/action/text/container) on the map."/>
+			<item name="Towns" action="SHOW_TOWNS" help="Show towns on the map."/>
+			<item name="Houses" action="SHOW_HOUSES" help="Show house tiles."/>
 			<item name="Waypoints" action="SHOW_WAYPOINTS" help="Show waypoints on the map."/>
-			<item name="Shade" hotkey="Q" action="SHOW_SHADE" help="Draw shadow on floors below the current one."/>
+			<item name="Special Items" action="SHOW_SPECIAL" help="Show special tiles (unique/action/text/container) on the map."/>
+			<separator/>
 			<item name="Grid" hotkey="Ctrl+G" action="SHOW_GRID" help="Draw a grid on the screen."/>
-			<item name="Tooltips" hotkey="Y" action="SHOW_TOOLTIPS" help="Display item descriptions when hovering."/>
+			<item name="In-game Box" action="SHOW_INGAME_BOX" help="Show in-game view boundary box."/>
 			<item name="Pathing" hotkey="O" action="SHOW_PATHING" help="Highlight tiles that cannot be walked on."/>
-			<item name="Zones" hotkey="E" action="SHOW_ZONES" help="Show zone overlays on the map."/>
-			<separator/>
-			<item name="Lights" action="SHOW_LIGHTS" help="Simulate ingame ambient night and light sources."/>
-			<item name="Light Strength" action="SHOW_LIGHT_STR" help="Show light radius indicators."/>
-			<separator/>
-			<item name="Ghost Loose Items" hotkey="G" action="GHOST_LOOSE_ITEMS" help="Make unmovable/loose items translucent."/>
+			<item name="Wall Hooks" hotkey="K" action="SHOW_WALL_HOOKS" help="Show indicators for wall hooks."/>
+			<item name="Technical Items" action="SHOW_TECHNICAL_ITEMS" help="Show technical items on the map."/>
+			<item name="Tooltips" hotkey="Y" action="SHOW_TOOLTIPS" help="Display item descriptions when hovering."/>
+			<item name="Text Bubbles" action="SHOW_TEXT_BUBBLES" help="Display text bubbles on the map."/>
 			<separator/>
 			<item name="Highlight Items" hotkey="V" action="HIGHLIGHT_ITEMS" help="Highlight tiles with items on them."/>
 			<item name="Highlight Locked Doors" hotkey="U" action="HIGHLIGHT_LOCKED_DOORS" help="Highlight doors that require key to open."/>
-			<item name="Wall Hooks" hotkey="K" action="SHOW_WALL_HOOKS" help="Show indicators for wall hooks."/>
+			<item name="Ghost Loose Items" hotkey="G" action="GHOST_ITEMS" help="Make unmovable/loose items translucent."/>
+			<separator/>
+			<item name="Lights" action="SHOW_LIGHTS" help="Simulate ingame ambient night and light sources."/>
+			<item name="Light Strength" action="SHOW_LIGHT_STR" help="Show light radius indicators."/>
+			<item name="Preview" hotkey="L" action="SHOW_PREVIEW" help="Show preview."/>
+			<item name="Show FPS" action="SHOW_FPS" help="Toggle frames per second display on the map canvas."/>
 		</menu>
-		<separator/>
-		<item name="Show all Floors" hotkey="Ctrl+W" action="SHOW_ALL_FLOORS" help="If not checked other floors are hidden."/>
-		<item name="Ghost higher floors" hotkey="Ctrl+L" action="GHOST_HIGHER_FLOORS" help="Ghost floors."/>
-		<item name="Show FPS" action="SHOW_FPS" help="Toggle frames per second display on the map canvas."/>
-		<separator/>
 		<menu name="Display Mode">
 			<item name="Show as Minimap" hotkey="Shift+E" action="SHOW_AS_MINIMAP" help="Show only the tile minimap colors."/>
 			<item name="Only show Colors" hotkey="Ctrl+E" action="SHOW_ONLY_COLORS" help="Show only the special tiles on the map."/>
 			<item name="Only show Modified" hotkey="Ctrl+M" action="SHOW_ONLY_MODIFIED" help="Show only the tiles that have been modified since the map was opened."/>
+			<separator/>
 			<item name="Always show zones" action="ALWAYS_SHOW_ZONES" help="Zones will be visible even on empty tiles."/>
 			<item name="Extended house shader" action="EXT_HOUSE_SHADER" help="Draw house brush on walls and items."/>
 		</menu>
+		<separator/>
+		<item name="No Hotkeys Mode" action="TOGGLE_NO_HOTKEYS" help="Disables single-letter hotkeys to prevent conflicts while mapping."/>
+		<item name="Show Hotkeys..." action="SHOW_HOTKEYS" help="Display and configure keyboard hotkeys in Settings."/>
 	</menu>
 
 	<menu name="Multiplayer">
