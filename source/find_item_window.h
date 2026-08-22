@@ -28,6 +28,7 @@
 #include <wx/dialog.h>
 
 class FindDialogListBox;
+class Brush;
 
 class FindItemDialog : public wxDialog {
 public:

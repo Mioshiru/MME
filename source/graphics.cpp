@@ -805,25 +805,24 @@ uint8_t GameSprite::getMiniMapColor() const { return minimap_color; }
 
 int GameSprite::getIndex(int width_i, int height_i, int layer, int pattern_x_i,
                          int pattern_y_i, int pattern_z_i, int frame) const {
-  return ((((((frame % this->frames) * this->pattern_z + pattern_z_i) *
-                 this->pattern_y +
-             pattern_y_i) *
-                this->pattern_x +
-            pattern_x_i) *
-               this->layers +
-           layer) *
-              this->height +
-          height_i) *
-             this->width +
-         width_i;
+  int f = (this->frames > 0) ? (frame % static_cast<int>(this->frames)) : 0;
+  int idx = f;
+  idx = idx * static_cast<int>(this->pattern_z) + pattern_z_i;
+  idx = idx * static_cast<int>(this->pattern_y) + pattern_y_i;
+  idx = idx * static_cast<int>(this->pattern_x) + pattern_x_i;
+  idx = idx * static_cast<int>(this->layers) + layer;
+  idx = idx * static_cast<int>(this->height) + height_i;
+  idx = idx * static_cast<int>(this->width) + width_i;
+  return idx;
 }
 
 GLuint GameSprite::getHardwareID(int _x, int _y, int _layer, int _count,
                                  int _pattern_x, int _pattern_y, int _pattern_z,
                                  int _frame) {
+  if (spriteList.empty() || numsprites == 0) return 0;
   uint32_t v =
       (_count >= 0 && height <= 1 && width <= 1)
-          ? _count
+          ? static_cast<uint32_t>(_count)
           : ((((((_frame)*pattern_y + _pattern_y) * pattern_x + _pattern_x) *
                    layers +
                _layer) *
@@ -831,8 +830,9 @@ GLuint GameSprite::getHardwareID(int _x, int _y, int _layer, int _count,
               _y) *
                  width +
              _x);
-  if (v >= numsprites)
-    v = (numsprites == 1) ? 0 : (v % numsprites);
+  if (v >= numsprites || v >= spriteList.size())
+    v = (numsprites <= 1) ? 0 : (v % numsprites);
+  if (v >= spriteList.size() || !spriteList[v]) return 0;
   return spriteList[v]->getHardwareID();
 }
 
@@ -857,11 +857,13 @@ GameSprite::TemplateImage *GameSprite::getTemplateImage(int sprite_index,
 GLuint GameSprite::getHardwareID(int _x, int _y, int _dir, int _addon,
                                  int _pattern_z, const Outfit &_outfit,
                                  int _frame) {
+  if (spriteList.empty() || numsprites == 0) return 0;
   uint32_t v = getIndex(_x, _y, 0, _dir, _addon, _pattern_z, _frame);
-  if (v >= numsprites)
-    v = (numsprites == 1) ? 0 : (v % numsprites);
+  if (v >= numsprites || v >= spriteList.size())
+    v = (numsprites <= 1) ? 0 : (v % numsprites);
   if (layers > 1)
     return getTemplateImage(v, _outfit)->getHardwareID();
+  if (v >= spriteList.size() || !spriteList[v]) return 0;
   return spriteList[v]->getHardwareID();
 }
 
@@ -885,14 +887,16 @@ wxBitmap *GameSprite::getBitmap(SpriteSize size, bool count100) {
       for (uint8_t w = 0; w < width; w++) {
         for (uint8_t h = 0; h < height; h++) {
           const int i = getIndex(w, h, l, px, py, 0, 0);
-          uint8_t *data = spriteList[i]->getRGBData();
-          if (data) {
-            wxImage img(SPRITE_PIXELS, SPRITE_PIXELS, data, true);
-            img.SetMaskColour(0xFF, 0x00, 0xFF);
-            image.Paste(img, (width - w - 1) * SPRITE_PIXELS,
-                        (height - h - 1) * SPRITE_PIXELS);
-            img.Destroy();
-            delete[] data;
+          if (i >= 0 && (size_t)i < spriteList.size() && spriteList[i]) {
+            uint8_t *data = spriteList[i]->getRGBData();
+            if (data) {
+              wxImage img(SPRITE_PIXELS, SPRITE_PIXELS, data, true);
+              img.SetMaskColour(0xFF, 0x00, 0xFF);
+              image.Paste(img, (width - w - 1) * SPRITE_PIXELS,
+                          (height - h - 1) * SPRITE_PIXELS);
+              img.Destroy();
+              delete[] data;
+            }
           }
         }
       }
@@ -939,6 +943,76 @@ void GameSprite::DrawTo(wxDC *dc, SpriteSize sz, int start_x, int start_y,
   }
 }
 
+void GameSprite::DrawOutfitTo(wxDC *dc, const Outfit &outfit, int start_x,
+                               int start_y, int width_val, int height_val,
+                               int dir, int addon, int pattern_z, int frame) {
+  if (!dc)
+    return;
+
+  int grid_w = std::max<int>(1, (int)width);
+  int grid_h = std::max<int>(1, (int)height);
+  int total_px_w = grid_w * 32;
+  int total_px_h = grid_h * 32;
+
+  wxImage composite(total_px_w, total_px_h, true);
+  composite.InitAlpha();
+  unsigned char* alpha_buf = composite.GetAlpha();
+  if (alpha_buf) {
+    memset(alpha_buf, 0, total_px_w * total_px_h);
+  }
+
+  bool drawn_any = false;
+
+  for (uint8_t w = 0; w < width; ++w) {
+    for (uint8_t h = 0; h < height; ++h) {
+      int v = getIndex(w, h, 0, dir, addon, pattern_z, frame);
+      uint8_t *rgba = nullptr;
+      if (layers >= 2) {
+        TemplateImage *timg = getTemplateImage(v, outfit);
+        if (timg)
+          rgba = timg->getRGBAData();
+      } else if (v < (int)numsprites && spriteList[v]) {
+        rgba = spriteList[v]->getRGBAData();
+      }
+
+      if (rgba) {
+        wxImage tile_img(32, 32, false);
+        unsigned char *rgb = (unsigned char *)malloc(32 * 32 * 3);
+        unsigned char *alpha = (unsigned char *)malloc(32 * 32);
+        for (int i = 0; i < 32 * 32; ++i) {
+          rgb[i * 3 + 0] = rgba[i * 4 + 0];
+          rgb[i * 3 + 1] = rgba[i * 4 + 1];
+          rgb[i * 3 + 2] = rgba[i * 4 + 2];
+          alpha[i] = rgba[i * 4 + 3];
+        }
+        tile_img.SetData(rgb);
+        tile_img.SetAlpha(alpha);
+        delete[] rgba;
+
+        int dest_x = (width - w - 1) * 32;
+        int dest_y = (height - h - 1) * 32;
+        composite.Paste(tile_img, dest_x, dest_y);
+        tile_img.Destroy();
+        drawn_any = true;
+      }
+    }
+  }
+
+  if (drawn_any) {
+    float scale = std::min((float)width_val / total_px_w, (float)height_val / total_px_h);
+    int final_w = std::max(1, (int)(total_px_w * scale));
+    int final_h = std::max(1, (int)(total_px_h * scale));
+    int offset_x = start_x + (width_val - final_w) / 2;
+    int offset_y = start_y + (height_val - final_h) / 2;
+
+    wxBitmap bmp(composite.Scale(final_w, final_h, wxIMAGE_QUALITY_NEAREST));
+    dc->DrawBitmap(bmp, offset_x, offset_y, true);
+    composite.Destroy();
+  } else {
+    DrawTo(dc, SPRITE_SIZE_32x32, start_x, start_y, width_val, height_val);
+  }
+}
+
 void GameSprite::unloadDC() {
   delete bm[SPRITE_SIZE_16x16];
   delete bm[SPRITE_SIZE_32x32];
@@ -963,8 +1037,9 @@ void GameSprite::Image::createGLTexture(GLuint whatid) {
   g_gui.gfx.loaded_textures += 1;
 
   glBindTexture(GL_TEXTURE_2D, whatid);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  GLint filter = g_settings.getBoolean(Config::FAKE_HD_ASSETS) ? GL_LINEAR : GL_NEAREST;
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SPRITE_PIXELS, SPRITE_PIXELS, 0,
@@ -1272,6 +1347,11 @@ FrameDuration *Animator::getFrameDuration(int frame) {
 }
 
 int Animator::getFrame() {
+  if (!async && total_duration > 0) {
+    calculateSynchronous();
+    return current_frame;
+  }
+
   long time_val = g_gui.gfx.getElapsedTime();
   if (time_val != last_time && !is_complete) {
     long elapsed = time_val - last_time;
@@ -1285,8 +1365,9 @@ int Animator::getFrame() {
           current_frame = frame;
           current_duration = std::max<int>(0, duration);
         }
-      } else
+      } else if (loop_count != 0) {
         is_complete = true;
+      }
     } else
       current_duration -= elapsed;
     last_time = time_val;

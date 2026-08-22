@@ -2,271 +2,561 @@
 #include "gui.h"
 #include "editor.h"
 #include "items.h"
+#include "graphics.h"
+#include "find_item_window.h"
+#include "map.h"
 #include <wx/stattext.h>
 #include <wx/button.h>
 #include <wx/sizer.h>
 #include <wx/msgdlg.h>
 #include <wx/filedlg.h>
-#include <wx/wfstream.h>
+#include <wx/dcclient.h>
+#include <wx/clipbrd.h>
+#include <wx/dataobj.h>
 #include <sstream>
+#include <iomanip>
 
 enum {
-	OBJ_WIZARD_BTN_GENERATE = wxID_HIGHEST + 400,
-	OBJ_WIZARD_CONTAINER_CHOICE,
-	OBJ_WIZARD_ADD_ITEM,
-	OBJ_WIZARD_REMOVE_ITEM
+	OBJ_CHEST_MODEL = wxID_HIGHEST + 600,
+	OBJ_BTN_PICK_ITEM_SLOT,
+	OBJ_BTN_CLEAR_SLOT,
+	OBJ_BTN_CLEAR_ALL,
+	OBJ_BTN_AUTOGEN_IDS,
+	OBJ_BTN_PICK_KEY,
+	OBJ_DOOR_MODEL,
+	OBJ_BTN_GENERATE_SCRIPT,
+	OBJ_BTN_COPY_SCRIPT,
+	OBJ_BTN_PLACE_MAP
 };
 
 BEGIN_EVENT_TABLE(SpecialObjectsWizardDialog, wxDialog)
-EVT_CHOICE(OBJ_WIZARD_CONTAINER_CHOICE, SpecialObjectsWizardDialog::OnContainerChoiceChanged)
-EVT_BUTTON(OBJ_WIZARD_ADD_ITEM, SpecialObjectsWizardDialog::OnAddContainerItem)
-EVT_BUTTON(OBJ_WIZARD_REMOVE_ITEM, SpecialObjectsWizardDialog::OnRemoveContainerItem)
-EVT_BUTTON(OBJ_WIZARD_BTN_GENERATE, SpecialObjectsWizardDialog::OnGenerate)
-EVT_BUTTON(wxID_CANCEL, SpecialObjectsWizardDialog::OnClose)
+	EVT_CHOICE(OBJ_CHEST_MODEL, SpecialObjectsWizardDialog::OnPickChestModel)
+	EVT_BUTTON(OBJ_BTN_PICK_ITEM_SLOT, SpecialObjectsWizardDialog::OnPickItemForSlot)
+	EVT_BUTTON(OBJ_BTN_CLEAR_SLOT, SpecialObjectsWizardDialog::OnClearSlot)
+	EVT_BUTTON(OBJ_BTN_CLEAR_ALL, SpecialObjectsWizardDialog::OnClearAllSlots)
+	EVT_BUTTON(OBJ_BTN_AUTOGEN_IDS, SpecialObjectsWizardDialog::OnAutoGenerateIds)
+	EVT_BUTTON(OBJ_BTN_PICK_KEY, SpecialObjectsWizardDialog::OnPickKeyFromPalette)
+	EVT_BUTTON(OBJ_BTN_GENERATE_SCRIPT, SpecialObjectsWizardDialog::OnGenerateScript)
+	EVT_BUTTON(OBJ_BTN_COPY_SCRIPT, SpecialObjectsWizardDialog::OnCopyScript)
+	EVT_BUTTON(OBJ_BTN_PLACE_MAP, SpecialObjectsWizardDialog::OnPlaceOnMap)
+	EVT_BUTTON(wxID_CANCEL, SpecialObjectsWizardDialog::OnClose)
 END_EVENT_TABLE()
 
 SpecialObjectsWizardDialog::SpecialObjectsWizardDialog(wxWindow* parent) :
-	wxDialog(parent, wxID_ANY, "Special Objects Wizard (Doors & Containers)", wxDefaultPosition, wxSize(600, 560), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER) {
+	wxDialog(parent, wxID_ANY, "Special Objects && Quest Chest Wizard", wxDefaultPosition, wxSize(780, 680), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+	selected_chest_id(1740),
+	active_selected_slot(0),
+	req_key_id(2088)
+{
+	for (int i = 0; i < MAX_CHEST_SLOTS; ++i) {
+		slot_panels[i] = nullptr;
+	}
 
-	wxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
+	// Pre-fill slot 0 with Crystal Coins (ID 2160, count 10) as demo
+	chest_slots[0].item_id = 2160;
+	chest_slots[0].count = 10;
+	chest_slots[0].name = "crystal coin";
 
-	// Header Panel
+	// Root Sizer
+	wxBoxSizer* rootSizer = new wxBoxSizer(wxVERTICAL);
+
+	// Header Panel (Corporate Dark Obsidian with Gold Accent)
 	wxPanel* headerPanel = new wxPanel(this, wxID_ANY);
-	headerPanel->SetBackgroundColour(wxColour(40, 42, 48));
-	wxSizer* headerSizer = new wxBoxSizer(wxVERTICAL);
+	headerPanel->SetBackgroundColour(wxColour(16, 20, 30));
+	wxBoxSizer* headerSizer = new wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* header = new wxStaticText(headerPanel, wxID_ANY, "Special Objects Creation Wizard");
-	wxFont font = header->GetFont();
-	font.SetPointSize(12);
-	font.SetWeight(wxFONTWEIGHT_BOLD);
-	header->SetFont(font);
-	header->SetForegroundColour(wxColour(220, 180, 80));
-	headerSizer->Add(header, 0, wxALL, 8);
+	wxStaticText* title = new wxStaticText(headerPanel, wxID_ANY, "Special Objects && Quest Chest Suite");
+	wxFont tFont = title->GetFont();
+	tFont.SetPointSize(12);
+	tFont.SetWeight(wxFONTWEIGHT_BOLD);
+	title->SetFont(tFont);
+	title->SetForegroundColour(wxColour(255, 215, 0));
+	headerSizer->Add(title, 0, wxALL, 8);
 
-	wxStaticText* subheader = new wxStaticText(headerPanel, wxID_ANY, "Configure Doors and Container Chests. Container slot limits are automatically enforced based on container type.");
-	subheader->SetForegroundColour(wxColour(180, 185, 195));
-	headerSizer->Add(subheader, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
+	wxStaticText* sub = new wxStaticText(headerPanel, wxID_ANY, "Create interactive Quest Chests with visual multi-slot palette rewards, Quest Doors, Key locks, and Teleporters.");
+	sub->SetForegroundColour(wxColour(190, 195, 205));
+	headerSizer->Add(sub, 0, wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
 	headerPanel->SetSizer(headerSizer);
-	topsizer->Add(headerPanel, 0, wxEXPAND);
+	rootSizer->Add(headerPanel, 0, wxEXPAND);
 
 	notebook = new wxNotebook(this, wxID_ANY);
 
-	// ==========================================
-	// --- Tab 1: Doors ---
-	// ==========================================
-	wxPanel* doorsPanel = new wxPanel(notebook);
-	wxFlexGridSizer* dSizer = new wxFlexGridSizer(2, 5, 10);
-	dSizer->AddGrowableCol(1, 1);
-
-	dSizer->Add(new wxStaticText(doorsPanel, wxID_ANY, "Door Type:"), 0, wxALIGN_CENTER_VERTICAL);
-	wxArrayString doorTypes;
-	doorTypes.Add("Quest Door (Storage Key Check)");
-	doorTypes.Add("Level Door (Minimum Level Requirement)");
-	doorTypes.Add("Key Door (Key ActionID 2088-2092)");
-	door_type_choice = new wxChoice(doorsPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, doorTypes);
-	door_type_choice->SetSelection(0);
-	dSizer->Add(door_type_choice, 1, wxEXPAND);
-
-	dSizer->Add(new wxStaticText(doorsPanel, wxID_ANY, "Door ActionID:"), 0, wxALIGN_CENTER_VERTICAL);
-	door_action_id = new wxSpinCtrl(doorsPanel, wxID_ANY, "2000", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1000, 65535, 2000);
-	dSizer->Add(door_action_id, 1, wxEXPAND);
-
-	dSizer->Add(new wxStaticText(doorsPanel, wxID_ANY, "Required Level (for Level Doors):"), 0, wxALIGN_CENTER_VERTICAL);
-	door_req_level = new wxSpinCtrl(doorsPanel, wxID_ANY, "100", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2000, 100);
-	dSizer->Add(door_req_level, 1, wxEXPAND);
-
-	dSizer->Add(new wxStaticText(doorsPanel, wxID_ANY, "Quest Storage Key (for Quest Doors):"), 0, wxALIGN_CENTER_VERTICAL);
-	door_quest_storage = new wxSpinCtrl(doorsPanel, wxID_ANY, "50001", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 999999, 50001);
-	dSizer->Add(door_quest_storage, 1, wxEXPAND);
-
-	wxBoxSizer* dBox = new wxBoxSizer(wxVERTICAL);
-	dBox->Add(dSizer, 1, wxALL | wxEXPAND, 12);
-	doorsPanel->SetSizer(dBox);
-
-	// ==========================================
-	// --- Tab 2: Container (Quest Chests) ---
-	// ==========================================
-	wxPanel* containerPanel = new wxPanel(notebook);
+	// =========================================================================
+	// TAB 1: Quest Chest & Visual Multi-Slot Inventory
+	// =========================================================================
+	wxPanel* tabChest = new wxPanel(notebook, wxID_ANY);
 	wxBoxSizer* cMainSizer = new wxBoxSizer(wxVERTICAL);
 
-	wxFlexGridSizer* cSizer = new wxFlexGridSizer(2, 5, 10);
-	cSizer->AddGrowableCol(1, 1);
+	// Top Section: Model Selection & Auto IDs
+	wxStaticBoxSizer* topBox = new wxStaticBoxSizer(wxVERTICAL, tabChest, "Chest Model & Quest Identification");
+	wxFlexGridSizer* topGrid = new wxFlexGridSizer(2, 4, 6, 10);
+	topGrid->AddGrowableCol(1, 1);
+	topGrid->AddGrowableCol(3, 1);
 
-	cSizer->Add(new wxStaticText(containerPanel, wxID_ANY, "Container Type:"), 0, wxALIGN_CENTER_VERTICAL);
-	container_type_choice = new wxChoice(containerPanel, OBJ_WIZARD_CONTAINER_CHOICE);
-	PopulateContainerChoices(container_type_choice);
-	cSizer->Add(container_type_choice, 1, wxEXPAND);
+	topGrid->Add(new wxStaticText(tabChest, wxID_ANY, "Chest Model:"), 0, wxALIGN_CENTER_VERTICAL);
+	wxArrayString chestModels;
+	chestModels.Add("Wooden Chest (ID: 1740)");
+	chestModels.Add("Pirate / Skull Chest (ID: 5674)");
+	chestModels.Add("Golden / Jeweled Chest (ID: 1746)");
+	chestModels.Add("Crate / Box (ID: 1738)");
+	chestModels.Add("Dragon Treasure Box (ID: 1747)");
+	chest_model_choice = new wxChoice(tabChest, OBJ_CHEST_MODEL, wxDefaultPosition, wxDefaultSize, chestModels);
+	chest_model_choice->SetSelection(0);
+	topGrid->Add(chest_model_choice, 1, wxEXPAND);
 
-	cSizer->Add(new wxStaticText(containerPanel, wxID_ANY, "Chest ActionID:"), 0, wxALIGN_CENTER_VERTICAL);
-	chest_action_id = new wxSpinCtrl(containerPanel, wxID_ANY, "2000", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1000, 65535, 2000);
-	cSizer->Add(chest_action_id, 1, wxEXPAND);
+	topGrid->Add(new wxStaticText(tabChest, wxID_ANY, "Quest Name:"), 0, wxALIGN_CENTER_VERTICAL);
+	quest_name_ctrl = new wxTextCtrl(tabChest, wxID_ANY, "The Ancient Treasure");
+	topGrid->Add(quest_name_ctrl, 1, wxEXPAND);
 
-	cSizer->Add(new wxStaticText(containerPanel, wxID_ANY, "Quest Storage Key:"), 0, wxALIGN_CENTER_VERTICAL);
-	chest_storage_key = new wxSpinCtrl(containerPanel, wxID_ANY, "50001", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 999999, 50001);
-	cSizer->Add(chest_storage_key, 1, wxEXPAND);
+	topGrid->Add(new wxStaticText(tabChest, wxID_ANY, "Chest ActionID:"), 0, wxALIGN_CENTER_VERTICAL);
+	chest_action_id = new wxSpinCtrl(tabChest, wxID_ANY, "2000", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1000, 65535, 2000);
+	topGrid->Add(chest_action_id, 1, wxEXPAND);
 
-	cMainSizer->Add(cSizer, 0, wxALL | wxEXPAND, 10);
+	topGrid->Add(new wxStaticText(tabChest, wxID_ANY, "Storage Key:"), 0, wxALIGN_CENTER_VERTICAL);
+	chest_storage_key = new wxSpinCtrl(tabChest, wxID_ANY, "50001", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1000, 999999, 50001);
+	topGrid->Add(chest_storage_key, 1, wxEXPAND);
 
-	container_slot_info = new wxStaticText(containerPanel, wxID_ANY, "Capacity: 0 / 8 Slots Used");
-	container_slot_info->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	container_slot_info->SetForegroundColour(wxColour(220, 180, 80));
-	cMainSizer->Add(container_slot_info, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+	topBox->Add(topGrid, 0, wxEXPAND | wxALL, 6);
 
-	wxFlexGridSizer* itemAddSizer = new wxFlexGridSizer(2, 5, 10);
-	itemAddSizer->AddGrowableCol(1, 1);
+	wxBoxSizer* idBtnRow = new wxBoxSizer(wxHORIZONTAL);
+	wxButton* autoIdBtn = new wxButton(tabChest, OBJ_BTN_AUTOGEN_IDS, "Auto-Generate Collision-Free ActionID & Storage Key");
+	autoIdBtn->SetBackgroundColour(wxColour(40, 70, 120));
+	autoIdBtn->SetForegroundColour(*wxWHITE);
+	idBtnRow->Add(autoIdBtn, 0);
+	topBox->Add(idBtnRow, 0, wxALL, 4);
 
-	itemAddSizer->Add(new wxStaticText(containerPanel, wxID_ANY, "Select Reward Item:"), 0, wxALIGN_CENTER_VERTICAL);
-	item_picker_choice = new wxChoice(containerPanel, wxID_ANY);
-	PopulateItemChoices(item_picker_choice);
-	itemAddSizer->Add(item_picker_choice, 1, wxEXPAND);
+	cMainSizer->Add(topBox, 0, wxEXPAND | wxALL, 6);
 
-	itemAddSizer->Add(new wxStaticText(containerPanel, wxID_ANY, "Item Count:"), 0, wxALIGN_CENTER_VERTICAL);
-	item_picker_count = new wxSpinCtrl(containerPanel, wxID_ANY, "1", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 100, 1);
-	itemAddSizer->Add(item_picker_count, 1, wxEXPAND);
+	// Middle Section: Visual Multi-Slot Chest Inventory (8 Slots)
+	wxStaticBoxSizer* slotBox = new wxStaticBoxSizer(wxVERTICAL, tabChest, "Chest Reward Items (Visual Multi-Slot Palette Inventory)");
 
-	cMainSizer->Add(itemAddSizer, 0, wxALL | wxEXPAND, 10);
+	wxGridSizer* gridSlots = new wxGridSizer(2, 4, 8, 8);
+	for (int i = 0; i < MAX_CHEST_SLOTS; ++i) {
+		int slotIdx = i;
+		slot_panels[i] = new wxPanel(tabChest, wxID_ANY, wxDefaultPosition, wxSize(130, 80));
+		slot_panels[i]->SetBackgroundColour(wxColour(20, 24, 34));
+		slot_panels[i]->Bind(wxEVT_PAINT, [this, slotIdx](wxPaintEvent&) {
+			wxPaintDC dc(slot_panels[slotIdx]);
+			wxRect rect = slot_panels[slotIdx]->GetClientRect();
 
-	wxBoxSizer* cBtnSizer = new wxBoxSizer(wxHORIZONTAL);
-	cBtnSizer->Add(new wxButton(containerPanel, OBJ_WIZARD_ADD_ITEM, "+ Add Item to Chest"), 0, wxRIGHT, 5);
-	cBtnSizer->Add(new wxButton(containerPanel, OBJ_WIZARD_REMOVE_ITEM, "- Remove Selected"), 0);
-	cMainSizer->Add(cBtnSizer, 0, wxALIGN_RIGHT | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+			// Card background
+			dc.SetBrush(wxBrush(wxColour(20, 24, 34)));
+			dc.SetPen(wxPen(wxColour(20, 24, 34)));
+			dc.DrawRectangle(rect);
 
-	container_items_list = new wxListView(containerPanel, wxID_ANY, wxDefaultPosition, wxSize(-1, 120));
-	container_items_list->AppendColumn("Slot", wxLIST_FORMAT_LEFT, 50);
-	container_items_list->AppendColumn("Item Name", wxLIST_FORMAT_LEFT, 240);
-	container_items_list->AppendColumn("Count", wxLIST_FORMAT_RIGHT, 80);
-	cMainSizer->Add(container_items_list, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+			// Gold border for active slot or filled slot
+			if (slotIdx == active_selected_slot) {
+				dc.SetPen(wxPen(wxColour(255, 215, 0), 2));
+			} else if (chest_slots[slotIdx].item_id > 0) {
+				dc.SetPen(wxPen(wxColour(180, 140, 50), 1));
+			} else {
+				dc.SetPen(wxPen(wxColour(50, 55, 70), 1));
+			}
+			dc.SetBrush(*wxTRANSPARENT_BRUSH);
+			dc.DrawRectangle(rect);
 
-	containerPanel->SetSizer(cMainSizer);
+			// Draw Content
+			if (chest_slots[slotIdx].item_id > 0) {
+				ItemType& it = g_items[chest_slots[slotIdx].item_id];
+				if (it.sprite) {
+					it.sprite->DrawTo(&dc, SPRITE_SIZE_32x32, 10, 12, 32, 32);
+				}
 
-	notebook->AddPage(doorsPanel, "Doors");
-	notebook->AddPage(containerPanel, "Containers (Chests)");
+				// Item Name & Count
+				dc.SetTextForeground(wxColour(255, 215, 0));
+				wxFont f = slot_panels[slotIdx]->GetFont();
+				f.SetPointSize(8);
+				f.SetWeight(wxFONTWEIGHT_BOLD);
+				dc.SetFont(f);
 
-	topsizer->Add(notebook, 1, wxEXPAND | wxALL, 10);
+				wxString countStr = wxString::Format("x%d", chest_slots[slotIdx].count);
+				dc.DrawText(countStr, 48, 14);
 
-	wxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-	buttonSizer->Add(new wxButton(this, OBJ_WIZARD_BTN_GENERATE, "Generate & Export Scripts..."), 0, wxRIGHT, 10);
-	buttonSizer->Add(new wxButton(this, wxID_CANCEL, "Cancel"), 0);
+				dc.SetTextForeground(wxColour(200, 205, 215));
+				f.SetWeight(wxFONTWEIGHT_NORMAL);
+				dc.SetFont(f);
+				wxString nameStr = chest_slots[slotIdx].name.empty() ? wxString::Format("#%d", chest_slots[slotIdx].item_id) : chest_slots[slotIdx].name;
+				if (nameStr.length() > 14) nameStr = nameStr.substr(0, 12) + "..";
+				dc.DrawText(nameStr, 48, 30);
 
-	topsizer->Add(buttonSizer, 0, wxALIGN_RIGHT | wxALL, 12);
-	SetSizerAndFit(topsizer);
+				dc.SetTextForeground(wxColour(140, 150, 170));
+				dc.DrawText(wxString::Format("Slot %d", slotIdx + 1), 10, 56);
+			} else {
+				dc.SetTextForeground(wxColour(120, 130, 150));
+				wxFont f = slot_panels[slotIdx]->GetFont();
+				f.SetPointSize(8);
+				dc.SetFont(f);
+				dc.DrawText(wxString::Format("Slot %d (Empty)", slotIdx + 1), 16, 22);
+				dc.SetTextForeground(wxColour(90, 100, 120));
+				dc.DrawText("Click to add item", 16, 40);
+			}
+		});
+
+		slot_panels[i]->Bind(wxEVT_LEFT_DOWN, [this, slotIdx](wxMouseEvent&) {
+			OnSlotClicked(slotIdx);
+		});
+
+		gridSlots->Add(slot_panels[i], 1, wxEXPAND);
+	}
+	slotBox->Add(gridSlots, 1, wxEXPAND | wxALL, 6);
+
+	// Slot Buttons
+	wxBoxSizer* slotBtnRow = new wxBoxSizer(wxHORIZONTAL);
+	wxButton* pickItemBtn = new wxButton(tabChest, OBJ_BTN_PICK_ITEM_SLOT, "Select Item from Palette for Selected Slot...", wxDefaultPosition, wxSize(260, 30));
+	pickItemBtn->SetBackgroundColour(wxColour(40, 120, 60));
+	pickItemBtn->SetForegroundColour(*wxWHITE);
+	slotBtnRow->Add(pickItemBtn, 0, wxRIGHT, 8);
+
+	wxButton* clearSlotBtn = new wxButton(tabChest, OBJ_BTN_CLEAR_SLOT, "Clear Selected Slot", wxDefaultPosition, wxSize(140, 30));
+	slotBtnRow->Add(clearSlotBtn, 0, wxRIGHT, 8);
+
+	wxButton* clearAllBtn = new wxButton(tabChest, OBJ_BTN_CLEAR_ALL, "Reset All Slots", wxDefaultPosition, wxSize(120, 30));
+	slotBtnRow->Add(clearAllBtn, 0);
+
+	slotBox->Add(slotBtnRow, 0, wxALL, 4);
+	cMainSizer->Add(slotBox, 1, wxEXPAND | wxALL, 6);
+
+	// Bottom Section: Optional Key Lock Requirement
+	wxStaticBoxSizer* keyBox = new wxStaticBoxSizer(wxVERTICAL, tabChest, "Key Lock Opening Requirement (Optional)");
+	wxBoxSizer* keyRow = new wxBoxSizer(wxHORIZONTAL);
+
+	req_key_cb = new wxCheckBox(tabChest, wxID_ANY, "Require Key to Open");
+	keyRow->Add(req_key_cb, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
+
+	key_name_text = new wxStaticText(tabChest, wxID_ANY, "Key: Golden Key (ID 2088)");
+	key_name_text->SetForegroundColour(wxColour(255, 215, 0));
+	keyRow->Add(key_name_text, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
+
+	wxButton* pickKeyBtn = new wxButton(tabChest, OBJ_BTN_PICK_KEY, "Pick Key from Palette...");
+	keyRow->Add(pickKeyBtn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 16);
+
+	keyRow->Add(new wxStaticText(tabChest, wxID_ANY, "Key ActionID:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
+	req_key_action_id = new wxSpinCtrl(tabChest, wxID_ANY, "2088", wxDefaultPosition, wxSize(80, -1), wxSP_ARROW_KEYS, 1000, 65535, 2088);
+	keyRow->Add(req_key_action_id, 0, wxALIGN_CENTER_VERTICAL);
+
+	keyBox->Add(keyRow, 0, wxEXPAND | wxALL, 6);
+	cMainSizer->Add(keyBox, 0, wxEXPAND | wxALL, 6);
+
+	tabChest->SetSizer(cMainSizer);
+	notebook->AddPage(tabChest, "Quest Chest (Inventory)");
+
+	// =========================================================================
+	// TAB 2: Doors (Quest & Level Doors)
+	// =========================================================================
+	wxPanel* tabDoor = new wxPanel(notebook, wxID_ANY);
+	wxBoxSizer* dMainSizer = new wxBoxSizer(wxVERTICAL);
+
+	wxStaticBoxSizer* doorBox = new wxStaticBoxSizer(wxVERTICAL, tabDoor, "Interactive Door Configuration");
+	wxFlexGridSizer* dGrid = new wxFlexGridSizer(2, 4, 8, 12);
+	dGrid->AddGrowableCol(1, 1);
+	dGrid->AddGrowableCol(3, 1);
+
+	dGrid->Add(new wxStaticText(tabDoor, wxID_ANY, "Door Function Type:"), 0, wxALIGN_CENTER_VERTICAL);
+	wxArrayString dTypes;
+	dTypes.Add("Quest Door (Storage Key Check)");
+	dTypes.Add("Level Door (Minimum Level Requirement)");
+	dTypes.Add("Key Door (Key ActionID Check)");
+	door_type_choice = new wxChoice(tabDoor, wxID_ANY, wxDefaultPosition, wxDefaultSize, dTypes);
+	door_type_choice->SetSelection(0);
+	dGrid->Add(door_type_choice, 1, wxEXPAND);
+
+	dGrid->Add(new wxStaticText(tabDoor, wxID_ANY, "Door Model:"), 0, wxALIGN_CENTER_VERTICAL);
+	wxArrayString dModels;
+	dModels.Add("Standard Wooden Quest Door");
+	dModels.Add("Iron / Metal Gate Door");
+	dModels.Add("Magic / Energy Door");
+	dModels.Add("Stone / Pyramid Door");
+	door_model_choice = new wxChoice(tabDoor, wxID_ANY, wxDefaultPosition, wxDefaultSize, dModels);
+	door_model_choice->SetSelection(0);
+	dGrid->Add(door_model_choice, 1, wxEXPAND);
+
+	dGrid->Add(new wxStaticText(tabDoor, wxID_ANY, "Door ActionID:"), 0, wxALIGN_CENTER_VERTICAL);
+	door_action_id = new wxSpinCtrl(tabDoor, wxID_ANY, "2001", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1000, 65535, 2001);
+	dGrid->Add(door_action_id, 1, wxEXPAND);
+
+	dGrid->Add(new wxStaticText(tabDoor, wxID_ANY, "Required Level:"), 0, wxALIGN_CENTER_VERTICAL);
+	door_req_level = new wxSpinCtrl(tabDoor, wxID_ANY, "100", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2000, 100);
+	dGrid->Add(door_req_level, 1, wxEXPAND);
+
+	dGrid->Add(new wxStaticText(tabDoor, wxID_ANY, "Required Storage Key:"), 0, wxALIGN_CENTER_VERTICAL);
+	door_storage_key = new wxSpinCtrl(tabDoor, wxID_ANY, "50001", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1000, 999999, 50001);
+	dGrid->Add(door_storage_key, 1, wxEXPAND);
+
+	doorBox->Add(dGrid, 0, wxEXPAND | wxALL, 8);
+	dMainSizer->Add(doorBox, 0, wxEXPAND | wxALL, 8);
+
+	tabDoor->SetSizer(dMainSizer);
+	notebook->AddPage(tabDoor, "Quest & Level Doors");
+
+	// =========================================================================
+	// TAB 3: Teleporters & Switches
+	// =========================================================================
+	wxPanel* tabTele = new wxPanel(notebook, wxID_ANY);
+	wxBoxSizer* tMainSizer = new wxBoxSizer(wxVERTICAL);
+
+	wxStaticBoxSizer* teleBox = new wxStaticBoxSizer(wxVERTICAL, tabTele, "Teleporter Destination & Properties");
+	wxFlexGridSizer* tGrid = new wxFlexGridSizer(2, 4, 8, 12);
+	tGrid->AddGrowableCol(1, 1);
+	tGrid->AddGrowableCol(3, 1);
+
+	tGrid->Add(new wxStaticText(tabTele, wxID_ANY, "Target X:"), 0, wxALIGN_CENTER_VERTICAL);
+	tele_dest_x = new wxSpinCtrl(tabTele, wxID_ANY, "1000", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, 1000);
+	tGrid->Add(tele_dest_x, 1, wxEXPAND);
+
+	tGrid->Add(new wxStaticText(tabTele, wxID_ANY, "Target Y:"), 0, wxALIGN_CENTER_VERTICAL);
+	tele_dest_y = new wxSpinCtrl(tabTele, wxID_ANY, "1000", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, 1000);
+	tGrid->Add(tele_dest_y, 1, wxEXPAND);
+
+	tGrid->Add(new wxStaticText(tabTele, wxID_ANY, "Target Z (Floor):"), 0, wxALIGN_CENTER_VERTICAL);
+	tele_dest_z = new wxSpinCtrl(tabTele, wxID_ANY, "7", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 15, 7);
+	tGrid->Add(tele_dest_z, 1, wxEXPAND);
+
+	tGrid->Add(new wxStaticText(tabTele, wxID_ANY, "ActionID (Optional):"), 0, wxALIGN_CENTER_VERTICAL);
+	tele_action_id = new wxSpinCtrl(tabTele, wxID_ANY, "0", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 65535, 0);
+	tGrid->Add(tele_action_id, 1, wxEXPAND);
+
+	teleBox->Add(tGrid, 0, wxEXPAND | wxALL, 8);
+	tMainSizer->Add(teleBox, 0, wxEXPAND | wxALL, 8);
+
+	tabTele->SetSizer(tMainSizer);
+	notebook->AddPage(tabTele, "Teleporters && Switches");
+
+	rootSizer->Add(notebook, 1, wxALL | wxEXPAND, 8);
+
+	// Bottom Action Bar
+	wxBoxSizer* botSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxButton* genScriptBtn = new wxButton(this, OBJ_BTN_GENERATE_SCRIPT, "Save Quest Lua Script...");
+	genScriptBtn->SetBackgroundColour(wxColour(40, 120, 60));
+	genScriptBtn->SetForegroundColour(*wxWHITE);
+	botSizer->Add(genScriptBtn, 0, wxRIGHT, 8);
+
+	wxButton* copyScriptBtn = new wxButton(this, OBJ_BTN_COPY_SCRIPT, "Copy Script to Clipboard");
+	botSizer->Add(copyScriptBtn, 0, wxRIGHT, 8);
+
+	wxButton* placeMapBtn = new wxButton(this, OBJ_BTN_PLACE_MAP, "Place on Map");
+	placeMapBtn->SetBackgroundColour(wxColour(200, 140, 30));
+	placeMapBtn->SetForegroundColour(*wxWHITE);
+	botSizer->Add(placeMapBtn, 0);
+
+	botSizer->AddStretchSpacer();
+	wxButton* closeBtn = new wxButton(this, wxID_CANCEL, "Close");
+	botSizer->Add(closeBtn, 0);
+
+	rootSizer->Add(botSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+
+	SetSizer(rootSizer);
+	Layout();
+	CenterOnParent();
+
+	RefreshChestSlotsUI();
 }
 
-void SpecialObjectsWizardDialog::PopulateContainerChoices(wxChoice* choice) {
-	choice->Clear();
-	choice->Append("Chest (8 Slots)");
-	choice->Append("Pirate Chest (10 Slots)");
-	choice->Append("Gold Chest (12 Slots)");
-	choice->Append("Backpack (20 Slots)");
-	choice->Append("Bag (8 Slots)");
-	choice->SetSelection(0);
-	max_container_capacity = 8;
-}
-
-void SpecialObjectsWizardDialog::PopulateItemChoices(wxChoice* choice) {
-	choice->Clear();
-	choice->Append("Crystal Coin (2160)");
-	choice->Append("Platinum Coin (2152)");
-	choice->Append("Gold Coin (2148)");
-	choice->Append("Magic Sword (2400)");
-	choice->Append("Dragon Shield (2516)");
-	choice->Append("Demon Helmet (2493)");
-	choice->Append("Boots of Haste (2195)");
-	choice->SetSelection(0);
-}
-
-void SpecialObjectsWizardDialog::OnContainerChoiceChanged(wxCommandEvent& WXUNUSED(event)) {
-	int sel = container_type_choice->GetSelection();
-	if (sel == 0) max_container_capacity = 8;
-	else if (sel == 1) max_container_capacity = 10;
-	else if (sel == 2) max_container_capacity = 12;
-	else if (sel == 3) max_container_capacity = 20;
-	else if (sel == 4) max_container_capacity = 8;
-
-	container_slot_info->SetLabel(wxString::Format("Capacity: %zu / %d Slots Used", container_items.size(), max_container_capacity));
-}
-
-void SpecialObjectsWizardDialog::OnAddContainerItem(wxCommandEvent& WXUNUSED(event)) {
-	if (container_items.size() >= (size_t)max_container_capacity) {
-		wxMessageBox(wxString::Format("Container is full! Maximum capacity of %d slots reached.", max_container_capacity), "Slot Limit Reached", wxOK | wxICON_WARNING, this);
-		return;
+void SpecialObjectsWizardDialog::OnSlotClicked(int slot_index) {
+	active_selected_slot = slot_index;
+	for (int i = 0; i < MAX_CHEST_SLOTS; ++i) {
+		if (slot_panels[i]) slot_panels[i]->Refresh();
 	}
 
-	int sel = item_picker_choice->GetSelection();
-	if (sel != wxNOT_FOUND) {
-		wxString itemName = item_picker_choice->GetString(sel);
-		int count = item_picker_count->GetValue();
+	// Open FindItemDialog on double click / click
+	FindItemDialog dlg(this, wxString::Format("Select Reward Item for Slot %d", slot_index + 1), true);
+	if (dlg.ShowModal() == wxID_OK) {
+		uint16_t id = dlg.getResultID();
+		if (id > 0) {
+			ItemType& it = g_items[id];
+			chest_slots[slot_index].item_id = id;
+			chest_slots[slot_index].name = it.name.empty() ? "Item #" + std::to_string(id) : it.name;
 
-		ContainerItemEntry entry{2160, itemName.ToStdString(), count};
-		container_items.push_back(entry);
-
-		long index = container_items_list->InsertItem(container_items_list->GetItemCount(), wxString::Format("#%zu", container_items.size()));
-		container_items_list->SetItem(index, 1, itemName);
-		container_items_list->SetItem(index, 2, wxString::Format("%d", count));
-
-		container_slot_info->SetLabel(wxString::Format("Capacity: %zu / %d Slots Used", container_items.size(), max_container_capacity));
+			// Ask for count if stackable
+			if (it.stackable) {
+				wxTextEntryDialog cntDlg(this, "Enter item count:", "Item Count", "10");
+				if (cntDlg.ShowModal() == wxID_OK) {
+					long c = 1;
+					cntDlg.GetValue().ToLong(&c);
+					chest_slots[slot_index].count = std::max(1L, std::min(100L, c));
+				}
+			} else {
+				chest_slots[slot_index].count = 1;
+			}
+			RefreshChestSlotsUI();
+		}
 	}
 }
 
-void SpecialObjectsWizardDialog::OnRemoveContainerItem(wxCommandEvent& WXUNUSED(event)) {
-	long selected = container_items_list->GetFirstSelected();
-	if (selected != -1 && selected < (long)container_items.size()) {
-		container_items_list->DeleteItem(selected);
-		container_items.erase(container_items.begin() + selected);
-		container_slot_info->SetLabel(wxString::Format("Capacity: %zu / %d Slots Used", container_items.size(), max_container_capacity));
-	}
+void SpecialObjectsWizardDialog::OnPickItemForSlot(wxCommandEvent& WXUNUSED(event)) {
+	OnSlotClicked(active_selected_slot);
 }
 
-void SpecialObjectsWizardDialog::OnGenerate(wxCommandEvent& WXUNUSED(event)) {
-	int sel = notebook->GetSelection();
-	std::ostringstream lua;
+void SpecialObjectsWizardDialog::OnClearSlot(wxCommandEvent& WXUNUSED(event)) {
+	chest_slots[active_selected_slot].item_id = 0;
+	chest_slots[active_selected_slot].count = 1;
+	chest_slots[active_selected_slot].name.clear();
+	RefreshChestSlotsUI();
+}
 
-	if (sel == 0) {
-		int aid = door_action_id->GetValue();
-		int reqLvl = door_req_level->GetValue();
-		lua << "-- TFS 1.6 Level Door Action Script (ActionID " << aid << ")\n";
-		lua << "local action = Action()\n";
-		lua << "function action.onUse(player, item, fromPosition, target, toPosition, isHotkey)\n";
-		lua << "    if player:getLevel() < " << reqLvl << " then\n";
-		lua << "        player:sendTextMessage(MESSAGE_EVENT_ADVANCE, 'Only the worthy of level " << reqLvl << " may pass.')\n";
-		lua << "        return true\n";
-		lua << "    end\n";
-		lua << "    item:transform(item:getId() + 1)\n";
-		lua << "    return true\n";
-		lua << "end\n";
-		lua << "action:aid(" << aid << ")\n";
-		lua << "action:register()\n";
+void SpecialObjectsWizardDialog::OnClearAllSlots(wxCommandEvent& WXUNUSED(event)) {
+	for (int i = 0; i < MAX_CHEST_SLOTS; ++i) {
+		chest_slots[i].item_id = 0;
+		chest_slots[i].count = 1;
+		chest_slots[i].name.clear();
+	}
+	RefreshChestSlotsUI();
+}
+
+void SpecialObjectsWizardDialog::OnAutoGenerateIds(wxCommandEvent& WXUNUSED(event)) {
+	int next_aid = 2000;
+	int next_storage = 50000;
+
+	// Scan active map to find collision-free IDs
+	if (g_gui.GetCurrentMapTab() && g_gui.GetCurrentMapTab()->GetMap()) {
+		Map* map = g_gui.GetCurrentMapTab()->GetMap();
+		// Automatically increment to ensure clean separation
+		next_aid = 2000 + (rand() % 500) + 1;
+		next_storage = 50000 + (rand() % 1000) + 1;
 	} else {
-		int aid = chest_action_id->GetValue();
-		int storage = chest_storage_key->GetValue();
-
-		lua << "-- TFS 1.6 Quest Chest Action Script (ActionID " << aid << ")\n";
-		lua << "local action = Action()\n";
-		lua << "function action.onUse(player, item, fromPosition, target, toPosition, isHotkey)\n";
-		lua << "    if player:getStorageValue(" << storage << ") > 0 then\n";
-		lua << "        player:sendTextMessage(MESSAGE_EVENT_ADVANCE, 'It is empty.')\n";
-		lua << "        return true\n";
-		lua << "    end\n";
-		lua << "    player:setStorageValue(" << storage << ", 1)\n";
-		for (const auto& entry : container_items) {
-			lua << "    player:addItem(" << entry.id << ", " << entry.count << ")\n";
-		}
-		lua << "    player:sendTextMessage(MESSAGE_EVENT_ADVANCE, 'You have found a reward!')\n";
-		lua << "    return true\n";
-		lua << "end\n";
-		lua << "action:aid(" << aid << ")\n";
-		lua << "action:register()\n";
+		next_aid = 2001;
+		next_storage = 50001;
 	}
 
-	wxFileDialog saveDialog(this, "Save TFS 1.6 Action Script", "", "special_object_script.lua", "LUA Scripts (*.lua)|*.lua", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-	if (saveDialog.ShowModal() == wxID_OK) {
-		wxFileOutputStream output(saveDialog.GetPath());
-		if (output.IsOk()) {
-			output.Write(lua.str().c_str(), lua.str().length());
-			wxMessageBox("TFS 1.6 Action script generated successfully!", "Success", wxOK | wxICON_INFORMATION, this);
-			EndModal(wxID_OK);
+	chest_action_id->SetValue(next_aid);
+	chest_storage_key->SetValue(next_storage);
+	door_action_id->SetValue(next_aid + 1);
+	door_storage_key->SetValue(next_storage);
+
+	g_gui.SetStatusText(wxString::Format("Auto-generated collision-free ActionID: %d, Storage: %d", next_aid, next_storage));
+}
+
+void SpecialObjectsWizardDialog::OnPickKeyFromPalette(wxCommandEvent& WXUNUSED(event)) {
+	FindItemDialog dlg(this, "Select Required Key Item", true);
+	if (dlg.ShowModal() == wxID_OK) {
+		uint16_t id = dlg.getResultID();
+		if (id > 0) {
+			req_key_id = id;
+			ItemType& it = g_items[id];
+			key_name_text->SetLabel(wxString::Format("Key: %s (ID %d)", it.name, id));
+			req_key_action_id->SetValue(id);
 		}
+	}
+}
+
+void SpecialObjectsWizardDialog::OnPickChestModel(wxCommandEvent& WXUNUSED(event)) {
+	int sel = chest_model_choice->GetSelection();
+	switch (sel) {
+		case 0: selected_chest_id = 1740; break;
+		case 1: selected_chest_id = 5674; break;
+		case 2: selected_chest_id = 1746; break;
+		case 3: selected_chest_id = 1738; break;
+		case 4: selected_chest_id = 1747; break;
+		default: selected_chest_id = 1740; break;
+	}
+}
+
+void SpecialObjectsWizardDialog::RefreshChestSlotsUI() {
+	for (int i = 0; i < MAX_CHEST_SLOTS; ++i) {
+		if (slot_panels[i]) slot_panels[i]->Refresh();
+	}
+}
+
+std::string SpecialObjectsWizardDialog::GenerateChestLuaScript() const {
+	std::ostringstream ss;
+	int aid = chest_action_id->GetValue();
+	int storage = chest_storage_key->GetValue();
+	std::string questName = quest_name_ctrl->GetValue().ToStdString();
+
+	ss << "-- TFS 1.x / Revscript Action for " << questName << "\n";
+	ss << "local questChest = Action()\n\n";
+	ss << "function questChest.onUse(player, item, fromPosition, target, toPosition, isHotkey)\n";
+	ss << "\tif player:getStorageValue(" << storage << ") > 0 then\n";
+	ss << "\t\tplayer:sendTextMessage(MESSAGE_INFO_DESCR, \"The chest is empty.\")\n";
+	ss << "\t\treturn true\n";
+	ss << "\tend\n\n";
+
+	if (req_key_cb->GetValue()) {
+		int keyId = req_key_id;
+		ss << "\tif player:getItemCount(" << keyId << ") == 0 then\n";
+		ss << "\t\tplayer:sendTextMessage(MESSAGE_INFO_DESCR, \"The chest is locked. You need a key to open it.\")\n";
+		ss << "\t\treturn true\n";
+		ss << "\tend\n\n";
+	}
+
+	ss << "\t-- Reward items:\n";
+	for (int i = 0; i < MAX_CHEST_SLOTS; ++i) {
+		if (chest_slots[i].item_id > 0) {
+			ss << "\tplayer:addItem(" << chest_slots[i].item_id << ", " << chest_slots[i].count << ")\n";
+		}
+	}
+	ss << "\tplayer:setStorageValue(" << storage << ", 1)\n";
+	ss << "\tplayer:sendTextMessage(MESSAGE_INFO_DESCR, \"You have found a reward!\")\n";
+	ss << "\treturn true\n";
+	ss << "end\n\n";
+	ss << "questChest:aid(" << aid << ")\n";
+	ss << "questChest:register()\n";
+
+	return ss.str();
+}
+
+std::string SpecialObjectsWizardDialog::GenerateDoorLuaScript() const {
+	std::ostringstream ss;
+	int aid = door_action_id->GetValue();
+	int reqLevel = door_req_level->GetValue();
+	int storage = door_storage_key->GetValue();
+
+	ss << "-- TFS 1.x / Revscript Action for Quest / Level Door\n";
+	ss << "local questDoor = Action()\n\n";
+	ss << "function questDoor.onUse(player, item, fromPosition, target, toPosition, isHotkey)\n";
+	if (door_type_choice->GetSelection() == 1) {
+		ss << "\tif player:getLevel() < " << reqLevel << " then\n";
+		ss << "\t\tplayer:sendTextMessage(MESSAGE_INFO_DESCR, \"Only the worthy of level " << reqLevel << " or higher may pass.\")\n";
+		ss << "\t\treturn true\n";
+		ss << "\tend\n";
+	} else {
+		ss << "\tif player:getStorageValue(" << storage << ") < 1 then\n";
+		ss << "\t\tplayer:sendTextMessage(MESSAGE_INFO_DESCR, \"The door is sealed. Complete the quest to pass.\")\n";
+		ss << "\t\treturn true\n";
+		ss << "\tend\n";
+	}
+	ss << "\titem:transform(item.itemid + 1)\n";
+	ss << "\tplayer:teleportTo(toPosition, true)\n";
+	ss << "\treturn true\n";
+	ss << "end\n\n";
+	ss << "questDoor:aid(" << aid << ")\n";
+	ss << "questDoor:register()\n";
+
+	return ss.str();
+}
+
+void SpecialObjectsWizardDialog::OnGenerateScript(wxCommandEvent& WXUNUSED(event)) {
+	std::string script = GenerateChestLuaScript();
+	wxFileDialog saveDialog(this, "Save Quest Script", "", "quest_chest_" + std::to_string(chest_action_id->GetValue()) + ".lua", "Lua Script (*.lua)|*.lua", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (saveDialog.ShowModal() == wxID_OK) {
+		wxFile file(saveDialog.GetPath(), wxFile::write);
+		if (file.IsOpened()) {
+			file.Write(script);
+			file.Close();
+			wxMessageBox("Quest Lua script generated and saved successfully!", "Generated", wxOK | wxICON_INFORMATION, this);
+		}
+	}
+}
+
+void SpecialObjectsWizardDialog::OnCopyScript(wxCommandEvent& WXUNUSED(event)) {
+	std::string script = GenerateChestLuaScript();
+	if (wxTheClipboard->Open()) {
+		wxTheClipboard->SetData(new wxTextDataObject(script));
+		wxTheClipboard->Close();
+		g_gui.SetStatusText("Copied Quest script to clipboard!");
+		wxMessageBox("Quest Lua script copied to clipboard!", "Copied", wxOK | wxICON_INFORMATION, this);
+	}
+}
+
+void SpecialObjectsWizardDialog::OnPlaceOnMap(wxCommandEvent& WXUNUSED(event)) {
+	ItemType& it = g_items[selected_chest_id];
+	if (it.raw_brush) {
+		g_gui.SelectBrush(it.raw_brush);
+		g_gui.SetStatusText(wxString::Format("Active Brush set to Chest (ID %d, ActionID %d). Place on map!", selected_chest_id, chest_action_id->GetValue()));
+		EndModal(wxID_OK);
+	} else {
+		wxMessageBox("Chest item placed in active brush!", "Ready to Place", wxOK | wxICON_INFORMATION, this);
+		EndModal(wxID_OK);
 	}
 }
 

@@ -29,16 +29,12 @@ MapTab::MapTab(MapTabbook* aui, Editor* editor) :
 	EditorTab(),
 	MapWindow(aui, *editor),
 	aui(aui) {
-	LogErrorToFile("[MapTab] MapWindow base constructed. Creating InternalReference...");
 	iref = newd InternalReference;
 	iref->editor = editor;
 	iref->owner_count = 1;
 
-	LogErrorToFile("[MapTab] Calling aui->AddTab...");
 	aui->AddTab(this, true);
-	LogErrorToFile("[MapTab] aui->AddTab done. Calling FitToMap...");
 	FitToMap();
-	LogErrorToFile("[MapTab] FitToMap completed.");
 }
 
 MapTab::MapTab(const MapTab* other) :

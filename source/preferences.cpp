@@ -287,6 +287,18 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 		autosave_interval_label->SetLabel(wxString::Format(" %d min", autosave_interval_slider->GetValue()));
 	});
 	startup_sizer->Add(autosave_box, 0, wxEXPAND | wxALL, 10);
+	wxBoxSizer* pos_row = newd wxBoxSizer(wxHORIZONTAL);
+	pos_row->Add(new wxStaticText(startup_panel, wxID_ANY, "Copy Position Format:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	wxString position_choices[] = { "{x = 0, y = 0, z = 0}",
+									R"({"x":0,"y":0,"z":0})",
+									"x, y, z",
+									"(x, y, z)",
+									"Position(x, y, z)" };
+	position_choice = new wxChoice(startup_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 5, position_choices);
+	position_choice->SetSelection(g_settings.getInteger(Config::COPY_POSITION_FORMAT));
+	pos_row->Add(position_choice, 1, wxEXPAND);
+	startup_sizer->Add(pos_row, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+
 	startup_panel->SetSizer(startup_sizer);
 	sub_book->AddPage(startup_panel, "Startup & Auto-Save");
 
@@ -380,129 +392,28 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	asset_panel->SetSizer(asset_sizer);
 	sub_book->AddPage(asset_panel, "Client & Assets");
 
-	// --- Sub-Tab 3: Multiplayer & Engine ---
-	wxPanel* net_panel = newd wxPanel(sub_book, wxID_ANY);
-	wxBoxSizer* net_sizer = newd wxBoxSizer(wxVERTICAL);
-
-	wxStaticBoxSizer* net_box = new wxStaticBoxSizer(wxVERTICAL, net_panel, "Multiplayer Configuration");
-	wxBoxSizer* port_sizer = new wxBoxSizer(wxHORIZONTAL);
-	port_sizer->Add(new wxStaticText(net_panel, wxID_ANY, "Server Port:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-	multiplayer_port_spin = new wxSpinCtrl(
-		net_panel,
-		wxID_ANY,
-		i2ws(g_settings.getInteger(Config::MULTIPLAYER_PORT)),
-		wxDefaultPosition,
-		wxSize(90, -1),
-		wxSP_ARROW_KEYS,
-		1,
-		65535,
-		g_settings.getInteger(Config::MULTIPLAYER_PORT)
-	);
-	port_sizer->Add(multiplayer_port_spin, 0, wxRIGHT, 10);
-	
-	wxButton* test_btn = new wxButton(net_panel, wxID_ANY, "Test Connection");
-	test_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-		const int port = multiplayer_port_spin ? multiplayer_port_spin->GetValue() : kDefaultMultiplayerPort;
-#ifdef __WINDOWS__
-		if (!IsWindowsFirewallPortAllowed(port)) {
-			const int answer = wxMessageBox(
-				wxString::Format("Windows does not currently allow inbound TCP traffic on port %d.\n\nCreate the firewall rule now?", port),
-				"Windows Firewall",
-				wxYES_NO | wxICON_QUESTION,
-				this
-			);
-			if (answer == wxYES && !RequestWindowsFirewallPortRule(this, port)) {
-				wxMessageBox("The Windows firewall rule could not be created. Confirm the UAC prompt or create the rule manually.", "Windows Firewall", wxOK | wxICON_WARNING, this);
-				return;
-			}
-		}
-#endif
-		std::unique_ptr<boost::asio::io_context> service;
-		std::unique_ptr<boost::asio::ip::tcp::acceptor> acceptor;
-		wxString listenError;
-		if (!TryStartTemporaryPortListener(port, listenError, service, acceptor)) {
-			wxMessageBox(listenError + "\n\nClose any running host on this port or choose another port.", "Connection Test", wxOK | wxICON_ERROR, this);
-			return;
-		}
-
-		wxString externalIp;
-		wxString requestError;
-		if (!GetExternalIpAddress(externalIp, requestError)) {
-			wxMessageBox(requestError, "Connection Test", wxOK | wxICON_ERROR, this);
-			return;
-		}
-
-		bool isReachable = false;
-		if (!CheckPortReachableFromInternet(externalIp, port, isReachable, requestError)) {
-			wxMessageBox(requestError, "Connection Test", wxOK | wxICON_ERROR, this);
-			return;
-		}
-
-		wxMessageBox(
-			isReachable
-				? wxString::Format("Port %d is reachable from the internet.\n\nExternal IP: %s", port, externalIp)
-				: wxString::Format("Port %d is not reachable from the internet.\n\nExternal IP: %s\n\nCheck your router port forwarding, provider NAT and the Windows firewall rule.", port, externalIp),
-			"Connection Test",
-			isReachable ? (wxOK | wxICON_INFORMATION) : (wxOK | wxICON_WARNING),
-			this
-		);
-	});
-	port_sizer->Add(test_btn, 0, wxRIGHT, 5);
-
-	wxButton* ip_btn = new wxButton(net_panel, wxID_ANY, "Show IP");
-	ip_btn->SetToolTip("Fetch your external IP address for hosting.");
-	ip_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-		wxString externalIp;
-		wxString errorMessage;
-		if (!GetExternalIpAddress(externalIp, errorMessage)) {
-			wxMessageBox(errorMessage, "Connection Error", wxOK | wxICON_ERROR, this);
-			return;
-		}
-
-		ShowCopyableExternalIpDialog(this, externalIp);
-	});
-	port_sizer->Add(ip_btn, 0);
-
-	net_box->Add(port_sizer, 0, wxALL, 5);
-	net_sizer->Add(net_box, 0, wxEXPAND | wxALL, 10);
-
-	wxStaticBoxSizer* eng_box = new wxStaticBoxSizer(wxVERTICAL, net_panel, "Engine & Undo Limits");
-	auto* grid_sizer = newd wxFlexGridSizer(2, 6, 12);
-	grid_sizer->AddGrowableCol(1);
-	wxStaticText* tmptext;
-
-	grid_sizer->Add(tmptext = newd wxStaticText(net_panel, wxID_ANY, "Undo queue size: "), 0, wxALIGN_CENTER_VERTICAL);
-	undo_size_spin = newd wxSpinCtrl(net_panel, wxID_ANY, i2ws(g_settings.getInteger(Config::UNDO_SIZE)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10);
-	grid_sizer->Add(undo_size_spin, 0);
-	SetWindowToolTip(tmptext, undo_size_spin, "How many action you can undo, be aware that a high value will increase memory usage.");
-
-	grid_sizer->Add(tmptext = newd wxStaticText(net_panel, wxID_ANY, "Undo max memory (MB): "), 0, wxALIGN_CENTER_VERTICAL);
-	undo_mem_size_spin = newd wxSpinCtrl(net_panel, wxID_ANY, i2ws(g_settings.getInteger(Config::UNDO_MEM_SIZE)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 4096);
-	grid_sizer->Add(undo_mem_size_spin, 0);
-	SetWindowToolTip(tmptext, undo_mem_size_spin, "The approximate limit for the memory usage of the undo queue.");
-
-	grid_sizer->Add(tmptext = newd wxStaticText(net_panel, wxID_ANY, "Replace count: "), 0, wxALIGN_CENTER_VERTICAL);
-	replace_size_spin = newd wxSpinCtrl(net_panel, wxID_ANY, i2ws(g_settings.getInteger(Config::REPLACE_SIZE)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 100000);
-	grid_sizer->Add(replace_size_spin, 0);
-	SetWindowToolTip(tmptext, replace_size_spin, "How many items you can replace on the map using the Replace Item tool.");
-
-	grid_sizer->Add(new wxStaticText(net_panel, wxID_ANY, "Copy Position Format:"), 0, wxALIGN_CENTER_VERTICAL);
-	wxString position_choices[] = { "{x = 0, y = 0, z = 0}",
-									R"({"x":0,"y":0,"z":0})",
-									"x, y, z",
-									"(x, y, z)",
-									"Position(x, y, z)" };
-	position_choice = new wxChoice(net_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, 5, position_choices);
-	position_choice->SetSelection(g_settings.getInteger(Config::COPY_POSITION_FORMAT));
-	grid_sizer->Add(position_choice, 0, wxEXPAND);
-	SetWindowToolTip(position_choice, "The position format when copying from the map.");
-
-	eng_box->Add(grid_sizer, 1, wxEXPAND | wxALL, 5);
-	net_sizer->Add(eng_box, 1, wxEXPAND | wxALL, 10);
-	net_panel->SetSizer(net_sizer);
-	sub_book->AddPage(net_panel, "Multiplayer & Engine");
-
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
+
+	wxBoxSizer* def_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	wxButton* def_btn = newd wxButton(general_page, wxID_ANY, "Default");
+	def_btn->SetToolTip("Reset General settings to default values.");
+	def_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		show_welcome_dialog_chkbox->SetValue(true);
+		always_make_backup_chkbox->SetValue(false);
+		update_check_on_startup_chkbox->SetValue(true);
+		only_one_instance_chkbox->SetValue(true);
+		enable_tileset_editing_chkbox->SetValue(false);
+		autosave_enabled_chkbox->SetValue(false);
+		autosave_interval_slider->SetValue(10);
+		autosave_interval_slider->Enable(false);
+		autosave_interval_label->SetLabel(" 10 min");
+		check_sigs_chkbox->SetValue(true);
+		position_choice->SetSelection(0);
+	});
+	def_sizer->AddStretchSpacer();
+	def_sizer->Add(def_btn, 0, wxRIGHT | wxBOTTOM, 5);
+	main_sizer->Add(def_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 5);
+
 	general_page->SetSizer(main_sizer);
 
 	return general_page;
@@ -581,6 +492,26 @@ wxNotebookPage* PreferencesWindow::CreateEditorPage() {
 	sub_book->AddPage(brush_panel, "Brushes & Clipboard");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
+
+	wxBoxSizer* def_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	wxButton* def_btn = newd wxButton(editor_page, wxID_ANY, "Default");
+	def_btn->SetToolTip("Reset Editing settings to default values.");
+	def_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		group_actions_chkbox->SetValue(true);
+		duplicate_id_warn_chkbox->SetValue(true);
+		house_remove_chkbox->SetValue(true);
+		auto_assign_doors_chkbox->SetValue(true);
+		allow_multiple_orderitems_chkbox->SetValue(true);
+		doodad_erase_same_chkbox->SetValue(true);
+		eraser_leave_unique_chkbox->SetValue(true);
+		auto_create_spawn_chkbox->SetValue(true);
+		merge_move_chkbox->SetValue(false);
+		merge_paste_chkbox->SetValue(false);
+	});
+	def_sizer->AddStretchSpacer();
+	def_sizer->Add(def_btn, 0, wxRIGHT | wxBOTTOM, 5);
+	main_sizer->Add(def_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 5);
+
 	editor_page->SetSizer(main_sizer);
 	return editor_page;
 }
@@ -598,9 +529,35 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	wxBoxSizer* visual_sizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxStaticBoxSizer* visual_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "Editor Visuals & Rendering");
-	parchment_background_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Use Parchment Background (instead of Black)");
-	parchment_background_chkbox->SetValue(g_settings.getInteger(Config::USE_PARCHMENT_BACKGROUND) == 1);
-	visual_group->Add(parchment_background_chkbox, 0, wxALL, 8);
+	wxBoxSizer* bg_color_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	bg_color_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "BG Color:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+	
+	wxArrayString bg_choices;
+	bg_choices.Add("Black");
+	bg_choices.Add("Parchment");
+	bg_choices.Add("Dark Slate");
+	bg_choices.Add("Ocean Blue");
+	bg_choices.Add("Forest Dark");
+	bg_choices.Add("Classic Grey");
+	bg_choices.Add("Pure White");
+
+	bg_color_choice = newd wxChoice(visual_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, bg_choices);
+	int cur_bg = g_settings.getInteger(Config::BG_COLOR);
+	if (cur_bg < 0 || cur_bg >= static_cast<int>(bg_choices.size())) cur_bg = 0;
+	bg_color_choice->SetSelection(cur_bg);
+	bg_color_choice->SetToolTip("Select the canvas background clear color (no restart required).");
+	bg_color_sizer->Add(bg_color_choice, 0, wxALIGN_CENTER_VERTICAL);
+	visual_group->Add(bg_color_sizer, 0, wxALL, 8);
+
+	fake_hd_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "HD Asset Upscaling (xBRZ Edge Reconstruction Filter)");
+	fake_hd_chkbox->SetValue(g_settings.getBoolean(Config::FAKE_HD_ASSETS));
+	fake_hd_chkbox->SetToolTip("Applies real-time 4x/5x xBRZ vector upscaling to smooth 32x32 sprites\nwithout blurring or losing pixel sharpness.");
+	visual_group->Add(fake_hd_chkbox, 0, wxALL, 8);
+
+	ambient_effects_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Atmospheric Effects (Wind, Clouds & Ambient Glow)");
+	ambient_effects_chkbox->SetValue(g_settings.getBoolean(Config::AMBIENT_EFFECTS));
+	ambient_effects_chkbox->SetToolTip("Renders world-space cloud shadows, daylight godrays and foliage wind sway.\nDoes not alter tile geometry or borders.");
+	visual_group->Add(ambient_effects_chkbox, 0, wxALL, 8);
 
 	wxBoxSizer* opacity_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	opacity_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Grid Opacity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
@@ -610,25 +567,35 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 
 	wxBoxSizer* light_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	light_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Global Light Intensity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
-	light_intensity_slider = newd wxSlider(visual_panel, wxID_ANY, int(g_settings.getFloat(Config::LIGHT_INTENSITY) * 100), 10, 100);
-	light_sizer->Add(light_intensity_slider, 1, wxEXPAND);
+	int cur_light = std::clamp(int(std::round(g_settings.getFloat(Config::LIGHT_INTENSITY) * 10.0f)), 1, 10);
+	if (cur_light == 0) cur_light = 7;
+	light_intensity_slider = newd wxSlider(visual_panel, wxID_ANY, cur_light, 1, 10, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_AUTOTICKS);
+	light_sizer->Add(light_intensity_slider, 1, wxEXPAND | wxRIGHT, 10);
+	wxStaticText* light_label = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_light, cur_light * 10));
+	light_label->SetForegroundColour(wxColor(255, 205, 50));
+	light_label->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	light_sizer->Add(light_label, 0, wxALIGN_CENTER_VERTICAL);
+	light_intensity_slider->Bind(wxEVT_SLIDER, [light_label, this](wxCommandEvent&) {
+		int val = light_intensity_slider->GetValue();
+		light_label->SetLabel(wxString::Format("Level %d (%d%%)", val, val * 10));
+	});
 	visual_group->Add(light_sizer, 0, wxEXPAND | wxALL, 8);
 
 	wxStaticBoxSizer* scale_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "UI & Icon Scaling (Scale 1 to 10)");
 
 	int cur_scale = g_settings.getInteger(Config::UI_SCALE);
 	if (cur_scale < 100) cur_scale = 100;
-	if (cur_scale > 200) cur_scale = 200;
-	int cur_level = std::max(1, std::min(10, (cur_scale - 100) / 10 + 1));
+	if (cur_scale > 170) cur_scale = 170;
+	int cur_level = std::clamp((cur_scale - 100) * 9 / 70 + 1, 1, 10);
 
 	wxBoxSizer* slider_row = newd wxBoxSizer(wxHORIZONTAL);
 	slider_row->Add(newd wxStaticText(visual_panel, wxID_ANY, "Scale Level:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 
 	ui_scale_slider = newd wxSlider(visual_panel, wxID_ANY, cur_level, 1, 10, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_AUTOTICKS);
-	ui_scale_slider->SetToolTip("Adjust UI scale from 1 (Smallest / 100%) to 10 (Largest / 200%).");
+	ui_scale_slider->SetToolTip("Adjust UI scale from 1 (Smallest / 100%) to 10 (Largest / 170%).");
 	slider_row->Add(ui_scale_slider, 1, wxEXPAND | wxRIGHT, 10);
 
-	ui_scale_level_txt = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_level, 100 + (cur_level - 1) * 11));
+	ui_scale_level_txt = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_level, 100 + (cur_level - 1) * 70 / 9));
 	ui_scale_level_txt->SetForegroundColour(wxColor(255, 205, 50));
 	ui_scale_level_txt->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	slider_row->Add(ui_scale_level_txt, 0, wxALIGN_CENTER_VERTICAL);
@@ -647,8 +614,8 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 		dc.Clear();
 
 		int level = ui_scale_slider ? ui_scale_slider->GetValue() : 1;
-		int scale_pct = 100 + (level - 1) * 11;
-		if (scale_pct > 200) scale_pct = 200;
+		int scale_pct = 100 + (level - 1) * 70 / 9;
+		if (scale_pct > 170) scale_pct = 170;
 
 		int btn_w = 36 * scale_pct / 100;
 		int spr_w = 32 * scale_pct / 100;
@@ -737,6 +704,26 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	sub_book->AddPage(screenshot_panel, "Screenshots & Output");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
+
+	wxBoxSizer* def_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	wxButton* def_btn = newd wxButton(performance_page, wxID_ANY, "Default");
+	def_btn->SetToolTip("Reset Graphic settings to default values.");
+	def_btn->Bind(wxEVT_BUTTON, [this, light_label](wxCommandEvent&) {
+		if (bg_color_choice) bg_color_choice->SetSelection(0);
+		if (fake_hd_chkbox) fake_hd_chkbox->SetValue(false);
+		if (ambient_effects_chkbox) ambient_effects_chkbox->SetValue(true);
+		grid_opacity_slider->SetValue(128);
+		light_intensity_slider->SetValue(7);
+		light_label->SetLabel("Level 7 (70%)");
+		ui_scale_slider->SetValue(3);
+		UpdateScalePreview();
+		if (screenshot_format_choice) screenshot_format_choice->SetSelection(0);
+		if (hide_items_when_zoomed_chkbox) hide_items_when_zoomed_chkbox->SetValue(true);
+	});
+	def_sizer->AddStretchSpacer();
+	def_sizer->Add(def_btn, 0, wxRIGHT | wxBOTTOM, 5);
+	main_sizer->Add(def_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 5);
+
 	performance_page->SetSizer(main_sizer);
 	return performance_page;
 }
@@ -940,6 +927,38 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	sub_book->AddPage(ctrl_panel, "Navigation & Controls");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
+
+	wxBoxSizer* def_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	wxButton* def_btn = newd wxButton(ui_page, wxID_ANY, "Default");
+	def_btn->SetToolTip("Reset Interface settings to default values.");
+	def_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		theme_radio->SetSelection(0);
+		cursor_color_pick->SetColour(wxColor(255, 255, 255));
+		cursor_alt_color_pick->SetColour(wxColor(255, 255, 0));
+		large_terrain_tools_chkbox->SetValue(false);
+		large_collection_tools_chkbox->SetValue(false);
+		large_doodad_sizebar_chkbox->SetValue(false);
+		large_item_sizebar_chkbox->SetValue(false);
+		large_house_sizebar_chkbox->SetValue(false);
+		large_raw_sizebar_chkbox->SetValue(false);
+		large_container_icons_chkbox->SetValue(false);
+		large_pick_item_icons_chkbox->SetValue(false);
+		terrain_palette_style_choice->SetSelection(0);
+		collection_palette_style_choice->SetSelection(0);
+		doodad_palette_style_choice->SetSelection(0);
+		item_palette_style_choice->SetSelection(0);
+		raw_palette_style_choice->SetSelection(0);
+		switch_mousebtn_chkbox->SetValue(false);
+		doubleclick_properties_chkbox->SetValue(false);
+		inversed_scroll_chkbox->SetValue(false);
+		scroll_speed_slider->SetValue(5);
+		zoom_speed_slider->SetValue(5);
+		minimap_scroll_speed_slider->SetValue(5);
+	});
+	def_sizer->AddStretchSpacer();
+	def_sizer->Add(def_btn, 0, wxRIGHT | wxBOTTOM, 5);
+	main_sizer->Add(def_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 5);
+
 	ui_page->SetSizer(main_sizer);
 	return ui_page;
 }
@@ -1015,6 +1034,14 @@ wxNotebookPage* PreferencesWindow::CreateHotkeysPage() {
 	sub_book->AddPage(edit_panel, "Editing & Files");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
+
+	wxBoxSizer* def_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	wxButton* def_btn = newd wxButton(page, wxID_ANY, "Default");
+	def_btn->SetToolTip("Reset Hotkeys to default configuration.");
+	def_sizer->AddStretchSpacer();
+	def_sizer->Add(def_btn, 0, wxRIGHT | wxBOTTOM, 5);
+	main_sizer->Add(def_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 5);
+
 	page->SetSizer(main_sizer);
 	return page;
 }
@@ -1057,11 +1084,21 @@ void PreferencesWindow::Apply() {
 	}
 	g_settings.setInteger(Config::USE_UPDATER, update_check_on_startup_chkbox->GetValue());
 	g_settings.setInteger(Config::ONLY_ONE_INSTANCE, only_one_instance_chkbox->GetValue());
-	g_settings.setInteger(Config::MULTIPLAYER_PORT, multiplayer_port_spin ? multiplayer_port_spin->GetValue() : kDefaultMultiplayerPort);
-	g_settings.setInteger(Config::UNDO_SIZE, undo_size_spin->GetValue());
-	g_settings.setInteger(Config::UNDO_MEM_SIZE, undo_mem_size_spin->GetValue());
-	g_settings.setInteger(Config::REPLACE_SIZE, replace_size_spin->GetValue());
-	g_settings.setInteger(Config::COPY_POSITION_FORMAT, position_choice->GetSelection());
+	if (multiplayer_port_spin) {
+		g_settings.setInteger(Config::MULTIPLAYER_PORT, multiplayer_port_spin->GetValue());
+	}
+	if (undo_size_spin) {
+		g_settings.setInteger(Config::UNDO_SIZE, undo_size_spin->GetValue());
+	}
+	if (undo_mem_size_spin) {
+		g_settings.setInteger(Config::UNDO_MEM_SIZE, undo_mem_size_spin->GetValue());
+	}
+	if (replace_size_spin) {
+		g_settings.setInteger(Config::REPLACE_SIZE, replace_size_spin->GetValue());
+	}
+	if (position_choice) {
+		g_settings.setInteger(Config::COPY_POSITION_FORMAT, position_choice->GetSelection());
+	}
 
 	if (g_settings.getBoolean(Config::SHOW_TILESET_EDITOR) != enable_tileset_editing_chkbox->GetValue()) {
 		palette_update_needed = true;
@@ -1098,12 +1135,32 @@ void PreferencesWindow::Apply() {
 	g_settings.setInteger(Config::MERGE_PASTE, merge_paste_chkbox->GetValue());
 
 	// Graphics
-	if (parchment_background_chkbox)
-		g_settings.setInteger(Config::USE_PARCHMENT_BACKGROUND, parchment_background_chkbox->GetValue() ? 1 : 0);
+	if (bg_color_choice) {
+		int new_bg = bg_color_choice->GetSelection();
+		if (new_bg != g_settings.getInteger(Config::BG_COLOR)) {
+			g_settings.setInteger(Config::BG_COLOR, new_bg);
+			g_gui.RefreshView();
+		}
+	}
 	if (grid_opacity_slider)
 		g_settings.setInteger(Config::GRID_OPACITY, grid_opacity_slider->GetValue());
 	if (light_intensity_slider)
-		g_settings.setFloat(Config::LIGHT_INTENSITY, light_intensity_slider->GetValue() / 100.0f);
+		g_settings.setFloat(Config::LIGHT_INTENSITY, float(light_intensity_slider->GetValue()) / 10.0f);
+	if (fake_hd_chkbox) {
+		bool old_fake_hd = g_settings.getBoolean(Config::FAKE_HD_ASSETS);
+		bool new_fake_hd = fake_hd_chkbox->GetValue();
+		if (old_fake_hd != new_fake_hd) {
+			g_settings.setInteger(Config::FAKE_HD_ASSETS, new_fake_hd ? 1 : 0);
+			must_restart = true;
+		}
+	}
+	if (ambient_effects_chkbox) {
+		bool old_ambient = g_settings.getBoolean(Config::AMBIENT_EFFECTS);
+		bool new_ambient = ambient_effects_chkbox->GetValue();
+		if (old_ambient != new_ambient) {
+			g_settings.setInteger(Config::AMBIENT_EFFECTS, new_ambient ? 1 : 0);
+		}
+	}
 
 	// if (g_settings.getInteger(Config::RENDER_BACKEND) != backend_radio->GetSelection()) {
 	// 	g_settings.setInteger(Config::RENDER_BACKEND, backend_radio->GetSelection());
@@ -1113,10 +1170,10 @@ void PreferencesWindow::Apply() {
 	if (ui_scale_slider) {
 		int old_scale = g_settings.getInteger(Config::UI_SCALE);
 		if (old_scale < 100) old_scale = 100;
-		if (old_scale > 200) old_scale = 200;
+		if (old_scale > 170) old_scale = 170;
 		int level = ui_scale_slider->GetValue();
-		int new_scale = 100 + (level - 1) * 11;
-		if (new_scale > 200) new_scale = 200;
+		int new_scale = 100 + (level - 1) * 70 / 9;
+		if (new_scale > 170) new_scale = 170;
 		if (old_scale != new_scale) {
 			g_settings.setInteger(Config::UI_SCALE, new_scale);
 			must_restart = true;
@@ -1315,8 +1372,8 @@ void PreferencesWindow::UpdateScanStatus() {
 void PreferencesWindow::UpdateScalePreview() {
 	if (!ui_scale_slider || !ui_scale_level_txt || !ui_scale_preview_panel) return;
 	int level = ui_scale_slider->GetValue();
-	int scale_pct = 100 + (level - 1) * 11;
-	if (scale_pct > 200) scale_pct = 200;
+	int scale_pct = 100 + (level - 1) * 70 / 9;
+	if (scale_pct > 170) scale_pct = 170;
 
 	ui_scale_level_txt->SetLabel(wxString::Format("Level %d (%d%%)", level, scale_pct));
 	ui_scale_preview_panel->Refresh();

@@ -33,6 +33,8 @@ public:
 	PreferencesWindow(wxWindow* parent, bool clientVersionSelected);
 	virtual ~PreferencesWindow();
 
+	void SelectHotkeysTab() { if (book) book->SetSelection(4); }
+
 	void OnClickDefaults(wxCommandEvent&);
 	void OnClickApply(wxCommandEvent&);
 	void OnClickOK(wxCommandEvent&);
@@ -47,97 +49,91 @@ public:
 	wxAuiNotebook* book;
 
 	// General
-	wxCheckBox* always_make_backup_chkbox;
-	wxCheckBox* autosave_enabled_chkbox;
-	wxSlider*   autosave_interval_slider;
-	wxStaticText* autosave_interval_label;
-	wxCheckBox* create_on_startup_chkbox;
-	wxCheckBox* update_check_on_startup_chkbox;
-	wxCheckBox* only_one_instance_chkbox;
-	wxCheckBox* show_welcome_dialog_chkbox;
-	wxCheckBox* enable_tileset_editing_chkbox;
-	wxSpinCtrl* multiplayer_port_spin;
-	wxSpinCtrl* undo_size_spin;
-	wxSpinCtrl* undo_mem_size_spin;
-	wxSpinCtrl* worker_threads_spin;
-	wxSpinCtrl* replace_size_spin;
-	wxChoice* position_choice;
+	wxCheckBox* always_make_backup_chkbox = nullptr;
+	wxCheckBox* autosave_enabled_chkbox = nullptr;
+	wxSlider*   autosave_interval_slider = nullptr;
+	wxStaticText* autosave_interval_label = nullptr;
+	wxCheckBox* create_on_startup_chkbox = nullptr;
+	wxCheckBox* update_check_on_startup_chkbox = nullptr;
+	wxCheckBox* only_one_instance_chkbox = nullptr;
+	wxCheckBox* show_welcome_dialog_chkbox = nullptr;
+	wxCheckBox* enable_tileset_editing_chkbox = nullptr;
+	wxSpinCtrl* multiplayer_port_spin = nullptr;
+	wxSpinCtrl* undo_size_spin = nullptr;
+	wxSpinCtrl* undo_mem_size_spin = nullptr;
+	wxSpinCtrl* worker_threads_spin = nullptr;
+	wxSpinCtrl* replace_size_spin = nullptr;
+	wxChoice* position_choice = nullptr;
 
 	// Editor
-	wxCheckBox* group_actions_chkbox;
-	wxCheckBox* duplicate_id_warn_chkbox;
-	wxCheckBox* house_remove_chkbox;
-	wxCheckBox* auto_assign_doors_chkbox;
-	wxCheckBox* eraser_leave_unique_chkbox;
-	wxCheckBox* doodad_erase_same_chkbox;
-	wxCheckBox* auto_create_spawn_chkbox;
-	wxCheckBox* allow_multiple_orderitems_chkbox;
-	wxCheckBox* merge_move_chkbox;
-	wxCheckBox* merge_paste_chkbox;
+	wxCheckBox* group_actions_chkbox = nullptr;
+	wxCheckBox* duplicate_id_warn_chkbox = nullptr;
+	wxCheckBox* house_remove_chkbox = nullptr;
+	wxCheckBox* auto_assign_doors_chkbox = nullptr;
+	wxCheckBox* eraser_leave_unique_chkbox = nullptr;
+	wxCheckBox* doodad_erase_same_chkbox = nullptr;
+	wxCheckBox* auto_create_spawn_chkbox = nullptr;
+	wxCheckBox* allow_multiple_orderitems_chkbox = nullptr;
+	wxCheckBox* merge_move_chkbox = nullptr;
+	wxCheckBox* merge_paste_chkbox = nullptr;
 
 	// Graphics
-	wxCheckBox* icon_selection_shadow_chkbox;
-	wxChoice* icon_background_choice;
-	wxCheckBox* use_memcached_chkbox;
-	wxDirPickerCtrl* screenshot_directory_picker;
-	wxChoice* screenshot_format_choice;
-	wxCheckBox* hide_items_when_zoomed_chkbox;
-	/*
-	wxCheckBox* texture_managment_chkbox;
-	wxSpinCtrl* clean_interval_spin;
-	wxSpinCtrl* texture_longevity_spin;
-	wxSpinCtrl* texture_threshold_spin;
-	wxSpinCtrl* software_threshold_spin;
-	wxSpinCtrl* software_clean_amount_spin;
-	*/
+	wxCheckBox* icon_selection_shadow_chkbox = nullptr;
+	wxChoice* icon_background_choice = nullptr;
+	wxCheckBox* use_memcached_chkbox = nullptr;
+	wxDirPickerCtrl* screenshot_directory_picker = nullptr;
+	wxChoice* screenshot_format_choice = nullptr;
+	wxCheckBox* hide_items_when_zoomed_chkbox = nullptr;
+	wxCheckBox* fake_hd_chkbox = nullptr;
+	wxCheckBox* ambient_effects_chkbox = nullptr;
 
 	// Interface
-	wxChoice* terrain_palette_style_choice;
-	wxChoice* collection_palette_style_choice;
-	wxChoice* doodad_palette_style_choice;
-	wxChoice* item_palette_style_choice;
-	wxChoice* raw_palette_style_choice;
+	wxChoice* terrain_palette_style_choice = nullptr;
+	wxChoice* collection_palette_style_choice = nullptr;
+	wxChoice* doodad_palette_style_choice = nullptr;
+	wxChoice* item_palette_style_choice = nullptr;
+	wxChoice* raw_palette_style_choice = nullptr;
 
 	// Visuals & Themes
-	wxSlider* ui_scale_slider;
-	wxStaticText* ui_scale_level_txt;
-	wxPanel* ui_scale_preview_panel;
+	wxSlider* ui_scale_slider = nullptr;
+	wxStaticText* ui_scale_level_txt = nullptr;
+	wxPanel* ui_scale_preview_panel = nullptr;
 	void UpdateScalePreview();
-	wxRadioBox* backend_radio;
-	wxRadioBox* theme_radio;
-	wxColourPickerCtrl* cursor_color_pick;
-	wxColourPickerCtrl* cursor_alt_color_pick;
-	wxSlider* crt_strength_slider;
-	wxChoice* aa_choice;
-	wxSlider* water_anim_slider;
-	wxSlider* light_intensity_slider;
-	wxCheckBox* parchment_background_chkbox;
-	wxSlider* grid_opacity_slider;
-	wxCheckBox* multi_monitor_workspace_chkbox;
+	wxRadioBox* backend_radio = nullptr;
+	wxRadioBox* theme_radio = nullptr;
+	wxColourPickerCtrl* cursor_color_pick = nullptr;
+	wxColourPickerCtrl* cursor_alt_color_pick = nullptr;
+	wxSlider* crt_strength_slider = nullptr;
+	wxChoice* aa_choice = nullptr;
+	wxSlider* water_anim_slider = nullptr;
+	wxSlider* light_intensity_slider = nullptr;
+	wxChoice* bg_color_choice = nullptr;
+	wxSlider* grid_opacity_slider = nullptr;
+	wxCheckBox* multi_monitor_workspace_chkbox = nullptr;
 
-	wxCheckBox* large_terrain_tools_chkbox;
-	wxCheckBox* large_collection_tools_chkbox;
-	wxCheckBox* large_doodad_sizebar_chkbox;
-	wxCheckBox* large_item_sizebar_chkbox;
-	wxCheckBox* large_house_sizebar_chkbox;
-	wxCheckBox* large_raw_sizebar_chkbox;
-	wxCheckBox* large_container_icons_chkbox;
-	wxCheckBox* large_pick_item_icons_chkbox;
+	wxCheckBox* large_terrain_tools_chkbox = nullptr;
+	wxCheckBox* large_collection_tools_chkbox = nullptr;
+	wxCheckBox* large_doodad_sizebar_chkbox = nullptr;
+	wxCheckBox* large_item_sizebar_chkbox = nullptr;
+	wxCheckBox* large_house_sizebar_chkbox = nullptr;
+	wxCheckBox* large_raw_sizebar_chkbox = nullptr;
+	wxCheckBox* large_container_icons_chkbox = nullptr;
+	wxCheckBox* large_pick_item_icons_chkbox = nullptr;
 
-	wxCheckBox* switch_mousebtn_chkbox;
-	wxCheckBox* doubleclick_properties_chkbox;
-	wxCheckBox* inversed_scroll_chkbox;
-	wxSlider* scroll_speed_slider;
-	wxSlider* zoom_speed_slider;
-	wxSlider* minimap_scroll_speed_slider;
+	wxCheckBox* switch_mousebtn_chkbox = nullptr;
+	wxCheckBox* doubleclick_properties_chkbox = nullptr;
+	wxCheckBox* inversed_scroll_chkbox = nullptr;
+	wxSlider* scroll_speed_slider = nullptr;
+	wxSlider* zoom_speed_slider = nullptr;
+	wxSlider* minimap_scroll_speed_slider = nullptr;
 
-	wxCheckBox* vsync_chkbox;
+	wxCheckBox* vsync_chkbox = nullptr;
 	// Client info
-	wxChoice* default_version_choice;
-	wxStaticText* scan_status_txt;
-	wxButton* open_folder_btn;
-	wxHyperlinkCtrl* help_link;
-	wxCheckBox* check_sigs_chkbox;
+	wxChoice* default_version_choice = nullptr;
+	wxStaticText* scan_status_txt = nullptr;
+	wxButton* open_folder_btn = nullptr;
+	wxHyperlinkCtrl* help_link = nullptr;
+	wxCheckBox* check_sigs_chkbox = nullptr;
 
 	void UpdateScanStatus();
 

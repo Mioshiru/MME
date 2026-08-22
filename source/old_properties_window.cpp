@@ -936,8 +936,10 @@ void OldPropertiesWindow::OnClose(wxCloseEvent&) {
 void OldPropertiesWindow::Update() {
 	Container* container = dynamic_cast<Container*>(edit_item);
 	if (container) {
-		for (uint32_t i = 0; i < container->getVolume(); ++i) {
-			container_items[i]->setItem(container->getItem(i));
+		for (size_t i = 0; i < container_items.size() && i < container->getVolume(); ++i) {
+			if (container_items[i]) {
+				container_items[i]->setItem(container->getItem(i));
+			}
 		}
 	}
 	wxDialog::Update();

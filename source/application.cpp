@@ -207,9 +207,14 @@ void LogErrorToFile(const std::string &message) {
     size_t lastSlash = path.find_last_of("\\/");
     if (lastSlash != std::string::npos) {
       std::string dir = path.substr(0, lastSlash);
-      size_t dllsPos = dir.rfind("\\DLLs");
-      if (dllsPos != std::string::npos) {
-        dir = dir.substr(0, dllsPos);
+      size_t binPos = dir.rfind("\\Binaries\\Win64");
+      if (binPos != std::string::npos) {
+        dir = dir.substr(0, binPos);
+      } else {
+        size_t dllsPos = dir.rfind("\\DLLs");
+        if (dllsPos != std::string::npos) {
+          dir = dir.substr(0, dllsPos);
+        }
       }
       std::string rootLogPath = dir + "\\error.log";
       std::ofstream root_err_file(rootLogPath, std::ios::app);

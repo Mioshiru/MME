@@ -42,6 +42,7 @@ namespace Config {
 		TRANSPARENT_FLOORS,
 		TRANSPARENT_ITEMS,
 		SHOW_INGAME_BOX,
+		WEATHER_EFFECT,
 		SHOW_GRID,
 		SHOW_EXTRA,
 		SHOW_ALL_FLOORS,
@@ -189,7 +190,8 @@ namespace Config {
 		ALWAYS_SHOW_ZONES,
 		EXT_HOUSE_SHADER,
 
-		USE_PARCHMENT_BACKGROUND,
+		BG_COLOR,
+		USE_PARCHMENT_BACKGROUND = BG_COLOR,
 		GRID_OPACITY,
 		LIGHT_INTENSITY,
 		LIGHT_AMBIENT,
@@ -208,6 +210,8 @@ namespace Config {
 		MULTIPLAYER_FAVORITES,
 		MULTIPLAYER_NAME,
 		UI_SCALE,
+		FAKE_HD_ASSETS,     // Bilinear filtering for smoother 32x32 assets
+		AMBIENT_EFFECTS,    // Atmospheric cloud shadows, godrays & ambient glow
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;
@@ -263,14 +267,15 @@ public:
 			}
 		};
 		~DynamicValue() {
-			if (type == TYPE_STR) {
+			if (type == TYPE_STR && strval) {
 				delete strval;
+				strval = nullptr;
 			}
 		}
 		DynamicValue(const DynamicValue& dv) :
 			type(dv.type) {
 			if (dv.type == TYPE_STR) {
-				strval = newd std::string(*dv.strval);
+				strval = dv.strval ? newd std::string(*dv.strval) : nullptr;
 			} else if (dv.type == TYPE_INT) {
 				intval = dv.intval;
 			} else if (dv.type == TYPE_FLOAT) {
@@ -278,7 +283,26 @@ public:
 			} else {
 				intval = 0;
 			}
-		};
+		}
+		DynamicValue& operator=(const DynamicValue& dv) {
+			if (this != &dv) {
+				if (type == TYPE_STR && strval) {
+					delete strval;
+					strval = nullptr;
+				}
+				type = dv.type;
+				if (dv.type == TYPE_STR) {
+					strval = dv.strval ? newd std::string(*dv.strval) : nullptr;
+				} else if (dv.type == TYPE_INT) {
+					intval = dv.intval;
+				} else if (dv.type == TYPE_FLOAT) {
+					floatval = dv.floatval;
+				} else {
+					intval = 0;
+				}
+			}
+			return *this;
+		}
 
 		std::string str();
 

@@ -14,14 +14,17 @@
 
 ### 👥 Real-Time Collaboration (Multiplayer Live Mapping)
 * **Up to 6 Simultaneous Mappers:** Host or join live mapping sessions with up to 6 players (1 Host + 5 Clients) editing the same map simultaneously.
+* **Live-Ping & Network Quality HUD:** Real-time bidirectional millisecond latency and packet loss display powered by high-precision timestamps.
+* **Guaranteed Autoborder:** Automatic border transitions are seamlessly enforced for all connected clients (`IsLive()`), guaranteeing consistent map rendering across every player.
 * **Distinct Mapper Identity:** Each team member is assigned a unique player highlight color, live cursor outline, and customizable name tag.
 * **Smart Property Conflict Protection:** Editing tile, creature, spawn, or item properties temporarily locks the element, preventing accidental overwriting by teammates.
 * **Camera Follow Mode:** Instantly lock and follow another mapper's viewport with a single click.
 * **Alt + Click Pings & Sticky Notes:** Send animated ping rings to coordinates or leave persistent notes for your team.
 * **Auto-AFK & Keep-Alive:** Real-time idle detection ([AFK] status after 5 minutes) and seamless re-syncing on connection recovery.
-* **Frictionless Hosting:** Automated firewall integration triggering standard OS prompts without cumbersome port checks.
 
 ### 🎨 Next-Gen Rendering, Shaders & Visuals
+* **Atmospheric RPG Lighting & 2D Raycasting:** Floor-isolated lighting with Bresenham wall occlusion, window transparency, and zero GPU-overdraw lightmaps.
+* **TFS 1.6 NPC Wizard & Look-Type Generator (TLG):** Complete outfit designer with interactive 133-color palette matrix, addon toggles, and 1-click XML/Lua export.
 * **Modern Shader Pipeline:** Deferred rendering, Global Illumination (GI) raytracing, retro CRT filters, and post-processing blur directly on the canvas.
 * **High-DPI & Ultrawide Support:** Pixel-perfect 512x512 vector icons resampled with high-quality filtering for 1440p and 4K displays.
 * **Dark Gold Theme:** Elegant, distraction-free modern UI across all palettes, dialogs, minimap widgets, and sub-windows.

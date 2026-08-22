@@ -3,6 +3,8 @@
 #include "materials.h"
 #include "sprites.h"
 #include <wx/stdpaths.h>
+#include <wx/dir.h>
+#include <filesystem>
 
 wxString GUI::GetDataDirectory() {
 	std::string cfg_str = g_settings.getString(Config::DATA_DIRECTORY);
@@ -15,28 +17,58 @@ wxString GUI::GetDataDirectory() {
 			return path;
 		}
 	}
-	FileName exec_directory;
-	try {
-		exec_directory = dynamic_cast<wxStandardPaths&>(wxStandardPaths::Get()).GetExecutablePath();
-	} catch (const std::bad_cast) { throw; }
-	const auto& dirs = exec_directory.GetDirs();
-	if (!dirs.empty() && (dirs.back() == "DLLs" || dirs.back() == "bin")) {
-		exec_directory.RemoveLastDir();
-	}
+	FileName exec_directory = GetExecDirectory();
 	exec_directory.AppendDir("data");
 	return exec_directory.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
 }
 
 wxString GUI::GetExecDirectory() {
+#ifdef _WIN32
+	wchar_t exePath[MAX_PATH];
+	if (GetModuleFileNameW(NULL, exePath, MAX_PATH)) {
+		std::filesystem::path p(exePath);
+		p = p.parent_path(); // folder containing exe
+		while (!p.empty()) {
+			std::wstring fn = p.filename().wstring();
+			if (_wcsicmp(fn.c_str(), L"Win64") == 0 || _wcsicmp(fn.c_str(), L"x64") == 0 ||
+			    _wcsicmp(fn.c_str(), L"Binaries") == 0 || _wcsicmp(fn.c_str(), L"DLLs") == 0 ||
+			    _wcsicmp(fn.c_str(), L"bin") == 0 || _wcsicmp(fn.c_str(), L"Release") == 0 ||
+			    _wcsicmp(fn.c_str(), L"Debug") == 0) {
+				p = p.parent_path();
+			} else {
+				break;
+			}
+		}
+		std::error_code ec;
+		if (!std::filesystem::exists(p / "Saves", ec)) {
+			std::filesystem::path cwd = std::filesystem::current_path(ec);
+			if (!ec && std::filesystem::exists(cwd / "Saves", ec)) {
+				p = cwd;
+			}
+		}
+		std::wstring result = p.wstring();
+		if (!result.empty() && result.back() != L'\\' && result.back() != L'/') {
+			result += L'\\';
+		}
+		return wxString(result.c_str());
+	}
+#endif
 	FileName exec_directory;
 	try {
 		exec_directory = dynamic_cast<wxStandardPaths&>(wxStandardPaths::Get()).GetExecutablePath();
-	} catch (const std::bad_cast) { wxLogError("Could not fetch executable directory."); }
-	const auto& dirs = exec_directory.GetDirs();
-	if (!dirs.empty() && (dirs.back() == "DLLs" || dirs.back() == "bin")) {
-		exec_directory.RemoveLastDir();
+	} catch (const std::bad_cast&) { wxLogError("Could not fetch executable directory."); }
+	
+	while (!exec_directory.GetDirs().empty()) {
+		wxString last = exec_directory.GetDirs().back();
+		if (last == "Win64" || last == "x64" || last == "x86" || last == "Binaries" ||
+		    last == "DLLs"  || last == "bin" || last == "Release" || last == "Debug") {
+			exec_directory.RemoveLastDir();
+		} else {
+			break;
+		}
 	}
-	return exec_directory.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
+	wxString path = exec_directory.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
+	return path;
 }
 
 wxString GUI::GetLocalDataDirectory() {

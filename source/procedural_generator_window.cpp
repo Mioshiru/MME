@@ -608,6 +608,11 @@ ProceduralGeneratorDialog::~ProceduralGeneratorDialog() {
 }
 
 void ProceduralGeneratorDialog::OnClose(wxCloseEvent& event) {
+	if (has_generated) {
+		editor.actionQueue->undo();
+		has_generated = false;
+		g_gui.RefreshView();
+	}
 	if (IsModal()) {
 		EndModal(wxID_CANCEL);
 	} else {
@@ -980,6 +985,11 @@ void ProceduralGeneratorDialog::OnClickGenerate(wxCommandEvent& WXUNUSED(event))
 }
 
 void ProceduralGeneratorDialog::OnClickCancel(wxCommandEvent& WXUNUSED(event)) {
+	if (has_generated) {
+		editor.actionQueue->undo();
+		has_generated = false;
+		g_gui.RefreshView();
+	}
 	if (IsModal()) {
 		EndModal(wxID_CANCEL);
 	} else {

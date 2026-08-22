@@ -25,9 +25,7 @@
 
 MapWindow::MapWindow(wxWindow *parent, Editor &editor)
     : wxPanel(parent, PANE_MAIN), editor(editor), replaceItemsDialog(nullptr) {
-  LogErrorToFile("[MapWindow] Constructing MapCanvas...");
   canvas = newd MapCanvas(this, editor, nullptr);
-  LogErrorToFile("[MapWindow] MapCanvas constructed. Creating scrollbars & UI buttons...");
 
   vScroll = newd MapScrollBar(this, MAP_WINDOW_VSCROLL, wxVERTICAL, canvas);
   hScroll = newd MapScrollBar(this, MAP_WINDOW_HSCROLL, wxHORIZONTAL, canvas);
@@ -46,7 +44,6 @@ MapWindow::MapWindow(wxWindow *parent, Editor &editor)
   topsizer->Add(gem, wxSizerFlags(1));
 
   SetSizerAndFit(topsizer);
-  LogErrorToFile("[MapWindow] Sizer and layout fitted.");
 }
 
 MapWindow::~MapWindow() {

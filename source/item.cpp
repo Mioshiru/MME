@@ -402,11 +402,16 @@ BorderType Item::getBorderAlignment() const {
 void Item::animate() {
 	ItemType& type = g_items[id];
 	GameSprite* sprite = type.sprite;
-	if (!sprite || !sprite->animator) {
+	if (!sprite) {
 		return;
 	}
 
-	frame = sprite->animator->getFrame();
+	if (sprite->animator) {
+		frame = sprite->animator->getFrame();
+	} else if (sprite->frames > 1) {
+		long time_val = g_gui.gfx.getElapsedTime();
+		frame = (time_val / ITEM_FRAME_DURATION) % sprite->frames;
+	}
 }
 
 // ============================================================================

@@ -54,6 +54,29 @@ protected:
 	wxWindow* createContainerPanel(wxWindow* parent);
 	void saveContainerPanel();
 
+	// Door Special pane
+	wxChoice* door_type_choice;
+	wxSpinCtrl* door_req_level;
+	wxSpinCtrl* door_action_id;
+	wxSpinCtrl* door_storage_key;
+	wxWindow* createDoorSpecialPanel(wxWindow* parent);
+	void saveDoorSpecialPanel();
+
+	// Container / Quest Chest Special pane
+	wxChoice* chest_mode_choice;
+	wxPanel* chest_quest_panel;
+	wxSpinCtrl* chest_req_level;
+	wxSpinCtrl* chest_action_id;
+	wxTextCtrl* chest_reward_msg;
+	void saveContainerSpecialPanel();
+
+	// Teleporter / Switch Special pane
+	wxSpinCtrl* tele_dest_x;
+	wxSpinCtrl* tele_dest_y;
+	wxSpinCtrl* tele_dest_z;
+	wxWindow* createTeleportSpecialPanel(wxWindow* parent);
+	void saveTeleportSpecialPanel();
+
 	// Advanced pane
 	wxGrid* attributesGrid;
 	wxWindow* createAttributesPanel(wxWindow* parent);

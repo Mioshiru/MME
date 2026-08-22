@@ -1,28 +1,31 @@
-#version 130
-in vec2  aPos;
-in vec2  aTexCoord;
-in vec4  aColor;
-in float aShaderData;
+#version 120
+attribute vec2  aPos;
+attribute vec2  aTexCoord;
+attribute vec4  aColor;
+attribute float aShaderData;
 
 uniform float uTime;
+uniform int   uAmbientEffects;
+uniform int   uFloor;
 
-out vec2 vTexCoord;
-out vec4 vColor;
+varying vec2  vTexCoord;
+varying vec4  vColor;
+varying vec2  vWorldPos;
+varying float vShaderData;
 
 void main() {
-    vColor = aColor;
-    vec2 pos = aPos;
+    vColor      = aColor;
+    vShaderData = aShaderData;
+    vWorldPos   = aPos;
+    vec2 pos    = aPos;
 
-    // GPU-side water wave animation (flag 1.0)
-    if (aShaderData == 1.0) {
-        pos.x += sin(uTime * 2.5 + aPos.y * 0.05) * 3.0;
-        pos.y += cos(uTime * 1.8 + aPos.x * 0.05) * 1.5;
-        vColor.a *= 0.85;
-    }
-
-    // Dynamic objects (flag 2.0) - no vertical displacement
-    if (aShaderData == 2.0) {
-        // Reserved for sprite animation flags without vertex displacement
+    // 4.0: Foliage Wind Sway - nur Oberflaeche (floor 0-7), kein Untergrund
+    if (uAmbientEffects == 1 && aShaderData == 4.0 && uFloor <= 7) {
+        // Multi-tile synchronization: quantize coordinates to grid cells
+        // so all tiles of a 2x1, 1x2, 2x2, 3x3 object share the exact same sway without tearing!
+        vec2 objAnchor = floor(aPos / 64.0) * 64.0;
+        float wind = sin(uTime * 1.6 + objAnchor.x * 0.02 + objAnchor.y * 0.015) * 2.0;
+        pos.x += wind;
     }
 
     vTexCoord   = aTexCoord;

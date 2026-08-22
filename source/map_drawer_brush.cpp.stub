@@ -1,5 +1,0 @@
-#include "main.h"
-#include "map_drawer.h"
-
-void MapDrawer::DrawBrush() {}
-void MapDrawer::DrawRawBrush(int, int, ItemType *, uint8_t, uint8_t, uint8_t, uint8_t) {}

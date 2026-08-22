@@ -144,6 +144,8 @@ public:
 
   unsigned int GetMinimapTextureID() const { return minimap_tex_id; }
 
+  MapDrawer* GetDrawer() const { return drawer.get(); }
+
   void ExecuteMagicWandSelect(int mouse_map_x, int mouse_map_y, int floor, bool add_to_selection = false);
   void ReplaceSelectionWithBrush(Brush* brush);
 
@@ -264,6 +266,7 @@ protected:
   MapPopupMenu *popup_menu;
   AnimationTimer *animation_timer;
   bool needs_repaint = true; // [PERF] Dirty flag for AnimationTimer
+  struct ImGuiContext* imgui_context = nullptr;
 
   friend class MapDrawer;
   friend class PaletteWindow;

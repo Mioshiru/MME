@@ -179,11 +179,11 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		auto_scaled = true;
 	}
 
-	static bool imgui_initialized = false;
-	if (!imgui_initialized) {
+	if (!imgui_context) {
 		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable; // <--- THIS WAS MISSING AND CAUSED THE CRASH
+		imgui_context = ImGui::CreateContext();
+		ImGui::SetCurrentContext(imgui_context);
+		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		ImGui::StyleColorsDark();
 		
 		// Custom styling for a premium look
@@ -243,7 +243,8 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		style.Colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.16f, 0.18f, 0.25f, 1.00f);
 
 		ImGui_ImplOpenGL3_Init(nullptr);
-		imgui_initialized = true;
+	} else {
+		ImGui::SetCurrentContext(imgui_context);
 	}
 
 	if (g_gui.IsRenderingEnabled()) {
@@ -394,7 +395,11 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
 					ImGui::Text("%s:", nstr(peer->getName()).c_str());
 					ImGui::SameLine();
-					ImGui::TextColored(col, " %d ms | %u%% loss | %s", lat, peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
+					if (lat <= 1) {
+						ImGui::TextColored(col, " < 1 ms | %u%% loss | %s", peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
+					} else {
+						ImGui::TextColored(col, " %u ms | %u%% loss | %s", lat, peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
+					}
 				}
 				ImGui::EndTooltip();
 			}
@@ -404,7 +409,11 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
 			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Join Mode | ");
 			ImGui::SameLine();
-			ImGui::TextColored(col, "%s | %d ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), lat, client->getPacketLoss());
+			if (lat <= 1) {
+				ImGui::TextColored(col, "%s | < 1 ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), client->getPacketLoss());
+			} else {
+				ImGui::TextColored(col, "%s | %u ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), lat, client->getPacketLoss());
+			}
 		}
 		ImGui::Separator();
 

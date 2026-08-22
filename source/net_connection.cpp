@@ -91,9 +91,10 @@ NetworkConnection& NetworkConnection::getInstance() {
 bool NetworkConnection::start() {
 	if (thread.joinable()) {
 		if (stopped) {
-			return false;
+			stop();
+		} else {
+			return true;
 		}
-		return true;
 	}
 
 	stopped = false;
@@ -102,27 +103,23 @@ bool NetworkConnection::start() {
 	}
 
 	thread = std::thread([this]() -> void {
-		boost::asio::io_context& serviceRef = *service;
 		try {
-			while (!stopped) {
-				serviceRef.run_one();
-				serviceRef.restart();
-			}
-		} catch (std::exception& e) {
-			std::cout << e.what() << std::endl;
+			auto work_guard = boost::asio::make_work_guard(*service);
+			service->run();
+		} catch (...) {
 		}
 	});
 	return true;
 }
 
 void NetworkConnection::stop() {
-	if (!service) {
-		return;
-	}
-
-	service->stop();
 	stopped = true;
-	thread.join();
+	if (service) {
+		service->stop();
+	}
+	if (thread.joinable()) {
+		thread.join();
+	}
 
 	delete service;
 	service = nullptr;

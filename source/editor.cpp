@@ -1398,7 +1398,7 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 						if (!doodad_brush->placeOnDuplicate() && !alt) {
 							for (ItemVector::iterator item_iter = new_tile->items.begin(); item_iter != new_tile->items.end();) {
 								Item* item = *item_iter;
-								if (!item->isBorder() && !item->isCarpet() && !item->isWall() && !item->isDoor()) {
+								if (doodad_brush->ownsItem(item)) {
 									delete item;
 									item_iter = new_tile->items.erase(item_iter);
 								} else {
@@ -1430,20 +1430,12 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 				}
 				if (!is_wall_blocking) {
 					bool place = true;
-					if (tile && !doodad_brush->placeOnDuplicate() && !alt) {
-						for (ItemVector::const_iterator iter = tile->items.begin(); iter != tile->items.end(); ++iter) {
-							if (doodad_brush->ownsItem(*iter)) {
-								place = false;
-								break;
-							}
-						}
-					}
 					if (place) {
 						Tile* new_tile = tile ? tile->deepCopy(map) : map.allocator(location);
 						if (tile && !doodad_brush->placeOnDuplicate() && !alt) {
 							for (ItemVector::iterator item_iter = new_tile->items.begin(); item_iter != new_tile->items.end();) {
 								Item* item = *item_iter;
-								if (!item->isBorder() && !item->isCarpet() && !item->isWall() && !item->isDoor()) {
+								if (doodad_brush->ownsItem(item)) {
 									delete item;
 									item_iter = new_tile->items.erase(item_iter);
 								} else {
@@ -1630,7 +1622,8 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, bool alt, bool d
 }
 
 void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& tilestoborder, bool alt, bool dodraw) {
-	if (defer_borders && g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+	bool use_automagic = (g_settings.getInteger(Config::USE_AUTOMAGIC) != 0) || IsLive();
+	if (defer_borders && use_automagic) {
 		pending_borders.insert(pending_borders.end(), tilestoborder.begin(), tilestoborder.end());
 		tilestoborder.clear();
 	}
@@ -1649,7 +1642,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 			Tile* tile = location->get();
 			if (tile) {
 				Tile* new_tile = tile->deepCopy(map);
-				if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+				if (use_automagic) {
 					new_tile->cleanBorders();
 				}
 				if (dodraw) {
@@ -1693,7 +1686,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		// Commit changes to map
 		batch->addAndCommitAction(action);
 
-		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+		if (use_automagic) {
 			// Do borders!
 			action = actionQueue->createAction(batch);
 			for (PositionVector::const_iterator it = tilestoborder.begin(); it != tilestoborder.end(); ++it) {
@@ -1751,7 +1744,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		batch->addAndCommitAction(action);
 
 		// Do borders (tableize / carpetize)!
-		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+		if (use_automagic) {
 			action = actionQueue->createAction(batch);
 
 			std::unordered_set<uint64_t> border_set;
@@ -1828,7 +1821,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 		// Commit changes to map
 		batch->addAndCommitAction(action);
 
-		if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+		if (use_automagic) {
 			// Do walls! Collect all drawn tiles + direct neighbors for wallize pass.
 			// We CANNOT rely on tilestoborder here because defer_borders clears it
 			// before this code runs.
@@ -1932,7 +1925,7 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 			// Commit changes to map
 			batch->addAndCommitAction(action);
 
-			if (g_settings.getInteger(Config::USE_AUTOMAGIC)) {
+			if (use_automagic) {
 				// Do walls! Must use tilestodraw + neighbors directly because
 				// defer_borders clears tilestoborder before we get here,
 				// making the old tilestoborder-based wallize pass a no-op.

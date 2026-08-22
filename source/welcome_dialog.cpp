@@ -30,6 +30,9 @@
 #include <wx/tokenzr.h>
 #include "live_client.h"
 #include "firewall_helper.h"
+#include "iomap_sec.h"
+#include "editor.h"
+#include <filesystem>
 wxDEFINE_EVENT(WELCOME_DIALOG_ACTION, wxCommandEvent);
 wxDEFINE_EVENT(WELCOME_DIALOG_DELETE_RECENT, wxCommandEvent);
 
@@ -243,18 +246,55 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent& event) {
 				});
 			}
 		} else {
-			wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
 			if (button->GetAction() == wxID_OPEN) {
-				// File picker
-				wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0
-					? "(*.otbm;*.otgz)|*.otbm;*.otgz"
-					: "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
-				wxFileDialog file_dialog(this, "Open map file", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-				if (file_dialog.ShowModal() != wxID_OK) {
+				wxArrayString load_options;
+				load_options.Add("OpenTibia Map File (*.otbm, *.otgz)");
+				load_options.Add("CipSoft / RealOTS / Nostalrius Sector Map Folder (*.sec)");
+
+				wxSingleChoiceDialog choice_dlg(this, "Select the type of map you want to load:", "Load Map", load_options);
+				if (choice_dlg.ShowModal() != wxID_OK) {
 					return;
 				}
-				action_event.SetString(file_dialog.GetPath());
+
+				if (choice_dlg.GetSelection() == 0) {
+					// OpenTibia File picker
+					wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0
+						? "(*.otbm;*.otgz)|*.otbm;*.otgz"
+						: "(*.otbm)|*.otbm|Compressed OpenTibia Binary Map (*.otgz)|*.otgz";
+					wxFileDialog file_dialog(this, "Open Map File", "", "", wildcard, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+					if (file_dialog.ShowModal() != wxID_OK) {
+						return;
+					}
+					wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
+					action_event.SetString(file_dialog.GetPath());
+					action_event.SetId(button->GetAction());
+					ProcessWindowEvent(action_event);
+				} else {
+					// CipSoft / RealOTS Sector Folder
+					wxDirDialog dir_dialog(this, "Select CipSoft / RealOTS Sector Folder (containing .sec files)", "", wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+					if (dir_dialog.ShowModal() != wxID_OK) {
+						return;
+					}
+					wxString sec_path = dir_dialog.GetPath();
+					g_gui.FinishWelcomeDialog();
+					wxTheApp->CallAfter([sec_path]() {
+						g_gui.NewMap();
+						if (g_gui.GetCurrentEditor()) {
+							IOMapSEC sec_io;
+							g_gui.SetStatusText("Importing CipSoft .sec sectors from " + sec_path + "...");
+							if (sec_io.loadMap(g_gui.GetCurrentEditor()->map, FileName(sec_path))) {
+								g_gui.RefreshView();
+								wxMessageBox("CipSoft / RealOTS .sec sectors loaded successfully into the map editor!", "Map Loaded", wxICON_INFORMATION);
+							} else {
+								wxMessageBox("Failed to load .sec sectors: " + sec_io.getError(), "Error", wxICON_ERROR);
+							}
+						}
+					});
+				}
+				return;
 			}
+
+			wxCommandEvent action_event(WELCOME_DIALOG_ACTION);
 			action_event.SetId(button->GetAction());
 			ProcessWindowEvent(action_event);
 		}
@@ -323,15 +363,54 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	scrollWin->SetScrollRate(0, 15);
 
 	wxBoxSizer* slotsSizer = newd wxBoxSizer(wxVERTICAL);
-	wxString basePath = GUI::GetExecDirectory();
+	std::filesystem::path savesDir;
+	std::vector<std::filesystem::path> searchRoots;
+	
+	// 1. GetExecDirectory
+	wxString execDirStr = GUI::GetExecDirectory();
+	if (!execDirStr.empty()) {
+		searchRoots.push_back(std::filesystem::path(execDirStr.wc_str()));
+	}
+	
+	// 2. Current working directory
+	std::error_code ec;
+	std::filesystem::path cwd = std::filesystem::current_path(ec);
+	if (!ec) {
+		searchRoots.push_back(cwd);
+		searchRoots.push_back(cwd.parent_path());
+	}
+	
+	// 3. Native Win32 Executable location
+#ifdef _WIN32
+	wchar_t rawExe[MAX_PATH];
+	if (GetModuleFileNameW(NULL, rawExe, MAX_PATH)) {
+		std::filesystem::path ep(rawExe);
+		searchRoots.push_back(ep.parent_path());
+		searchRoots.push_back(ep.parent_path().parent_path());
+		searchRoots.push_back(ep.parent_path().parent_path().parent_path());
+	}
+#endif
+
+	for (const auto& root : searchRoots) {
+		std::filesystem::path testSaves = root / "Saves";
+		if (std::filesystem::exists(testSaves, ec) && std::filesystem::is_directory(testSaves, ec)) {
+			savesDir = testSaves;
+			break;
+		}
+	}
 	for (size_t i = 1; i <= 50; ++i) {
 		wxString file;
-		wxString slot_dir = basePath + wxString::Format("Saves/Slot %zu", i);
-		if (wxDir::Exists(slot_dir)) {
-			wxDir dir(slot_dir);
-			wxString filename;
-			if (dir.GetFirst(&filename, "*.otbm", wxDIR_FILES)) {
-				file = slot_dir + "/" + filename;
+		std::filesystem::path slotDir = savesDir / ("Slot " + std::to_string(i));
+		if (std::filesystem::exists(slotDir, ec) && std::filesystem::is_directory(slotDir, ec)) {
+			for (const auto& entry : std::filesystem::directory_iterator(slotDir, ec)) {
+				if (entry.is_regular_file(ec)) {
+					std::string ext = entry.path().extension().string();
+					for (char &c : ext) c = tolower(c);
+					if (ext == ".otbm") {
+						file = wxString(entry.path().wstring().c_str());
+						break;
+					}
+				}
 			}
 		}
 		auto* recent_item = newd RecentItem(scrollWin, dialog, base_colour, file, static_cast<int>(i - 1));
@@ -637,6 +716,9 @@ JoinMultiplayerDialog::JoinMultiplayerDialog(wxWindow* parent) :
 	m_favorites_choice->Bind(wxEVT_CHOICE, &JoinMultiplayerDialog::OnFavoriteSelected, this);
 	m_add_fav_btn->Bind(wxEVT_BUTTON, &JoinMultiplayerDialog::OnAddFavorite, this);
 	m_rem_fav_btn->Bind(wxEVT_BUTTON, &JoinMultiplayerDialog::OnRemoveFavorite, this);
+	m_name_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+		LoadFavorites();
+	});
 
 	LoadFavorites();
 }
@@ -653,12 +735,40 @@ wxString JoinMultiplayerDialog::GetPlayerName() const {
 	return m_name_ctrl->GetValue().Trim();
 }
 
+static std::string GetFavoritesFilename(wxString nick) {
+	std::string s = nick.Trim().ToStdString();
+	std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+	std::string clean;
+	for (char c : s) {
+		if (isalnum((unsigned char)c) || c == '_' || c == '-') {
+			clean += c;
+		}
+	}
+	if (clean.empty()) clean = "default";
+	return "favorites_" + clean + ".cfg";
+}
+
 void JoinMultiplayerDialog::LoadFavorites() {
 	m_favorites.clear();
 	m_favorites_choice->Clear();
 	m_favorites_choice->Append("-- Select Favorite --");
 
-	wxString fav_str = g_settings.getString(Config::MULTIPLAYER_FAVORITES);
+	wxString fav_str;
+	wxString nickVal = m_name_ctrl ? m_name_ctrl->GetValue() : wxString();
+	std::string fn = GetFavoritesFilename(nickVal);
+	
+	// Check user specific file
+	std::ifstream infile(fn);
+	if (infile.is_open()) {
+		std::string line;
+		std::getline(infile, line);
+		fav_str = wxString::FromUTF8(line.c_str());
+		infile.close();
+	}
+	if (fav_str.empty()) {
+		fav_str = g_settings.getString(Config::MULTIPLAYER_FAVORITES);
+	}
+
 	wxStringTokenizer tokens(fav_str, ";");
 	while (tokens.HasMoreTokens()) {
 		wxString token = tokens.GetNextToken();
@@ -685,6 +795,15 @@ void JoinMultiplayerDialog::SaveFavorites() {
 		fav_str += wxString::Format("%s|%s|%d|%s", m_favorites[i].label, m_favorites[i].ip, m_favorites[i].port, m_favorites[i].name);
 	}
 	g_settings.setString(Config::MULTIPLAYER_FAVORITES, nstr(fav_str));
+
+	// Save to case-insensitive user file
+	wxString nickVal = m_name_ctrl ? m_name_ctrl->GetValue() : wxString();
+	std::string fn = GetFavoritesFilename(nickVal);
+	std::ofstream outfile(fn);
+	if (outfile.is_open()) {
+		outfile << fav_str.ToStdString() << "\n";
+		outfile.close();
+	}
 }
 
 void JoinMultiplayerDialog::OnFavoriteSelected(wxCommandEvent& event) {

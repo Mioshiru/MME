@@ -51,7 +51,7 @@ wxConfigBase& Settings::getConfigObject() {
 }
 
 bool Settings::getBoolean(uint32_t key) const {
-	if (key > Config::LAST) {
+	if (key >= Config::LAST || key >= store.size()) {
 		return false;
 	}
 
@@ -63,7 +63,7 @@ bool Settings::getBoolean(uint32_t key) const {
 }
 
 int Settings::getInteger(uint32_t key) const {
-	if (key > Config::LAST) {
+	if (key >= Config::LAST || key >= store.size()) {
 		return 0;
 	}
 	const DynamicValue& dv = store[key];
@@ -74,7 +74,7 @@ int Settings::getInteger(uint32_t key) const {
 }
 
 float Settings::getFloat(uint32_t key) const {
-	if (key > Config::LAST) {
+	if (key >= Config::LAST || key >= store.size()) {
 		return 0.0;
 	}
 	const DynamicValue& dv = store[key];
@@ -85,7 +85,7 @@ float Settings::getFloat(uint32_t key) const {
 }
 
 std::string Settings::getString(uint32_t key) const {
-	if (key > Config::LAST) {
+	if (key >= Config::LAST || key >= store.size()) {
 		return "";
 	}
 	const DynamicValue& dv = store[key];
@@ -96,7 +96,7 @@ std::string Settings::getString(uint32_t key) const {
 }
 
 void Settings::setInteger(uint32_t key, int newval) {
-	if (key > Config::LAST) {
+	if (key >= Config::LAST || key >= store.size()) {
 		return;
 	}
 	DynamicValue& dv = store[key];
@@ -109,7 +109,7 @@ void Settings::setInteger(uint32_t key, int newval) {
 }
 
 void Settings::setFloat(uint32_t key, float newval) {
-	if (key > Config::LAST) {
+	if (key >= Config::LAST || key >= store.size()) {
 		return;
 	}
 	DynamicValue& dv = store[key];
@@ -122,7 +122,7 @@ void Settings::setFloat(uint32_t key, float newval) {
 }
 
 void Settings::setString(uint32_t key, std::string newval) {
-	if (key > Config::LAST) {
+	if (key >= Config::LAST || key >= store.size()) {
 		return;
 	}
 	DynamicValue& dv = store[key];
@@ -207,9 +207,10 @@ void Settings::IO(IOMode mode) {
 	Int(TRANSPARENT_ITEMS, 0);
 	Int(SHOW_ALL_FLOORS, 1);
 	Int(SHOW_INGAME_BOX, 0);
+	Int(WEATHER_EFFECT, 0);
 	Int(SHOW_LIGHTS, 1);
 	Float(LIGHT_INTENSITY, 1.0f);
-	Float(LIGHT_AMBIENT, 0.5f);
+	Float(LIGHT_AMBIENT, 0.15f);
 	Int(SHOW_LIGHT_STR, 1);
 	Int(SHOW_TECHNICAL_ITEMS, 1);
 	Int(SHOW_WAYPOINTS, 1);
@@ -255,7 +256,6 @@ void Settings::IO(IOMode mode) {
 	Int(UNDO_SIZE, 5); // Speichert die letzten 5 Schritte für Undo / Redo
 	Int(UNDO_MEM_SIZE, 60);
 	Int(ERASER_LEAVE_GROUND, 0);
-	Int(ERASER_LEAVE_UNIQUE, 0);
 	Int(NO_HOTKEYS_MODE, 0);
 	Int(GROUP_ACTIONS, 1);
 	Int(SELECTION_TYPE, SELECT_CURRENT_FLOOR);
@@ -335,6 +335,8 @@ void Settings::IO(IOMode mode) {
 	Int(USE_GUI_SELECTION_SHADOW, 0);
 	Int(SHOW_FPS, 0);
 	Int(UI_SCALE, 100);
+	Int(FAKE_HD_ASSETS, 0);
+	Int(AMBIENT_EFFECTS, 1);
 	Int(PALETTE_COL_COUNT, 8);
 	String(PALETTE_TERRAIN_STYLE, "large icons");
 	String(PALETTE_COLLECTION_STYLE, "large icons");

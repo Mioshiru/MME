@@ -29,7 +29,7 @@ std::string MMEUpdater::GetCurrentVersion() const {
 #ifdef __RME_VERSION__
 	return std::string(__RME_VERSION__);
 #else
-	return "1.8.5";
+	return "1.9.0";
 #endif
 }
 

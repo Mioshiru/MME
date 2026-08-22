@@ -21,6 +21,7 @@
 #include <cmath>
 #include <imgui.h>
 #include <map>
+#include <unordered_map>
 #include <nanovg.h>
 
 #ifdef __APPLE__
@@ -144,47 +145,181 @@ static PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays = nullptr;
 
 // ── Embedded GLSL source (no file-IO at runtime) ─────────────────────────────
 static const char* k_MapVertSrc = R"GLSL(
-#version 130
-in vec2  aPos;
-in vec2  aTexCoord;
-in vec4  aColor;
-in float aShaderData;
-uniform float uTime;
-out vec2 vTexCoord;
-out vec4 vColor;
+#version 120
+attribute vec2  aPos;
+attribute vec2  aTexCoord;
+attribute vec4  aColor;
+attribute float aShaderData;
+uniform   float uTime;
+uniform   int   uAmbientEffects;
+uniform   int   uFloor;
+varying   vec2  vTexCoord;
+varying   vec4  vColor;
+varying   vec2  vWorldPos;
+varying   float vShaderData;
+
 void main() {
-    vColor = aColor;
-    vec2 pos = aPos;
-    if (aShaderData == 1.0) {
-        pos.x += sin(uTime * 2.5 + aPos.y * 0.05) * 3.0;
-        pos.y += cos(uTime * 1.8 + aPos.x * 0.05) * 1.5;
-        vColor.a *= 0.85;
+    vColor      = aColor;
+    vShaderData = aShaderData;
+    vWorldPos   = aPos;
+    vec2 pos    = aPos;
+
+    // 4.0: Foliage Wind Sway - nur Oberflaeche (floor 0-7), kein Untergrund
+    if (uAmbientEffects == 1 && aShaderData == 4.0 && uFloor <= 7) {
+        // Multi-tile synchronization: quantize coordinates to grid cells
+        // so all tiles of a 2x1, 1x2, 2x2, 3x3 object share the exact same sway without tearing!
+        vec2 objAnchor = floor(aPos / 64.0) * 64.0;
+        float wind = sin(uTime * 1.6 + objAnchor.x * 0.02 + objAnchor.y * 0.015) * 2.0;
+        pos.x += wind;
     }
-    if (aShaderData == 2.0) {
-        // Dynamic objects - no vertical vertex displacement
-    }
+
     vTexCoord   = aTexCoord;
     gl_Position = gl_ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
 }
 )GLSL";
 
 static const char* k_MapFragSrc = R"GLSL(
-#version 130
+#version 120
 uniform sampler2D uTexture;
-in  vec2 vTexCoord;
-in  vec4 vColor;
+uniform int   uUpscaling;
+uniform int   uAmbientEffects;
+uniform float uTime;
+uniform int   uFloor;
+
+varying vec2  vTexCoord;
+varying vec4  vColor;
+varying vec2  vWorldPos;
+varying float vShaderData;
+
+// Perceptual color distance metric (YUV luminance-weighted for accurate sprite edge detection)
+float colorDist(vec4 c1, vec4 c2) {
+    if (c1.a < 0.05 && c2.a < 0.05) return 0.0;
+    if (c1.a < 0.05 || c2.a < 0.05) return 2.0;
+    vec3 yuv1 = vec3(dot(c1.rgb, vec3(0.299, 0.587, 0.114)), c1.r - c1.b, c1.g - c1.b);
+    vec3 yuv2 = vec3(dot(c2.rgb, vec3(0.299, 0.587, 0.114)), c2.r - c2.b, c2.g - c2.b);
+    vec3 diff = abs(yuv1 - yuv2);
+    return diff.x * 0.75 + (diff.y + diff.z) * 0.25 + abs(c1.a - c2.a) * 0.5;
+}
+
+// Alpha-safe color blending (prevents dark halos around transparent sprite boundaries)
+vec4 blendEdge(vec4 c1, vec4 c2) {
+    if (c1.a < 0.05) return c2;
+    if (c2.a < 0.05) return c1;
+    return mix(c1, c2, 0.5);
+}
+
+// Advanced 4x/5x Multi-Angle xBRZ & Super-xBR Filter
+vec4 sampleXBRZ(sampler2D tex, vec2 uv) {
+    vec2 texSize = vec2(32.0, 32.0);
+    vec2 ps = vec2(1.0 / 32.0, 1.0 / 32.0);
+    vec2 pos = uv * texSize;
+    vec2 f = fract(pos);
+    vec2 centerUV = (floor(pos) + 0.5) * ps;
+
+    vec4 E  = texture2D(tex, centerUV);
+    vec4 B  = texture2D(tex, centerUV + vec2( 0.0,   -ps.y));
+    vec4 D  = texture2D(tex, centerUV + vec2(-ps.x,   0.0));
+    vec4 F  = texture2D(tex, centerUV + vec2( ps.x,   0.0));
+    vec4 H  = texture2D(tex, centerUV + vec2( 0.0,    ps.y));
+
+    // Fast-path early exit: flat areas (grass/water/dirt) skip all 13-tap calculations
+    if (B == D && D == F && F == H && H == E) {
+        return E;
+    }
+
+    vec4 A  = texture2D(tex, centerUV + vec2(-ps.x,  -ps.y));
+    vec4 C  = texture2D(tex, centerUV + vec2( ps.x,  -ps.y));
+    vec4 G  = texture2D(tex, centerUV + vec2(-ps.x,   ps.y));
+    vec4 I  = texture2D(tex, centerUV + vec2( ps.x,   ps.y));
+    vec4 B1 = texture2D(tex, centerUV + vec2( 0.0,   -2.0 * ps.y));
+    vec4 D1 = texture2D(tex, centerUV + vec2(-2.0 * ps.x, 0.0));
+    vec4 F1 = texture2D(tex, centerUV + vec2( 2.0 * ps.x, 0.0));
+    vec4 H1 = texture2D(tex, centerUV + vec2( 0.0,    2.0 * ps.y));
+
+    vec4 color = E;
+
+    if (f.x < 0.5 && f.y < 0.5) {
+        float d_edge = colorDist(D, B); float d_diag = colorDist(A, E);
+        if (d_edge < d_diag && (colorDist(E, D) < 0.12 || colorDist(E, B) < 0.12 || d_edge < 0.35)) {
+            vec4 edgeCol = blendEdge(D, B);
+            float dist45 = (0.5 - f.x) + (0.5 - f.y);
+            float distShallow = (0.5 - f.x) * 0.5 + (0.5 - f.y);
+            float distSteep   = (0.5 - f.x) + (0.5 - f.y) * 0.5;
+            if (colorDist(D1, B) < colorDist(D1, E) && distShallow > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distShallow)); }
+            else if (colorDist(D, B1) < colorDist(E, B1) && distSteep > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distSteep)); }
+            else if (dist45 > 0.38) { color = mix(color, edgeCol, smoothstep(0.35, 0.55, dist45)); }
+        }
+    } else if (f.x >= 0.5 && f.y < 0.5) {
+        float d_edge = colorDist(B, F); float d_diag = colorDist(C, E);
+        if (d_edge < d_diag && (colorDist(E, B) < 0.12 || colorDist(E, F) < 0.12 || d_edge < 0.35)) {
+            vec4 edgeCol = blendEdge(B, F);
+            float dist45 = (f.x - 0.5) + (0.5 - f.y);
+            float distShallow = (f.x - 0.5) * 0.5 + (0.5 - f.y);
+            float distSteep   = (f.x - 0.5) + (0.5 - f.y) * 0.5;
+            if (colorDist(F1, B) < colorDist(F1, E) && distShallow > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distShallow)); }
+            else if (colorDist(F, B1) < colorDist(E, B1) && distSteep > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distSteep)); }
+            else if (dist45 > 0.38) { color = mix(color, edgeCol, smoothstep(0.35, 0.55, dist45)); }
+        }
+    } else if (f.x < 0.5 && f.y >= 0.5) {
+        float d_edge = colorDist(D, H); float d_diag = colorDist(G, E);
+        if (d_edge < d_diag && (colorDist(E, D) < 0.12 || colorDist(E, H) < 0.12 || d_edge < 0.35)) {
+            vec4 edgeCol = blendEdge(D, H);
+            float dist45 = (0.5 - f.x) + (f.y - 0.5);
+            float distShallow = (0.5 - f.x) * 0.5 + (f.y - 0.5);
+            float distSteep   = (0.5 - f.x) + (f.y - 0.5) * 0.5;
+            if (colorDist(D1, H) < colorDist(D1, E) && distShallow > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distShallow)); }
+            else if (colorDist(D, H1) < colorDist(E, H1) && distSteep > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distSteep)); }
+            else if (dist45 > 0.38) { color = mix(color, edgeCol, smoothstep(0.35, 0.55, dist45)); }
+        }
+    } else if (f.x >= 0.5 && f.y >= 0.5) {
+        float d_edge = colorDist(F, H); float d_diag = colorDist(I, E);
+        if (d_edge < d_diag && (colorDist(E, F) < 0.12 || colorDist(E, H) < 0.12 || d_edge < 0.35)) {
+            vec4 edgeCol = blendEdge(F, H);
+            float dist45 = (f.x - 0.5) + (f.y - 0.5);
+            float distShallow = (f.x - 0.5) * 0.5 + (f.y - 0.5);
+            float distSteep   = (f.x - 0.5) + (f.y - 0.5) * 0.5;
+            if (colorDist(F1, H) < colorDist(F1, E) && distShallow > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distShallow)); }
+            else if (colorDist(F, H1) < colorDist(E, H1) && distSteep > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distSteep)); }
+            else if (dist45 > 0.38) { color = mix(color, edgeCol, smoothstep(0.35, 0.55, dist45)); }
+        }
+    }
+
+    vec4 crossAvg = (B + D + F + H) * 0.25;
+    vec4 sharp = color + (color - crossAvg) * 0.05;
+    color = mix(color, sharp, 0.50);
+    float lum = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+    color.rgb = mix(vec3(lum), color.rgb, 1.03);
+    return color;
+}
+
 void main() {
-    vec4 texel = texture(uTexture, vTexCoord);
+    vec4 texel;
+    if (uUpscaling == 1) {
+        texel = sampleXBRZ(uTexture, vTexCoord);
+    } else {
+        texel = texture2D(uTexture, vTexCoord);
+    }
+
+    // Lava / Magma subtle warm pulse (3.0)
+    if (uAmbientEffects == 1 && vShaderData == 3.0) {
+        float pulse = 0.93 + 0.15 * sin(uTime * 2.4 + vWorldPos.x * 0.05 + vWorldPos.y * 0.05);
+        if (texel.r > 0.35) {
+            texel.rgb *= pulse;
+            texel.r = min(1.0, texel.r * 1.10);
+        }
+    }
+
     if (texel.a < 0.01) discard;
     gl_FragColor = texel * vColor;
 }
 )GLSL";
 
 
-// ── Shader singleton + time accumulator ──────────────────────────────────────
+// ── Shader singleton + time accumulator + FPS monitor ──────────────────────
 static RME_Rendering::ShaderProgram g_map_shader;
 static float g_shader_time = 0.0f;
 static uint32_t g_shader_last_ms = 0;
+static float g_current_fps = 120.0f;
 
 // Build column-major orthographic matrix (no GLM dependency)
 static void makeOrtho(float* m16, float l, float r, float b, float t) {
@@ -236,7 +371,7 @@ void DrawingOptions::SetDefault() {
   show_as_minimap = false;
   show_only_colors = false;
   show_only_modified = false;
-  show_preview = false;
+  show_preview = true;
   show_hooks = false;
   hide_items_when_zoomed = true;
 }
@@ -268,7 +403,7 @@ void DrawingOptions::SetIngame() {
   show_as_minimap = false;
   show_only_colors = false;
   show_only_modified = false;
-  show_preview = false;
+  show_preview = true;
   show_hooks = false;
   hide_items_when_zoomed = false;
 }
@@ -359,12 +494,33 @@ void MapDrawer::DrawBrush() {
       float draw_x = ((mouse_map_x * TileSize) - view_scroll_x) - offset;
       float draw_y = ((mouse_map_y * TileSize) - view_scroll_y) - offset;
       glDisable(GL_TEXTURE_2D);
-      glColor4ub(255, 255, 255, 60);
+      // Subtle gold fill
+      glColor4ub(255, 215, 0, 40);
       glBegin(GL_QUADS);
       glVertex2f(draw_x, draw_y);
       glVertex2f(draw_x + TileSize, draw_y);
       glVertex2f(draw_x + TileSize, draw_y + TileSize);
       glVertex2f(draw_x, draw_y + TileSize);
+      glEnd();
+
+      // Outer Corporate Gold Border (#FFD700)
+      glLineWidth(2.0f);
+      glColor4ub(255, 215, 0, 230);
+      glBegin(GL_LINE_LOOP);
+      glVertex2f(draw_x, draw_y);
+      glVertex2f(draw_x + TileSize, draw_y);
+      glVertex2f(draw_x + TileSize, draw_y + TileSize);
+      glVertex2f(draw_x, draw_y + TileSize);
+      glEnd();
+
+      // Inner Warm Accent Gold Line (#D4AF37)
+      glLineWidth(1.0f);
+      glColor4ub(212, 175, 55, 170);
+      glBegin(GL_LINE_LOOP);
+      glVertex2f(draw_x + 1.0f, draw_y + 1.0f);
+      glVertex2f(draw_x + TileSize - 1.0f, draw_y + 1.0f);
+      glVertex2f(draw_x + TileSize - 1.0f, draw_y + TileSize - 1.0f);
+      glVertex2f(draw_x + 1.0f, draw_y + TileSize - 1.0f);
       glEnd();
       glEnable(GL_TEXTURE_2D);
     }
@@ -733,10 +889,232 @@ void MapDrawer::DrawIngameBox() {
   int center_y = start_y + int(screensize_y * zoom / 64);
   int box_start_x = center_x * TileSize - view_scroll_x;
   int box_start_y = (center_y + 2) * TileSize - view_scroll_y;
+  int box_w = ClientMapWidth * TileSize;
+  int box_h = ClientMapHeight * TileSize;
+
+  // Extended outer client box (+10 tiles on each side for widescreen / high-res preview)
+  int ext_margin = 10 * TileSize;
+  int ext_x = box_start_x - ext_margin;
+  int ext_y = box_start_y - ext_margin;
+  int ext_w = box_w + 2 * ext_margin;
+  int ext_h = box_h + 2 * ext_margin;
 
   glDisable(GL_TEXTURE_2D);
-  drawRect(box_start_x, box_start_y, ClientMapWidth * TileSize,
-           ClientMapHeight * TileSize, *wxRED);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // --- 1. Weather Simulation Overlay (strictly inside client box, throttled if FPS < 70) ---
+  int weather = g_settings.getInteger(Config::WEATHER_EFFECT);
+  if (weather > 0 && g_current_fps >= 70.0f) {
+    // Weather 1: Clouds & Shadows
+    if (weather == 1) {
+      // Soft drifting cloud masses
+      for (int c = 0; c < 5; ++c) {
+        float cx = ext_x + fmod((c * 230.0f) + g_shader_time * 25.0f * (1.0f + c * 0.15f), (float)(ext_w + 200.0f)) - 100.0f;
+        float cy = ext_y + fmod((c * 170.0f) + g_shader_time * 12.0f, (float)(ext_h + 100.0f)) - 50.0f;
+        float cw = 160.0f + (c % 3) * 60.0f;
+        float ch = 100.0f + (c % 2) * 50.0f;
+        glColor4ub(10, 20, 35, 45 + (c % 3) * 15);
+        glBegin(GL_QUADS);
+        glVertex2f(cx, cy);
+        glVertex2f(cx + cw, cy);
+        glVertex2f(cx + cw, cy + ch);
+        glVertex2f(cx, cy + ch);
+        glEnd();
+      }
+      // Sunlight Godray beams
+      for (int g = 0; g < 3; ++g) {
+        float gx = ext_x + fmod((g * 280.0f) + g_shader_time * 18.0f, (float)(ext_w + 150.0f)) - 50.0f;
+        glColor4ub(255, 245, 190, 22);
+        glBegin(GL_QUADS);
+        glVertex2f(gx, (float)ext_y);
+        glVertex2f(gx + 55.0f, (float)ext_y);
+        glVertex2f(gx + 120.0f, (float)(ext_y + ext_h));
+        glVertex2f(gx + 65.0f, (float)(ext_y + ext_h));
+        glEnd();
+      }
+    }
+    // Weather 2: Rain & Storm
+    else if (weather == 2) {
+      // Storm atmospheric tint
+      glColor4ub(15, 25, 45, 55);
+      glBegin(GL_QUADS);
+      glVertex2f((float)ext_x, (float)ext_y);
+      glVertex2f((float)(ext_x + ext_w), (float)ext_y);
+      glVertex2f((float)(ext_x + ext_w), (float)(ext_y + ext_h));
+      glVertex2f((float)ext_x, (float)(ext_y + ext_h));
+      glEnd();
+
+      // Slanted falling raindrops
+      glLineWidth(1.5f);
+      glBegin(GL_LINES);
+      for (int i = 0; i < 280; ++i) {
+        float speed = 520.0f + (i % 8) * 35.0f;
+        float rx = ext_x + fmod((i * 137.5f) + g_shader_time * 110.0f, (float)ext_w);
+        float ry = ext_y + fmod((i * 283.1f) + g_shader_time * speed, (float)ext_h);
+        float len = 14.0f + (i % 5) * 3.0f;
+        uint8_t a = static_cast<uint8_t>(130 + (i % 80));
+        glColor4ub(190, 220, 255, a);
+        glVertex2f(rx, ry);
+        glVertex2f(rx - 5.0f, ry + len);
+      }
+      glEnd();
+      glLineWidth(1.0f);
+
+      // Rain splash ripples
+      for (int i = 0; i < 24; ++i) {
+        float cycle = fmod(g_shader_time * 3.2f + i * 0.41f, 1.0f);
+        float sx = ext_x + fmod(i * 191.3f, (float)ext_w);
+        float sy = ext_y + fmod(i * 317.7f, (float)ext_h);
+        float r = cycle * 7.0f;
+        uint8_t a = static_cast<uint8_t>((1.0f - cycle) * 110.0f);
+        if (a > 5) {
+          glColor4ub(200, 230, 255, a);
+          glBegin(GL_LINE_LOOP);
+          for (int seg = 0; seg < 8; ++seg) {
+            float angle = seg * (6.2831853f / 8.0f);
+            glVertex2f(sx + cos(angle) * r, sy + sin(angle) * (r * 0.45f));
+          }
+          glEnd();
+        }
+      }
+    }
+    // Weather 3: Snow & Blizzard
+    else if (weather == 3) {
+      // Winter cold atmospheric tint
+      glColor4ub(210, 230, 255, 25);
+      glBegin(GL_QUADS);
+      glVertex2f((float)ext_x, (float)ext_y);
+      glVertex2f((float)(ext_x + ext_w), (float)ext_y);
+      glVertex2f((float)(ext_x + ext_w), (float)(ext_y + ext_h));
+      glVertex2f((float)ext_x, (float)(ext_y + ext_h));
+      glEnd();
+
+      // Fluttering snowflakes
+      glBegin(GL_QUADS);
+      for (int i = 0; i < 320; ++i) {
+        float speed = 40.0f + (i % 7) * 14.0f;
+        float sway = sin(g_shader_time * 2.2f + i * 1.3f) * (12.0f + (i % 5) * 3.0f);
+        float sx = ext_x + fmod(i * 83.7f + sway + g_shader_time * 18.0f, (float)ext_w);
+        float sy = ext_y + fmod(i * 157.3f + g_shader_time * speed, (float)ext_h);
+        float sz = 1.2f + (i % 4) * 0.8f;
+        uint8_t a = static_cast<uint8_t>(140 + (i % 95));
+        glColor4ub(245, 250, 255, a);
+        glVertex2f(sx - sz, sy - sz);
+        glVertex2f(sx + sz, sy - sz);
+        glVertex2f(sx + sz, sy + sz);
+        glVertex2f(sx - sz, sy + sz);
+      }
+      glEnd();
+    }
+    // Weather 4: Desert Heat / Haze
+    else if (weather == 4) {
+      // Golden desert atmospheric tint
+      glColor4ub(255, 175, 40, 40);
+      glBegin(GL_QUADS);
+      glVertex2f((float)ext_x, (float)ext_y);
+      glVertex2f((float)(ext_x + ext_w), (float)ext_y);
+      glVertex2f((float)(ext_x + ext_w), (float)(ext_y + ext_h));
+      glVertex2f((float)ext_x, (float)(ext_y + ext_h));
+      glEnd();
+
+      // Shimmering upward heat waves
+      for (int b = 0; b < 10; ++b) {
+        float by = ext_y + fmod(b * (ext_h / 10.0f) - g_shader_time * 25.0f, (float)ext_h);
+        if (by < ext_y) by += ext_h;
+        float wave = sin(g_shader_time * 2.8f + b * 1.4f) * 8.0f;
+        uint8_t a = static_cast<uint8_t>(18 + sin(g_shader_time * 1.8f + b) * 10);
+        glColor4ub(255, 220, 130, a);
+        glBegin(GL_QUADS);
+        glVertex2f((float)ext_x, by - 8.0f + wave);
+        glVertex2f((float)(ext_x + ext_w), by - 8.0f - wave);
+        glVertex2f((float)(ext_x + ext_w), by + 8.0f - wave);
+        glVertex2f((float)ext_x, by + 8.0f + wave);
+        glEnd();
+      }
+
+      // Drifting sand motes
+      glBegin(GL_QUADS);
+      for (int i = 0; i < 60; ++i) {
+        float sx = ext_x + fmod(i * 113.0f + g_shader_time * 45.0f, (float)ext_w);
+        float sy = ext_y + fmod(i * 73.0f + sin(g_shader_time * 2.0f + i) * 6.0f, (float)ext_h);
+        float sz = 1.0f + (i % 3) * 0.5f;
+        glColor4ub(240, 200, 120, static_cast<uint8_t>(120 + (i % 60)));
+        glVertex2f(sx - sz, sy - sz);
+        glVertex2f(sx + sz, sy - sz);
+        glVertex2f(sx + sz, sy + sz);
+        glVertex2f(sx - sz, sy + sz);
+      }
+      glEnd();
+    }
+    // Weather 5: Dense Fog / Mist
+    else if (weather == 5) {
+      // Base fog layer
+      glColor4ub(220, 230, 240, 65);
+      glBegin(GL_QUADS);
+      glVertex2f((float)ext_x, (float)ext_y);
+      glVertex2f((float)(ext_x + ext_w), (float)ext_y);
+      glVertex2f((float)(ext_x + ext_w), (float)(ext_y + ext_h));
+      glVertex2f((float)ext_x, (float)(ext_y + ext_h));
+      glEnd();
+
+      // Rolling mist waves
+      for (int m = 0; m < 6; ++m) {
+        float mx = ext_x + fmod((m * 210.0f) + g_shader_time * 16.0f * (1.0f + m * 0.1f), (float)(ext_w + 300.0f)) - 150.0f;
+        float my = ext_y + (m * (ext_h / 6.0f));
+        float mw = 220.0f + (m % 3) * 70.0f;
+        float mh = (ext_h / 5.0f);
+        glColor4ub(230, 240, 250, 40 + (m % 3) * 15);
+        glBegin(GL_QUADS);
+        glVertex2f(mx, my);
+        glVertex2f(mx + mw, my);
+        glVertex2f(mx + mw, my + mh);
+        glVertex2f(mx, my + mh);
+        glEnd();
+      }
+    }
+  }
+
+  // --- 2. Inner Standard Client Box (Solid Red Line) ---
+  drawRect(box_start_x, box_start_y, box_w, box_h, *wxRED);
+
+  // --- 3. Outer Extended Client Box (+10 Tiles: Red Dashed Line) ---
+  glColor4ub(255, 50, 50, 230);
+  const int dash_len = 8;
+  const int gap_len = 6;
+  // Top edge
+  for (int x = ext_x; x < ext_x + ext_w; x += dash_len + gap_len) {
+    int x2 = std::min(x + dash_len, ext_x + ext_w);
+    glBegin(GL_LINES);
+    glVertex2i(x, ext_y);
+    glVertex2i(x2, ext_y);
+    glEnd();
+  }
+  // Bottom edge
+  for (int x = ext_x; x < ext_x + ext_w; x += dash_len + gap_len) {
+    int x2 = std::min(x + dash_len, ext_x + ext_w);
+    glBegin(GL_LINES);
+    glVertex2i(x, ext_y + ext_h);
+    glVertex2i(x2, ext_y + ext_h);
+    glEnd();
+  }
+  // Left edge
+  for (int y = ext_y; y < ext_y + ext_h; y += dash_len + gap_len) {
+    int y2 = std::min(y + dash_len, ext_y + ext_h);
+    glBegin(GL_LINES);
+    glVertex2i(ext_x, y);
+    glVertex2i(ext_x, y2);
+    glEnd();
+  }
+  // Right edge
+  for (int y = ext_y; y < ext_y + ext_h; y += dash_len + gap_len) {
+    int y2 = std::min(y + dash_len, ext_y + ext_h);
+    glBegin(GL_LINES);
+    glVertex2i(ext_x + ext_w, y);
+    glVertex2i(ext_x + ext_w, y2);
+    glEnd();
+  }
+
   glEnable(GL_TEXTURE_2D);
 }
 
@@ -1035,15 +1413,28 @@ void MapDrawer::SetupGL() {
 
   // ── Phase 2: update shader uniforms ────────────────────────────────────────
   if (g_map_shader.isValid()) {
-    // Advance animation time
+    // Advance animation time & calculate moving-average FPS
     uint32_t now_ms = wxGetLocalTimeMillis().GetValue();
-    if (g_shader_last_ms != 0)
-      g_shader_time += (now_ms - g_shader_last_ms) / 1000.0f;
+    if (g_shader_last_ms != 0) {
+      float dt = (now_ms - g_shader_last_ms) / 1000.0f;
+      if (dt > 0.0001f && dt < 1.0f) {
+        float inst_fps = 1.0f / dt;
+        g_current_fps = g_current_fps * 0.90f + inst_fps * 0.10f;
+      }
+      g_shader_time += dt;
+    }
     g_shader_last_ms = now_ms;
+
+    bool allow_animations = (zoom <= 1.96f);
+    bool allow_ambient = allow_animations && g_settings.getBoolean(Config::AMBIENT_EFFECTS);
+    bool allow_upscaling = (zoom <= 1.25f) && g_settings.getBoolean(Config::FAKE_HD_ASSETS);
 
     g_map_shader.use();
     g_map_shader.setFloat("uTime",   g_shader_time);
     g_map_shader.setInt("uTexture", 0); // texture unit 0
+    g_map_shader.setInt("uUpscaling", allow_upscaling ? 1 : 0);
+    g_map_shader.setInt("uAmbientEffects", allow_ambient ? 1 : 0);
+    g_map_shader.setInt("uFloor", 7); // default: Oberflaeche
     RME_Rendering::ShaderProgram::unuse(); // VBO draw path activates it per-chunk
   }
 }
@@ -1341,11 +1732,30 @@ bool MapDrawer::addOverlayTooltips(
 }
 
 void MapDrawer::DrawBackground() {
-  bool isDarkTheme = g_settings.getInteger(Config::UI_THEME) == 0;
-  if (isDarkTheme) {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-  } else {
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  int bg_choice = g_settings.getInteger(Config::BG_COLOR);
+  switch (bg_choice) {
+    case 1: // Parchment / Warm Beige
+      glClearColor(0.85f, 0.78f, 0.67f, 1.0f);
+      break;
+    case 2: // Dark Slate
+      glClearColor(0.08f, 0.10f, 0.14f, 1.0f);
+      break;
+    case 3: // Ocean Blue
+      glClearColor(0.04f, 0.12f, 0.24f, 1.0f);
+      break;
+    case 4: // Forest Dark
+      glClearColor(0.05f, 0.12f, 0.07f, 1.0f);
+      break;
+    case 5: // Classic Grey
+      glClearColor(0.20f, 0.20f, 0.20f, 1.0f);
+      break;
+    case 6: // Pure White
+      glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+      break;
+    case 0: // Black (Default)
+    default:
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      break;
   }
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1353,9 +1763,6 @@ void MapDrawer::DrawBackground() {
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
-
-  // glAlphaFunc(GL_GEQUAL, 0.9f);
-  // glEnable(GL_ALPHA_TEST);
 }
 
 
@@ -1443,6 +1850,32 @@ void MapDrawer::DrawMap() {
     if (map_z >= end_z) {
       bool translated = false;
       bool client_states_active = false;
+      bool shader_active = false;
+
+      // Check if shader pipeline is available for this floor
+      bool can_use_shader = (g_map_shader.isValid() &&
+                             glEnableVertexAttribArray && glVertexAttribPointer &&
+                             glDisableVertexAttribArray && !only_colors);
+
+      if (can_use_shader) {
+        bool allow_animations = (zoom <= 1.96f);
+        bool allow_upscaling = (zoom <= 1.25f) && g_settings.getBoolean(Config::FAKE_HD_ASSETS);
+        bool allow_ambient   = allow_animations && g_settings.getBoolean(Config::AMBIENT_EFFECTS);
+
+        g_map_shader.use();
+        g_map_shader.setFloat("uTime", g_shader_time);
+        g_map_shader.setInt("uTexture", 0);
+        g_map_shader.setInt("uUpscaling", allow_upscaling ? 1 : 0);
+        g_map_shader.setInt("uAmbientEffects", allow_ambient ? 1 : 0);
+        g_map_shader.setInt("uFloor", map_z);
+
+        const GLsizei stride = sizeof(RME_Rendering::MapVertex);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        glEnableVertexAttribArray(3);
+        shader_active = true;
+      }
 
       for (const auto& vn : visible_nodes) {
         QTreeNode *nd = vn.node;
@@ -1452,9 +1885,6 @@ void MapDrawer::DrawMap() {
         if (!live_client || nd->isVisible(map_z > GROUND_LAYER)) {
           Floor *f = nd->getFloor(map_z);
           if (f) {
-            // [PERF] Buffer Orphaning strategy:
-            // - isDirty (user edit): full delete+recreate — correct data needed
-            // - animation/revision update: mark for rebuild but KEEP the VBO object alive
             bool needs_rebuild = false;
 
             if (nd->isDirty(map_z)) {
@@ -1467,12 +1897,11 @@ void MapDrawer::DrawMap() {
               }
               nd->clearDirty(map_z);
               needs_rebuild = true;
-            } else if ((f->has_animations && zoom <= 1.5) || f->last_rebuild_tick != current_vbo_revision) {
+            } else if ((f->has_animations && zoom < 1.95f) || f->last_rebuild_tick != current_vbo_revision) {
               // Soft update: animation frame or global revision change
-              // Keep the VBO alive — just signal a data refresh
               needs_rebuild = true;
               if (f->vbo_id != 0) {
-                g_floor_batches.erase(f->vbo_id); // batches will be repopulated
+                g_floor_batches.erase(f->vbo_id);
               }
             }
 
@@ -1524,18 +1953,13 @@ void MapDrawer::DrawMap() {
                     g_vbo_vertices.size() * sizeof(RME_Rendering::MapVertex));
 
                 if (needed > f->vbo_allocated_size) {
-                  // [PERF] Buffer Orphaning: discard old GPU storage without sync,
-                  // then upload fresh data. No glDeleteBuffers needed.
                   glBufferData(GL_ARRAY_BUFFER, needed, nullptr, GL_STREAM_DRAW);
                   glBufferData(GL_ARRAY_BUFFER, needed, g_vbo_vertices.data(), GL_STREAM_DRAW);
                   f->vbo_allocated_size = needed;
                 } else if (glBufferSubData) {
-                  // [PERF] Buffer already large enough — orphan then sub-write
-                  // to avoid GPU pipeline stall on re-use.
                   glBufferData(GL_ARRAY_BUFFER, f->vbo_allocated_size, nullptr, GL_STREAM_DRAW);
                   glBufferSubData(GL_ARRAY_BUFFER, 0, needed, g_vbo_vertices.data());
                 } else {
-                  // Fallback if glBufferSubData not available (very old driver)
                   glBufferData(GL_ARRAY_BUFFER, needed, g_vbo_vertices.data(), GL_STREAM_DRAW);
                   f->vbo_allocated_size = needed;
                 }
@@ -1556,31 +1980,12 @@ void MapDrawer::DrawMap() {
                 translated = true;
               }
 
-              // ── Phase 1+2: VAO + Shader draw path ─────────────────────────
-              if (g_map_shader.isValid() &&
-                  glEnableVertexAttribArray && glVertexAttribPointer &&
-                  glDisableVertexAttribArray) {
-
-                // Deactivate legacy client states if they were set by fallback
-                if (client_states_active) {
-                  glDisableClientState(GL_VERTEX_ARRAY);
-                  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-                  glDisableClientState(GL_COLOR_ARRAY);
-                  client_states_active = false;
-                }
-
-                g_map_shader.use();
+              if (shader_active) {
                 glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
-
-                // Describe vertex layout (matches MapVertex: pos[2], uv[2], color[4])
                 const GLsizei stride = sizeof(RME_Rendering::MapVertex);
-                glEnableVertexAttribArray(0);
                 glVertexAttribPointer(0, 2, GL_FLOAT,         GL_FALSE, stride, (void*)0);  // aPos
-                glEnableVertexAttribArray(1);
                 glVertexAttribPointer(1, 2, GL_FLOAT,         GL_FALSE, stride, (void*)8);  // aTexCoord
-                glEnableVertexAttribArray(2);
                 glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,  stride, (void*)16); // aColor
-                glEnableVertexAttribArray(3);
                 glVertexAttribPointer(3, 1, GL_FLOAT,         GL_FALSE, stride, (void*)20); // aShaderData
 
                 const auto &batches = g_floor_batches[f->vbo_id];
@@ -1588,14 +1993,6 @@ void MapDrawer::DrawMap() {
                   bindTexture(batch.textureId);
                   glDrawArrays(GL_QUADS, batch.start, batch.count);
                 }
-
-                glDisableVertexAttribArray(3);
-                glDisableVertexAttribArray(2);
-                glDisableVertexAttribArray(1);
-                glDisableVertexAttribArray(0);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-                RME_Rendering::ShaderProgram::unuse();
-
               } else {
                 // ── Fallback: legacy fixed-function path ───────────────────
                 glBindBuffer(GL_ARRAY_BUFFER, f->vbo_id);
@@ -1620,7 +2017,6 @@ void MapDrawer::DrawMap() {
               g_pending_instances.clear();
               last_bound_texture = -1;
             } else if ((f->vbo_id == 0 && !f->is_empty) || only_colors) {
-              // Only fallback to slow immediate mode if VBO is not generated or we draw colors (minimap)
               if (translated) {
                 glPopMatrix();
                 translated = false;
@@ -1640,7 +2036,7 @@ void MapDrawer::DrawMap() {
               }
             }
 
-            if (options.isDrawLight()) {
+            if (options.isDrawLight() && map_z == floor) {
               if (f->vbo_id != 0) {
                 for (const auto &l : f->lights) {
                   light_drawer->addLight(l.map_x, l.map_y, l.map_z, SpriteLight{l.intensity, l.color});
@@ -1687,6 +2083,16 @@ void MapDrawer::DrawMap() {
           glVertex2f(cx, cy);
           glEnd();
         }
+      }
+
+      if (shader_active) {
+        glDisableVertexAttribArray(3);
+        glDisableVertexAttribArray(2);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        RME_Rendering::ShaderProgram::unuse();
+        shader_active = false;
       }
 
       if (translated) {
@@ -1939,11 +2345,104 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
 
   // GPU Shader Flags setzen
   g_vbo_current_shader_flag = 0.0f;
-  if (it.isGroundTile() && (it.name.find("Water") != std::string::npos ||
-                            it.name.find("Sea") != std::string::npos)) {
-    g_vbo_current_shader_flag = 1.0f; // Wasser-Flag
+  std::string lowerName = it.name;
+  std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
+  if (it.isGroundTile() && (lowerName.find("water") != std::string::npos ||
+                            lowerName.find("sea")   != std::string::npos ||
+                            lowerName.find("ocean") != std::string::npos ||
+                            lowerName.find("river") != std::string::npos ||
+                            lowerName.find("lake")  != std::string::npos)) {
+    g_vbo_current_shader_flag = 1.0f; // Wasser
+  } else if (it.isGroundTile() && (lowerName.find("lava") != std::string::npos ||
+                                   lowerName.find("magma") != std::string::npos)) {
+    g_vbo_current_shader_flag = 3.0f; // Lava / Magma
+  } else if (it.isGroundTile() && lowerName.find("sand") != std::string::npos &&
+             lowerName.find("beach") == std::string::npos &&
+             lowerName.find("shore") == std::string::npos) {
+    g_vbo_current_shader_flag = 5.0f; // Wüstensand – Hitzeschleier
+  } else if (it.isGroundTile() && (lowerName.find("snow") != std::string::npos ||
+                                   lowerName.find("ice")  != std::string::npos ||
+                                   lowerName.find("frost") != std::string::npos)) {
+    g_vbo_current_shader_flag = 6.0f; // Schnee / Eis – Frostschleier
+  } else if (!it.isGroundTile() && !it.isBorder && !it.isWall) {
+    // Explicit blacklist: Shelves, furniture, lights, structures must NEVER sway
+    bool isBlacklisted = (
+      lowerName.find("shelf")    != std::string::npos ||
+      lowerName.find("rack")     != std::string::npos ||
+      lowerName.find("book")     != std::string::npos ||
+      lowerName.find("chest")    != std::string::npos ||
+      lowerName.find("table")    != std::string::npos ||
+      lowerName.find("chair")    != std::string::npos ||
+      lowerName.find("bench")    != std::string::npos ||
+      lowerName.find("bed")      != std::string::npos ||
+      lowerName.find("box")      != std::string::npos ||
+      lowerName.find("crate")    != std::string::npos ||
+      lowerName.find("barrel")   != std::string::npos ||
+      lowerName.find("drawer")   != std::string::npos ||
+      lowerName.find("cupboard") != std::string::npos ||
+      lowerName.find("cabinet")  != std::string::npos ||
+      lowerName.find("stump")    != std::string::npos ||
+      lowerName.find("trunk")    != std::string::npos ||
+      lowerName.find("log")      != std::string::npos ||
+      lowerName.find("lamp")     != std::string::npos ||
+      lowerName.find("lantern")  != std::string::npos ||
+      lowerName.find("torch")    != std::string::npos ||
+      lowerName.find("candle")   != std::string::npos ||
+      lowerName.find("sign")     != std::string::npos ||
+      lowerName.find("statue")   != std::string::npos ||
+      lowerName.find("carpet")   != std::string::npos ||
+      lowerName.find("tapestry") != std::string::npos ||
+      lowerName.find("dead")     != std::string::npos ||
+      lowerName.find("dry")      != std::string::npos ||
+      lowerName.find("stone")    != std::string::npos ||
+      lowerName.find("rock")     != std::string::npos ||
+      lowerName.find("fence")    != std::string::npos
+    );
+
+    if (!isBlacklisted && (
+        // Foliage: einfaches Name-Matching – alle Bäume, Pflanzen etc.
+        lowerName.find("tree")      != std::string::npos ||
+        lowerName.find("grass")     != std::string::npos ||
+        lowerName.find("wheat")     != std::string::npos ||
+        lowerName.find("flower")    != std::string::npos ||
+        lowerName.find("flowers")   != std::string::npos ||
+        lowerName.find("fern")      != std::string::npos ||
+        lowerName.find("spice")     != std::string::npos ||
+        lowerName.find("plant")     != std::string::npos ||
+        lowerName.find("plants")    != std::string::npos ||
+        lowerName.find("tentacle")  != std::string::npos ||
+        lowerName.find("sprout")    != std::string::npos ||
+        // Bekannte Baumarten per Name
+        lowerName.find("willow")    != std::string::npos ||
+        lowerName.find("pine")      != std::string::npos ||
+        lowerName.find("poplar")    != std::string::npos ||
+        lowerName.find("birch")     != std::string::npos ||
+        lowerName.find("oak")       != std::string::npos ||
+        lowerName.find("palm")      != std::string::npos ||
+        lowerName.find("bamboo")    != std::string::npos ||
+        lowerName.find("bush")      != std::string::npos ||
+        lowerName.find("shrub")     != std::string::npos ||
+        lowerName.find("reed")      != std::string::npos ||
+        lowerName.find("vine")      != std::string::npos ||
+        lowerName.find("mushroom")  != std::string::npos ||
+        lowerName.find("crop")      != std::string::npos ||
+        // ID-Whitelist bekannter Tibia-Bäume (willow, pine, poplar, birch)
+        item->getID() == 2700 || item->getID() == 2701 || item->getID() == 2702 ||
+        item->getID() == 2703 || item->getID() == 2704 || item->getID() == 2705 ||
+        item->getID() == 2706 || item->getID() == 2707 || item->getID() == 2708 ||
+        item->getID() == 2709 || item->getID() == 2710 || item->getID() == 2711 ||
+        item->getID() == 2712 || item->getID() == 2713 || item->getID() == 2714 ||
+        item->getID() == 2715 || item->getID() == 2716 || item->getID() == 2717 ||
+        item->getID() == 2718 || item->getID() == 2719 || item->getID() == 2720 ||
+        item->getID() == 8313 || item->getID() == 8314 || item->getID() == 8315 ||
+        item->getID() == 8316 || item->getID() == 8317 || item->getID() == 20178)) {
+      g_vbo_current_shader_flag = 4.0f; // Foliage – Wind Sway
+    } else if (it.sprite && it.sprite->animator) {
+      g_vbo_current_shader_flag = 2.0f; // Generisches Animations-Flag
+    }
   } else if (it.sprite && it.sprite->animator) {
-    g_vbo_current_shader_flag = 2.0f; // Animations-Flag
+    g_vbo_current_shader_flag = 2.0f; // Generisches Animations-Flag
   }
 
   // Locked door indicator
@@ -1961,6 +2460,22 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
 
   // item sprite
   GameSprite *spr = it.sprite;
+  uint16_t cur_id = item->getID();
+  if (zoom < 1.95f) {
+    if (cur_id >= 598 && cur_id <= 601) {
+      long time_val = g_gui.gfx.getElapsedTime();
+      uint16_t anim_id = 598 + ((time_val / 280) % 4);
+      if (g_items[anim_id].sprite) spr = g_items[anim_id].sprite;
+    } else if (cur_id >= 4608 && cur_id <= 4615) {
+      long time_val = g_gui.gfx.getElapsedTime();
+      uint16_t anim_id = 4608 + ((time_val / 250) % 8);
+      if (g_items[anim_id].sprite) spr = g_items[anim_id].sprite;
+    } else if (cur_id >= 4616 && cur_id <= 4625) {
+      long time_val = g_gui.gfx.getElapsedTime();
+      uint16_t anim_id = 4616 + ((time_val / 250) % 10);
+      if (g_items[anim_id].sprite) spr = g_items[anim_id].sprite;
+    }
+  }
 
   // Display invisible and invalid items
   // Ugly hacks. :)
@@ -2068,6 +2583,16 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
   }
 
   int frame = item->getFrame();
+  if (zoom < 1.95f) {
+    if (spr->animator) {
+      frame = spr->animator->getFrame();
+    } else if (spr->frames > 1) {
+      long time_val = g_gui.gfx.getElapsedTime();
+      frame = (time_val / 200) % spr->frames;
+    }
+  } else {
+    frame = 0;
+  }
 
   // Normal sprite pass
   for (int cx = 0; cx != spr->width; cx++) {
@@ -2508,15 +3033,15 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
     }
   } else {
     if (tile->ground) {
-      if (options.show_preview && zoom <= 1.5) {
-        tile->ground->animate();
-      }
+      tile->ground->animate();
       if (tile->ground->getID() != 0) {
         ItemType& type = g_items[tile->ground->getID()];
-        if (type.sprite && type.sprite->animator) {
-          if (f) {
-            f->has_animations = true;
-          }
+        uint16_t gid = tile->ground->getID();
+        bool is_anim = (gid >= 598 && gid <= 601) || (gid >= 4608 && gid <= 4625) ||
+                       (gid >= 4644 && gid <= 4678) || (gid >= 4808 && gid <= 4819) ||
+                       (type.sprite && (type.sprite->animator || type.sprite->frames > 1));
+        if (is_anim && f) {
+          f->has_animations = true;
         }
       }
 
@@ -2558,14 +3083,15 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
       }
 
       // item animation
-      if (options.show_preview && zoom <= 1.5) {
-        (*it)->animate();
-      }
+      (*it)->animate();
       if ((*it)->getID() != 0) {
         ItemType& type = g_items[(*it)->getID()];
-        if (type.sprite && type.sprite->animator) {
-          if (f) f->has_animations = true;
-        }
+        uint16_t iid = (*it)->getID();
+        bool is_anim = (iid >= 598 && iid <= 601) || (iid >= 4608 && iid <= 4625) ||
+                       (iid >= 4644 && iid <= 4678) || (iid >= 4808 && iid <= 4819) ||
+                       (type.sprite && (type.sprite->animator || type.sprite->frames > 1)) ||
+                       (*it)->isBorder();
+        if (is_anim && f) f->has_animations = true;
       }
 
       if (f && (*it)->hasLight()) {
@@ -2629,6 +3155,40 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
         }
       }
 
+      // Corporate Design Gold Framing for selected tiles & items
+      if (!options.ingame && (tile->isSelected() || (tile->ground && tile->ground->isSelected()))) {
+        glDisable(GL_TEXTURE_2D);
+        // Semi-transparent golden background highlight
+        glColor4ub(255, 215, 0, 45);
+        glBegin(GL_QUADS);
+        glVertex2f(draw_x, draw_y);
+        glVertex2f(draw_x + TileSize, draw_y);
+        glVertex2f(draw_x + TileSize, draw_y + TileSize);
+        glVertex2f(draw_x, draw_y + TileSize);
+        glEnd();
+
+        // Outer Corporate Gold Border (#FFD700)
+        glLineWidth(2.0f);
+        glColor4ub(255, 215, 0, 230);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(draw_x, draw_y);
+        glVertex2f(draw_x + TileSize, draw_y);
+        glVertex2f(draw_x + TileSize, draw_y + TileSize);
+        glVertex2f(draw_x, draw_y + TileSize);
+        glEnd();
+
+        // Inner Warm Accent Gold Line (#D4AF37)
+        glLineWidth(1.0f);
+        glColor4ub(212, 175, 55, 170);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(draw_x + 1.0f, draw_y + 1.0f);
+        glVertex2f(draw_x + TileSize - 1.0f, draw_y + 1.0f);
+        glVertex2f(draw_x + TileSize - 1.0f, draw_y + TileSize - 1.0f);
+        glVertex2f(draw_x + 1.0f, draw_y + TileSize - 1.0f);
+        glEnd();
+        glEnable(GL_TEXTURE_2D);
+      }
+
       // tooltips
       if (options.show_tooltips) {
         if (location->getWaypointCount() > 0) {
@@ -2643,9 +3203,9 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
 }
 
 void MapDrawer::DrawLight() {
-  // draw in-game light
+  // draw in-game light with raycasting and window transparency on current floor
   light_drawer->draw(start_x, start_y, end_x, end_y, view_scroll_x,
-                     view_scroll_y);
+                     view_scroll_y, &editor.map, floor);
 }
 
 void MapDrawer::MakeTooltip(int screenx, int screeny, const std::string &text,

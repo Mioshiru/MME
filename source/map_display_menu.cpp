@@ -23,50 +23,106 @@
 #include "brush.h"
 #include "complexitem.h"
 
-static uint16_t getContainerSwitchID(Item* item) {
+static uint16_t getItemUseSwitchID(Item* item) {
 	if (!item || item->getID() == 0) return 0;
-	
-	const ItemType& it = g_items.getItemType(item->getID());
+	uint16_t id = item->getID();
+
+	// 1. Direct explicit table of known Tibia light & interactive pairs
+	static const std::map<uint16_t, uint16_t> switch_pairs = {
+		// Street lamps & Lamps
+		{ 1479, 1480 }, { 1480, 1479 },
+		{ 2041, 2042 }, { 2042, 2041 },
+		{ 2043, 2044 }, { 2044, 2043 },
+		{ 2045, 2046 }, { 2046, 2045 },
+		{ 2047, 2048 }, { 2048, 2047 },
+		{ 2049, 2050 }, { 2050, 2049 },
+		{ 2057, 2058 }, { 2058, 2057 },
+		// Coal basins
+		{ 1484, 1485 }, { 1485, 1484 }, { 1486, 1485 },
+		// Braziers & Amphoras
+		{ 1481, 1482 }, { 1482, 1481 }, { 1487, 1488 }, { 1488, 1487 },
+		// Torches
+		{ 2050, 2051 }, { 2051, 2050 }, { 2052, 2050 }, { 2053, 2050 }, { 2054, 2050 }, { 2055, 2050 },
+		// Wall Torches
+		{ 1492, 1493 }, { 1493, 1492 }, { 1494, 1495 }, { 1495, 1494 },
+		{ 1496, 1497 }, { 1497, 1496 }, { 1498, 1499 }, { 1499, 1498 },
+		// Campfires & Chimneys
+		{ 1421, 1422 }, { 1422, 1421 }, { 1423, 1424 }, { 1424, 1423 },
+		{ 1425, 1426 }, { 1426, 1425 }, { 1427, 1428 }, { 1428, 1427 },
+		{ 1780, 1781 }, { 1781, 1780 }, { 1782, 1783 }, { 1783, 1782 },
+		{ 7131, 7132 }, { 7132, 7131 },
+		// Levers & Switches
+		{ 1945, 1946 }, { 1946, 1945 }, { 1947, 1948 }, { 1948, 1947 },
+		// Chests & Boxes
+		{ 1738, 1739 }, { 1739, 1738 }, { 1740, 1741 }, { 1741, 1740 },
+		{ 1746, 1747 }, { 1747, 1746 }, { 1748, 1749 }, { 1749, 1748 },
+		{ 1750, 1751 }, { 1751, 1750 }, { 1752, 1753 }, { 1753, 1752 }
+	};
+
+	auto itPair = switch_pairs.find(id);
+	if (itPair != switch_pairs.end()) {
+		if (g_items.typeExists(itPair->second)) {
+			return itPair->second;
+		}
+	}
+
+	const ItemType& it = g_items.getItemType(id);
 	std::string name = it.name;
-	for (auto &c : name) {
-		c = std::tolower(c);
-	}
-	
-	// Check if it's a container/chest/locker/safe
-	bool is_chest = (name.find("chest") != std::string::npos ||
-	                 name.find("box") != std::string::npos ||
-	                 name.find("trunk") != std::string::npos ||
-	                 name.find("safe") != std::string::npos ||
-	                 name.find("locker") != std::string::npos ||
-	                 it.isContainer());
-	                 
-	if (!is_chest) return 0;
-	
-	if (name.find("open") != std::string::npos) {
-		// It's open, try to close it (ID - 1)
-		uint16_t closed_id = item->getID() - 1;
-		if (closed_id > 0) {
-			const ItemType& closed_it = g_items.getItemType(closed_id);
-			std::string closed_name = closed_it.name;
-			for (auto &c : closed_name) {
-				c = std::tolower(c);
+	std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+	bool has_light = (it.sprite && it.sprite->hasLight());
+
+	// Clean name helper (strips "lit", "unlit", "burning", "active", "off", "on", "extinguished")
+	auto cleanName = [](std::string s) -> std::string {
+		std::vector<std::string> words = { "lit ", " unlit", "unlit ", "burning ", " active", "active ", " extinguished", " (lit)", " (off)", " (on)", " (burning)" };
+		for (const auto& w : words) {
+			size_t pos = s.find(w);
+			if (pos != std::string::npos) s.erase(pos, w.length());
+		}
+		return s;
+	};
+
+	std::string rootName = cleanName(name);
+
+	// Helper to check if candidate is a compatible light/interactive toggle
+	auto isCandidate = [&](int target_id) -> bool {
+		if (target_id <= 0 || target_id > 65535) return false;
+		if (!g_items.typeExists(target_id)) return false;
+
+		const ItemType& tit = g_items.getItemType(target_id);
+		std::string tname = tit.name;
+		std::transform(tname.begin(), tname.end(), tname.begin(), ::tolower);
+		std::string trootName = cleanName(tname);
+
+		bool thas_light = (tit.sprite && tit.sprite->hasLight());
+
+		if (!rootName.empty() && rootName == trootName) {
+			if (has_light != thas_light || name.find("lever") != std::string::npos || name.find("switch") != std::string::npos || name.find("chest") != std::string::npos) {
+				return true;
 			}
-			if (closed_name.find("open") == std::string::npos) {
-				return closed_id;
+		}
+
+		// Partial keyword matching for fire / light items
+		static const std::vector<std::string> keywords = {
+			"basin", "lamp", "torch", "candle", "brazier", "campfire", "fire", "chimney", "lantern", "candelabr", "amphora", "lever", "switch", "chest"
+		};
+		for (const auto& kw : keywords) {
+			if (name.find(kw) != std::string::npos && tname.find(kw) != std::string::npos) {
+				if (has_light != thas_light || name.find("lever") != std::string::npos || name.find("switch") != std::string::npos) {
+					return true;
+				}
 			}
 		}
-	} else {
-		// It's closed, try to open it (ID + 1)
-		uint16_t open_id = item->getID() + 1;
-		const ItemType& open_it = g_items.getItemType(open_id);
-		std::string open_name = open_it.name;
-		for (auto &c : open_name) {
-			c = std::tolower(c);
-		}
-		if (open_name.find("open") != std::string::npos) {
-			return open_id;
+		return false;
+	};
+
+	const int offsets[] = { 1, -1, 2, -2 };
+	for (int offset : offsets) {
+		int target_id = (int)id + offset;
+		if (isCandidate(target_id)) {
+			return (uint16_t)target_id;
 		}
 	}
+
 	return 0;
 }
 
@@ -327,26 +383,48 @@ void MapPopupMenu::Update() {
 					Append(MAP_POPUP_MENU_SELECT_CARPET_BRUSH, "Select Carpetbrush", "Uses the current item as a carpetbrush");
 				}
 
-				if (hasTable) {
-					Append(MAP_POPUP_MENU_SELECT_TABLE_BRUSH, "Select Tablebrush", "Uses the current item as a tablebrush");
+				Brush* foundDoodadBrush = nullptr;
+				if (topSelectedItem && topSelectedItem->getDoodadBrush()) {
+					foundDoodadBrush = topSelectedItem->getDoodadBrush();
+				} else {
+					for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
+						if ((*it)->getDoodadBrush()) {
+							foundDoodadBrush = (*it)->getDoodadBrush();
+							break;
+						}
+					}
 				}
-
-				if (topSelectedItem && topSelectedItem->getDoodadBrush() && topSelectedItem->getDoodadBrush()->visibleInPalette()) {
+				if (foundDoodadBrush && foundDoodadBrush->visibleInPalette()) {
 					Append(MAP_POPUP_MENU_SELECT_DOODAD_BRUSH, "Select Doodadbrush", "Use this doodad brush");
 				}
 
+				Brush* foundDoorBrush = nullptr;
 				if (topSelectedItem && topSelectedItem->isBrushDoor() && topSelectedItem->getDoorBrush()) {
+					foundDoorBrush = topSelectedItem->getDoorBrush();
+				} else {
+					for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
+						if ((*it)->isBrushDoor() && (*it)->getDoorBrush()) {
+							foundDoorBrush = (*it)->getDoorBrush();
+							break;
+						}
+					}
+				}
+				if (foundDoorBrush) {
 					Append(MAP_POPUP_MENU_SELECT_DOOR_BRUSH, "Select Doorbrush", "Use this door brush");
 				}
 
 				bool can_use = false;
 				if (topSelectedItem) {
-					if (topSelectedItem->isBrushDoor() || getContainerSwitchID(topSelectedItem) != 0 || topSelectedItem->isContainer()) {
+					if (topSelectedItem->isBrushDoor() || getItemUseSwitchID(topSelectedItem) != 0 || topSelectedItem->isContainer()) {
+						can_use = true;
+					}
+				} else if (topItem) {
+					if (topItem->isBrushDoor() || getItemUseSwitchID(topItem) != 0 || topItem->isContainer()) {
 						can_use = true;
 					}
 				}
 				if (can_use) {
-					Append(MAP_POPUP_MENU_SWITCH_DOOR, "Use", "Interact with this item");
+					Append(MAP_POPUP_MENU_SWITCH_DOOR, "Use", "Use, toggle light, or interact with this item");
 				}
 
 				if (tile->hasGround() && tile->getGroundBrush() && tile->getGroundBrush()->visibleInPalette()) {
@@ -630,7 +708,7 @@ void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event)) {
 	}
 	if (!target_item) {
 		for (Item* item : tile->items) {
-			if (getContainerSwitchID(item) != 0) {
+			if (getItemUseSwitchID(item) != 0) {
 				target_item = item;
 				is_container_only = false;
 				break;
@@ -650,7 +728,7 @@ void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event)) {
 		if (tile->ground->isContainer()) {
 			target_item = tile->ground;
 			is_container_only = true;
-		} else if (getContainerSwitchID(tile->ground) != 0 || tile->ground->isBrushDoor()) {
+		} else if (getItemUseSwitchID(tile->ground) != 0 || tile->ground->isBrushDoor()) {
 			target_item = tile->ground;
 			is_container_only = false;
 		}
@@ -678,7 +756,7 @@ void MapCanvas::OnSwitchDoor(wxCommandEvent& WXUNUSED(event)) {
 		}
 
 		if (new_item) {
-			uint16_t container_switch_id = getContainerSwitchID(new_item);
+			uint16_t container_switch_id = getItemUseSwitchID(new_item);
 			if (container_switch_id != 0) {
 				new_item->setID(container_switch_id);
 			} else if (new_item->isBrushDoor()) {
@@ -732,18 +810,46 @@ void MapCanvas::OnSelectDoodadBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
-	Item* top = tile->getTopItem();
-	if (top && top->getDoodadBrush()) {
-		g_gui.SelectBrush(top->getDoodadBrush(), TILESET_DOODAD);
+	Item* found = nullptr;
+	for (auto* item : tile->items) {
+		if (item->isSelected() && item->getDoodadBrush()) {
+			found = item;
+			break;
+		}
+	}
+	if (!found) {
+		for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
+			if ((*it)->getDoodadBrush()) {
+				found = *it;
+				break;
+			}
+		}
+	}
+	if (found && found->getDoodadBrush()) {
+		g_gui.SelectBrush(found->getDoodadBrush(), TILESET_DOODAD);
 	}
 }
 void MapCanvas::OnSelectDoorBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
-	Item* top = tile->getTopItem();
-	if (top && top->getDoorBrush()) {
-		g_gui.SelectBrush(top->getDoorBrush(), TILESET_TERRAIN);
+	Item* found = nullptr;
+	for (auto* item : tile->items) {
+		if (item->isSelected() && item->isBrushDoor() && item->getDoorBrush()) {
+			found = item;
+			break;
+		}
+	}
+	if (!found) {
+		for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
+			if ((*it)->isBrushDoor() && (*it)->getDoorBrush()) {
+				found = *it;
+				break;
+			}
+		}
+	}
+	if (found && found->getDoorBrush()) {
+		g_gui.SelectBrush(found->getDoorBrush(), TILESET_TERRAIN);
 	}
 }
 void MapCanvas::OnSelectWallBrush(wxCommandEvent& WXUNUSED(event)) {

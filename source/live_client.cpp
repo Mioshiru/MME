@@ -114,17 +114,22 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 }
 
 void LiveClient::close() {
+	stopped = true;
 	{
 		std::lock_guard<std::mutex> lock(writeMutex);
 		writeQueue.clear();
 	}
 	g_gui.latencies.erase(this);
 	if (resolver) {
+		boost::system::error_code ec;
 		resolver->cancel();
 	}
 
 	if (socket) {
-		socket->close();
+		boost::system::error_code ec;
+		socket->cancel(ec);
+		socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+		socket->close(ec);
 	}
 
 	if (log) {
@@ -136,7 +141,6 @@ void LiveClient::close() {
 	connectionStatus = "Disconnected";
 	reconnectScheduled = false;
 	hasCreatedEditorTab = false;
-	stopped = true;
 }
 
 bool LiveClient::handleError(const boost::system::error_code& error) {
@@ -341,18 +345,13 @@ LiveLogTab* LiveClient::createLogWindow(wxWindow* parent) {
 }
 
 MapTab* LiveClient::createEditorWindow() {
-	LogErrorToFile("[LiveClient] createEditorWindow - retrieving tabbook...");
 	MapTabbook* mtb = dynamic_cast<MapTabbook*>(g_gui.tabbook);
 	if (!mtb) {
-		LogErrorToFile("[LiveClient] createEditorWindow FAILED: g_gui.tabbook is null!");
 		return nullptr;
 	}
 
-	LogErrorToFile("[LiveClient] createEditorWindow - constructing MapTab with mapEditor=" + std::to_string((uintptr_t)mapEditor));
 	MapTab* edit = newd MapTab(mtb, mapEditor);
-	LogErrorToFile("[LiveClient] createEditorWindow - MapTab constructed successfully. Calling OnSwitchEditorMode...");
 	edit->OnSwitchEditorMode(g_gui.IsSelectionMode() ? SELECTION_MODE : DRAWING_MODE);
-	LogErrorToFile("[LiveClient] createEditorWindow - OnSwitchEditorMode complete.");
 
 	return edit;
 }
@@ -373,8 +372,8 @@ void LiveClient::sendHeartbeat() {
 	if (!socket || !socket->is_open()) return;
 	static uint64_t last_ping_time = 0;
 	uint64_t now = wxGetLocalTimeMillis().GetValue();
-	if (now - last_ping_time > 2000) {
-		if (waitingForPong && lastPingTimestamp != 0 && now - lastPingTimestamp > 4000) {
+	if (now - last_ping_time >= 1000) {
+		if (waitingForPong && lastPingTimestamp != 0 && now - lastPingTimestamp > 3000) {
 			++pingsMissed;
 			packetLossPercent = pingsSent == 0 ? 0 : (pingsMissed * 100U) / pingsSent;
 			connectionStatus = "Unstable";
@@ -626,6 +625,11 @@ void LiveClient::parseHello(NetworkMessage& message) {
 	map.convert(ver);
 	this->mapVersion = VirtualIOMap(ver);
 
+	g_settings.setInteger(Config::USE_AUTOMAGIC, 1);
+	if (g_gui.root) {
+		g_gui.root->UpdateMenubar();
+	}
+
 	if (reconnectAttempts > 0) {
 		g_gui.SetScreenCenterPosition(pendingFocusPos);
 		g_gui.RefreshView();
@@ -747,7 +751,6 @@ void LiveClient::parseStartOperation(NetworkMessage& message) {
 	const std::string& operation = message.read<std::string>();
 
 	currentOperation = wxstr(operation);
-	LogErrorToFile("[LiveClient] Operation started: " + operation);
 	g_gui.CreateLoadBar(currentOperation);
 	g_gui.SetStatusText("Server Operation in Progress: " + currentOperation + "... (0%)");
 }
@@ -755,34 +758,27 @@ void LiveClient::parseStartOperation(NetworkMessage& message) {
 void LiveClient::parseUpdateOperation(NetworkMessage& message) {
 	int32_t percent = message.read<uint32_t>();
 	if (percent >= 100) {
-		LogErrorToFile("[LiveClient] Operation 100% complete. Finalizing map synchronization...");
 		g_gui.SetLoadDone(100);
 		g_gui.DestroyLoadBar();
 		currentOperation.clear();
 		g_gui.SetStatusText("Server Operation Finished.");
 
 		if (!hasCreatedEditorTab && mapEditor) {
-			LogErrorToFile("[LiveClient] Creating Editor Window (MapTab)...");
 			hasCreatedEditorTab = true;
 			MapTab* tab = createEditorWindow();
 			if (tab) {
-				LogErrorToFile("[LiveClient] Setting initial screen focus position...");
 				tab->SetScreenCenterPosition(pendingFocusPos);
 			}
-			LogErrorToFile("[LiveClient] Updating title and palettes...");
 			g_gui.UpdateTitle();
 			g_gui.RefreshPalettes();
 			if (g_gui.root) {
 				g_gui.root->UpdateMenubar();
 				g_gui.root->Refresh();
 			}
-			LogErrorToFile("[LiveClient] Editor window initialized successfully.");
 		}
 
-		LogErrorToFile("[LiveClient] Refreshing view & minimap...");
 		g_gui.RefreshView();
 		g_gui.UpdateMinimap();
-		LogErrorToFile("[LiveClient] Initial synchronization finished 100% OK.");
 	} else {
 		g_gui.SetLoadDone(percent, currentOperation + wxString::Format(" (%d%%)", percent));
 		g_gui.SetStatusText("Server Operation in Progress: " + currentOperation + wxString::Format(" (%d%%)", percent));

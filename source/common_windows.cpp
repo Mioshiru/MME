@@ -1048,8 +1048,10 @@ Brush* FindDialogListBox::GetSelectedBrush() {
 
 void FindDialogListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const {
 	if (no_matches) {
+		dc.SetTextForeground(wxColor(180, 190, 205));
 		dc.DrawText("No matches for your search.", rect.GetX() + 40, rect.GetY() + 6);
 	} else if (cleared) {
+		dc.SetTextForeground(wxColor(180, 190, 205));
 		dc.DrawText("Please enter your search string.", rect.GetX() + 40, rect.GetY() + 6);
 	} else {
 		ASSERT(n < brushlist.size());
@@ -1070,13 +1072,9 @@ void FindDialogListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const
 		}
 
 		if (IsSelected(n)) {
-			if (HasFocus()) {
-				dc.SetTextForeground(wxColor(0xFF, 0xFF, 0xFF));
-			} else {
-				dc.SetTextForeground(wxColor(0x00, 0x00, 0xFF));
-			}
+			dc.SetTextForeground(wxColor(255, 215, 0)); // Gold when selected
 		} else {
-			dc.SetTextForeground(wxColor(0x00, 0x00, 0x00));
+			dc.SetTextForeground(wxColor(240, 245, 255)); // Crisp bright white in dark mode
 		}
 
 		std::string name = brushlist[n]->getName();

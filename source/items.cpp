@@ -1082,6 +1082,16 @@ ItemType& ItemDatabase::getItemType(int id) {
 	}
 }
 
+ItemType& ItemDatabase::getItemIdByClientID(int spriteId) {
+	for (size_t i = 0; i < items.size(); ++i) {
+		ItemType* it = items[i];
+		if (it && it->clientID == static_cast<uint16_t>(spriteId)) {
+			return *it;
+		}
+	}
+	return getItemType(spriteId);
+}
+
 bool ItemDatabase::typeExists(int id) const {
 	ItemType* it = items[id];
 	return it != nullptr;

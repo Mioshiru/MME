@@ -25,8 +25,11 @@
 
 #include "main_menubar.h"
 #include "application.h"
-#include "preferences.h"
+#include "editor.h"
 #include "about_window.h"
+#include "preferences.h"
+#include "playtest_window.h"
+#include "materials.h"
 #include "mme_updater.h"
 #include "result_window.h"
 #include "extension_window.h"
@@ -61,6 +64,10 @@
 #include "tfs_exporter.h"
 #include "tfs_npc_wizard_window.h"
 #include "tfs_special_objects_wizard_window.h"
+#include "iomap_sec.h"
+#include "realots_converter_dialog.h"
+#include "monster_editor_dialog.h"
+#include "item_editor_dialog.h"
 
 
 namespace {
@@ -144,13 +151,16 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(NEW, wxITEM_NORMAL, OnNew);
 	MAKE_ACTION(OPEN, wxITEM_NORMAL, OnOpen);
 	MAKE_ACTION(SAVE, wxITEM_NORMAL, OnSave);
+	MAKE_ACTION(TEST_MAP, wxITEM_NORMAL, OnTestMap);
 	MAKE_ACTION(GENERATE_MAP, wxITEM_NORMAL, OnGenerateMap);
 	MAKE_ACTION(CLOSE, wxITEM_NORMAL, OnClose);
 
 	MAKE_ACTION(IMPORT_MAP, wxITEM_NORMAL, OnImportMap);
+	MAKE_ACTION(IMPORT_SEC_MAP, wxITEM_NORMAL, OnImportSECMap);
 	MAKE_ACTION(IMPORT_MONSTERS, wxITEM_NORMAL, OnImportMonsterData);
 	MAKE_ACTION(IMPORT_MINIMAP, wxITEM_NORMAL, OnImportMinimap);
 	MAKE_ACTION(EXPORT_MINIMAP, wxITEM_NORMAL, OnExportMinimap);
+	MAKE_ACTION(EXPORT_SEC_MAP, wxITEM_NORMAL, OnExportSECMap);
 	MAKE_ACTION(EXPORT_TILESETS, wxITEM_NORMAL, OnExportTilesets);
 	MAKE_ACTION(EXPORT_OTCLIENT, wxITEM_NORMAL, OnExportOTClient);
 
@@ -268,12 +278,15 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(TOOLS_MAP_DIAGNOSTIC, wxITEM_NORMAL, OnMapDiagnostic);
 	MAKE_ACTION(TOOLS_MAP_DIFF, wxITEM_NORMAL, OnMapDiff);
 	MAKE_ACTION(TOOLS_RADIO_PLAYER, wxITEM_NORMAL, OnRadioPlayer);
+	MAKE_ACTION(TOOLS_MONSTER_EDITOR, wxITEM_NORMAL, OnMonsterEditor);
+	MAKE_ACTION(TOOLS_ITEM_EDITOR, wxITEM_NORMAL, OnItemEditor);
 	MAKE_ACTION(WIZARD_NPC, wxITEM_NORMAL, OnWizardNPC);
 	MAKE_ACTION(WIZARD_SPECIAL_OBJECTS, wxITEM_NORMAL, OnWizardSpecialObjects);
 	MAKE_ACTION(TFS_QUEST_GENERATOR, wxITEM_NORMAL, OnTFSQuestGenerator);
 	MAKE_ACTION(TFS_KEY_MANAGER, wxITEM_NORMAL, OnTFSKeyManager);
 	MAKE_ACTION(TFS_NPC_EDITOR, wxITEM_NORMAL, OnTFSNPCEditor);
 	MAKE_ACTION(TFS_EXPORTER, wxITEM_NORMAL, OnTFSExporter);
+	MAKE_ACTION(SHOW_HOTKEYS, wxITEM_NORMAL, OnShowHotkeys);
 
 
 	MAKE_ACTION(SELECT_TERRAIN, wxITEM_NORMAL, OnSelectTerrainPalette);
@@ -359,7 +372,12 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_KEY_MANAGER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSKeyManager), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_NPC_EDITOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSNPCEditor), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_EXPORTER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSExporter), nullptr, this);
-
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_REALOTS_CONVERTER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnRealOTSConverter), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_MONSTER_EDITOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMonsterEditor), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_ITEM_EDITOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnItemEditor), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::IMPORT_SEC_MAP, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnImportSECMap), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::EXPORT_SEC_MAP, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnExportSECMap), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::SHOW_HOTKEYS, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnShowHotkeys), nullptr, this);
 }
 
 MainMenuBar::~MainMenuBar() {
@@ -937,10 +955,26 @@ void MainMenuBar::OnSave(wxCommandEvent& WXUNUSED(event)) {
 	g_gui.SaveMap();
 }
 
+void MainMenuBar::OnTestMap(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) {
+		g_gui.PopupDialog("Notice", "Please open or create a map first before entering Playtest mode.", wxOK);
+		return;
+	}
+	PlaytestDialog dlg(frame, *g_gui.GetCurrentEditor());
+	dlg.ShowModal();
+}
+
 
 
 void MainMenuBar::OnPreferences(wxCommandEvent& WXUNUSED(event)) {
 	PreferencesWindow dialog(frame);
+	dialog.ShowModal();
+	dialog.Destroy();
+}
+
+void MainMenuBar::OnShowHotkeys(wxCommandEvent& WXUNUSED(event)) {
+	PreferencesWindow dialog(frame);
+	dialog.SelectHotkeysTab();
 	dialog.ShowModal();
 	dialog.Destroy();
 }
@@ -1292,10 +1326,10 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event) {
 	g_settings.setInteger(Config::SHOW_WALL_HOOKS, IsItemChecked(MenuBar::SHOW_WALL_HOOKS));
 	g_settings.setInteger(Config::SHOW_TOWNS, IsItemChecked(MenuBar::SHOW_TOWNS));
 	g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, IsItemChecked(MenuBar::ALWAYS_SHOW_ZONES));
-	g_settings.setInteger(Config::EXT_HOUSE_SHADER, IsItemChecked(MenuBar::EXT_HOUSE_SHADER));
-
 	g_gui.RefreshView();
-	// g_gui.UpdateMinimap(true); // No longer needed, minimap is canvas-based and refreshes with view
+	if (g_gui.root) {
+		g_gui.root->UpdateMenubar();
+	}
 }
 
 void MainMenuBar::OnChangeFloor(wxCommandEvent& event) {
@@ -1372,7 +1406,6 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 	// Data fields
 	wxTextCtrl* hostname;
 	wxSpinCtrl* port;
-	wxCheckBox* allow_copy;
 
 	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Server Name:"));
 	gsizer->Add(hostname = newd wxTextCtrl(live_host_dlg, wxID_ANY, "RME Live Server"), 0, wxEXPAND);
@@ -1382,15 +1415,16 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 	top_sizer->Add(gsizer, 0, wxALL, 20);
 
 	wxString versionLabel = g_gui.IsVersionLoaded() ? wxString::FromUTF8(g_gui.GetCurrentVersion().getName()) : wxString("No client version loaded");
-	top_sizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Host client version: " + versionLabel), 0, wxLEFT | wxRIGHT | wxBOTTOM, 20);
+	top_sizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Host client version: " + versionLabel), 0, wxLEFT | wxRIGHT | wxBOTTOM, 12);
 
-	top_sizer->Add(allow_copy = newd wxCheckBox(live_host_dlg, wxID_ANY, "Allow copy & paste between maps."), 0, wxRIGHT | wxLEFT, 20);
-	allow_copy->SetToolTip("Allows remote clients to copy & paste from the hosted map to local maps.");
+	wxCheckBox* allow_save_local = newd wxCheckBox(live_host_dlg, wxID_ANY, "Allow User to save a local copy.");
+	allow_save_local->SetToolTip("Allows connected remote mappers to save a local snapshot file on their machine.\nNote: All authoritative session progress is always saved on the host.");
+	top_sizer->Add(allow_save_local, 0, wxRIGHT | wxLEFT | wxBOTTOM, 10);
 
 	wxSizer* helper_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	auto* copy_invite_btn = newd wxButton(live_host_dlg, wxID_ANY, "Copy Invite");
-	helper_sizer->Add(copy_invite_btn, 1, wxRIGHT, 5);
-	top_sizer->Add(helper_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 20);
+	helper_sizer->Add(copy_invite_btn, 1);
+	top_sizer->Add(helper_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
 
 	copy_invite_btn->Bind(wxEVT_BUTTON, [live_host_dlg, port, copy_invite_btn](wxCommandEvent&) {
 		wxString externalIp;
@@ -1798,6 +1832,11 @@ void MainMenuBar::OnWizardSpecialObjects(wxCommandEvent& WXUNUSED(event)) {
 	dialog.ShowModal();
 }
 
+void MainMenuBar::OnItemEditor(wxCommandEvent& WXUNUSED(event)) {
+	ItemEditorDialog dialog(frame);
+	dialog.ShowModal();
+}
+
 void MainMenuBar::OnRotateItem(wxCommandEvent& event) {
 	MapTab* mapTab = g_gui.GetCurrentMapTab();
 	if (mapTab && mapTab->GetCanvas()) {
@@ -1827,5 +1866,55 @@ void MainMenuBar::OnToggleNoHotkeys(wxCommandEvent& WXUNUSED(event)) {
 void MainMenuBar::OnRadioPlayer(wxCommandEvent& WXUNUSED(event)) {
 	RadioPlayerWindow::Toggle(frame);
 }
+
+void MainMenuBar::OnRealOTSConverter(wxCommandEvent& WXUNUSED(event)) {
+	RealOTSConverterDialog dialog(frame, g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnMonsterEditor(wxCommandEvent& WXUNUSED(event)) {
+	MonsterEditorDialog dialog(frame);
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnImportSECMap(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) {
+		wxMessageBox("Please create or open a map first before importing sector files.", "No Active Map", wxICON_WARNING);
+		return;
+	}
+
+	wxDirDialog dirDlg(frame, "Select CipSoft / RealOTS Sector Folder (containing .sec files)", "", wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+	if (dirDlg.ShowModal() == wxID_CANCEL) return;
+
+	wxString path = dirDlg.GetPath();
+	IOMapSEC sec_io;
+	g_gui.SetStatusText("Importing CipSoft .sec sector files from " + path + "...");
+	if (sec_io.loadMap(g_gui.GetCurrentEditor()->map, FileName(path))) {
+		g_gui.RefreshView();
+		wxMessageBox("CipSoft .sec sectors imported successfully into the current map!", "Import Complete", wxICON_INFORMATION);
+	} else {
+		wxMessageBox("Failed to import .sec sectors: " + sec_io.getError(), "Import Error", wxICON_ERROR);
+	}
+}
+
+void MainMenuBar::OnExportSECMap(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.GetCurrentEditor()) {
+		wxMessageBox("Please create or open a map first before exporting.", "No Active Map", wxICON_WARNING);
+		return;
+	}
+
+	wxDirDialog dirDlg(frame, "Select Destination Folder for CipSoft / RealOTS .sec Sector Files", "", wxDD_DEFAULT_STYLE);
+	if (dirDlg.ShowModal() == wxID_CANCEL) return;
+
+	wxString path = dirDlg.GetPath();
+	IOMapSEC sec_io;
+	g_gui.SetStatusText("Exporting map to CipSoft .sec sector files in " + path + "...");
+	if (sec_io.saveMap(g_gui.GetCurrentEditor()->map, FileName(path))) {
+		wxMessageBox("Map successfully exported to CipSoft .sec sector files and monster.db!", "Export Complete", wxICON_INFORMATION);
+	} else {
+		wxMessageBox("Failed to export .sec sectors: " + sec_io.getError(), "Export Error", wxICON_ERROR);
+	}
+}
+
 
 

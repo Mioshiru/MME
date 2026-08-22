@@ -188,20 +188,18 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 	contentPanel->SetBackgroundColour(wxColour(18, 32, 54));
 	wxBoxSizer* contentSizer = new wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* featsTitle = new wxStaticText(contentPanel, wxID_ANY, "Features & Changelog Highlights (v1.8.5 Beta):");
+	wxStaticText* featsTitle = new wxStaticText(contentPanel, wxID_ANY, "Features & Changelog Highlights (v1.9.0):");
 	featsTitle->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	featsTitle->SetForegroundColour(wxColour(240, 210, 120));
 	contentSizer->Add(featsTitle, 0, wxBOTTOM, 4);
 
 	wxString feats;
-	feats << "- Procedural Dungeon, Cave & House Generator Suite\n";
-	feats << "- GitHub Releases 1-Click Update System\n";
-	feats << "- Smart Mountain Plateau Fill with Floor-Aware Autoborder\n";
-	feats << "- Favorites 2.0 with Auto-Categorization & Slot Sync\n";
-	feats << "- Fantasy Web Radio Player with Live Streams\n";
-	feats << "- Modern Canvas Toolbar & Quick Tool Wheel (Shift+Q)\n";
-	feats << "- TFS 1.6 Quest & NPC Wizard Suite\n";
-	feats << "- Dark Corporate Design UI & Performance Optimizations\n";
+	feats << "- Integrated Interactive Map Playtester with Real-Time Avatar & Weather (F6)\n";
+	feats << "- Super-Smooth Dynamic HD Asset Upscaling & Clean Pixel Edge Filtering\n";
+	feats << "- Realistic 2D Raycasted Light Wall Collision & Directional Wall Torches\n";
+	feats << "- Fully Synchronized Animated Grounds & Shore/Lava Border Cascades\n";
+	feats << "- Smart Zoom Performance Throttling (Automatic Idle/Anim Pause from 50% to 1% Zoom)\n";
+	feats << "- Monster Creator, NPC Generator & Procedural Map Generation Suite\n";
 
 	wxStaticText* featsText = new wxStaticText(contentPanel, wxID_ANY, feats);
 	featsText->SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));

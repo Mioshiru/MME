@@ -92,10 +92,25 @@ void ContainerItemButton::OnAddItem(wxCommandEvent& WXUNUSED(event)) {
 
 	if (dialog.ShowModal() == wxID_OK) {
 		Container* container = getParentContainer();
+		if (!container) {
+			dialog.Destroy();
+			return;
+		}
 		ItemVector& itemVector = container->getVector();
 
-		Item* item = Item::Create(dialog.getResultID());
-		if (index < itemVector.size()) {
+		uint16_t res_id = dialog.getResultID();
+		if (res_id == 0) {
+			dialog.Destroy();
+			return;
+		}
+
+		Item* item = Item::Create(res_id);
+		if (!item) {
+			dialog.Destroy();
+			return;
+		}
+
+		if (index >= 0 && (size_t)index < itemVector.size()) {
 			itemVector.insert(itemVector.begin() + index, item);
 		} else {
 			itemVector.push_back(item);
@@ -110,7 +125,7 @@ void ContainerItemButton::OnAddItem(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void ContainerItemButton::OnEditItem(wxCommandEvent& WXUNUSED(event)) {
-	ASSERT(edit_item);
+	if (!edit_item) return;
 
 	wxPoint newDialogAt;
 	wxWindow* w = this;
@@ -123,20 +138,22 @@ void ContainerItemButton::OnEditItem(wxCommandEvent& WXUNUSED(event)) {
 
 	newDialogAt += wxPoint(20, 20);
 
-	wxDialog* d;
+	wxDialog* d = nullptr;
 
-	if (edit_map->getVersion().otbm >= MAP_OTBM_4) {
+	if (edit_map && edit_map->getVersion().otbm >= MAP_OTBM_4) {
 		d = newd PropertiesWindow(this, edit_map, nullptr, edit_item, newDialogAt);
 	} else {
 		d = newd OldPropertiesWindow(this, edit_map, nullptr, edit_item, newDialogAt);
 	}
 
-	d->ShowModal();
-	d->Destroy();
+	if (d) {
+		d->ShowModal();
+		d->Destroy();
+	}
 }
 
 void ContainerItemButton::OnRemoveItem(wxCommandEvent& WXUNUSED(event)) {
-	ASSERT(edit_item);
+	if (!edit_item) return;
 	int32_t ret = g_gui.PopupDialog(GetParent(), "Remove Item", "Are you sure you want to remove this item from the container?", wxYES | wxNO);
 
 	if (ret != wxID_YES) {
@@ -144,6 +161,7 @@ void ContainerItemButton::OnRemoveItem(wxCommandEvent& WXUNUSED(event)) {
 	}
 
 	Container* container = getParentContainer();
+	if (!container) return;
 	ItemVector& itemVector = container->getVector();
 
 	auto it = itemVector.begin();
@@ -153,10 +171,12 @@ void ContainerItemButton::OnRemoveItem(wxCommandEvent& WXUNUSED(event)) {
 		}
 	}
 
-	ASSERT(it != itemVector.end());
-
-	itemVector.erase(it);
-	delete edit_item;
+	if (it != itemVector.end()) {
+		Item* to_del = *it;
+		itemVector.erase(it);
+		delete to_del;
+		edit_item = nullptr;
+	}
 
 	ObjectPropertiesWindowBase* propertyWindow = getParentContainerWindow();
 	if (propertyWindow) {
@@ -210,7 +230,9 @@ void ContainerItemPopupMenu::Update(ContainerItemButton* btn) {
 	}
 
 	Container* parentContainer = btn->getParentContainer();
-	if (parentContainer->getVolume() <= (int)parentContainer->getVector().size()) {
-		addItem->Enable(false);
+	if (parentContainer && parentContainer->getVolume() <= parentContainer->getVector().size()) {
+		if (addItem) {
+			addItem->Enable(false);
+		}
 	}
 }

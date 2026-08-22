@@ -951,60 +951,29 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
     CallAfter([this]() { Refresh(); });
   }
 
-	if (drawing) {
-		editor.setDeferNetworkSync(true);
-		if (event.LeftIsDown()) {
-			g_gui.SetSelectionMode();
-			g_gui.SelectBrush(nullptr);
-		} else if (event.ShiftDown()) {
-			dragging_draw = true;
-			rectangle_mode = true;
-		} else {
-			if (editor.selection.size() == 0) {
-				Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
-				if (tile) {
-					editor.selection.start(Selection::INTERNAL);
-					if (tile->spawn && g_settings.getInteger(Config::SHOW_SPAWNS)) {
-						editor.selection.add(tile, tile->spawn);
-					} else if (tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
-						editor.selection.add(tile, tile->creature);
-					} else {
-						Item* top_item = tile->getTopItem();
-						if (top_item) {
-							editor.selection.add(tile, top_item);
-						} else if (tile->ground) {
-							editor.selection.add(tile, tile->ground);
-						}
-					}
-					editor.selection.finish(Selection::INTERNAL);
+	Tile* clicked_tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+	if (clicked_tile) {
+		if (editor.selection.size() <= 1 || clicked_tile != editor.selection.getSelectedTile()) {
+			editor.selection.clear();
+			editor.selection.start(Selection::INTERNAL);
+			if (clicked_tile->spawn && g_settings.getInteger(Config::SHOW_SPAWNS)) {
+				editor.selection.add(clicked_tile, clicked_tile->spawn);
+			} else if (clicked_tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
+				editor.selection.add(clicked_tile, clicked_tile->creature);
+			} else {
+				Item* top_item = clicked_tile->getTopItem();
+				if (top_item) {
+					editor.selection.add(clicked_tile, top_item);
+				} else if (clicked_tile->ground) {
+					editor.selection.add(clicked_tile, clicked_tile->ground);
 				}
 			}
-			popup_menu->Update();
-			PopupMenu(popup_menu);
+			editor.selection.finish(Selection::INTERNAL);
 		}
-	} else {
-		if (editor.selection.size() == 0) {
-			Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
-			if (tile) {
-				editor.selection.start(Selection::INTERNAL);
-				if (tile->spawn && g_settings.getInteger(Config::SHOW_SPAWNS)) {
-					editor.selection.add(tile, tile->spawn);
-				} else if (tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
-					editor.selection.add(tile, tile->creature);
-				} else {
-					Item* top_item = tile->getTopItem();
-					if (top_item) {
-						editor.selection.add(tile, top_item);
-					} else if (tile->ground) {
-						editor.selection.add(tile, tile->ground);
-					}
-				}
-				editor.selection.finish(Selection::INTERNAL);
-			}
-		}
-		popup_menu->Update();
-		PopupMenu(popup_menu);
 	}
+
+	popup_menu->Update();
+	PopupMenu(popup_menu);
 	CallAfter([this]() { Refresh(); });
 }
 
@@ -1391,17 +1360,13 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
       tool_wheel_tile_z = 7;
       minimap_zoom = 1.0f;
       memset(minimap_pixels, 0, sizeof(minimap_pixels));
-  LogErrorToFile("[MapCanvas] Constructing popup_menu and animation_timer...");
   popup_menu = newd MapPopupMenu(editor);
   animation_timer = newd AnimationTimer(this);
 
   if (IsShownOnScreen()) {
-    LogErrorToFile("[MapCanvas] Setting GL context...");
     SetCurrent(*g_gui.GetGLContext(this));
   }
-  LogErrorToFile("[MapCanvas] Constructing MapDrawer...");
   drawer = std::make_unique<MapDrawer>(this); // Use unique_ptr
-  LogErrorToFile("[MapCanvas] MapDrawer constructed. Initializing toolbar...");
   keyCode = WXK_NONE;
 
   // Initialisierung der Toolbar mit gespeicherten Werten aus der Config
@@ -1473,6 +1438,12 @@ MapCanvas::~MapCanvas() {
   free(screenshot_buffer); // unique_ptr verwaltet dies jetzt
   if (minimap_tex_id != 0) {
     glDeleteTextures(1, &minimap_tex_id);
+  }
+  if (imgui_context) {
+    ImGui::SetCurrentContext(imgui_context);
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui::DestroyContext(imgui_context);
+    imgui_context = nullptr;
   }
 }
 
@@ -2229,12 +2200,11 @@ void AnimationTimer::Notify() {
     map_canvas->UpdateKineticScroll();
     map_canvas->UpdateSmoothZoom();
     
-    bool animating = map_canvas->IsAnimating();
-    bool dirty = map_canvas->isDirty();
-    bool show_anim = g_settings.getBoolean(Config::SHOW_PREVIEW) && (map_canvas->GetZoom() <= 1.5);
-
-    if (animating || dirty || show_anim) {
-        if (dirty) map_canvas->clearDirty();
+    bool is_dirty = map_canvas->isDirty();
+    if (is_dirty) {
+        map_canvas->clearDirty();
+    }
+    if (is_dirty || map_canvas->IsAnimating() || map_canvas->GetZoom() < 1.95) {
         map_canvas->Refresh(false);
     }
 }

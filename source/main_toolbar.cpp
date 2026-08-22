@@ -19,6 +19,10 @@
 #include "main_toolbar.h"
 #include "gui.h"
 #include "editor.h"
+#include "main_menubar.h"
+#include "map_tab.h"
+#include "map_display.h"
+#include "map_drawer.h"
 #include "settings.h"
 #include "brush.h"
 #include "radio_player.h"
@@ -46,6 +50,41 @@ wxBitmap LoadBitmapFromFileCandidates(const wxSize& icon_size, const std::vector
 		}
 	}
 	return wxNullBitmap;
+}
+
+wxBitmap CreateDayNightBitmap(const wxSize& size) {
+	int w = size.GetWidth() > 0 ? size.GetWidth() : 16;
+	int h = size.GetHeight() > 0 ? size.GetHeight() : 16;
+	wxImage img(w, h);
+	img.InitAlpha();
+	float cx = (w - 1) / 2.0f;
+	float cy = (h - 1) / 2.0f;
+	float radius = std::min(w, h) * 0.44f;
+
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			float dx = x - cx;
+			float dy = y - cy;
+			float dist = std::sqrt(dx * dx + dy * dy);
+			if (dist <= radius) {
+				float alpha = 1.0f;
+				if (dist > radius - 1.0f) {
+					alpha = radius - dist;
+				}
+				// Diagonal from bottom-left to top-right: (x + y) <= (w - 1) is Day (Yellow), else Night (Black/Dark)
+				bool is_day = (x + y) <= (w - 1);
+				if (is_day) {
+					img.SetRGB(x, y, 255, 204, 34); // Golden Sun Yellow
+				} else {
+					img.SetRGB(x, y, 20, 25, 40); // Midnight Dark Black
+				}
+				img.SetAlpha(x, y, static_cast<unsigned char>(alpha * 255));
+			} else {
+				img.SetAlpha(x, y, 0);
+			}
+		}
+	}
+	return wxBitmap(img);
 }
 }
 
@@ -205,6 +244,11 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	z_choice->SetForegroundColour(wxColour(180, 150, 50));
 	
 	position_toolbar->AddControl(z_choice);
+
+	wxBitmap day_night_bitmap = CreateDayNightBitmap(icon_size);
+	position_toolbar->AddSeparator();
+	position_toolbar->AddTool(TOOLBAR_LIGHT_TOGGLE, "Day/Night", day_night_bitmap, wxNullBitmap, wxITEM_CHECK, "Toggle Day / Night Lighting View (Shift+L)", wxEmptyString, NULL);
+
 	position_toolbar->Realize();
 
 	wxBitmap circular_bitmap = wxArtProvider::GetBitmap(ART_CIRCULAR, wxART_TOOLBAR, icon_size);
@@ -238,16 +282,24 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	manager->AddPane(position_toolbar, wxAuiPaneInfo().Name(POSITION_BAR_NAME).ToolbarPane().Top().Row(0).Position(2).Floatable(false).CloseButton(false).Gripper(false));
 
 	brushes_toolbar->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
+	brushes_toolbar->Bind(wxEVT_TOOL, &MainToolBar::OnBrushesButtonClick, this);
 	z_choice->Bind(wxEVT_CHOICE, &MainToolBar::OnZChoiceChanged, this);
+	position_toolbar->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnPositionButtonClick, this);
+	position_toolbar->Bind(wxEVT_TOOL, &MainToolBar::OnPositionButtonClick, this);
 	sizes_toolbar->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnSizesButtonClick, this);
+	sizes_toolbar->Bind(wxEVT_TOOL, &MainToolBar::OnSizesButtonClick, this);
 
 	LoadPerspective();
 }
 
 MainToolBar::~MainToolBar() {
 	brushes_toolbar->Unbind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
+	brushes_toolbar->Unbind(wxEVT_TOOL, &MainToolBar::OnBrushesButtonClick, this);
 	z_choice->Unbind(wxEVT_CHOICE, &MainToolBar::OnZChoiceChanged, this);
+	position_toolbar->Unbind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnPositionButtonClick, this);
+	position_toolbar->Unbind(wxEVT_TOOL, &MainToolBar::OnPositionButtonClick, this);
 	sizes_toolbar->Unbind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnSizesButtonClick, this);
+	sizes_toolbar->Unbind(wxEVT_TOOL, &MainToolBar::OnSizesButtonClick, this);
 }
 
 void MainToolBar::UpdateButtons() {
@@ -271,6 +323,10 @@ void MainToolBar::UpdateButtons() {
 		if (has_map) {
 			SetFloor(g_gui.GetCurrentFloor());
 		}
+	}
+	if (position_toolbar && position_toolbar->FindTool(TOOLBAR_LIGHT_TOGGLE)) {
+		position_toolbar->EnableTool(TOOLBAR_LIGHT_TOGGLE, has_map);
+		position_toolbar->ToggleTool(TOOLBAR_LIGHT_TOGGLE, g_settings.getBoolean(Config::SHOW_LIGHTS));
 	}
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_CIRCULAR, has_map);
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_RECTANGULAR, has_map);
@@ -535,6 +591,18 @@ void MainToolBar::OnWindowsDropdown(wxCommandEvent& WXUNUSED(event)) {
 void MainToolBar::SetFloor(int floor) {
 	if (z_choice && floor >= 0 && floor <= MAP_MAX_LAYER) {
 		z_choice->SetSelection(floor);
+	}
+}
+
+void MainToolBar::OnPositionButtonClick(wxCommandEvent& event) {
+	if (event.GetId() == TOOLBAR_LIGHT_TOGGLE) {
+		bool current = g_settings.getBoolean(Config::SHOW_LIGHTS);
+		bool next_val = !current;
+		g_settings.setInteger(Config::SHOW_LIGHTS, next_val ? 1 : 0);
+		if (position_toolbar && position_toolbar->FindTool(TOOLBAR_LIGHT_TOGGLE)) {
+			position_toolbar->ToggleTool(TOOLBAR_LIGHT_TOGGLE, next_val);
+		}
+		g_gui.RefreshView();
 	}
 }
 

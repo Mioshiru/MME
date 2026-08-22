@@ -100,6 +100,7 @@ public:
 	bool hasLight() const noexcept {
 		return has_light;
 	}
+	void DrawOutfitTo(wxDC* dc, const Outfit& outfit, int start_x, int start_y, int width_val = 32, int height_val = 32, int dir = 2, int addon = 0, int pattern_z = 0, int frame = 0);
 	const SpriteLight& getLight() const noexcept {
 		return light;
 	}

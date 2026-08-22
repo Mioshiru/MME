@@ -25,7 +25,7 @@
 // xxyyzzt (major, minor, subversion)
 #define __RME_VERSION_MAJOR__ 1
 #define __RME_VERSION_MINOR__ 8
-#define __RME_SUBVERSION__ 1
+#define __RME_SUBVERSION__ 8
 
 #define __LIVE_NET_VERSION__ 7
 
@@ -52,8 +52,8 @@
 	#define __RME_VERSION__ std::string(i2s(__RME_VERSION_MAJOR__) + "." + i2s(__RME_VERSION_MINOR__) + "." + i2s(__RME_SUBVERSION__) + " (Pre-release)")
 	#define __W_RME_VERSION__ (wxString() << __RME_VERSION_MAJOR__ << "." << __RME_VERSION_MINOR__ << "." << __RME_SUBVERSION__ << " (Pre-release)")
 #else
-	#define __RME_VERSION__ std::string("1.8.5 Beta (by Mioshiro)")
-	#define __W_RME_VERSION__ wxString("1.8.5 Beta (by Mioshiro)")
+	#define __RME_VERSION__ std::string("1.9.0 (by Mioshiro)")
+	#define __W_RME_VERSION__ wxString("1.9.0 (by Mioshiro)")
 #endif
 // OS
 
@@ -144,7 +144,7 @@ constexpr int ClientMapHeight = 13;
 #define MAP_SAVE_FILE_WILDCARD "OpenTibia Binary Map (*.otbm)|*.otbm"
 
 // Lights
-constexpr int MaxLightIntensity = 8;
+constexpr int MaxLightIntensity = 15;
 constexpr int PixelFormatRGB = 3;
 constexpr int PixelFormatRGBA = 4;
 

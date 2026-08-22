@@ -27,6 +27,7 @@ PFNGLGETPROGRAMINFOLOGPROC  ShaderProgram::s_GetProgramInfoLog = nullptr;
 PFNGLDELETESHADERPROC       ShaderProgram::s_DeleteShader      = nullptr;
 PFNGLDELETEPROGRAMPROC      ShaderProgram::s_DeleteProgram     = nullptr;
 PFNGLGETUNIFORMLOCATIONPROC ShaderProgram::s_GetUniformLocation= nullptr;
+PFNGLBINDATTRIBLOCATIONPROC ShaderProgram::s_BindAttribLocation= nullptr;
 PFNGLUNIFORM1IPROC          ShaderProgram::s_Uniform1i         = nullptr;
 PFNGLUNIFORM1FPROC          ShaderProgram::s_Uniform1f         = nullptr;
 PFNGLUNIFORMMATRIX4FVPROC   ShaderProgram::s_UniformMatrix4fv  = nullptr;
@@ -51,6 +52,7 @@ void ShaderProgram::loadProcs() {
     s_DeleteShader       = (PFNGLDELETESHADERPROC)      GL_GET_PROC("glDeleteShader");
     s_DeleteProgram      = (PFNGLDELETEPROGRAMPROC)     GL_GET_PROC("glDeleteProgram");
     s_GetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)GL_GET_PROC("glGetUniformLocation");
+    s_BindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC)GL_GET_PROC("glBindAttribLocation");
     s_Uniform1i          = (PFNGLUNIFORM1IPROC)         GL_GET_PROC("glUniform1i");
     s_Uniform1f          = (PFNGLUNIFORM1FPROC)         GL_GET_PROC("glUniform1f");
     s_UniformMatrix4fv   = (PFNGLUNIFORMMATRIX4FVPROC)  GL_GET_PROC("glUniformMatrix4fv");
@@ -106,6 +108,12 @@ bool ShaderProgram::build(const char* vertSrc, const char* fragSrc) {
     GLuint prog = s_CreateProgram();
     s_AttachShader(prog, vert);
     s_AttachShader(prog, frag);
+    if (s_BindAttribLocation) {
+        s_BindAttribLocation(prog, 0, "aPos");
+        s_BindAttribLocation(prog, 1, "aTexCoord");
+        s_BindAttribLocation(prog, 2, "aColor");
+        s_BindAttribLocation(prog, 3, "aShaderData");
+    }
     s_LinkProgram(prog);
     if (s_DeleteShader) { s_DeleteShader(vert); s_DeleteShader(frag); }
 

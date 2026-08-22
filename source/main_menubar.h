@@ -28,12 +28,15 @@ namespace MenuBar {
 		OPEN,
 		SAVE,
 		SAVE_AS,
+		TEST_MAP,
 		GENERATE_MAP,
 		CLOSE,
 		IMPORT_MAP,
+		IMPORT_SEC_MAP,
 		IMPORT_MONSTERS,
 		IMPORT_MINIMAP,
 		EXPORT_MINIMAP,
+		EXPORT_SEC_MAP,
 		EXPORT_TILESETS,
 		EXPORT_OTCLIENT,
 		RELOAD_DATA,
@@ -146,8 +149,12 @@ namespace MenuBar {
 		TFS_EXPORTER,
 		WIZARD_NPC,
 		WIZARD_SPECIAL_OBJECTS,
+		TOOLS_REALOTS_CONVERTER,
+		TOOLS_MONSTER_EDITOR,
+		TOOLS_ITEM_EDITOR,
 		TOOLS_RADIO_PLAYER,
 		SHOW_MINIMAP_HUD, // New item for toggling canvas-based minimap
+		SHOW_HOTKEYS,
 
 		SELECT_RAW,
 		FLOOR_0,
@@ -216,17 +223,21 @@ public:
 	void OnGenerateMap(wxCommandEvent& event);
 	void OnOpenRecent(wxCommandEvent& event);
 	void OnSave(wxCommandEvent& event);
+	void OnTestMap(wxCommandEvent& event);
 
 	void OnClose(wxCommandEvent& event);
 	void OnPreferences(wxCommandEvent& event);
+	void OnShowHotkeys(wxCommandEvent& event);
 	void OnQuit(wxCommandEvent& event);
 
 	// Import Menu
 	// Export Menu
 	void OnImportMap(wxCommandEvent& event);
+	void OnImportSECMap(wxCommandEvent& event);
 	void OnImportMonsterData(wxCommandEvent& event);
 	void OnImportMinimap(wxCommandEvent& event);
 	void OnExportMinimap(wxCommandEvent& event);
+	void OnExportSECMap(wxCommandEvent& event);
 	void OnExportOTClient(wxCommandEvent& event);
 	void OnExportTilesets(wxCommandEvent& event);
 	void OnReloadDataFiles(wxCommandEvent& event);
@@ -292,6 +303,9 @@ public:
 	void OnTFSKeyManager(wxCommandEvent& event);
 	void OnTFSNPCEditor(wxCommandEvent& event);
 	void OnTFSExporter(wxCommandEvent& event);
+	void OnRealOTSConverter(wxCommandEvent& event);
+	void OnMonsterEditor(wxCommandEvent& event);
+	void OnItemEditor(wxCommandEvent& event);
 
 
 	// View Menu

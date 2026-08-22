@@ -57,6 +57,7 @@ private:
     static PFNGLDELETESHADERPROC       s_DeleteShader;
     static PFNGLDELETEPROGRAMPROC      s_DeleteProgram;
     static PFNGLGETUNIFORMLOCATIONPROC s_GetUniformLocation;
+    static PFNGLBINDATTRIBLOCATIONPROC s_BindAttribLocation;
     static PFNGLUNIFORM1IPROC          s_Uniform1i;
     static PFNGLUNIFORM1FPROC          s_Uniform1f;
     static PFNGLUNIFORMMATRIX4FVPROC   s_UniformMatrix4fv;

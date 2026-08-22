@@ -24,7 +24,7 @@ set "BOLD=%ESC%[1m"
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_ROOT=!SCRIPT_DIR:~0,-1!"
 set "BUILD_DIR=!PROJECT_ROOT!\build"
-set "RELEASE_DIR=!PROJECT_ROOT!\dist"
+set "RELEASE_DIR=!PROJECT_ROOT!\Mios_Map_Editor"
 set "ERROR_FILE=!PROJECT_ROOT!\compiler_error_latest.md"
 set "INSTALL_DIR=!BUILD_DIR!"
 set "LOG_FILE=%TEMP%\mme_build_%RANDOM%.log"
@@ -234,30 +234,32 @@ echo %BOLD%[%STEP%/%TOTAL_STEPS%] Packaging Runtime Release Artifacts...%RESET%
 
 if not exist "!RELEASE_DIR!" mkdir "!RELEASE_DIR!" >nul 2>&1
 
-REM 1. Copy DLLs to BUILD_DIR (for dev testing) and RELEASE_DIR\DLLs (clean distribution)
-if not exist "!RELEASE_DIR!\DLLs" mkdir "!RELEASE_DIR!\DLLs" >nul 2>&1
+set "BIN_DIR=!RELEASE_DIR!\Binaries\Win64"
+if not exist "!BIN_DIR!" mkdir "!BIN_DIR!" >nul 2>&1
 if exist "!RELEASE_DIR!\*.dll" del /f /q "!RELEASE_DIR!\*.dll" >nul 2>&1
+if exist "!RELEASE_DIR!\DLLs" rd /s /q "!RELEASE_DIR!\DLLs" >nul 2>&1
 
+REM 1. Copy DLLs to BUILD_DIR (for dev testing) and Binaries\Win64
 if exist "!BUILD_DIR!\vcpkg_installed\x64-windows\bin" (
     copy /y "!BUILD_DIR!\vcpkg_installed\x64-windows\bin\*.dll" "!BUILD_DIR!\" >nul 2>&1
-    copy /y "!BUILD_DIR!\vcpkg_installed\x64-windows\bin\*.dll" "!RELEASE_DIR!\DLLs\" >nul 2>&1
+    copy /y "!BUILD_DIR!\vcpkg_installed\x64-windows\bin\*.dll" "!BIN_DIR!\" >nul 2>&1
 )
 if exist "!BUILD_DIR!\bin" (
     copy /y "!BUILD_DIR!\bin\*.dll" "!BUILD_DIR!\" >nul 2>&1
-    copy /y "!BUILD_DIR!\bin\*.dll" "!RELEASE_DIR!\DLLs\" >nul 2>&1
+    copy /y "!BUILD_DIR!\bin\*.dll" "!BIN_DIR!\" >nul 2>&1
 )
 
-REM 2. Copy Executable to RELEASE_DIR\DLLs\MME_core.exe
-if exist "!BUILD_DIR!\MME.exe" copy /y "!BUILD_DIR!\MME.exe" "!RELEASE_DIR!\DLLs\MME_core.exe" >nul 2>&1
-if exist "!BUILD_DIR!\Release\MME.exe" copy /y "!BUILD_DIR!\Release\MME.exe" "!RELEASE_DIR!\DLLs\MME_core.exe" >nul 2>&1
+REM 2. Copy Core Executable to Binaries\Win64\MME-Win64.exe
+if exist "!BUILD_DIR!\Release\MME.exe" copy /y "!BUILD_DIR!\Release\MME.exe" "!BIN_DIR!\MME-Win64.exe" >nul 2>&1
+if exist "!BUILD_DIR!\MME.exe" copy /y "!BUILD_DIR!\MME.exe" "!BIN_DIR!\MME-Win64.exe" >nul 2>&1
 
-REM 3. Compile lightweight root launcher MME.exe
+REM 3. Compile lightweight root launcher MME.exe with icon
 rc /nologo /fo "!BUILD_DIR!\launcher.res" "!PROJECT_ROOT!\source\rme.rc" >nul 2>&1
 cl /nologo /O2 /MD /std:c++20 "!PROJECT_ROOT!\tools\launcher\launcher.cpp" "!BUILD_DIR!\launcher.res" /Fe"!RELEASE_DIR!\MME.exe" /Fo"!BUILD_DIR!\launcher.obj" /link /SUBSYSTEM:WINDOWS user32.lib >nul 2>&1
 if exist "launcher.obj" del /f /q "launcher.obj" >nul 2>&1
 
 REM 4. Copy Asset Folders to both BUILD_DIR and RELEASE_DIR
-for %%D in (data brushes scripts extensions icons) do (
+for %%D in (data brushes scripts extensions icons Saves tools) do (
     if exist "!PROJECT_ROOT!\%%D" (
         robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
         robocopy "!PROJECT_ROOT!\%%D" "!RELEASE_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
@@ -265,7 +267,6 @@ for %%D in (data brushes scripts extensions icons) do (
 )
 if not exist "!BUILD_DIR!\Saves" mkdir "!BUILD_DIR!\Saves" >nul 2>&1
 if not exist "!RELEASE_DIR!\Saves" mkdir "!RELEASE_DIR!\Saves" >nul 2>&1
-if exist "!RELEASE_DIR!\DLLs\Saves" rd /s /q "!RELEASE_DIR!\DLLs\Saves" >nul 2>&1
 
 echo.
 echo   %GREEN%Deployment OK%RESET%

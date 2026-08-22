@@ -88,7 +88,11 @@ PropertiesWindow::PropertiesWindow(wxWindow* parent, const Map* map, const Tile*
 
 	notebook->AddPage(createGeneralPanel(notebook), "General", true);
 	if (dynamic_cast<Container*>(item)) {
-		notebook->AddPage(createContainerPanel(notebook), "Contents");
+		notebook->AddPage(createContainerPanel(notebook), "Special");
+	} else if (item->isDoor()) {
+		notebook->AddPage(createDoorSpecialPanel(notebook), "Special");
+	} else if (dynamic_cast<Teleport*>(item)) {
+		notebook->AddPage(createTeleportSpecialPanel(notebook), "Special");
 	}
 	notebook->AddPage(createAttributesPanel(notebook), "Attributes");
 	if (edit_tile) {
@@ -127,8 +131,10 @@ PropertiesWindow::~PropertiesWindow() {
 void PropertiesWindow::Update() {
 	Container* container = dynamic_cast<Container*>(edit_item);
 	if (container) {
-		for (uint32_t i = 0; i < container->getVolume(); ++i) {
-			container_items[i]->setItem(container->getItem(i));
+		for (size_t i = 0; i < container_items.size() && i < container->getVolume(); ++i) {
+			if (container_items[i]) {
+				container_items[i]->setItem(container->getItem(i));
+			}
 		}
 	}
 	wxDialog::Update();
@@ -322,10 +328,76 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 wxWindow* PropertiesWindow::createContainerPanel(wxWindow* parent) {
 	Container* container = (Container*)edit_item;
 	wxPanel* panel = newd wxPanel(parent, ITEM_PROPERTIES_CONTAINER_TAB);
+	panel->SetBackgroundColour(wxColour(16, 28, 48));
 	wxSizer* topSizer = newd wxBoxSizer(wxVERTICAL);
 
-	wxSizer* gridSizer = newd wxWrapSizer(wxHORIZONTAL);
+	wxStaticText* headerNote = newd wxStaticText(panel, wxID_ANY, "Chest & Container Special Configuration");
+	headerNote->SetForegroundColour(wxColour(255, 215, 0));
+	headerNote->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	topSizer->Add(headerNote, 0, wxLEFT | wxRIGHT | wxTOP, 8);
 
+	wxStaticText* subNote = newd wxStaticText(panel, wxID_ANY, "Right-click any slot to Add, Edit, or Delete items.");
+	subNote->SetForegroundColour(wxColour(180, 190, 205));
+	subNote->SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+	topSizer->Add(subNote, 0, wxLEFT | wxRIGHT | wxBOTTOM, 6);
+
+	wxBoxSizer* modeRow = newd wxBoxSizer(wxHORIZONTAL);
+	wxStaticText* modeLbl = newd wxStaticText(panel, wxID_ANY, "Chest Mode:");
+	modeLbl->SetForegroundColour(wxColour(180, 190, 205));
+	modeLbl->SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	modeRow->Add(modeLbl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+
+	wxArrayString modes;
+	modes.Add("Casual (Standard Container / Session Loot)");
+	modes.Add("Quest Chest (Per-Player Permanent Reward)");
+	chest_mode_choice = newd wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, modes);
+	modeRow->Add(chest_mode_choice, 1, wxEXPAND);
+	topSizer->Add(modeRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
+
+	// Quest configuration panel (shown only when Quest Chest is selected)
+	chest_quest_panel = newd wxPanel(panel, wxID_ANY);
+	chest_quest_panel->SetBackgroundColour(wxColour(16, 28, 48));
+	wxFlexGridSizer* fgrid = newd wxFlexGridSizer(2, 4, 8);
+	fgrid->AddGrowableCol(1);
+
+	auto addLbl = [this, fgrid](const wxString& text) {
+		wxStaticText* lbl = newd wxStaticText(chest_quest_panel, wxID_ANY, text);
+		lbl->SetForegroundColour(wxColour(180, 190, 205));
+		lbl->SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+		fgrid->Add(lbl, 0, wxALIGN_CENTER_VERTICAL);
+	};
+
+	addLbl("Required Min Level:");
+	chest_req_level = newd wxSpinCtrl(chest_quest_panel, wxID_ANY, "1", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10000, 1);
+	fgrid->Add(chest_req_level, wxSizerFlags(1).Expand());
+
+	addLbl("Storage Key (ActionID):");
+	chest_action_id = newd wxSpinCtrl(chest_quest_panel, wxID_ANY, i2ws(edit_item->getActionID()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 65535, edit_item->getActionID());
+	fgrid->Add(chest_action_id, wxSizerFlags(1).Expand());
+
+	addLbl("Reward Message:");
+	chest_reward_msg = newd wxTextCtrl(chest_quest_panel, wxID_ANY, "You have found a reward.");
+	fgrid->Add(chest_reward_msg, wxSizerFlags(1).Expand());
+
+	chest_quest_panel->SetSizer(fgrid);
+	topSizer->Add(chest_quest_panel, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
+
+	bool isQuest = (edit_item->getActionID() >= 2000);
+	chest_mode_choice->SetSelection(isQuest ? 1 : 0);
+	chest_quest_panel->Show(isQuest);
+
+	chest_mode_choice->Bind(wxEVT_CHOICE, [this, panel, topSizer](wxCommandEvent&) {
+		bool qMode = (chest_mode_choice->GetSelection() == 1);
+		chest_quest_panel->Show(qMode);
+		if (qMode && chest_action_id->GetValue() < 2000) {
+			chest_action_id->SetValue(2001);
+		}
+		topSizer->Layout();
+		panel->Layout();
+		Layout();
+	});
+
+	wxSizer* gridSizer = newd wxWrapSizer(wxHORIZONTAL);
 	bool use_large_sprites = g_settings.getBoolean(Config::USE_LARGE_CONTAINER_ICONS);
 	for (uint32_t i = 0; i < container->getVolume(); ++i) {
 		Item* item = container->getItem(i);
@@ -335,17 +407,165 @@ wxWindow* PropertiesWindow::createContainerPanel(wxWindow* parent) {
 		gridSizer->Add(containerItemButton, wxSizerFlags(0));
 	}
 
-	topSizer->Add(gridSizer, wxSizerFlags(1).Expand());
-
-	/*
-	wxSizer* optSizer = newd wxBoxSizer(wxHORIZONTAL);
-	optSizer->Add(newd wxButton(panel, ITEM_PROPERTIES_ADD_ATTRIBUTE, "Add Item"), wxSizerFlags(0).Center());
-	// optSizer->Add(newd wxButton(panel, ITEM_PROPERTIES_REMOVE_ATTRIBUTE, "Remove Attribute"), wxSizerFlags(0).Center());
-	topSizer->Add(optSizer, wxSizerFlags(0).Center().DoubleBorder());
-	*/
-
+	topSizer->Add(gridSizer, wxSizerFlags(1).Expand().Border(wxALL, 4));
 	panel->SetSizer(topSizer);
 	return panel;
+}
+
+void PropertiesWindow::saveContainerSpecialPanel() {
+	if (!chest_mode_choice) return;
+	if (chest_mode_choice->GetSelection() == 1) {
+		if (chest_action_id && chest_action_id->GetValue() > 0) {
+			edit_item->setActionID(chest_action_id->GetValue());
+		}
+		if (chest_reward_msg && !chest_reward_msg->GetValue().empty()) {
+			std::string msg = chest_reward_msg->GetValue().ToStdString();
+			edit_item->setText(msg);
+		}
+	} else {
+		// Casual mode: clean chest without quest action ID if previously >= 2000
+		if (edit_item->getActionID() >= 2000) {
+			edit_item->setActionID(0);
+		}
+	}
+}
+
+wxWindow* PropertiesWindow::createDoorSpecialPanel(wxWindow* parent) {
+	wxPanel* panel = newd wxPanel(parent, wxID_ANY);
+	panel->SetBackgroundColour(wxColour(16, 28, 48));
+
+	wxBoxSizer* mainSizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxStaticText* hNote = newd wxStaticText(panel, wxID_ANY, "Quest & Level Door Configuration");
+	hNote->SetForegroundColour(wxColour(255, 215, 0));
+	hNote->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	mainSizer->Add(hNote, 0, wxALL, 8);
+
+	wxFlexGridSizer* fgrid = newd wxFlexGridSizer(2, 10, 10);
+	fgrid->AddGrowableCol(1);
+
+	auto addLbl = [panel, fgrid](const wxString& text) {
+		wxStaticText* lbl = newd wxStaticText(panel, wxID_ANY, text);
+		lbl->SetForegroundColour(wxColour(180, 190, 205));
+		lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+		fgrid->Add(lbl, 0, wxALIGN_CENTER_VERTICAL);
+	};
+
+	addLbl("Door Function Type:");
+	wxArrayString doorTypes;
+	doorTypes.Add("Standard Door");
+	doorTypes.Add("Locked Door (Key / ActionID 100)");
+	doorTypes.Add("Quest Door (Storage Key Check)");
+	doorTypes.Add("Level Door (Required Min Level)");
+
+	door_type_choice = newd wxChoice(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, doorTypes);
+	fgrid->Add(door_type_choice, wxSizerFlags(1).Expand());
+
+	addLbl("Required Level:");
+	door_req_level = newd wxSpinCtrl(panel, wxID_ANY, "1", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 10000, 1);
+	fgrid->Add(door_req_level, wxSizerFlags(1).Expand());
+
+	addLbl("Door Action ID:");
+	door_action_id = newd wxSpinCtrl(panel, wxID_ANY, i2ws(edit_item->getActionID()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 65535, edit_item->getActionID());
+	fgrid->Add(door_action_id, wxSizerFlags(1).Expand());
+
+	addLbl("Required Storage Key:");
+	door_storage_key = newd wxSpinCtrl(panel, wxID_ANY, "50000", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 999999, 50000);
+	fgrid->Add(door_storage_key, wxSizerFlags(1).Expand());
+
+	// Initial selection based on current ActionID
+	int curAid = edit_item->getActionID();
+	if (curAid == 100) {
+		door_type_choice->SetSelection(1); // Locked
+	} else if (curAid >= 1000 && curAid < 2000) {
+		door_type_choice->SetSelection(3); // Level door
+		door_req_level->SetValue(curAid - 1000);
+	} else if (curAid >= 2000) {
+		door_type_choice->SetSelection(2); // Quest door
+	} else {
+		door_type_choice->SetSelection(0);
+	}
+
+	door_type_choice->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+		int sel = door_type_choice->GetSelection();
+		if (sel == 1) { // Locked
+			door_action_id->SetValue(100);
+		} else if (sel == 2) { // Quest door
+			if (door_action_id->GetValue() < 2000) door_action_id->SetValue(2001);
+		} else if (sel == 3) { // Level door
+			door_action_id->SetValue(1000 + door_req_level->GetValue());
+		}
+	});
+
+	door_req_level->Bind(wxEVT_SPINCTRL, [this](wxCommandEvent&) {
+		if (door_type_choice->GetSelection() == 3) {
+			door_action_id->SetValue(1000 + door_req_level->GetValue());
+		}
+	});
+
+	mainSizer->Add(fgrid, 1, wxEXPAND | wxALL, 8);
+	panel->SetSizerAndFit(mainSizer);
+	return panel;
+}
+
+void PropertiesWindow::saveDoorSpecialPanel() {
+	if (!door_type_choice) return;
+	int sel = door_type_choice->GetSelection();
+	if (sel == 1) {
+		edit_item->setActionID(100);
+	} else if (sel == 3) {
+		edit_item->setActionID(1000 + door_req_level->GetValue());
+	} else if (door_action_id) {
+		edit_item->setActionID(door_action_id->GetValue());
+	}
+}
+
+wxWindow* PropertiesWindow::createTeleportSpecialPanel(wxWindow* parent) {
+	wxPanel* panel = newd wxPanel(parent, wxID_ANY);
+	panel->SetBackgroundColour(wxColour(16, 28, 48));
+
+	wxBoxSizer* mainSizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxStaticText* hNote = newd wxStaticText(panel, wxID_ANY, "Teleporters & Switches Configuration");
+	hNote->SetForegroundColour(wxColour(255, 215, 0));
+	hNote->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	mainSizer->Add(hNote, 0, wxALL, 8);
+
+	wxFlexGridSizer* fgrid = newd wxFlexGridSizer(2, 10, 10);
+	fgrid->AddGrowableCol(1);
+
+	auto addLbl = [panel, fgrid](const wxString& text) {
+		wxStaticText* lbl = newd wxStaticText(panel, wxID_ANY, text);
+		lbl->SetForegroundColour(wxColour(180, 190, 205));
+		lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+		fgrid->Add(lbl, 0, wxALIGN_CENTER_VERTICAL);
+	};
+
+	Teleport* tele = dynamic_cast<Teleport*>(edit_item);
+	Position dest = tele ? tele->getDestination() : Position(1000, 1000, 7);
+
+	addLbl("Target Destination X:");
+	tele_dest_x = newd wxSpinCtrl(panel, wxID_ANY, i2ws(dest.x), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 65535, dest.x);
+	fgrid->Add(tele_dest_x, wxSizerFlags(1).Expand());
+
+	addLbl("Target Destination Y:");
+	tele_dest_y = newd wxSpinCtrl(panel, wxID_ANY, i2ws(dest.y), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 65535, dest.y);
+	fgrid->Add(tele_dest_y, wxSizerFlags(1).Expand());
+
+	addLbl("Target Destination Z (Floor):");
+	tele_dest_z = newd wxSpinCtrl(panel, wxID_ANY, i2ws(dest.z), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 15, dest.z);
+	fgrid->Add(tele_dest_z, wxSizerFlags(1).Expand());
+
+	mainSizer->Add(fgrid, 1, wxEXPAND | wxALL, 8);
+	panel->SetSizerAndFit(mainSizer);
+	return panel;
+}
+
+void PropertiesWindow::saveTeleportSpecialPanel() {
+	Teleport* tele = dynamic_cast<Teleport*>(edit_item);
+	if (tele && tele_dest_x && tele_dest_y && tele_dest_z) {
+		tele->setDestination(Position(tele_dest_x->GetValue(), tele_dest_y->GetValue(), tele_dest_z->GetValue()));
+	}
 }
 
 wxWindow* PropertiesWindow::createAttributesPanel(wxWindow* parent) {
@@ -566,6 +786,9 @@ void PropertiesWindow::OnClickOK(wxCommandEvent&) {
 		return;
 	}
 	saveGeneralPanel();
+	saveContainerSpecialPanel();
+	saveDoorSpecialPanel();
+	saveTeleportSpecialPanel();
 	saveAttributesPanel();
 	saveWaypointPanel();
 	EndModal(1);
