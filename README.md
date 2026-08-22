@@ -1,63 +1,63 @@
 # Mio's Map Editor (MME)
 
 [![Release](https://img.shields.io/github/v/release/Mioshiru/MME?color=gold&style=flat-square)](https://github.com/Mioshiru/MME/releases)
+[![Version](https://img.shields.io/badge/version-v1.9.0-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
 [![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://otland.net/threads/mios-map-editor-a-modern-collaborative-shader-powered-successor-to-rme.304943/)
 
-> **A modern, collaborative, and shader-powered map editor for OpenTibia (OTBM).**  
-> MME is an ambitious, next-generation evolution of the legendary Remere's Map Editor (RME), built for modern development workflows, high performance, seamless multiplayer teamwork, and cutting-edge visual mapping tools.
+> **A modern, collaborative, shader-powered map editor and playtesting environment for OpenTibia (OTBM & SEC).**  
+> MME is the next-generation evolution of Remere's Map Editor (RME), engineered for professional level designers, high-performance rendering, multi-user live mapping, procedural generation, and instant in-editor playtesting.
 
 ---
 
-## 🌟 Key Highlights & Features
+## 🌟 Key Highlights & Mapper Features (v1.9.0)
+
+### 🎮 In-Editor Map Playtester (`File -> Test` / `F6`)
+* **Zero-Setup In-Process Playtesting:** Test your map instantly without exporting, compiling, or launching a dedicated server and OTClient.
+* **Full Character Controls:** Move with WASD or Arrow Keys, complete with directional character sprites, walking animations, and health/mana HUD.
+* **Interactive Floor Traversal:** Seamlessly climb stairs, walk up elevation ramps, drop down pits/holes, and right-click ladders or rope spots.
+* **World Interaction:** Open/close doors and gates, toggle street lamps, campfires, and torches with live sound and state changes.
+* **Dedicated Weather Simulation Suite:** Switch between *Off, Clouds, Rain, Snow, Desert Heat, and Fog* on the fly with customizable ambient particles.
+
+### 🎨 Next-Gen Rendering, HD Upscaling & Shaders
+* **Super-Smooth HD Asset Upscaling:** Advanced xBRZ & Super-xBR shader pipeline delivering smooth, anti-aliased, vector-like curves on all sprites, items, and terrain without pixel grain or noise.
+* **Atmospheric Raycasted Lighting:** Real-time 2D supercover Bresenham raycasting with true wall shadow occlusion and window/hatch light pass-through.
+* **Directional Wall Torches:** Wall-mounted lights intelligently project into the room and never leak backwards through solid walls.
+* **Max-Envelope Light Blending:** Authentic Tibia soft light accumulation preventing overexposed white blowouts across large lava lakes and torch corridors.
+* **Dynamic Animated Terrain & Borders:** Fully synchronized water ripples, bubbling lava, coastal wave breakers, and lava cascades rendered at high frame rates.
+* **Smart Performance Throttling:** Automatic idle & animation pausing when zooming out (50% down to 1%) ensuring buttery-smooth 60+ FPS even on massive map files.
 
 ### 👥 Real-Time Collaboration (Multiplayer Live Mapping)
-* **Up to 6 Simultaneous Mappers:** Host or join live mapping sessions with up to 6 players (1 Host + 5 Clients) editing the same map simultaneously.
-* **Live-Ping & Network Quality HUD:** Real-time bidirectional millisecond latency and packet loss display powered by high-precision timestamps.
-* **Guaranteed Autoborder:** Automatic border transitions are seamlessly enforced for all connected clients (`IsLive()`), guaranteeing consistent map rendering across every player.
-* **Distinct Mapper Identity:** Each team member is assigned a unique player highlight color, live cursor outline, and customizable name tag.
-* **Smart Property Conflict Protection:** Editing tile, creature, spawn, or item properties temporarily locks the element, preventing accidental overwriting by teammates.
-* **Camera Follow Mode:** Instantly lock and follow another mapper's viewport with a single click.
-* **Alt + Click Pings & Sticky Notes:** Send animated ping rings to coordinates or leave persistent notes for your team.
-* **Auto-AFK & Keep-Alive:** Real-time idle detection ([AFK] status after 5 minutes) and seamless re-syncing on connection recovery.
+* **Up to 6 Simultaneous Mappers:** Host or join live mapping sessions with up to 6 players editing the same OTBM map simultaneously.
+* **Live-Ping & Network Quality HUD:** High-precision millisecond latency and packet loss metrics displayed in real time.
+* **Guaranteed Synchronized Autoborder:** Enforces consistent autoborder calculation across all clients (`IsLive()`), eliminating desync or missing transition borders.
+* **Visual Mapper Identity:** Unique player highlight colors, live cursor positions, customizable name tags, and camera follow modes.
+* **Alt + Click Pings & Sticky Notes:** Send ping rings to map coordinates or attach persistent notes for your team.
 
-### 🎨 Next-Gen Rendering, Shaders & Visuals
-* **Atmospheric RPG Lighting & 2D Raycasting:** Floor-isolated lighting with Bresenham wall occlusion, window transparency, and zero GPU-overdraw lightmaps.
-* **TFS 1.6 NPC Wizard & Look-Type Generator (TLG):** Complete outfit designer with interactive 133-color palette matrix, addon toggles, and 1-click XML/Lua export.
-* **Modern Shader Pipeline:** Deferred rendering, Global Illumination (GI) raytracing, retro CRT filters, and post-processing blur directly on the canvas.
-* **High-DPI & Ultrawide Support:** Pixel-perfect 512x512 vector icons resampled with high-quality filtering for 1440p and 4K displays.
-* **Dark Gold Theme:** Elegant, distraction-free modern UI across all palettes, dialogs, minimap widgets, and sub-windows.
-* **Interactive ImGui Overlay Minimap:** Dockable, zoomable, and features click-to-teleport camera navigation.
-* **Radial Tool Wheel (`Shift + Q`):** Rapid vector-styled tool selection wheel centered directly at your mouse cursor.
+### 🏰 Procedural World, Dungeon & Cave Generator (`Tools -> Generators`)
+* **Native 2-Pass Autobordering Engine:** Generates fully enclosed room perimeters, organic cave networks, and multi-floor dungeons with clean door cutouts and perfect border transitions.
+* **Themed Biome Presets:** 1-Click presets for *Ancient Catacombs*, *Lava / Inferno Vault*, *Ice / Glacier Cavern*, *Desert Tomb*, and *Subterranean Sewers*.
+* **Live 2D Mini-Map Preview & 1-Click Retry:** Preview generated layouts in real time before applying, with 1-click **"Retry"** to roll new seeds instantly.
+* **Strict Non-Destructive Protection:** Protects player houses, spawns, monsters, and quest containers from accidental overwrites.
 
-### 📁 Interactive Palettes & Favorites 2.0
-* **Interactive Collapsible Sections:** Categorized tilesets with clickable accordion headers (▼ / ▶) that save vertical space in both Icon View and List View.
-* **Smart Palette Search:** Typing into the search bar dynamically filters and automatically opens matching collapsed categories.
-* **Automatic Favorites Categorization:** Favorited brushes are automatically sorted into clean sections (*Terrain*, *Walls & Railings*, *Doodads*, *Items*, *Monsters*, *NPCs*) with live palette synchronization.
-* **Unified Nature & Biome Tileset:** All biomes (Grasslands, Mountains, Waters, Desert, Snow, Swamp, Caves, Hive, Ocean) consolidated into a single structured tileset with zero duplicate brushes.
+### 📜 RealOTS & CipSoft Sector Engine (`File -> Import/Export -> .sec`)
+* **Full 32x32 Sector Engine (`iomap_sec`):** Directly load, edit, and save original 7.4 / 7.72 / 8.0 CipSoft sector files across all floors (0–15).
+* **`objects.srv` & `monster.db` Integration:** Native parsing and saving for server flags, item mappings, and monster spawn coordinates.
+* **Bidirectional Map Converter:** 1-Click conversion suite between OpenTibia `.otbm` maps and CipSoft `.sec` sector directories.
 
-### 🛠️ Advanced Mapping & Autobordering Engine
-* **Smart Mountain Plateau Fill:** Bucket-fill empty higher floors (e.g. Floor 6 over Floor 7) by automatically detecting the underlying mountain footprint while strictly excluding sloped border skirts.
-* **100% Reliable Undo (`Ctrl + Z`) & Redo (`Ctrl + Y`):** Complete state-based batch action queue preserving multi-step history for large bucket fills, pencil strokes, and erasures.
-* **Upgraded Eraser Tool:** Configurable brush sizes (`1`–`7`) and shapes, fully clearing ground, items, spawns, and creatures with optional ground protection.
-* **No Hotkeys Mode (`Edit -> Map Tools`):** Toggleable mapping mode that disables single-letter hotkeys (`O`, `A`, `P`, `J`, `R`, `Z`, etc.) to prevent accidental triggers while keeping brush sizing (`1`–`7`), WASD panning, and modifier shortcuts active.
-* **Smart Wall Decor & Emblems:** Wall hangings and banners automatically detect wall orientation (North vs. West) upon placement and can be manually rotated (`R` / `Z`).
-* **CAD-Style Right-Click Tool Canceling:** Right-clicking with an active brush instantly cancels the action and restores the Selection Tool.
+### 👹 Monster Designer & Item Asset Inspector
+* **Native In-Editor Monster Creator (`Tools -> Monster Editor`):** Design custom monsters with health, combat stats, spell attacks, elemental resistances, and loot tables with 1-click registration into creature palettes.
+* **Visual Outfit Designer (TLG Engine):** Interactive 132-color Tibia palette matrix with presets, addons, and mounts.
+* **OTB & Item Inspector Suite (`Tools -> Item & Assets Editor`):** Inspect item flags, properties, and capacities with direct integration into Arch-Mina Assets Editor.
 
-### 🧙‍♂️ TFS 1.6 Multi-Tool & Wizard Suite
-* **Visual NPC & Dialogue Editor:** Construct NPC dialogue trees, shop buy/sell offers, and generate production-ready TFS 1.6 RevScript Lua files.
-* **Quest Chest & Key Manager:** Interactive setup for quest rewards, quest level doors, and Action IDs (`aid`).
-* **In-Place House Editing & Diagnostics:** Add/remove house tiles and exits on the fly without recreating houses, backed by an automated house error scanner.
-* **One-Click TFS Exporter:** Export generated XML files and RevScript Lua scripts directly into your server's `data/` directory.
-
-### 🎲 Procedural Generation & Quality Assurance
-* **Procedural Map & Dungeon Generator:** Generate organic caves, multi-floor dungeons, and customizable houses with native 2-pass wall and ground autobordering, clean doorways, live 2D mini-map preview, and a 1-click Retry workflow.
-* **Prefab & Template Library:** Save custom architectural layouts and dungeons to stamp anywhere on your map with a single click.
-* **Map Diagnostic & Error Scanner:** Automatically scan and jump to UID conflicts, floating wall segments, and orphaned spawns.
-* **Visual Map Diff Tool:** Compare two map files with intuitive green (added) and red (removed/modified) visual overlays.
-* **Built-In Fantasy Radio Player:** Stream 24/7 video game soundtracks, chiptunes, remixes, and cozy ambient music from *Rainwave* (*ALL*, *Game*, *Chiptune*, *OC ReMix*, *Covers*, *Chill*) and *RPGamers Radio* with a dockable, transparent audio player window.
-* **1-Click GitHub Releases Updater:** Automated release checking, in-app download progress tracking, and instant auto-restart updating from official GitHub releases.
+### 📁 Streamlined Palettes, Brushes & UX Polish
+* **Smart Mountain Plateau Fill:** Bucket-fill higher elevations (e.g. Floor 6 directly over Floor 7) with automatic cliff footprint detection and strict skirt exclusion.
+* **100% Reliable Undo (`Ctrl + Z`) & Redo (`Ctrl + Y`):** Complete state-based batch action queue preserving multi-step history for large fills, brush strokes, and erasures.
+* **Interactive Collapsible Tilesets:** Clean accordion categories (▼ / ▶) with dynamic search auto-expansion.
+* **Radial Tool Wheel (`Shift + Q`):** Rapid 8-tool vector wheel centered directly at your mouse cursor.
+* **Built-In Fantasy Web Radio:** Dockable 24/7 video game soundtrack player streaming Rainwave and RPGamers Radio.
+* **1-Click In-App GitHub Auto-Updater:** Automated release detection, progress download, and zero-effort self-updating.
 
 ---
 
@@ -65,17 +65,21 @@
 
 [![MME Workspace Overview](docs/mme_editor_overview.png)](docs/mme_editor_overview.png)
 
-| Welcome & Save Slot Manager | Visual NPC & Shop Wizard |
+| In-Editor Playtester (`F6`) | Procedural Map & Dungeon Generator |
 |:---:|:---:|
-| <img src="docs/mme_welcome_page.png" width="100%"/> | <img src="docs/NPC%20Shop%20Wizard.png" width="100%"/> |
+| <img src="docs/Playtest.png" width="100%"/> | <img src="docs/Procedural%20Generator.png" width="100%"/> |
 
-| Quest Chest & Action ID Creator | Special Interactive Objects Wizard |
+| Monster Creator & LookType Designer | Item & Assets Inspector Suite |
 |:---:|:---:|
-| <img src="docs/Quest%20Chest%20Creator.png" width="100%"/> | <img src="docs/Special%20Objects%20Wizard.png" width="100%"/> |
+| <img src="docs/Monster%20Editor.png" width="100%"/> | <img src="docs/Item%20Editor.png" width="100%"/> |
 
-| 1-Click In-App Auto Updater | Modern Radial Tool Wheel (`Shift + Q`) |
+| NPC Dialogue & Shop Editor | Modern Radial Tool Wheel (`Shift + Q`) |
 |:---:|:---:|
-| <img src="docs/Auto%20Updater.png" width="100%"/> | <img src="docs/Radial%20Tool%20Wheel.png" width="100%"/> |
+| <img src="docs/NPC%20Editor.png" width="100%"/> | <img src="docs/Radial%20Tool%20Wheel.png" width="100%"/> |
+
+| Welcome & Save Slot Manager | 1-Click In-App Auto Updater |
+|:---:|:---:|
+| <img src="docs/mme_welcome_page.png" width="100%"/> | <img src="docs/Auto%20Updater.png" width="100%"/> |
 
 ---
 
@@ -83,13 +87,15 @@
 
 | Shortcut | Action |
 |:---|:---|
-| `WASD` | Pan / Scroll canvas viewport |
+| `F6` | **Launch In-Editor Playtester** (WASD move, floor traversal, door/light toggle) |
+| `WASD` / `Arrow Keys` | Pan / Scroll canvas viewport (or walk in Playtest mode) |
 | `1` – `7` / `+` / `-` | Quick select brush sizes (1x1 up to large area) |
-| `Tab` | Seamlessly cycle tools: Selection ➔ Pencil ➔ Bucket ➔ Eraser |
+| `Tab` | Cycle tools: Selection ➔ Pencil ➔ Bucket ➔ Eraser |
 | `Ctrl + Z` / `Ctrl + Y` | Undo / Redo last actions (5-step history) |
+| `Z` / `R` | Rotate selected / hovered item (ramps, stairs, furniture, hangings) |
+| `Shift + Q` | Open interactive Radial Tool Wheel |
 | `Ctrl + Left Click` | Single asset removal under cursor without affecting ground |
 | `Alt + Left Click` | Send multiplayer ping ring / drop sticky map note |
-| `Shift + Q` | Open interactive Radial Tool Wheel |
 | `Ctrl + Shift + P` | Open Quick Command Palette |
 | `Ctrl + C` / `Ctrl + X` / `Ctrl + V` | Copy, Cut, and Paste map selection |
 | `Ctrl + B` | Borderize selected area |
