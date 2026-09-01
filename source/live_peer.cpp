@@ -132,13 +132,23 @@ void LivePeer::receive(uint32_t packetSize) {
         } else {
           NetworkMessage msg = std::move(readMessage);
           readMessage.clear();
-          wxTheApp->CallAfter([this, msg = std::move(msg)]() mutable {
-            if (connected) {
-              parseEditorPacket(msg);
-            } else {
-              parseLoginPacket(msg);
+          auto flag = aliveFlag;
+          wxTheApp->CallAfter([this, msg = std::move(msg), flag]() mutable {
+            if (!flag->load()) return;
+            try {
+              if (connected) {
+                parseEditorPacket(msg);
+              } else {
+                parseLoginPacket(msg);
+              }
+            } catch (const std::exception& e) {
+              logMessage(wxString::Format("Error processing packet from %s: %s", getHostName(), e.what()));
+            } catch (...) {
+              logMessage(wxString::Format("Unknown error processing packet from %s", getHostName()));
             }
-            receiveHeader();
+            if (flag->load() && socket.is_open()) {
+              receiveHeader();
+            }
           });
         }
       });

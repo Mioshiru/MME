@@ -4,7 +4,32 @@
 
 ---
 
-## 🚀 Release v1.9.3 (Multiplayer Approval System & Modular Palette Overhaul)
+## 🚀 Release v1.9.4 (Data Packaging, Netcode Hardening & Visual Previews)
+
+### 🌟 Major Highlights & New Features in v1.9.4
+
+* **📦 Ultra-Compact Data Packaging & Transparent On-Demand Extraction:**
+  * **90 MB Distribution Size Reduction:** Inactive client versions (`740.zip` through `1330.zip`) are now bundled as high-compression archive packages, shrinking raw configuration size from ~115 MB to ~23 MB and eliminating 300+ loose XML files.
+  * **Instant Seamless Extractor:** When switching to a legacy or custom version in Preferences, MME automatically unpacks the archive in under 50ms using `libarchive` without requiring user intervention.
+  * **Master 13.10 Extension Suite (`13.10_additions.xml`):** Fully integrated 13.10 autoborder, doodad, wall, terrain, and creature master expansion.
+
+* **🛡️ 99% Crash-Proof Multiplayer Netcode:**
+  * **Atomic Asio Lifecycle Guards:** All async network callbacks check atomic `aliveFlag` and `stopped` state before executing on the main thread, preventing use-after-free conditions during peer disconnects.
+  * **Global Exception Protection:** All packet parsing logic (`parseEditorPacket`, `parseLoginPacket`, `parsePacket`) is wrapped in exception shields, preventing client termination on corrupted or partial packets.
+  * **Smooth Live Streaming:** Disabled blocking modal dialogues during incoming multiplayer fills and batch tile strokes.
+
+* **👹 Live Creature/Monster Outfit Previews in Palettes & Favorites:**
+  * Creature brushes placed in Favorites or brush lists now dynamically render real, colorized Tibia monster outfits and sprites instead of empty black boxes.
+
+* **🧭 Dynamic Responsive Minimap & UI Polish:**
+  * **Proportional Scaling:** Minimap module expands and bilinearly scales with any palette window width (`map_size x map_size`).
+  * **Streamlined UI:** Removed redundant "Show View Box" toggle from the minimap module.
+  * **Removed Placeholder Tilesets:** Purged "Custom World" placeholder across all 37 client versions.
+  * **Crash-Free Docking:** Stabilized wxAUI docking lifecycle for left/right sidebars and floating palettes.
+
+---
+
+## 📦 Release v1.9.3 (Multiplayer Approval System & Modular Palette Overhaul)
 
 ### 🌟 Major Highlights & New Features in v1.9.3
 

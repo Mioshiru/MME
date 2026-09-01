@@ -1690,10 +1690,6 @@ void MapCanvas::RenderCanvasContextMenu() {
 
 		if (sel_tile && (sel_tile->hasGround() || topSelectedItem || topItem || topCreature || topSpawn)) {
 			ImGui::Separator();
-			if (MenuItemStyled("⭐ Add to Favorites", "")) {
-				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
-				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnAddFavorite(ev); });
-			}
 			if (MenuItemStyled("Attributes", "Alt+Enter")) {
 				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
 				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnProperties(ev); });

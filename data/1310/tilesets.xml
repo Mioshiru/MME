@@ -1,4 +1,4 @@
-<materials>
+﻿<materials>
 	<!-- TILESETS -->
 
 	<tileset name="Grounds">
@@ -7838,29 +7838,6 @@
 			<item id="30163"/>
 			<item id="30165"/>
 		</raw>
-	</tileset>
-
-	<tileset name="Custom World">
-		<doodad>
-			<brush name="cw chest brown (closed)"/>
-			<brush name="cw chest brown (open)"/>
-			<brush name="cw chest red (closed)"/>
-			<brush name="cw chest red (open)"/>
-			<brush name="cw chest blue (closed)"/>
-			<brush name="cw chest blue (open)"/>
-			<brush name="cw chest green (closed)"/>
-			<brush name="cw chest green (open)"/>
-			<brush name="cw tree green (large)"/>
-			<brush name="cw tree autumn (large)"/>
-			<brush name="cw tree red (large)"/>
-			<brush name="cw tree green (small)"/>
-			<brush name="cw tree autumn (small)"/>
-			<brush name="cw tree red (small)"/>
-			<brush name="cw forest flowers"/>
-			<brush name="cw forest mushrooms"/>
-			<brush name="cw forest rocks"/>
-			<brush name="cw forest bushes"/>
-		</doodad>
 	</tileset>
 
 </materials>

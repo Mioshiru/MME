@@ -264,8 +264,17 @@ void LiveClient::receive(uint32_t packetSize) {
 			NetworkMessage msg = std::move(readMessage);
 			readMessage.clear();
 			wxTheApp->CallAfter([this, msg = std::move(msg)]() mutable {
-				parsePacket(msg);
-				receiveHeader();
+				if (stopped) return;
+				try {
+					parsePacket(msg);
+				} catch (const std::exception& e) {
+					logMessage(wxString::Format("Error parsing packet from server: %s", e.what()));
+				} catch (...) {
+					logMessage("Unknown error parsing packet from server.");
+				}
+				if (!stopped && socket && socket->is_open()) {
+					receiveHeader();
+				}
 			});
 		}
 	});

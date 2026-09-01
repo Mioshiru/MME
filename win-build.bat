@@ -262,8 +262,8 @@ REM 4. Copy Runtime Asset Folders to both BUILD_DIR and RELEASE_DIR
 if exist "!RELEASE_DIR!\tools" rd /s /q "!RELEASE_DIR!\tools" >nul 2>&1
 for %%D in (data brushes scripts extensions icons Saves) do (
     if exist "!PROJECT_ROOT!\%%D" (
-        robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
-        robocopy "!PROJECT_ROOT!\%%D" "!RELEASE_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+        robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /PURGE /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+        robocopy "!PROJECT_ROOT!\%%D" "!RELEASE_DIR!\%%D" /E /PURGE /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
     )
 )
 if not exist "!BUILD_DIR!\Saves" mkdir "!BUILD_DIR!\Saves" >nul 2>&1

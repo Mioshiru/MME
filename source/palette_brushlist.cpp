@@ -24,6 +24,7 @@
 #include "add_item_window.h"
 #include "materials.h"
 #include "creature_brush.h"
+#include "creature.h"
 #include "palette_window.h"
 #include <wx/settings.h>
 #include <wx/wrapsizer.h>
@@ -700,18 +701,19 @@ void BrushIconBox::OnSize(wxSizeEvent& event) {
 void BrushIconBox::UpdateLayout() {
 	item_layout.clear();
 	int client_width = GetClientSize().x;
-	if (client_width <= 0) {
-		wxWindow* p = this;
-		while (p) {
-			if (p->GetClientSize().x > 50) {
-				client_width = p->GetClientSize().x;
-				break;
-			}
-			p = p->GetParent();
+	wxWindow* p = GetParent();
+	while (p) {
+		int pw = p->GetClientSize().x;
+		if (pw > client_width) {
+			client_width = pw;
 		}
+		p = p->GetParent();
 	}
-	if (client_width <= 0) {
+	if (client_width < GetSize().x) {
 		client_width = GetSize().x;
+	}
+	if (client_width > 40) {
+		client_width -= 16; // Account for scrollbar and margin
 	}
 
 	int btn_width = 36;
@@ -737,6 +739,10 @@ void BrushIconBox::UpdateLayout() {
 	last_layout_width = client_width;
 
 	int columns = client_width / btn_width;
+	int config_cols = g_settings.getInteger(Config::PALETTE_COL_COUNT);
+	if (config_cols > 0 && columns < config_cols) {
+		columns = config_cols;
+	}
 	if (columns < 1) columns = 1;
 
 	int total_items_width = columns * btn_width;
@@ -923,16 +929,27 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 		}
 
 		if (brush) {
-			Sprite* sprite = nullptr;
-			int look_id = brush->getLookID();
-			if (look_id > 0 && g_items.typeExists(look_id)) {
-				sprite = g_gui.gfx.getSprite(g_items[look_id].clientID);
+			if (brush->isCreature()) {
+				CreatureBrush* cb = brush->asCreature();
+				CreatureType* ct = cb ? cb->getType() : nullptr;
+				if (ct) {
+					GameSprite* spr = g_gui.gfx.getCreatureSprite(ct->outfit.lookType);
+					if (spr) {
+						spr->DrawOutfitTo(&dc, ct->outfit, x + offset, y + offset, spr_w, spr_w, 2, ct->outfit.lookAddon, 0, 0);
+					}
+				}
 			} else {
-				sprite = g_gui.gfx.getSprite(look_id);
-			}
+				Sprite* sprite = nullptr;
+				int look_id = brush->getLookID();
+				if (look_id > 0 && g_items.typeExists(look_id)) {
+					sprite = g_gui.gfx.getSprite(g_items[look_id].clientID);
+				} else {
+					sprite = g_gui.gfx.getSprite(look_id);
+				}
 
-			if (sprite) {
-				sprite->DrawTo(&dc, spr_sz, x + offset, y + offset, spr_w, spr_w);
+				if (sprite) {
+					sprite->DrawTo(&dc, spr_sz, x + offset, y + offset, spr_w, spr_w);
+				}
 			}
 
 			// Render Tag Color (Color coding for Favorites)
@@ -1390,16 +1407,27 @@ void BrushListBox::OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const {
 		return;
 	}
 
-	int look_id = brush ? brush->getLookID() : 0;
-	Sprite* spr = nullptr;
-	if (look_id > 0 && g_items.typeExists(look_id)) {
-		spr = g_gui.gfx.getSprite(g_items[look_id].clientID);
+	if (brush && brush->isCreature()) {
+		CreatureBrush* cb = brush->asCreature();
+		CreatureType* ct = cb ? cb->getType() : nullptr;
+		if (ct) {
+			GameSprite* spr = g_gui.gfx.getCreatureSprite(ct->outfit.lookType);
+			if (spr) {
+				spr->DrawOutfitTo(&dc, ct->outfit, rect.GetX() + 2, rect.GetY() + 2, 28, 28, 2, ct->outfit.lookAddon, 0, 0);
+			}
+		}
 	} else {
-		spr = g_gui.gfx.getSprite(look_id);
-	}
-	bool count100 = (look_id > 0 && g_items.typeExists(look_id) && g_items[look_id].stackable);
-	if (spr) {
-		spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetHeight(), rect.GetHeight(), count100);
+		int look_id = brush ? brush->getLookID() : 0;
+		Sprite* spr = nullptr;
+		if (look_id > 0 && g_items.typeExists(look_id)) {
+			spr = g_gui.gfx.getSprite(g_items[look_id].clientID);
+		} else {
+			spr = g_gui.gfx.getSprite(look_id);
+		}
+		bool count100 = (look_id > 0 && g_items.typeExists(look_id) && g_items[look_id].stackable);
+		if (spr) {
+			spr->DrawTo(&dc, SPRITE_SIZE_32x32, rect.GetX(), rect.GetY(), rect.GetHeight(), rect.GetHeight(), count100);
+		}
 	}
 	if (IsSelected(n)) {
 		dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT));

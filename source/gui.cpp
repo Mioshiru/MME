@@ -227,10 +227,10 @@ PaletteWindow *GUI::CreatePalette() {
                                       .Dockable(true)
                                       .LeftDockable(true)
                                       .RightDockable(true)
-                                      .TopDockable(true)
-                                      .BottomDockable(true)
+                                      .TopDockable(false)
+                                      .BottomDockable(false)
                                       .BestSize(255, 450)
-                                      .MinSize(wxSize(200, 150))
+                                      .MinSize(wxSize(160, 150))
                                       .Show(true));
   } else {
     // Only the first opened palette has the minimap by default; subsequent palettes have it hidden
@@ -247,10 +247,10 @@ PaletteWindow *GUI::CreatePalette() {
                                       .Dockable(true)
                                       .LeftDockable(true)
                                       .RightDockable(true)
-                                      .TopDockable(true)
-                                      .BottomDockable(true)
+                                      .TopDockable(false)
+                                      .BottomDockable(false)
                                       .BestSize(255, 450)
-                                      .MinSize(wxSize(200, 150))
+                                      .MinSize(wxSize(160, 150))
                                       .Show(true));
   }
 

@@ -442,7 +442,6 @@ void MapPopupMenu::Update() {
 
 				if (tile->hasGround() || topSelectedItem || topItem || topCreature || topSpawn) {
 					AppendSeparator();
-					Append(MAP_POPUP_MENU_ADD_FAVORITE, "⭐ Add to Favorites", "Add this brush/item directly to your Favorites");
 					Append(MAP_POPUP_MENU_PROPERTIES, "&Attributes\tAlt+Enter", "Edit attributes and properties for the current object");
 				}
 			} else {
@@ -490,7 +489,6 @@ void MapPopupMenu::Update() {
 
 				if (tile->hasGround() || topSelectedItem || topItem || topCreature || topSpawn) {
 					AppendSeparator();
-					Append(MAP_POPUP_MENU_ADD_FAVORITE, "⭐ Add to Favorites", "Add this brush/item directly to your Favorites");
 					Append(MAP_POPUP_MENU_PROPERTIES, "&Attributes\tAlt+Enter", "Edit attributes and properties for the current object");
 				}
 			}

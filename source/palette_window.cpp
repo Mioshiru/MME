@@ -49,31 +49,25 @@ public:
 	bool dragging = false;
 
 	MinimapPanel(wxWindow* parent) :
-		wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(180, 255)) {
-		SetMinSize(wxSize(180, 255));
+		wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize) {
+		SetMinSize(wxSize(140, 220));
 		SetBackgroundColour(wxColor(10, 20, 35));
 		
 		// Dropdown for jumping to towns
-		town_choice = new wxChoice(this, wxID_ANY, wxPoint(5, 182), wxSize(170, 20));
+		town_choice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 		town_choice->SetBackgroundColour(wxColour(10, 20, 35));
 		town_choice->SetForegroundColour(wxColour(180, 150, 50));
 		town_choice->Bind(wxEVT_CHOICE, &MinimapPanel::OnTownSelected, this);
 
-		// Checkbox for view box
-		view_box_chk = new wxCheckBox(this, wxID_ANY, "Show View Box", wxPoint(5, 207));
-		view_box_chk->SetValue(g_settings.getInteger(Config::MINIMAP_VIEW_BOX) != 0);
-		view_box_chk->SetForegroundColour(wxColor(180, 150, 50));
-		view_box_chk->Bind(wxEVT_CHECKBOX, &MinimapPanel::OnToggleViewBox, this);
-
 		// Button to dock back to canvas
-		dock_btn = new wxButton(this, wxID_ANY, "Canvas", wxPoint(5, 227), wxSize(80, 22));
+		dock_btn = new wxButton(this, wxID_ANY, "Canvas", wxDefaultPosition, wxDefaultSize);
 		dock_btn->SetToolTip("Dock minimap back onto the map canvas");
 		dock_btn->SetBackgroundColour(wxColour(10, 20, 35));
 		dock_btn->SetForegroundColour(wxColour(180, 150, 50));
 		dock_btn->Bind(wxEVT_BUTTON, &MinimapPanel::OnDockToCanvas, this);
 
 		// Button to hide minimap from this palette
-		hide_btn = new wxButton(this, wxID_ANY, "Hide Minimap", wxPoint(90, 227), wxSize(85, 22));
+		hide_btn = new wxButton(this, wxID_ANY, "Hide Minimap", wxDefaultPosition, wxDefaultSize);
 		hide_btn->SetToolTip("Hide minimap in this palette window");
 		hide_btn->SetBackgroundColour(wxColour(10, 20, 35));
 		hide_btn->SetForegroundColour(wxColour(180, 150, 50));
@@ -172,14 +166,6 @@ public:
 		town_choice->SetSelection(0); // Reset selection
 	}
 
-	void OnToggleViewBox(wxCommandEvent& event) {
-		g_settings.setInteger(Config::MINIMAP_VIEW_BOX, event.IsChecked() ? 1 : 0);
-		Refresh();
-		if (g_gui.GetCurrentMapTab() && g_gui.GetCurrentMapTab()->GetCanvas()) {
-			g_gui.GetCurrentMapTab()->GetCanvas()->Refresh();
-		}
-	}
-
 	void OnDockToCanvas(wxCommandEvent& event) {
 		g_settings.setInteger(Config::MINIMAP_DOCK_STYLE, 0);
 		g_gui.RefreshPalettes();
@@ -198,6 +184,9 @@ public:
 		MapCanvas* canvas = map_tab->GetCanvas();
 		if (!canvas) return;
 
+		int total_w = GetClientSize().x;
+		int map_size = std::max(120, total_w - 4);
+
 		// Rebuild town list dynamically if town count differs
 		const Towns& towns = canvas->editor.map.towns;
 		if ((int)town_choice->GetCount() - 2 != (int)towns.count()) {
@@ -207,21 +196,26 @@ public:
 		// Make sure texture data is updated
 		canvas->UpdateMinimapTexture();
 
-		// Position controls below the 180x180 minimap image
-		town_choice->Move(5, 185);
-		view_box_chk->Move(5, 208);
-		dock_btn->Move(5, 228);
-		hide_btn->Move(90, 228);
+		// Position controls dynamically below the responsive minimap image
+		int btn_w = std::max(50, (total_w - 14) / 2);
+		town_choice->SetSize(2, map_size + 4, total_w - 4, 22);
+		dock_btn->SetSize(2, map_size + 29, btn_w, 22);
+		hide_btn->SetSize(total_w - btn_w - 2, map_size + 29, btn_w, 22);
+
+		SetMinSize(wxSize(120, map_size + 56));
 
 		// Draw the minimap image
 		wxImage img(180, 180, canvas->minimap_pixels, true);
+		if (map_size != 180) {
+			img.Rescale(map_size, map_size, wxIMAGE_QUALITY_NORMAL);
+		}
 		wxBitmap bmp(img);
-		dc.DrawBitmap(bmp, 0, 0, false);
+		dc.DrawBitmap(bmp, 2, 0, false);
 
 		// Draw gold border around the minimap image
 		dc.SetBrush(*wxTRANSPARENT_BRUSH);
 		dc.SetPen(wxPen(wxColor(180, 140, 50), 1));
-		dc.DrawRectangle(0, 0, 180, 180);
+		dc.DrawRectangle(2, 0, map_size, map_size);
 
 		if (g_settings.getInteger(Config::MINIMAP_VIEW_BOX)) {
 			int screensize_x, screensize_y;
@@ -236,8 +230,8 @@ public:
 			int view_end_x = view_start_x + screensize_x / tile_size + 1;
 			int view_end_y = view_start_y + screensize_y / tile_size + 1;
 
-			const float sx = 180.0f / (float)std::max(1, canvas->minimap_span_w);
-			const float sy = 180.0f / (float)std::max(1, canvas->minimap_span_h);
+			const float sx = (float)map_size / (float)std::max(1, canvas->minimap_span_w);
+			const float sy = (float)map_size / (float)std::max(1, canvas->minimap_span_h);
 			int p_start_x = (int)((view_start_x - canvas->minimap_start_x) * sx);
 			int p_start_y = (int)((view_start_y - canvas->minimap_start_y) * sy);
 			int p_end_x = (int)((view_end_x - canvas->minimap_start_x) * sx);
@@ -245,13 +239,13 @@ public:
 
 			p_start_x = std::max(p_start_x, 0);
 			p_start_y = std::max(p_start_y, 0);
-			p_end_x = std::min(p_end_x, 180);
-			p_end_y = std::min(p_end_y, 180);
+			p_end_x = std::min(p_end_x, map_size);
+			p_end_y = std::min(p_end_y, map_size);
 
 			if (p_start_x < p_end_x && p_start_y < p_end_y) {
 				dc.SetBrush(*wxTRANSPARENT_BRUSH);
 				dc.SetPen(wxPen(*wxWHITE, 1));
-				dc.DrawRectangle(p_start_x, p_start_y, p_end_x - p_start_x, p_end_y - p_start_y);
+				dc.DrawRectangle(2 + p_start_x, p_start_y, p_end_x - p_start_x, p_end_y - p_start_y);
 			}
 		}
 	}
@@ -262,13 +256,16 @@ public:
 		MapCanvas* canvas = map_tab->GetCanvas();
 		if (!canvas) return;
 
-		int mx = event.GetX();
-		int my = event.GetY();
-		mx = std::clamp(mx, 0, 179);
-		my = std::clamp(my, 0, 179);
+		int total_w = GetClientSize().x;
+		int map_size = std::max(120, total_w - 4);
 
-		float rel_x = (float)mx / 180.0f;
-		float rel_y = (float)my / 180.0f;
+		int mx = event.GetX() - 2;
+		int my = event.GetY();
+		mx = std::clamp(mx, 0, map_size - 1);
+		my = std::clamp(my, 0, map_size - 1);
+
+		float rel_x = (float)mx / (float)map_size;
+		float rel_y = (float)my / (float)map_size;
 
 		int click_map_x = canvas->minimap_start_x + (int)(rel_x * (float)std::max(1, canvas->minimap_span_w - 1));
 		int click_map_y = canvas->minimap_start_y + (int)(rel_y * (float)std::max(1, canvas->minimap_span_h - 1));
@@ -280,9 +277,12 @@ public:
 	}
 
 	void OnLeftDown(wxMouseEvent& event) {
-		int mx = event.GetX();
+		int total_w = GetClientSize().x;
+		int map_size = std::max(120, total_w - 4);
+
+		int mx = event.GetX() - 2;
 		int my = event.GetY();
-		if (mx < 0 || mx >= 180 || my < 0 || my >= 180) return;
+		if (mx < 0 || mx >= map_size || my < 0 || my >= map_size) return;
 
 		dragging = true;
 		if (HasCapture()) {
@@ -327,7 +327,6 @@ public:
 
 private:
 	wxChoice* town_choice;
-	wxCheckBox* view_box_chk;
 	wxButton* dock_btn;
 	wxButton* hide_btn;
 };
@@ -1237,20 +1236,13 @@ void PaletteWindow::OnKey(wxKeyEvent& event) {
 }
 
 void PaletteWindow::OnSize(wxSizeEvent& event) {
-	CheckAndUpdateOrientation();
+	Layout();
+	Refresh();
 	event.Skip();
 }
 
 void PaletteWindow::CheckAndUpdateOrientation() {
-	int w = GetClientSize().x;
-	int h = GetClientSize().y;
-	if (w <= 0 || h <= 0) return;
-
-	// When docked Top/Bottom or resized wide, width is significantly greater than height (e.g. w > h * 1.2 and w >= 320)
-	bool should_be_horizontal = (w >= 320 && w > h * 1.15f);
-	if (should_be_horizontal != is_horizontal) {
-		SetHorizontalLayout(should_be_horizontal);
-	}
+	// Stable vertical orientation for Left/Right docking & floating
 }
 
 void PaletteWindow::SetHorizontalLayout(bool horizontal) {

@@ -156,11 +156,57 @@ bool GUI::LoadVersion(ClientVersionID version, wxString& error, wxArrayString& w
 	return true;
 }
 
+static void EnsureVersionExtracted(const wxString& data_dir, const wxString& version_name) {
+	wxString items_otb = data_dir + "items.otb";
+	if (wxFileExists(items_otb)) {
+		return;
+	}
+
+	wxFileName dir_fn(data_dir);
+	wxString parent_dir = dir_fn.GetPath();
+	wxString zip_candidate = parent_dir + "/" + version_name + ".zip";
+	if (!wxFileExists(zip_candidate)) {
+		zip_candidate = parent_dir + "/" + version_name + ".pkg";
+	}
+	if (!wxFileExists(zip_candidate)) {
+		return;
+	}
+
+	std::shared_ptr<struct archive> a(archive_read_new(), archive_read_free);
+	archive_read_support_filter_all(a.get());
+	archive_read_support_format_all(a.get());
+	if (archive_read_open_filename(a.get(), nstr(zip_candidate).c_str(), 10240) != ARCHIVE_OK) {
+		return;
+	}
+
+	struct archive_entry* entry = nullptr;
+	while (archive_read_next_header(a.get(), &entry) == ARCHIVE_OK) {
+		std::string entryName = archive_entry_pathname(entry);
+		wxFileName out_path(data_dir + wxstr(entryName));
+		if (!wxDirExists(out_path.GetPath())) {
+			wxFileName::Mkdir(out_path.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+		}
+		if (archive_entry_size(entry) > 0) {
+			size_t entry_size = static_cast<size_t>(archive_entry_size(entry));
+			std::vector<char> buffer(entry_size);
+			archive_read_data(a.get(), buffer.data(), entry_size);
+			wxFile f(out_path.GetFullPath(), wxFile::write);
+			if (f.IsOpened()) {
+				f.Write(buffer.data(), buffer.size());
+				f.Close();
+			}
+		}
+	}
+}
+
 bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings) {
 	ScopedAction action("GUI::LoadDataFiles");
 	FileName data_path = getLoadedVersion()->getDataPath();
 	FileName client_path = getLoadedVersion()->getClientPath();
 	FileName extension_path = GetExtensionsDirectory();
+
+	wxString data_dir = data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR);
+	EnsureVersionExtracted(data_dir, data_path.GetName());
 
 	gfx.client_version = getLoadedVersion();
 	gfx.loadOTFI(client_path, error, warnings);
@@ -177,7 +223,7 @@ bool GUI::LoadDataFiles(wxString& error, wxArrayString& warnings) {
 	}
 
 	SetLoadDone(20, "Loading items.otb file...");
-	if (!g_items.loadFromOtb(wxString(data_path.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR) + "items.otb"), error, warnings)) {
+	if (!g_items.loadFromOtb(wxString(data_dir + "items.otb"), error, warnings)) {
 		DestroyLoadBar(); UnloadVersion(); return false;
 	}
 
