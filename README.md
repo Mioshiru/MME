@@ -1,6 +1,6 @@
 # Mio's Map Editor (MME)
 
-[![Version](https://img.shields.io/badge/version-v1.9.4-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
+[![Version](https://img.shields.io/badge/version-v1.9.2-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
 [![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://github.com/Mioshiru/MME)
@@ -10,7 +10,7 @@
 
 ---
 
-## 🌟 Key Highlights & Mapper Features (v1.9.4)
+## 🌟 Key Highlights & Mapper Features (v1.9.2)
 
 ### 👥 Real-Time Collaboration & 99% Crash-Proof Netcode
 * **Asio Lifecycle Safety & Exception Shields:** Fully protected Asio I/O handlers with atomic `aliveFlag` verification and comprehensive `try-catch` shields preventing crashes on disconnects or malformed packets.

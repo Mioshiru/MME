@@ -4,34 +4,9 @@
 
 ---
 
-## 🚀 Release v1.9.4 (Data Packaging, Netcode Hardening & Visual Previews)
+## 🚀 Release v1.9.2 (Collaborative Multiplayer Suite, Data Packaging & Hardened Netcode)
 
-### 🌟 Major Highlights & New Features in v1.9.4
-
-* **📦 Ultra-Compact Data Packaging & Transparent On-Demand Extraction:**
-  * **90 MB Distribution Size Reduction:** Inactive client versions (`740.zip` through `1330.zip`) are now bundled as high-compression archive packages, shrinking raw configuration size from ~115 MB to ~23 MB and eliminating 300+ loose XML files.
-  * **Instant Seamless Extractor:** When switching to a legacy or custom version in Preferences, MME automatically unpacks the archive in under 50ms using `libarchive` without requiring user intervention.
-  * **Master 13.10 Extension Suite (`13.10_additions.xml`):** Fully integrated 13.10 autoborder, doodad, wall, terrain, and creature master expansion.
-
-* **🛡️ 99% Crash-Proof Multiplayer Netcode:**
-  * **Atomic Asio Lifecycle Guards:** All async network callbacks check atomic `aliveFlag` and `stopped` state before executing on the main thread, preventing use-after-free conditions during peer disconnects.
-  * **Global Exception Protection:** All packet parsing logic (`parseEditorPacket`, `parseLoginPacket`, `parsePacket`) is wrapped in exception shields, preventing client termination on corrupted or partial packets.
-  * **Smooth Live Streaming:** Disabled blocking modal dialogues during incoming multiplayer fills and batch tile strokes.
-
-* **👹 Live Creature/Monster Outfit Previews in Palettes & Favorites:**
-  * Creature brushes placed in Favorites or brush lists now dynamically render real, colorized Tibia monster outfits and sprites instead of empty black boxes.
-
-* **🧭 Dynamic Responsive Minimap & UI Polish:**
-  * **Proportional Scaling:** Minimap module expands and bilinearly scales with any palette window width (`map_size x map_size`).
-  * **Streamlined UI:** Removed redundant "Show View Box" toggle from the minimap module.
-  * **Removed Placeholder Tilesets:** Purged "Custom World" placeholder across all 37 client versions.
-  * **Crash-Free Docking:** Stabilized wxAUI docking lifecycle for left/right sidebars and floating palettes.
-
----
-
-## 📦 Release v1.9.3 (Multiplayer Approval System & Modular Palette Overhaul)
-
-### 🌟 Major Highlights & New Features in v1.9.3
+### 🌟 Major Highlights & New Features in v1.9.2
 
 * **🛡️ Multiplayer Host Approval & Entity Management Suite (`Multiplayer -> Approvals & Reviews...`):**
   * **Centralized Host Review Dialog:** Hosts receive a dedicated live window listing all pending client creation and ID requests.
@@ -39,54 +14,35 @@
   * **Supported Entity Types:** Safe collision-free allocation for Towns, Unique IDs (UID), Action IDs (AID), Keyed Doors, and Quest Containers.
   * **Host-Exclusive Map Sizing:** Map dimension editing (`Map -> Properties`) is strictly reserved for the session host, preventing desynchronized client resizing.
 
-* **🧩 Modular Palette Architecture (`PaletteModuleCard`):**
-  * **Collapsible & Dismissible Modules:** Palette sections (Asset Browser, Minimap, etc.) now feature clean dark theme headers with `-` / `+` minimize toggles and `x` dismiss buttons.
-  * **Context Menu Restore:** Right-click anywhere on the palette canvas to restore dismissed modules or reset the palette layout to defaults in 1 click.
-  * **Smart Canvas Favorites Resolution:** Right-clicking on canvas tiles resolves composite parent brushes (Doodad, Wall, Ground, Carpet, Table, Creature, Spawn) directly into Favorites rather than raw item IDs.
-  * **Multi-Column Width Preservation:** Resolved bug where adding favorites was resetting the icon grid to a 3-column fallback.
-
-* **⚡ Ultra-Low Latency Netcode & Asynchronous I/O:**
+* **⚡ 99% Crash-Proof Multiplayer Netcode & Asynchronous I/O:**
+  * **Atomic Asio Lifecycle Guards:** All async network callbacks check atomic `aliveFlag` and `stopped` state before executing on the main thread, preventing use-after-free conditions during peer disconnects.
+  * **Global Exception Protection:** All packet parsing logic (`parseEditorPacket`, `parseLoginPacket`, `parsePacket`) is wrapped in exception shields, preventing client termination on corrupted or partial packets.
   * **Nagle-Free Socket Pipeline:** Configured `TCP_NODELAY`, `SO_KEEPALIVE`, and 128KB asynchronous socket send/receive buffers across both client and server peers.
   * **Adaptive 50Hz Cursor Throttling:** Smart delta-position tracking reduces cursor network packet traffic by over 70% while maintaining silky-smooth multi-user tracking.
   * **Non-Blocking Large-Fill Streaming:** Suppressed modal progress dialogs for live remote chunk broadcasts, preventing UI locking and thread starvation during massive batch operations.
-  * **Thread-Safe Peer Lifecycle:** Protected broadcast loops against iterator invalidation during client disconnects and modal dialog interactions.
+  * **Synchronized World Palettes:** Replicates host corporate tilesets (`PACKET_WORLD_PALETTE`) and town lists (`PACKET_TOWN_LIST`) to all joined clients.
+
+* **📦 Ultra-Compact Data Packaging & Transparent On-Demand Extraction:**
+  * **90 MB Distribution Size Reduction:** Inactive client versions (`740.zip` through `1330.zip`) are now bundled as high-compression archive packages, shrinking raw configuration size from ~115 MB to ~23 MB and eliminating 300+ loose XML files.
+  * **Instant Seamless Extractor:** When switching to a legacy or custom version in Preferences, MME automatically unpacks the archive in under 50ms using `libarchive` without requiring user intervention.
+  * **Master 13.10 Extension Suite (`13.10_additions.xml`):** Fully integrated 13.10 autoborder, doodad, wall, terrain, and creature master expansion.
+
+* **🧩 Modular Palette Architecture & UX Polish:**
+  * **Collapsible & Dismissible Modules (`PaletteModuleCard`):** Palette sections (Asset Browser, Minimap, etc.) now feature clean dark theme headers with `-` / `+` minimize toggles and `x` dismiss buttons.
+  * **Context Menu Restore:** Right-click anywhere on the palette canvas to restore dismissed modules or reset the palette layout to defaults in 1 click.
+  * **Live Monster Outfit Previews in Favorites:** Creature brushes in Favorites and brush lists now dynamically render rich, colorized Tibia monster outfits and sprites instead of empty black boxes.
+  * **Dynamic Responsive Minimap:** Minimap module expands and bilinearly scales smoothly to arbitrary palette widths (`map_size x map_size`). Removed redundant "Show View Box" checkbox.
+  * **Multi-Column Width Preservation:** Resolved bug where removing or updating favorites caused the icon grid to collapse into a narrow layout.
+  * **Crash-Free Docking:** Stabilized wxAUI docking lifecycle for left/right sidebars and floating palettes.
+  * **Removed Placeholder Tilesets:** Purged "Custom World" placeholder across all 37 client versions.
 
 * **⚙️ Instant Live Preferences (Zero Restart Required):**
   * **Immediate Parameter Application:** UI Scaling, Theme (Dark/Light), Palette Icon Sizes, Toolbars, and Cursor colors apply instantly upon clicking **Apply / OK** without requiring an application restart.
   * **Persistent Host Adoption:** Remembers player preference per server address, skipping repetitive sync prompts on reconnect.
 
-* **💬 In-Viewport Team Chat & Tool Polish:**
+* **💬 In-Viewport Team Chat & Audio Polish:**
   * **Dockable & Floating Chat Window:** Minimize chat to a compact status bar pill (`💬 Team Chat (X new)`) or toggle dock/float anchoring.
-  * **Synchronized World Palettes:** Replicates host corporate tilesets (`PACKET_WORLD_PALETTE`) and town lists (`PACKET_TOWN_LIST`) to all joined clients.
   * **Audio Lifecycle:** Built-in fantasy web radio automatically halts audio playback upon dialog closure.
-
----
-
-## 📦 Release v1.9.2 (Playtest Preview & Visuals Overhaul)
-
-### 🌟 Major Highlights & New Features in v1.9.2
-* **Cinematic Biome Color Grading & Post-Processing (`Preferences -> Graphics -> Visuals`):**
-  * **6 Tailored Biome Atmospheres:** Instant real-time color grading profiles for varied map areas:
-    * **Vibrant Fantasy RPG:** Crisp, saturated, and natural tones for the main surface world (Default).
-    * **Dark & Dangerous:** Ominous, desaturated high-contrast grading for undead crypts, dragon lairs, and blighted lands.
-    * **Gloomy Crypt & Cave:** Cool, deep cave tones with enhanced shadows.
-    * **Golden Sunset & Twilight:** Warm golden-amber highlights and twilight hues.
-    * **Frozen Wastes & Frost:** Crystalline ice-blue temperature grading.
-    * **Neutral / Classic Vanilla:** Unfiltered authentic pixel-art palette.
-  * **Cinematic Vignette:** Smooth radial edge-dimming with discrete 10-level scaling (10%–100%) for cinematic focus and depth.
-
-* **Re-Engineered Graphic Upgrader (Rich Chroma & Zero Washout):**
-  * **True Perceptual S-Curve Vibrance:** +25% rich color saturation boost on mid-tones without artificially overexposing, whitening, or blowing out highlights.
-  * **Clean Visual Rendering:** Removed legacy cloud rectangles, artificial water sparkles, and cliff shadow artifacts for a crystal-clear, clean canvas view.
-
-* **Palette & In-Viewport Favorites Workflow:**
-  * **In-Viewport "⭐ Add to Favorites":** Right-click any ground tile, doodad, wall, carpet, or creature directly on the canvas to add it to your Favorites palette in 1 click.
-  * **Self-Healing Auto-Layout Grid:** Favorites and brush palettes now automatically sync their columns and item dimensions to the exact panel width on every frame, eliminating blank spaces and layout glitches.
-  * **Fail-Safe Multi-Path Favorites Sync:** Robust loader and saver searching global data, local saves (`Saves/Slot 1/`), and client version paths so favorites are never lost when opening different map folders.
-
-* **Streamlined UI & Preferences:**
-  * **Removed Redundant Controls:** Deleted duplicate "Global Light Intensity" from Preferences dialog in favor of the dedicated main toolbar slider.
-  * **Consolidated Visuals Tab:** Merged all post-processing and biome options cleanly into `Visuals` and removed the obsolete `Experimental` tab.
 
 ---
 
