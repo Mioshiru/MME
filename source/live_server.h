@@ -77,6 +77,7 @@ public:
 	void updateOperation(int32_t percent);
 
 	std::unordered_map<uint32_t, LivePeer*> clients;
+	const std::unordered_map<uint32_t, LivePeer*>& getClients() const { return clients; }
 
 protected:
 	std::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor;

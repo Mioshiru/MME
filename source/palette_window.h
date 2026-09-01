@@ -76,6 +76,34 @@ private:
 	DECLARE_EVENT_TABLE()
 };
 
+class PaletteModuleCard : public wxPanel {
+public:
+	PaletteModuleCard(wxWindow* parent, const wxString& title, bool canClose = true);
+	virtual ~PaletteModuleCard() = default;
+
+	void SetContent(wxWindow* content);
+	void SetCollapsed(bool collapsed);
+	bool IsCollapsed() const { return is_collapsed; }
+	void SetTitle(const wxString& title);
+	wxWindow* GetContent() const { return content_window; }
+
+	std::function<void(bool is_collapsed)> OnCollapseChanged;
+	std::function<void()> OnClosed;
+
+private:
+	void OnToggleCollapse();
+	void OnCloseModule();
+
+	wxPanel* header_panel = nullptr;
+	wxStaticText* title_text = nullptr;
+	wxButton* btn_collapse = nullptr;
+	wxButton* btn_close = nullptr;
+	wxWindow* content_window = nullptr;
+	wxBoxSizer* main_sizer = nullptr;
+	bool is_collapsed = false;
+	bool can_close = true;
+};
+
 class PaletteWindow : public wxPanel {
 public:
 	PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets);
@@ -147,12 +175,15 @@ protected:
 
 public:
 	wxPanel* minimap_panel = nullptr;
+	PaletteModuleCard* card_assets = nullptr;
+	PaletteModuleCard* card_minimap = nullptr;
 	void UpdateMinimapVisibility();
 	void SetAllowMinimap(bool allow) { allow_minimap = allow; UpdateMinimapVisibility(); }
 	bool AllowsMinimap() const { return allow_minimap; }
 	void SetHorizontalLayout(bool horizontal);
 	bool IsHorizontalLayout() const { return is_horizontal; }
 	void CheckAndUpdateOrientation();
+	void ShowContextMenu(const wxPoint& pos);
 
 private:
 	bool allow_minimap = true;

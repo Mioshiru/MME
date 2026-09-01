@@ -251,6 +251,7 @@ void Settings::IO(IOMode mode) {
 	Int(MULTIPLAYER_PORT, 3074);
 	String(MULTIPLAYER_FAVORITES, "");
 	String(MULTIPLAYER_NAME, "Player");
+	String(MULTIPLAYER_ADOPTED_SERVERS, "");
 	Int(MERGE_MOVE, 0);
 	Int(MERGE_PASTE, 0);
 	Int(UNDO_SIZE, 5); // Speichert die letzten 5 Schritte für Undo / Redo
@@ -345,6 +346,7 @@ void Settings::IO(IOMode mode) {
 	Int(EXP_VIGNETTE, 0);
 	Float(EXP_VIGNETTE_STRENGTH, 0.4f);
 	Int(EXP_PIXEL_SNAPPING, 0);
+	Int(SHOW_CHAT, 1);
 	Int(PALETTE_COL_COUNT, 8);
 	String(PALETTE_TERRAIN_STYLE, "large icons");
 	String(PALETTE_COLLECTION_STYLE, "large icons");

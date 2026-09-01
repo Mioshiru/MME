@@ -4,7 +4,40 @@
 
 ---
 
-## 🚀 Release v1.9.2 (Playtest Preview & Visuals Overhaul)
+## 🚀 Release v1.9.3 (Multiplayer Approval System & Modular Palette Overhaul)
+
+### 🌟 Major Highlights & New Features in v1.9.3
+
+* **🛡️ Multiplayer Host Approval & Entity Management Suite (`Multiplayer -> Approvals & Reviews...`):**
+  * **Centralized Host Review Dialog:** Hosts receive a dedicated live window listing all pending client creation and ID requests.
+  * **Interactive Reviews:** Features **"📍 Jump to Location"** to inspect the player's canvas context, **"✅ Approve"** with collision-free ID allocation, and **"❌ Reject"** with instant player feedback.
+  * **Supported Entity Types:** Safe collision-free allocation for Towns, Unique IDs (UID), Action IDs (AID), Keyed Doors, and Quest Containers.
+  * **Host-Exclusive Map Sizing:** Map dimension editing (`Map -> Properties`) is strictly reserved for the session host, preventing desynchronized client resizing.
+
+* **🧩 Modular Palette Architecture (`PaletteModuleCard`):**
+  * **Collapsible & Dismissible Modules:** Palette sections (Asset Browser, Minimap, etc.) now feature clean dark theme headers with `-` / `+` minimize toggles and `x` dismiss buttons.
+  * **Context Menu Restore:** Right-click anywhere on the palette canvas to restore dismissed modules or reset the palette layout to defaults in 1 click.
+  * **Smart Canvas Favorites Resolution:** Right-clicking on canvas tiles resolves composite parent brushes (Doodad, Wall, Ground, Carpet, Table, Creature, Spawn) directly into Favorites rather than raw item IDs.
+  * **Multi-Column Width Preservation:** Resolved bug where adding favorites was resetting the icon grid to a 3-column fallback.
+
+* **⚡ Ultra-Low Latency Netcode & Asynchronous I/O:**
+  * **Nagle-Free Socket Pipeline:** Configured `TCP_NODELAY`, `SO_KEEPALIVE`, and 128KB asynchronous socket send/receive buffers across both client and server peers.
+  * **Adaptive 50Hz Cursor Throttling:** Smart delta-position tracking reduces cursor network packet traffic by over 70% while maintaining silky-smooth multi-user tracking.
+  * **Non-Blocking Large-Fill Streaming:** Suppressed modal progress dialogs for live remote chunk broadcasts, preventing UI locking and thread starvation during massive batch operations.
+  * **Thread-Safe Peer Lifecycle:** Protected broadcast loops against iterator invalidation during client disconnects and modal dialog interactions.
+
+* **⚙️ Instant Live Preferences (Zero Restart Required):**
+  * **Immediate Parameter Application:** UI Scaling, Theme (Dark/Light), Palette Icon Sizes, Toolbars, and Cursor colors apply instantly upon clicking **Apply / OK** without requiring an application restart.
+  * **Persistent Host Adoption:** Remembers player preference per server address, skipping repetitive sync prompts on reconnect.
+
+* **💬 In-Viewport Team Chat & Tool Polish:**
+  * **Dockable & Floating Chat Window:** Minimize chat to a compact status bar pill (`💬 Team Chat (X new)`) or toggle dock/float anchoring.
+  * **Synchronized World Palettes:** Replicates host corporate tilesets (`PACKET_WORLD_PALETTE`) and town lists (`PACKET_TOWN_LIST`) to all joined clients.
+  * **Audio Lifecycle:** Built-in fantasy web radio automatically halts audio playback upon dialog closure.
+
+---
+
+## 📦 Release v1.9.2 (Playtest Preview & Visuals Overhaul)
 
 ### 🌟 Major Highlights & New Features in v1.9.2
 * **Cinematic Biome Color Grading & Post-Processing (`Preferences -> Graphics -> Visuals`):**

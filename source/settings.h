@@ -220,6 +220,8 @@ namespace Config {
 		EXP_VIGNETTE,       // Cinematic Vignette Darkening
 		EXP_VIGNETTE_STRENGTH, // Vignette Strength float (0.1 - 1.0)
 		EXP_PIXEL_SNAPPING, // Sub-pixel camera snapping to eliminate shimmer
+		SHOW_CHAT,          // Multiplayer In-Editor Team Chat Window (0 or 1)
+		MULTIPLAYER_ADOPTED_SERVERS, // Remembered host view settings decisions
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;

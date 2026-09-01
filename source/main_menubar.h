@@ -130,10 +130,12 @@ namespace MenuBar {
 		SHOW_TOWNS,
 		ALWAYS_SHOW_ZONES,
 		EXT_HOUSE_SHADER,
+		SHOW_CHAT,
 		NEW_PALETTE,
 		TAKE_SCREENSHOT,
 		LIVE_START,
 		LIVE_JOIN,
+		LIVE_APPROVALS,
 		LIVE_CLOSE,
 		LIVE_HELP,
 		SELECT_TERRAIN,
@@ -337,6 +339,7 @@ public:
 	void OnSelectWaypointPalette(wxCommandEvent& event);
 	void OnSelectRawPalette(wxCommandEvent& event);
 	void OnStartLive(wxCommandEvent& event);
+	void OnApprovalsLive(wxCommandEvent& event);
 
 	// Floor menu
 	void OnChangeFloor(wxCommandEvent& event);

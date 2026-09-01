@@ -346,6 +346,96 @@ END_EVENT_TABLE()
 
 
 
+PaletteModuleCard::PaletteModuleCard(wxWindow* parent, const wxString& title, bool canClose)
+	: wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_STATIC), can_close(canClose) {
+	SetBackgroundColour(wxColor(12, 24, 42));
+
+	main_sizer = new wxBoxSizer(wxVERTICAL);
+
+	header_panel = new wxPanel(this, wxID_ANY);
+	header_panel->SetBackgroundColour(wxColor(20, 38, 62));
+
+	wxBoxSizer* header_sizer = new wxBoxSizer(wxHORIZONTAL);
+	title_text = new wxStaticText(header_panel, wxID_ANY, title);
+	title_text->SetForegroundColour(wxColor(220, 235, 255));
+	wxFont font = title_text->GetFont();
+	font.SetWeight(wxFONTWEIGHT_BOLD);
+	font.SetPointSize(8);
+	title_text->SetFont(font);
+	header_sizer->Add(title_text, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, 6);
+
+	btn_collapse = new wxButton(header_panel, wxID_ANY, "-", wxDefaultPosition, wxSize(20, 18), wxNO_BORDER);
+	btn_collapse->SetBackgroundColour(wxColor(32, 54, 82));
+	btn_collapse->SetForegroundColour(wxColor(240, 245, 255));
+	btn_collapse->SetToolTip("Minimize / Expand Module");
+	btn_collapse->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { OnToggleCollapse(); });
+	header_sizer->Add(btn_collapse, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 2);
+
+	if (can_close) {
+		btn_close = new wxButton(header_panel, wxID_ANY, "x", wxDefaultPosition, wxSize(20, 18), wxNO_BORDER);
+		btn_close->SetBackgroundColour(wxColor(48, 28, 38));
+		btn_close->SetForegroundColour(wxColor(255, 180, 180));
+		btn_close->SetToolTip("Remove / Hide Module");
+		btn_close->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { OnCloseModule(); });
+		header_sizer->Add(btn_close, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
+	}
+
+	header_panel->SetSizer(header_sizer);
+	main_sizer->Add(header_panel, 0, wxEXPAND);
+
+	SetSizer(main_sizer);
+}
+
+void PaletteModuleCard::SetContent(wxWindow* content) {
+	if (content_window && content_window != content) {
+		main_sizer->Detach(content_window);
+	}
+	content_window = content;
+	if (content_window) {
+		main_sizer->Add(content_window, 1, wxEXPAND | wxALL, 2);
+	}
+	Layout();
+}
+
+void PaletteModuleCard::SetCollapsed(bool collapsed) {
+	is_collapsed = collapsed;
+	if (content_window) {
+		content_window->Show(!is_collapsed);
+	}
+	if (btn_collapse) {
+		btn_collapse->SetLabel(is_collapsed ? "+" : "-");
+	}
+	Layout();
+	if (GetParent()) {
+		GetParent()->Layout();
+		GetParent()->Refresh();
+	}
+	if (OnCollapseChanged) {
+		OnCollapseChanged(is_collapsed);
+	}
+}
+
+void PaletteModuleCard::OnToggleCollapse() {
+	SetCollapsed(!is_collapsed);
+}
+
+void PaletteModuleCard::OnCloseModule() {
+	Hide();
+	if (GetParent()) {
+		GetParent()->Layout();
+		GetParent()->Refresh();
+	}
+	if (OnClosed) {
+		OnClosed();
+	}
+}
+
+void PaletteModuleCard::SetTitle(const wxString& title) {
+	if (title_text) {
+		title_text->SetLabel(title);
+	}
+}
+
 PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets) :
 	wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(180, 255)),
 	choicebook(nullptr),
@@ -361,13 +451,26 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	favorites_palette(nullptr),
 	minimap_panel(nullptr),
 	palette_choice(nullptr),
-	search_box(nullptr) {
+	search_box(nullptr),
+	card_assets(nullptr),
+	card_minimap(nullptr) {
 	SetMinSize(wxSize(180, 255));
 	SetBackgroundColour(wxColor(10, 20, 35));
 
-	palette_choice = newd wxChoice(this, wxID_ANY);
+	// Context menu binding to restore modules
+	Bind(wxEVT_RIGHT_DOWN, [this](wxMouseEvent& event) {
+		ShowContextMenu(event.GetPosition());
+	});
+
+	// Module 1: Asset Browser Card
+	card_assets = new PaletteModuleCard(this, "Asset Palette", false);
+	wxPanel* asset_container = new wxPanel(card_assets, wxID_ANY);
+	asset_container->SetBackgroundColour(wxColor(10, 20, 35));
+	wxBoxSizer* asset_sizer = new wxBoxSizer(wxVERTICAL);
+
+	palette_choice = newd wxChoice(asset_container, wxID_ANY);
 	palette_choice->SetBackgroundColour(wxColour(10, 20, 35));
-	search_box = newd wxTextCtrl(this, PALETTE_SEARCH_BOX, "", wxDefaultPosition, wxDefaultSize, 0);
+	search_box = newd wxTextCtrl(asset_container, PALETTE_SEARCH_BOX, "", wxDefaultPosition, wxDefaultSize, 0);
 	search_box->SetHint("Search");
 	search_box->Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& event) {
 		int code = event.GetKeyCode();
@@ -380,11 +483,10 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 			}
 			return;
 		}
-		// Allow normal text navigation and standard clipboard hotkeys in text field without bubbling to map accelerators
 		event.Skip();
 	});
 
-	choicebook = newd wxChoicebook(this, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(180, 250));
+	choicebook = newd wxChoicebook(asset_container, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(180, 250));
 	choicebook->SetBackgroundColour(wxColor(10, 20, 35));
 	if (auto* choice_ctrl = choicebook->GetChoiceCtrl()) {
 		choice_ctrl->Hide();
@@ -428,14 +530,6 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	favorites_palette->SetBackgroundColour(wxColor(10, 20, 35));
 	choicebook->AddPage(favorites_palette, favorites_palette->GetName());
 
-	// Setup sizers
-	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
-	sizer->Add(palette_choice, 0, wxEXPAND | wxALL, 5);
-	sizer->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
-
-	choicebook->SetMinSize(wxSize(180, 250));
-	sizer->Add(choicebook, 1, wxEXPAND);
-
 	for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {
 		palette_choice->Append(choicebook->GetPageText(i));
 	}
@@ -447,9 +541,24 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 		}
 	});
 
-	minimap_panel = new MinimapPanel(this);
-	sizer->Add(minimap_panel, 0, wxALIGN_CENTER | wxALL, 10);
+	asset_sizer->Add(palette_choice, 0, wxEXPAND | wxALL, 3);
+	asset_sizer->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 3);
+	asset_sizer->Add(choicebook, 1, wxEXPAND);
+	asset_container->SetSizer(asset_sizer);
+	card_assets->SetContent(asset_container);
 
+	// Module 2: Minimap Navigation Card
+	card_minimap = new PaletteModuleCard(this, "Minimap", true);
+	minimap_panel = new MinimapPanel(card_minimap);
+	card_minimap->SetContent(minimap_panel);
+	card_minimap->OnClosed = [this]() {
+		g_gui.SetStatusText("Minimap hidden. Right-click palette to restore.");
+	};
+
+	// Setup main window sizer
+	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
+	sizer->Add(card_assets, 1, wxEXPAND | wxALL, 3);
+	sizer->Add(card_minimap, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 3);
 	SetSizer(sizer);
 
 	RefreshFavoritesBox();
@@ -1155,37 +1264,25 @@ void PaletteWindow::SetHorizontalLayout(bool horizontal) {
 
 	if (horizontal) {
 		// Horizontal layout (for top / bottom docking):
-		// Left side: Header panel containing category selector and search box
-		// Center: Choicebook expanding to fill the width
-		// Right: Minimap panel (if visible)
 		wxBoxSizer* main_sizer = new wxBoxSizer(wxHORIZONTAL);
-
-		wxBoxSizer* left_ctrls = new wxBoxSizer(wxVERTICAL);
-		left_ctrls->Add(palette_choice, 0, wxEXPAND | wxALL, 4);
-		left_ctrls->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 4);
-		main_sizer->Add(left_ctrls, 0, wxALIGN_CENTER_VERTICAL | wxALL, 2);
-
-		choicebook->SetMinSize(wxSize(200, 100));
-		main_sizer->Add(choicebook, 1, wxEXPAND | wxALL, 2);
-
-		if (minimap_panel) {
-			main_sizer->Add(minimap_panel, 0, wxALIGN_CENTER_VERTICAL | wxALL, 4);
+		if (card_assets) {
+			choicebook->SetMinSize(wxSize(200, 100));
+			main_sizer->Add(card_assets, 1, wxEXPAND | wxALL, 2);
 		}
-
+		if (card_minimap) {
+			main_sizer->Add(card_minimap, 0, wxALIGN_CENTER_VERTICAL | wxALL, 4);
+		}
 		SetSizer(main_sizer);
 	} else {
 		// Vertical layout (for left / right docking & floating):
 		wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
-		main_sizer->Add(palette_choice, 0, wxEXPAND | wxALL, 5);
-		main_sizer->Add(search_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 5);
-
-		choicebook->SetMinSize(wxSize(180, 200));
-		main_sizer->Add(choicebook, 1, wxEXPAND);
-
-		if (minimap_panel) {
-			main_sizer->Add(minimap_panel, 0, wxALIGN_CENTER | wxALL, 10);
+		if (card_assets) {
+			choicebook->SetMinSize(wxSize(180, 200));
+			main_sizer->Add(card_assets, 1, wxEXPAND | wxALL, 3);
 		}
-
+		if (card_minimap) {
+			main_sizer->Add(card_minimap, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 3);
+		}
 		SetSizer(main_sizer);
 	}
 
@@ -1194,10 +1291,44 @@ void PaletteWindow::SetHorizontalLayout(bool horizontal) {
 	Refresh();
 }
 
+void PaletteWindow::ShowContextMenu(const wxPoint& pos) {
+	wxMenu menu;
+	if (card_assets) {
+		wxMenuItem* item = menu.AppendCheckItem(12001, "Show Asset Palette");
+		item->Check(card_assets->IsShown());
+	}
+	if (card_minimap) {
+		wxMenuItem* item = menu.AppendCheckItem(12002, "Show Minimap");
+		item->Check(card_minimap->IsShown());
+	}
+	menu.AppendSeparator();
+	menu.Append(12003, "Reset Palette Modules");
+
+	Bind(wxEVT_MENU, [this](wxCommandEvent& ev) {
+		int id = ev.GetId();
+		if (id == 12001 && card_assets) {
+			card_assets->Show(!card_assets->IsShown());
+			if (card_assets->IsShown() && card_assets->IsCollapsed()) card_assets->SetCollapsed(false);
+			Layout();
+			Refresh();
+		} else if (id == 12002 && card_minimap) {
+			card_minimap->Show(!card_minimap->IsShown());
+			if (card_minimap->IsShown() && card_minimap->IsCollapsed()) card_minimap->SetCollapsed(false);
+			Layout();
+			Refresh();
+		} else if (id == 12003) {
+			if (card_assets) { card_assets->Show(true); card_assets->SetCollapsed(false); }
+			if (card_minimap) { card_minimap->Show(true); card_minimap->SetCollapsed(false); }
+			Layout();
+			Refresh();
+		}
+	});
+
+	PopupMenu(&menu, pos);
+}
+
 void PaletteWindow::OnClose(wxCloseEvent& event) {
 	if (!event.CanVeto()) {
-		// We can't do anything! This sucks!
-		// (application is closed, we have to destroy ourselves)
 		Destroy();
 	} else {
 		Show(false);

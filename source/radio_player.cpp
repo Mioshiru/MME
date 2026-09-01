@@ -525,6 +525,17 @@ void RadioPlayerWindow::ShowDocked(bool dock) {
 	wxAuiManager* aui = g_gui.GetAuiManager();
 	if (!aui) return;
 
+	static bool s_paneCloseBound = false;
+	if (!s_paneCloseBound) {
+		aui->Bind(wxEVT_AUI_PANE_CLOSE, [](wxAuiManagerEvent& evt) {
+			if (evt.GetPane() && evt.GetPane()->name == RADIO_DOCK_PANE_NAME) {
+				RadioManager::Get().Stop();
+			}
+			evt.Skip();
+		});
+		s_paneCloseBound = true;
+	}
+
 	if (!s_dockedPanelInstance) {
 		s_dockedPanelInstance = new RadioPlayerPanel(g_gui.root);
 		aui->AddPane(s_dockedPanelInstance, wxAuiPaneInfo()
@@ -563,6 +574,17 @@ void RadioPlayerWindow::Toggle(wxWindow* parent) {
 	wxAuiManager* aui = g_gui.GetAuiManager();
 	if (!aui) return;
 
+	static bool s_paneCloseBound = false;
+	if (!s_paneCloseBound) {
+		aui->Bind(wxEVT_AUI_PANE_CLOSE, [](wxAuiManagerEvent& evt) {
+			if (evt.GetPane() && evt.GetPane()->name == RADIO_DOCK_PANE_NAME) {
+				RadioManager::Get().Stop();
+			}
+			evt.Skip();
+		});
+		s_paneCloseBound = true;
+	}
+
 	if (!s_dockedPanelInstance) {
 		s_dockedPanelInstance = new RadioPlayerPanel(g_gui.root);
 		aui->AddPane(s_dockedPanelInstance, wxAuiPaneInfo()
@@ -588,6 +610,7 @@ void RadioPlayerWindow::Toggle(wxWindow* parent) {
 
 	wxAuiPaneInfo& pane = aui->GetPane(s_dockedPanelInstance);
 	if (pane.IsShown()) {
+		RadioManager::Get().Stop();
 		pane.Show(false);
 	} else {
 		pane.Show(true);
@@ -632,5 +655,6 @@ void RadioPlayerWindow::SetWindowTransparency(int percent) {
 }
 
 void RadioPlayerWindow::OnClose(wxCloseEvent& WXUNUSED(event)) {
-	Hide(); // Keep stream alive in background
+	RadioManager::Get().Stop();
+	Hide();
 }

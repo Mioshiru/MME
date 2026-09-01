@@ -23,6 +23,10 @@
 #include "map_tab.h"
 #include "editor.h"
 #include "radio_player.h"
+#include "materials.h"
+#include "tileset.h"
+#include "brush.h"
+#include "map.h"
 
 #include <chrono>
 #include <new>
@@ -98,6 +102,8 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 		} else {
 			socket->set_option(boost::asio::ip::tcp::no_delay(true), error);
 			socket->set_option(boost::asio::socket_base::keep_alive(true), error);
+			socket->set_option(boost::asio::socket_base::send_buffer_size(131072), error);
+			socket->set_option(boost::asio::socket_base::receive_buffer_size(131072), error);
 			if (error) {
 				wxTheApp->CallAfter([this]() {
 					close();
@@ -318,6 +324,19 @@ void LiveClient::doWrite() {
 }
 
 void LiveClient::updateCursor(const Position& position) {
+	static Position last_sent_pos(-1, -1, -1);
+	static uint64_t last_sent_time = 0;
+	uint64_t now = wxGetLocalTimeMillis().GetValue();
+
+	if (position == last_sent_pos && (now - last_sent_time < 500)) {
+		return;
+	}
+	if (now - last_sent_time < 20) {
+		return;
+	}
+	last_sent_pos = position;
+	last_sent_time = now;
+
 	LiveCursor cursor;
 	cursor.id = 77; // Unimportant, server fixes it for us
 	cursor.pos = position;
@@ -578,6 +597,17 @@ void LiveClient::parsePacket(NetworkMessage message) {
 				parseRemoveAnnotation(message);
 				needsRefresh = true;
 				break;
+			case PACKET_TOWN_LIST:
+				parseTownList(message);
+				needsRefresh = true;
+				break;
+			case PACKET_WORLD_PALETTE:
+				parseWorldPalette(message);
+				break;
+			case PACKET_APPROVAL_RESPONSE:
+				parseApprovalResponse(message);
+				needsRefresh = true;
+				break;
 			case PACKET_PONG: {
 				uint64_t timestamp = message.read<uint64_t>();
 				latency = (uint32_t)(wxGetLocalTimeMillis().GetValue() - timestamp);
@@ -640,49 +670,88 @@ void LiveClient::parseHello(NetworkMessage& message) {
 	}
 
 	if (hasHostViewFlags) {
-		wxTheApp->CallAfter([hostViewFlags]() {
+		std::string srvKey = getHostName();
+		if (srvKey.empty() || srvKey == "Unknown IP" || srvKey == "not connected") {
+			if (!reconnectAddress.empty()) srvKey = reconnectAddress;
+		}
+
+		std::string adoptedList = g_settings.getString(Config::MULTIPLAYER_ADOPTED_SERVERS);
+		bool alreadyAnswered = false;
+		int savedDecision = -1; // 1 = adopt, 0 = keep
+
+		if (!adoptedList.empty()) {
+			wxArrayString entries = wxSplit(wxString::FromUTF8(adoptedList), ';');
+			for (size_t i = 0; i < entries.size(); ++i) {
+				wxString entry = entries[i];
+				int sep = entry.Find(':');
+				if (sep != wxNOT_FOUND) {
+					std::string entryIp = nstr(entry.Left(sep));
+					if (entryIp == srvKey || (!reconnectAddress.empty() && entryIp == reconnectAddress)) {
+						alreadyAnswered = true;
+						savedDecision = wxAtoi(entry.Mid(sep + 1));
+						break;
+					}
+				}
+			}
+		}
+
+		auto applyHostSettings = [hostViewFlags]() {
+			g_settings.setInteger(Config::SHOW_ALL_FLOORS, (hostViewFlags & (1 << 0)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_CREATURES, (hostViewFlags & (1 << 1)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_SPAWNS, (hostViewFlags & (1 << 2)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_HOUSES, (hostViewFlags & (1 << 3)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_SHADE, (hostViewFlags & (1 << 4)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_SPECIAL_TILES, (hostViewFlags & (1 << 5)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_ITEMS, (hostViewFlags & (1 << 6)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_BLOCKING, (hostViewFlags & (1 << 7)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_TOOLTIPS, (hostViewFlags & (1 << 8)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_WALL_HOOKS, (hostViewFlags & (1 << 9)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_AS_MINIMAP, (hostViewFlags & (1 << 10)) ? 1 : 0);
+			g_settings.setInteger(Config::TRANSPARENT_FLOORS, (hostViewFlags & (1 << 13)) ? 1 : 0);
+			g_settings.setInteger(Config::TRANSPARENT_ITEMS, (hostViewFlags & (1 << 14)) ? 1 : 0);
+			g_settings.setInteger(Config::HIGHLIGHT_ITEMS, (hostViewFlags & (1 << 15)) ? 1 : 0);
+			g_settings.setInteger(Config::HIGHLIGHT_LOCKED_DOORS, (hostViewFlags & (1 << 16)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_MINIMAP_HUD, (hostViewFlags & (1 << 17)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_GRID, (hostViewFlags & (1 << 18)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_TECHNICAL_ITEMS, (hostViewFlags & (1 << 19)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_WAYPOINTS, (hostViewFlags & (1 << 20)) ? 1 : 0);
+			g_settings.setInteger(Config::SHOW_TOWNS, (hostViewFlags & (1 << 21)) ? 1 : 0);
+			g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, (hostViewFlags & (1 << 22)) ? 1 : 0);
+
+			if (hostViewFlags & (1 << 23)) {
+				if (!RadioPlayerWindow::IsDocked() && !RadioPlayerWindow::GetInstance()) {
+					RadioPlayerWindow::ShowDocked(true);
+				}
+			}
+
+			if (g_gui.root) {
+				g_gui.root->UpdateMenubar();
+			}
+			g_gui.RefreshView();
+			g_gui.RefreshPalettes();
+			g_gui.RefreshMinimapPanel();
+		};
+
+		if (alreadyAnswered) {
+			if (savedDecision == 1) {
+				applyHostSettings();
+			}
+		} else {
 			wxMessageDialog dlg(g_gui.root,
 				"The Host is sharing their active View & Workspace Settings (Overlays, Layers, Minimap, Docked Radio Player, Grid, etc.).\n\nWould you like to adopt the Host's View Settings, or keep your own?",
 				"Adopt Host View Settings?",
 				wxYES_NO | wxICON_QUESTION);
 			dlg.SetYesNoLabels("Adopt Host Settings", "Keep My Settings");
-			if (dlg.ShowModal() == wxID_YES) {
-				g_settings.setInteger(Config::SHOW_ALL_FLOORS, (hostViewFlags & (1 << 0)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_CREATURES, (hostViewFlags & (1 << 1)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_SPAWNS, (hostViewFlags & (1 << 2)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_HOUSES, (hostViewFlags & (1 << 3)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_SHADE, (hostViewFlags & (1 << 4)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_SPECIAL_TILES, (hostViewFlags & (1 << 5)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_ITEMS, (hostViewFlags & (1 << 6)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_BLOCKING, (hostViewFlags & (1 << 7)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_TOOLTIPS, (hostViewFlags & (1 << 8)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_WALL_HOOKS, (hostViewFlags & (1 << 9)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_AS_MINIMAP, (hostViewFlags & (1 << 10)) ? 1 : 0);
-				g_settings.setInteger(Config::TRANSPARENT_FLOORS, (hostViewFlags & (1 << 13)) ? 1 : 0);
-				g_settings.setInteger(Config::TRANSPARENT_ITEMS, (hostViewFlags & (1 << 14)) ? 1 : 0);
-				g_settings.setInteger(Config::HIGHLIGHT_ITEMS, (hostViewFlags & (1 << 15)) ? 1 : 0);
-				g_settings.setInteger(Config::HIGHLIGHT_LOCKED_DOORS, (hostViewFlags & (1 << 16)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_MINIMAP_HUD, (hostViewFlags & (1 << 17)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_GRID, (hostViewFlags & (1 << 18)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_TECHNICAL_ITEMS, (hostViewFlags & (1 << 19)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_WAYPOINTS, (hostViewFlags & (1 << 20)) ? 1 : 0);
-				g_settings.setInteger(Config::SHOW_TOWNS, (hostViewFlags & (1 << 21)) ? 1 : 0);
-				g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, (hostViewFlags & (1 << 22)) ? 1 : 0);
-
-				if (hostViewFlags & (1 << 23)) {
-					if (!RadioPlayerWindow::IsDocked() && !RadioPlayerWindow::GetInstance()) {
-						RadioPlayerWindow::ShowDocked(true);
-					}
-				}
-
-				if (g_gui.root) {
-					g_gui.root->UpdateMenubar();
-				}
-				g_gui.RefreshView();
-				g_gui.RefreshPalettes();
-				g_gui.RefreshMinimapPanel();
+			int res = dlg.ShowModal();
+			int decision = (res == wxID_YES) ? 1 : 0;
+			if (decision == 1) {
+				applyHostSettings();
 			}
-		});
+			std::string newEntry = srvKey + ":" + std::to_string(decision);
+			if (!adoptedList.empty()) adoptedList += ";";
+			adoptedList += newEntry;
+			g_settings.setString(Config::MULTIPLAYER_ADOPTED_SERVERS, adoptedList);
+		}
 	}
 
 	if (reconnectAttempts > 0) {
@@ -804,17 +873,22 @@ void LiveClient::parseCursorUpdate(NetworkMessage& message) {
 
 void LiveClient::parseStartOperation(NetworkMessage& message) {
 	const std::string& operation = message.read<std::string>();
-
 	currentOperation = wxstr(operation);
-	g_gui.CreateLoadBar(currentOperation);
-	g_gui.SetStatusText("Server Operation in Progress: " + currentOperation + "... (0%)");
+
+	// Only show popup loading window during initial map download
+	if (!hasCreatedEditorTab) {
+		g_gui.CreateLoadBar(currentOperation);
+	}
+	g_gui.SetStatusText("Server Operation: " + currentOperation);
 }
 
 void LiveClient::parseUpdateOperation(NetworkMessage& message) {
 	int32_t percent = message.read<uint32_t>();
 	if (percent >= 100) {
-		g_gui.SetLoadDone(100);
-		g_gui.DestroyLoadBar();
+		if (!hasCreatedEditorTab) {
+			g_gui.SetLoadDone(100);
+			g_gui.DestroyLoadBar();
+		}
 		currentOperation.clear();
 		g_gui.SetStatusText("Server Operation Finished.");
 
@@ -835,9 +909,64 @@ void LiveClient::parseUpdateOperation(NetworkMessage& message) {
 		g_gui.RefreshView();
 		g_gui.UpdateMinimap();
 	} else {
-		g_gui.SetLoadDone(percent, currentOperation + wxString::Format(" (%d%%)", percent));
-		g_gui.SetStatusText("Server Operation in Progress: " + currentOperation + wxString::Format(" (%d%%)", percent));
+		if (!hasCreatedEditorTab) {
+			g_gui.SetLoadDone(percent, currentOperation + wxString::Format(" (%d%%)", percent));
+		}
+		g_gui.SetStatusText("Server Operation: " + currentOperation + wxString::Format(" (%d%%)", percent));
 	}
+}
+
+void LiveClient::parseTownList(NetworkMessage& message) {
+	if (!mapEditor) return;
+	Map& map = mapEditor->map;
+	uint32_t count = message.read<uint32_t>();
+	map.towns.clear();
+	for (uint32_t i = 0; i < count; ++i) {
+		uint32_t tid = message.read<uint32_t>();
+		std::string tname = message.read<std::string>();
+		Position tpos = message.read<Position>();
+		Town* t = new Town(tid);
+		t->setName(tname);
+		t->setTemplePosition(tpos);
+		map.towns.addTown(t);
+	}
+	g_gui.RefreshMinimapPanel();
+}
+
+void LiveClient::parseWorldPalette(NetworkMessage& message) {
+	std::string tsName = message.read<std::string>();
+	uint32_t brushCount = message.read<uint32_t>();
+
+	Tileset* tileset = nullptr;
+	auto it = g_materials.tilesets.find(tsName);
+	if (it != g_materials.tilesets.end()) {
+		tileset = it->second;
+		tileset->clear();
+	} else {
+		tileset = new Tileset(g_brushes, tsName);
+		g_materials.tilesets[tsName] = tileset;
+	}
+
+	for (uint32_t i = 0; i < brushCount; ++i) {
+		std::string brushName = message.read<std::string>();
+		uint32_t brushId = message.read<uint32_t>();
+		Brush* b = g_brushes.getBrush(brushName);
+		if (b) {
+			TilesetCategoryType catType = TILESET_RAW;
+			if (b->isGround()) catType = TILESET_TERRAIN;
+			else if (b->isDoodad()) catType = TILESET_DOODAD;
+			else if (b->isWall()) catType = TILESET_TERRAIN;
+			else if (b->isCreature()) catType = TILESET_CREATURE;
+			else if (b->isHouse()) catType = TILESET_HOUSE;
+
+			TilesetCategory* cat = tileset->getCategory(catType);
+			if (cat && !cat->containsBrush(b)) {
+				cat->brushlist.push_back(b);
+			}
+		}
+	}
+
+	g_gui.RefreshPalettes();
 }
 
 void LiveClient::requestLock(const Position& pos) {
@@ -972,4 +1101,32 @@ void LiveClient::checkInactivity() {
 void LiveClient::parseRemoveAnnotation(NetworkMessage& message) {
 	uint32_t id = message.read<uint32_t>();
 	mapAnnotations.erase(id);
+}
+
+void LiveClient::sendApprovalRequest(uint8_t reqType, const Position& pos, uint32_t reqValue, const wxString& details) {
+	static uint32_t s_localReqId = 1;
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_APPROVAL_REQUEST);
+	message.write<uint32_t>(s_localReqId++);
+	message.write<uint8_t>(reqType);
+	message.write<Position>(pos);
+	message.write<uint32_t>(reqValue);
+	message.write<std::string>(nstr(details));
+	send(message);
+
+	g_gui.SetStatusText("Approval request submitted to Multiplayer Host...");
+}
+
+void LiveClient::parseApprovalResponse(NetworkMessage& message) {
+	uint32_t reqId = message.read<uint32_t>();
+	uint8_t approved = message.read<uint8_t>();
+	uint32_t assignedValue = message.read<uint32_t>();
+	std::string reason = message.read<std::string>();
+
+	if (approved != 0) {
+		g_gui.SetStatusText(wxString::Format("✅ Host approved request (Assigned ID: %u)", assignedValue));
+	} else {
+		g_gui.SetStatusText(wxString::Format("❌ Host rejected request: %s", wxstr(reason)));
+		wxMessageBox(wxString::Format("Host rejected the creation/ID request:\n%s", wxstr(reason)), "Approval Rejected", wxOK | wxICON_INFORMATION);
+	}
 }

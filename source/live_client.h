@@ -83,6 +83,7 @@ public:
 	void sendAddAnnotation(const Position& pos, const wxString& text);
 	void sendRemoveAnnotation(uint32_t id);
 	void sendStatusUpdate(UserStatus status);
+	void sendApprovalRequest(uint8_t reqType, const Position& pos, uint32_t reqValue, const wxString& details);
 
 	// Camera Follow & Status
 	uint32_t getFollowClientId() const { return followClientId; }
@@ -114,6 +115,9 @@ protected:
 	void parsePingLocation(NetworkMessage& message);
 	void parseAddAnnotation(NetworkMessage& message);
 	void parseRemoveAnnotation(NetworkMessage& message);
+	void parseTownList(NetworkMessage& message);
+	void parseWorldPalette(NetworkMessage& message);
+	void parseApprovalResponse(NetworkMessage& message);
 	bool scheduleReconnect(const wxString& reason);
 	void attemptReconnect();
 	void resetConnectionMetrics();

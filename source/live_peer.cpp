@@ -25,6 +25,10 @@
 
 #include "editor.h"
 #include "radio_player.h"
+#include "materials.h"
+#include "tileset.h"
+#include "brush.h"
+#include "live_approval_window.h"
 
 LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket, uint32_t id)
     : LiveSocket(), readMessage(), server(server), socket(std::move(socket)),
@@ -35,6 +39,8 @@ LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket, uint
   boost::system::error_code error;
   this->socket.set_option(boost::asio::ip::tcp::no_delay(true), error);
   this->socket.set_option(boost::asio::socket_base::keep_alive(true), error);
+  this->socket.set_option(boost::asio::socket_base::send_buffer_size(131072), error);
+  this->socket.set_option(boost::asio::socket_base::receive_buffer_size(131072), error);
 }
 
 LivePeer::~LivePeer() {
@@ -261,6 +267,28 @@ void LivePeer::parseEditorPacket(NetworkMessage message) {
     case PACKET_UPDATE_STATUS:
       parseUpdateStatus(message);
       break;
+    case PACKET_APPROVAL_REQUEST: {
+      uint32_t reqId = message.read<uint32_t>();
+      uint8_t reqType = message.read<uint8_t>();
+      Position pos = message.read<Position>();
+      uint32_t reqVal = message.read<uint32_t>();
+      std::string details = message.read<std::string>();
+
+      LiveApprovalRequest req;
+      req.reqId = reqId;
+      req.clientId = getClientId();
+      req.requesterName = getClientName();
+      req.type = (LiveApprovalType)reqType;
+      req.pos = pos;
+      req.requestedValue = reqVal;
+      req.details = wxstr(details);
+      req.timestamp = g_gui.gfx.getElapsedTime();
+
+      wxTheApp->CallAfter([req]() {
+        LiveApprovalWindow::AddPendingRequest(req);
+      });
+      break;
+    }
     case PACKET_PING: {
       uint64_t timestamp = message.read<uint64_t>();
       uint32_t reported_latency = message.read<uint32_t>();
@@ -438,6 +466,43 @@ void LivePeer::parseReady(NetworkMessage &message) {
   listMsg.write<std::string>("Server");
   listMsg.write<std::string>(nstr(userList));
   send(listMsg);
+
+  // Step 2.5: Synchronize Towns container to Remote Client
+  NetworkMessage townListMsg;
+  townListMsg.write<uint8_t>(PACKET_TOWN_LIST);
+  townListMsg.write<uint32_t>((uint32_t)map.towns.count());
+  for (const auto& pair : map.towns) {
+    Town* t = pair.second;
+    if (t) {
+      townListMsg.write<uint32_t>(t->getID());
+      townListMsg.write<std::string>(t->getName());
+      townListMsg.write<Position>(t->getTemplePosition());
+    }
+  }
+  send(townListMsg);
+
+  // Step 2.6: Synchronize World Palette (Corporate Design) to Remote Client
+  auto wp_it = g_materials.tilesets.find("World Palette");
+  if (wp_it != g_materials.tilesets.end() && wp_it->second) {
+    Tileset* ts = wp_it->second;
+    std::vector<Brush*> allBrushes;
+    for (TilesetCategory* cat : ts->categories) {
+      if (cat) {
+        for (Brush* b : cat->brushlist) {
+          if (b) allBrushes.push_back(b);
+        }
+      }
+    }
+    NetworkMessage wpMsg;
+    wpMsg.write<uint8_t>(PACKET_WORLD_PALETTE);
+    wpMsg.write<std::string>("World Palette");
+    wpMsg.write<uint32_t>((uint32_t)allBrushes.size());
+    for (Brush* b : allBrushes) {
+      wpMsg.write<std::string>(b->getName());
+      wpMsg.write<uint32_t>(b->getID());
+    }
+    send(wpMsg);
+  }
 
   // Step 3: Initial Map Sync — send ALL non-empty nodes to this client
   // Send start operation so the client displays a smooth loading bar and avoids redraw lag

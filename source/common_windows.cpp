@@ -130,10 +130,23 @@ MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor&
 			event.Skip();
 		});
 		subsizer->Add(height_spin, wxSizerFlags(1).Expand());
+
+		if (editor.IsLiveClient()) {
+			width_spin->Enable(false);
+			height_spin->Enable(false);
+			width_spin->SetToolTip("Map dimensions can only be modified by the session Host.");
+			height_spin->SetToolTip("Map dimensions can only be modified by the session Host.");
+		}
+
 		details_grid->Add(subsizer, 1, wxEXPAND);
 	}
 
-
+	if (editor.IsLiveClient()) {
+		wxStaticText* clientNotice = new wxStaticText(details_box->GetStaticBox(), wxID_ANY, "🔒 Map size is locked by Multiplayer Host");
+		clientNotice->SetForegroundColour(wxColor(220, 160, 50));
+		details_grid->Add(new wxStaticText(details_box->GetStaticBox(), wxID_ANY, ""), 0);
+		details_grid->Add(clientNotice, 0, wxALIGN_CENTER_VERTICAL);
+	}
 
 	details_box->Add(details_grid, 1, wxEXPAND | wxALL, 5);
 	topsizer->Add(details_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 15);
@@ -199,13 +212,15 @@ void MapPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 	fn.SetFullName(wxstr(map.getName()));
 	map.setFilename(nstr(fn.GetFullPath()));
 
-	// Only resize if we have to
-	int new_map_width = width_spin->GetValue();
-	int new_map_height = height_spin->GetValue();
-	if (new_map_width != map.getWidth() || new_map_height != map.getHeight()) {
-		map.setWidth(new_map_width);
-		map.setHeight(new_map_height);
-		g_gui.FitViewToMap(view);
+	// Only resize if we have to (and not a remote client)
+	if (!editor.IsLiveClient()) {
+		int new_map_width = width_spin->GetValue();
+		int new_map_height = height_spin->GetValue();
+		if (new_map_width != map.getWidth() || new_map_height != map.getHeight()) {
+			map.setWidth(new_map_width);
+			map.setHeight(new_map_height);
+			g_gui.FitViewToMap(view);
+		}
 	}
 	g_gui.RefreshPalettes();
 

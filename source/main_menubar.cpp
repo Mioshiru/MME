@@ -35,6 +35,7 @@
 #include "extension_window.h"
 #include "find_item_window.h"
 #include "settings.h"
+#include "live_approval_window.h"
 
 #include "gui.h"
 
@@ -267,12 +268,14 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(SHOW_TOWNS, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(ALWAYS_SHOW_ZONES, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(EXT_HOUSE_SHADER, wxITEM_CHECK, OnChangeViewSettings);
+	MAKE_ACTION(SHOW_CHAT, wxITEM_CHECK, OnChangeViewSettings);
 
 	MAKE_ACTION(NEW_PALETTE, wxITEM_NORMAL, OnNewPalette); // This is not used in the current UI design
 	MAKE_ACTION(TAKE_SCREENSHOT, wxITEM_NORMAL, OnTakeScreenshot);
 
 	MAKE_ACTION(LIVE_START, wxITEM_NORMAL, OnStartLive); // Intern verknüpft mit "Host"
 	MAKE_ACTION(LIVE_JOIN, wxITEM_NORMAL, OnJoinLive);   // Intern verknüpft mit "Join"
+	MAKE_ACTION(LIVE_APPROVALS, wxITEM_NORMAL, OnApprovalsLive);
 	MAKE_ACTION(LIVE_CLOSE, wxITEM_NORMAL, OnCloseLive); // Intern verknüpft mit "Disconnect"
 	MAKE_ACTION(LIVE_HELP, wxITEM_NORMAL, OnHelpLive);
 
@@ -579,6 +582,7 @@ void MainMenuBar::Update() {
 
 	EnableItem(LIVE_START, is_local);
 	EnableItem(LIVE_JOIN, loaded);
+	EnableItem(LIVE_APPROVALS, is_live);
 	EnableItem(LIVE_CLOSE, is_live);
 	EnableItem(LIVE_HELP, true);
 
@@ -651,6 +655,7 @@ void MainMenuBar::LoadValues() {
 	CheckItem(SHOW_TOWNS, g_settings.getBoolean(Config::SHOW_TOWNS));
 	CheckItem(ALWAYS_SHOW_ZONES, g_settings.getBoolean(Config::ALWAYS_SHOW_ZONES));
 	CheckItem(EXT_HOUSE_SHADER, g_settings.getBoolean(Config::EXT_HOUSE_SHADER));
+	CheckItem(SHOW_CHAT, g_settings.getBoolean(Config::SHOW_CHAT));
 
 	CheckItem(MenuBar::SHOW_MINIMAP_HUD, g_settings.getBoolean(Config::MINIMAP_VISIBLE)); // Check the new minimap HUD item
 	CheckItem(SHOW_MINIMAP_HUD, g_settings.getBoolean(Config::MINIMAP_VISIBLE));
@@ -1335,6 +1340,7 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event) {
 	g_settings.setInteger(Config::SHOW_WALL_HOOKS, IsItemChecked(MenuBar::SHOW_WALL_HOOKS));
 	g_settings.setInteger(Config::SHOW_TOWNS, IsItemChecked(MenuBar::SHOW_TOWNS));
 	g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, IsItemChecked(MenuBar::ALWAYS_SHOW_ZONES));
+	g_settings.setInteger(Config::SHOW_CHAT, IsItemChecked(MenuBar::SHOW_CHAT));
 	g_gui.RefreshView();
 	if (g_gui.root) {
 		g_gui.root->UpdateMenubar();
@@ -1490,6 +1496,12 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 	}
 	live_host_dlg->Destroy();
 	Update();
+}
+
+void MainMenuBar::OnApprovalsLive(wxCommandEvent& event) {
+	Editor* editor = g_gui.GetCurrentEditor();
+	LiveServer* server = editor ? editor->GetLiveServer() : nullptr;
+	LiveApprovalWindow::ShowWindow(frame, server);
 }
 
 void MainMenuBar::OnJoinLive(wxCommandEvent& event) {

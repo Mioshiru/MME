@@ -6,6 +6,7 @@
 #include "live_socket.h"
 #include "live_client.h"
 #include "live_server.h"
+#include "live_peer.h"
 #include "tileset_window.h"
 #include "old_properties_window.h"
 #include "properties_window.h"
@@ -25,6 +26,7 @@
 #include "application.h"
 #include "materials.h"
 #include "spawn.h"
+#include "live_approval_window.h"
 
 uint16_t getItemUseSwitchID(Item* item) {
 	if (!item || item->getID() == 0) return 0;
@@ -1135,6 +1137,19 @@ void MapCanvas::OnSelectCollectionBrush(wxCommandEvent& WXUNUSED(event)) {
 	}
 }
 
+static Brush* FindBestItemBrush(Item* item) {
+	if (!item) return nullptr;
+	if (item->getDoodadBrush()) return item->getDoodadBrush();
+	if (item->getWallBrush()) return item->getWallBrush();
+	if (item->getCarpetBrush()) return item->getCarpetBrush();
+	if (item->getTableBrush()) return item->getTableBrush();
+	if (item->getDoorBrush()) return item->getDoorBrush();
+	if (item->getGroundBrush()) return item->getGroundBrush();
+	if (item->getBrush() && !item->getBrush()->isRaw()) return item->getBrush();
+
+	return item->getRAWBrush();
+}
+
 void MapCanvas::OnAddFavorite(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
@@ -1145,29 +1160,25 @@ void MapCanvas::OnAddFavorite(wxCommandEvent& WXUNUSED(event)) {
 	// 1. Check selected items first
 	for (auto* item : tile->items) {
 		if (item && item->isSelected()) {
-			if (item->getDoodadBrush()) target_brush = item->getDoodadBrush();
-			else if (item->getWallBrush()) target_brush = item->getWallBrush();
-			else if (item->getCarpetBrush()) target_brush = item->getCarpetBrush();
-			else if (item->getTableBrush()) target_brush = item->getTableBrush();
-			else if (item->getRAWBrush()) target_brush = item->getRAWBrush();
-			if (target_brush) break;
+			target_brush = FindBestItemBrush(item);
+			if (target_brush && !target_brush->isRaw()) break;
 		}
 	}
 
-	// 2. If nothing selected, inspect items top to bottom
-	if (!target_brush) {
+	// 2. If nothing selected or only raw found, inspect items top to bottom
+	if (!target_brush || target_brush->isRaw()) {
 		for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
 			if (!*it) continue;
-			if ((*it)->getDoodadBrush()) { target_brush = (*it)->getDoodadBrush(); break; }
-			if ((*it)->getWallBrush()) { target_brush = (*it)->getWallBrush(); break; }
-			if ((*it)->getCarpetBrush()) { target_brush = (*it)->getCarpetBrush(); break; }
-			if ((*it)->getTableBrush()) { target_brush = (*it)->getTableBrush(); break; }
-			if ((*it)->getRAWBrush()) { target_brush = (*it)->getRAWBrush(); break; }
+			Brush* b = FindBestItemBrush(*it);
+			if (b) {
+				target_brush = b;
+				if (!b->isRaw()) break;
+			}
 		}
 	}
 
 	// 3. Check creature / spawn
-	if (!target_brush) {
+	if (!target_brush || target_brush->isRaw()) {
 		if (tile->creature && tile->creature->getBrush()) {
 			target_brush = tile->creature->getBrush();
 		} else if (tile->spawn) {
@@ -1176,11 +1187,15 @@ void MapCanvas::OnAddFavorite(wxCommandEvent& WXUNUSED(event)) {
 	}
 
 	// 4. Check ground
-	if (!target_brush && tile->ground) {
-		if (tile->getGroundBrush()) {
-			target_brush = tile->getGroundBrush();
-		} else if (tile->ground->getRAWBrush()) {
-			target_brush = tile->ground->getRAWBrush();
+	if (!target_brush || target_brush->isRaw()) {
+		if (tile->ground) {
+			if (tile->getGroundBrush()) {
+				target_brush = tile->getGroundBrush();
+			} else if (tile->ground->getBrush() && !tile->ground->getBrush()->isRaw()) {
+				target_brush = tile->ground->getBrush();
+			} else if (tile->ground->getRAWBrush()) {
+				target_brush = tile->ground->getRAWBrush();
+			}
 		}
 	}
 
@@ -1193,6 +1208,15 @@ void MapCanvas::OnAddFavorite(wxCommandEvent& WXUNUSED(event)) {
 
 void MapCanvas::OnCreateTown(wxCommandEvent& WXUNUSED(event)) {
 	Position click_pos(last_click_map_x, last_click_map_y, floor);
+
+	if (editor.IsLiveClient()) {
+		if (editor.GetLiveClient()) {
+			editor.GetLiveClient()->sendApprovalRequest(APPROVAL_TOWN, click_pos, 0, "New Town");
+		}
+		g_gui.SetStatusText("Town creation request sent to Host for approval...");
+		return;
+	}
+
 	uint32_t max_id = 0;
 	for (const auto& pair : editor.map.towns) {
 		if (pair.second->getID() > max_id) {
@@ -1208,6 +1232,25 @@ void MapCanvas::OnCreateTown(wxCommandEvent& WXUNUSED(event)) {
 		tile->getLocation()->increaseTownCount();
 	}
 	editor.map.doChange();
+
+	LiveServer* server = editor.GetLiveServer();
+	if (server) {
+		NetworkMessage townListMsg;
+		townListMsg.write<uint8_t>(PACKET_TOWN_LIST);
+		townListMsg.write<uint32_t>((uint32_t)editor.map.towns.count());
+		for (const auto& pair : editor.map.towns) {
+			Town* town = pair.second;
+			if (town) {
+				townListMsg.write<uint32_t>(town->getID());
+				townListMsg.write<std::string>(town->getName());
+				townListMsg.write<Position>(town->getTemplePosition());
+			}
+		}
+		for (auto& clientEntry : server->getClients()) {
+			if (clientEntry.second) clientEntry.second->send(townListMsg);
+		}
+	}
+	g_gui.RefreshMinimapPanel();
 
 	uint32_t town_id = new_town->getID();
 	wxWindow* parent_win = static_cast<wxWindow*>(GetParent());

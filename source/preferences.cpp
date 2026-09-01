@@ -1238,7 +1238,7 @@ void PreferencesWindow::Apply() {
 		if (new_scale > 170) new_scale = 170;
 		if (old_scale != new_scale) {
 			g_settings.setInteger(Config::UI_SCALE, new_scale);
-			must_restart = true;
+			palette_style_changed = true;
 		}
 	}
 
@@ -1280,6 +1280,7 @@ void PreferencesWindow::Apply() {
 		int theme_idx = theme_radio->GetSelection();
 		g_settings.setInteger(Config::UI_THEME, theme_idx);
 		RME::UI::Theme::SetTheme(theme_idx == 0 ? RME::UI::Theme::Type::Dark : RME::UI::Theme::Type::Light);
+		palette_style_changed = true;
 	}
 
 	if (terrain_palette_style_choice && collection_palette_style_choice &&
@@ -1318,10 +1319,6 @@ void PreferencesWindow::Apply() {
 
 	g_settings.save();
 
-	if (must_restart) {
-		g_gui.PopupDialog(this, "Notice", "You must restart the editor for the changes to take effect.", wxOK);
-	}
-
 	if (palette_update_needed) {
 		// change palette structure
 		wxString error;
@@ -1333,6 +1330,13 @@ void PreferencesWindow::Apply() {
 		if (palette_style_changed) {
 			g_gui.RebuildPalettes();
 		}
+	}
+
+	g_gui.RefreshPalettes();
+	g_gui.RefreshView();
+	if (g_gui.root) {
+		g_gui.root->UpdateMenubar();
+		g_gui.root->Refresh();
 	}
 }
 

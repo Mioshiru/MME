@@ -1177,15 +1177,11 @@ void GUI::SetBrushSize(int nz) {
     size_panel->OnUpdateBrushSize(brush_shape, brush_size);
   }
 
-  root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
-
-  if (current_brush) {
-    if (GetPalette()) {
-      SelectBrush(current_brush, GetPalette()->GetSelectedPage());
-    } else {
-      SelectBrush(current_brush);
-    }
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
   }
+
+  RefreshView();
 }
 
 void GUI::SetBrushVariation(int nz) {
@@ -1422,22 +1418,6 @@ void GUI::SelectBrushInternal(Brush *brush) {
   current_brush = brush;
   if (!current_brush) {
     return;
-  }
-
-  if (!current_brush->isGround() && !current_brush->isEraser()) {
-    if (brush_size != 0 || brush_shape != BRUSHSHAPE_SQUARE) {
-      SetBrushSizeInternal(0);
-      brush_shape = BRUSHSHAPE_SQUARE;
-      for (auto &palette : palettes) {
-        palette->OnUpdateBrushSize(brush_shape, brush_size);
-      }
-      if (size_panel) {
-        size_panel->OnUpdateBrushSize(brush_shape, brush_size);
-      }
-      if (root && root->GetAuiToolBar()) {
-        root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
-      }
-    }
   }
 
   brush_variation = min(brush_variation, brush->getMaxVariation());

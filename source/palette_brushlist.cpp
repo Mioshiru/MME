@@ -648,9 +648,8 @@ bool BrushIconBox::SelectBrush(const Brush* whatbrush) {
 
 void BrushIconBox::SetBrushes(const std::vector<Brush*>& brushes) {
 	all_brushes = brushes;
-	visible_brushes = brushes;
-	UpdateLayout();
-	Refresh();
+	last_layout_width = -1;
+	Filter("");
 }
 
 void BrushIconBox::EnsureVisible(size_t n) {
@@ -681,21 +680,18 @@ void BrushIconBox::Filter(const wxString& query) {
 	visible_brushes.clear();
 	wxString lower_query = query.Lower();
 	for (Brush* brush : all_brushes) {
-		if (!brush) continue;
-		if (brush->isSeparator()) {
-			if (lower_query.IsEmpty()) {
-				visible_brushes.push_back(brush);
-			}
-		} else if (lower_query.IsEmpty() || wxstr(brush->getName()).Lower().Contains(lower_query)) {
+		if (brush && (query.empty() || wxstr(brush->getName()).Lower().Contains(query.Lower()))) {
 			visible_brushes.push_back(brush);
 		}
 	}
+	last_layout_width = -1;
 	UpdateLayout();
 	SelectFirstBrush();
 	Refresh();
 }
 
 void BrushIconBox::OnSize(wxSizeEvent& event) {
+	last_layout_width = -1;
 	UpdateLayout();
 	Refresh();
 	event.Skip();
@@ -705,17 +701,18 @@ void BrushIconBox::UpdateLayout() {
 	item_layout.clear();
 	int client_width = GetClientSize().x;
 	if (client_width <= 0) {
-		if (GetParent()) {
-			client_width = GetParent()->GetClientSize().x;
+		wxWindow* p = this;
+		while (p) {
+			if (p->GetClientSize().x > 50) {
+				client_width = p->GetClientSize().x;
+				break;
+			}
+			p = p->GetParent();
 		}
 	}
 	if (client_width <= 0) {
 		client_width = GetSize().x;
 	}
-	if (client_width <= 0) {
-		client_width = 240; // Sensible default palette width
-	}
-	last_layout_width = client_width;
 
 	int btn_width = 36;
 	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
@@ -728,6 +725,16 @@ void BrushIconBox::UpdateLayout() {
 		btn_width = 36;
 	}
 	btn_width = btn_width * scale_percent / 100;
+
+	if (client_width <= 0) {
+		int config_cols = g_settings.getInteger(Config::PALETTE_COL_COUNT);
+		if (config_cols > 0) {
+			client_width = config_cols * btn_width;
+		} else {
+			client_width = 300;
+		}
+	}
+	last_layout_width = client_width;
 
 	int columns = client_width / btn_width;
 	if (columns < 1) columns = 1;

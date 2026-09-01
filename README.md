@@ -1,6 +1,6 @@
 # Mio's Map Editor (MME)
 
-[![Version](https://img.shields.io/badge/version-v1.9.2-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
+[![Version](https://img.shields.io/badge/version-v1.9.3-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
 [![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://github.com/Mioshiru/MME)
@@ -10,7 +10,21 @@
 
 ---
 
-## 🌟 Key Highlights & Mapper Features (v1.9.2)
+## 🌟 Key Highlights & Mapper Features (v1.9.3)
+
+### 👥 Real-Time Collaboration & High-Performance Netcode
+* **Multiplayer Host Approval System (`Multiplayer -> Approvals & Reviews...`):** Host reviews, jumps to location (`📍 Jump to Location`), and approves or rejects town, unique ID, action ID, door, and container creation requests with collision-free ID assignment.
+* **Host-Exclusive Map Control:** Only the multiplayer session host can modify map dimensions (`Map -> Properties`), preventing unauthorized client resizing.
+* **Ultra-Low Latency Netcode (TCP_NODELAY & 128KB Buffers):** Optimized asynchronous I/O with disabled Nagle algorithm, 128KB socket buffers, and 50Hz adaptive cursor throttling reducing network overhead by >70%.
+* **Synchronized Town & World Palette Streaming:** Automatic real-time replication of `map.towns` (`PACKET_TOWN_LIST`) and host corporate "World Palettes" (`PACKET_WORLD_PALETTE`) on client connect.
+* **Integrated Team Chat (`Ctrl + Shift + C`):** Dockable & floating in-viewport team chat with minimize-to-statusbar pill notification (`💬 Team Chat`).
+* **Seamless Live Stroke Streaming:** Zero modal loading bars or frame freezes during large multiplayer brush strokes, fills, or remote map downloads.
+
+### 🧩 Modular Palette & Workflow Enhancements
+* **Modular Palette Cards (`PaletteModuleCard`):** Modular asset browser and minimap modules with dark theme header bars, `-` / `+` minimize toggles, and `x` close buttons. Restore modules via right-click context menu.
+* **In-Viewport "⭐ Add to Favorites" with Smart Brush Resolution:** Right-clicking tiles on the canvas intelligently resolves parent group brushes (Doodad, Wall, Ground, Carpet, Table, Creature) instead of raw item IDs.
+* **Adaptive Multi-Column Layout Grid:** Favorites and brush lists dynamically adapt to container width without jumping back to narrow 3-column layouts.
+* **Instant Live Settings (Zero Restart Required):** All preference changes (UI scale, theme, brush styles, and rendering options) apply instantly on Apply/OK without restarting the editor.
 
 ### 🎮 In-Editor Map Playtester (`File -> Test` / `F6`)
 * **Zero-Setup In-Process Playtesting:** Test your map instantly without exporting, compiling, or launching a dedicated server and OTClient.
@@ -20,20 +34,12 @@
 * **Dedicated Weather Simulation Suite:** Switch between *Off, Clouds, Rain, Snow, Desert Heat, and Fog* on the fly with customizable ambient particles.
 
 ### 🎨 Next-Gen Rendering, Biome Moods & Shaders
-* **Cinematic Biome Color Grading (`Preferences -> Graphics -> Visuals`):** 6 curated atmospheric color grading profiles (*Vibrant Fantasy RPG, Dark & Dangerous, Gloomy Crypt & Cave, Golden Sunset, Frozen Frost, Neutral Classic*) to preview maps in their intended biome atmosphere.
-* **Graphic Upgrader (Rich Chroma & Zero Washout):** High-clarity saturation and contrast enhancement (+25% vibrance) with preserved luminance, eliminating overexposure and whiteouts.
+* **Cinematic Biome Color Grading (`Preferences -> Graphics -> Visuals`):** 6 curated atmospheric color grading profiles (*Vibrant Fantasy RPG, Dark & Dangerous, Gloomy Crypt & Cave, Golden Sunset, Frozen Frost, Neutral Classic*).
+* **Graphic Upgrader (Rich Chroma & Zero Washout):** High-clarity saturation and contrast enhancement (+25% vibrance) with preserved luminance, eliminating overexposure.
 * **Cinematic Vignette:** Smooth radial focus darkening with discrete 10-level slider control.
 * **Super-Smooth HD Asset Upscaling:** Catmull-Rom bicubic spline & directional edge AA delivering clean curves on sprites, outfits, and terrain.
 * **Atmospheric Raycasted Lighting:** Real-time 2D supercover Bresenham raycasting with true wall shadow occlusion and directional wall-mounted torch projection.
-* **Dynamic Animated Terrain & Borders:** Fully synchronized water ripples, bubbling lava, coastal wave breakers, and lava cascades rendered at high frame rates.
-* **Smart Performance Throttling:** Automatic idle & animation pausing when zooming out (50% down to 1%) ensuring buttery-smooth 60+ FPS even on massive map files.
-
-### 👥 Real-Time Collaboration (Multiplayer Live Mapping)
-* **Up to 6 Simultaneous Mappers:** Host or join live mapping sessions with up to 6 players editing the same OTBM map simultaneously.
-* **Live-Ping & Network Quality HUD:** High-precision millisecond latency and packet loss metrics displayed in real time.
-* **Guaranteed Synchronized Autoborder:** Enforces consistent autoborder calculation across all clients (`IsLive()`), eliminating desync or missing transition borders.
-* **Visual Mapper Identity:** Unique player highlight colors, live cursor positions, customizable name tags, and camera follow modes.
-* **Alt + Click Pings & Sticky Notes:** Send ping rings to map coordinates or attach persistent notes for your team.
+* **Dynamic Animated Terrain & Borders:** Fully synchronized water ripples, bubbling lava, coastal wave breakers, and lava cascades.
 
 ### 🏰 Procedural World, Dungeon & Cave Generator (`Tools -> Generators`)
 * **Native 2-Pass Autobordering Engine:** Generates fully enclosed room perimeters, organic cave networks, and multi-floor dungeons with clean door cutouts and perfect border transitions.

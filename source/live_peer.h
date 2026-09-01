@@ -44,6 +44,9 @@ public:
 	uint32_t getClientId() const {
 		return clientId;
 	}
+	const wxString& getClientName() const {
+		return name;
+	}
 
 	std::string getHostName() const;
 

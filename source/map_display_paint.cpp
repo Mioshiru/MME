@@ -387,94 +387,162 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		}
 	}
 	// Team Chat Window (Multiplayer only)
-	if (editor.IsLive()) {
-		ImGui::SetNextWindowPos(ImVec2(10, io.DisplaySize.y - 220), ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
-		ImGui::Begin("Team Chat", nullptr, ImGuiWindowFlags_NoCollapse);
+	if (editor.IsLive() && g_settings.getBoolean(Config::SHOW_CHAT)) {
+		static bool chat_minimized = false;
+		static bool chat_docked_to_palette = false;
+		static int last_seen_msg_count = 0;
 
-		// Network Latency Display
-		if (editor.IsLiveServer()) {
-			LiveServer* server = editor.GetLiveServer();
-			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Host Mode | Clients: %d", (int)server->clients.size());
-			if (ImGui::IsItemHovered() && !server->clients.empty()) {
-				ImGui::BeginTooltip();
-				for (auto& clientEntry : server->clients) {
-					LivePeer* peer = clientEntry.second;
-					uint32_t lat = peer->getLatency();
-					ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-					ImGui::Text("%s:", nstr(peer->getName()).c_str());
-					ImGui::SameLine();
-					if (lat <= 1) {
-						ImGui::TextColored(col, " < 1 ms | %u%% loss | %s", peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
-					} else {
-						ImGui::TextColored(col, " %u ms | %u%% loss | %s", lat, peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
-					}
+		int total_msgs = (int)g_gui.chat_log.size();
+		int unread_count = std::max(0, total_msgs - last_seen_msg_count);
+
+		if (chat_minimized) {
+			// Render a sleek button pill in the bottom status area
+			ImGui::SetNextWindowPos(ImVec2(10, io.DisplaySize.y - 36), ImGuiCond_Always);
+			ImGui::SetNextWindowBgAlpha(0.85f);
+			ImGuiWindowFlags pill_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+			if (ImGui::Begin("##ChatMinimizedPill", nullptr, pill_flags)) {
+				std::string label = unread_count > 0 
+					? "💬 Team Chat (" + std::to_string(unread_count) + " new)"
+					: "💬 Team Chat";
+				
+				if (unread_count > 0) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.85f, 0.45f, 0.1f, 0.9f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 				}
-				ImGui::EndTooltip();
+				if (ImGui::Button(label.c_str())) {
+					chat_minimized = false;
+					last_seen_msg_count = (int)g_gui.chat_log.size();
+				}
+				if (unread_count > 0) {
+					ImGui::PopStyleColor(2);
+				}
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Click to restore Team Chat window");
+				}
+				ImGui::End();
 			}
 		} else {
-			LiveClient* client = editor.GetLiveClient();
-			uint32_t lat = client->getLatency();
-			ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-			ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Join Mode | ");
-			ImGui::SameLine();
-			if (lat <= 1) {
-				ImGui::TextColored(col, "%s | < 1 ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), client->getPacketLoss());
+			last_seen_msg_count = total_msgs;
+
+			if (chat_docked_to_palette) {
+				ImGui::SetNextWindowPos(ImVec2(std::max(10.0f, io.DisplaySize.x - 330.0f), std::max(10.0f, io.DisplaySize.y - 250.0f)), ImGuiCond_Always);
+				ImGui::SetNextWindowSize(ImVec2(320, 240), ImGuiCond_Always);
 			} else {
-				ImGui::TextColored(col, "%s | %u ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), lat, client->getPacketLoss());
+				ImGui::SetNextWindowPos(ImVec2(10, io.DisplaySize.y - 250), ImGuiCond_FirstUseEver);
+				ImGui::SetNextWindowSize(ImVec2(320, 240), ImGuiCond_FirstUseEver);
+			}
+			ImGui::SetNextWindowSizeConstraints(ImVec2(220, 140), ImVec2(800, 600));
+
+			bool open = true;
+			if (ImGui::Begin("Team Chat", &open, ImGuiWindowFlags_None)) {
+				// Header quick buttons
+				ImGui::SameLine(ImGui::GetWindowWidth() - 95);
+				if (ImGui::SmallButton(chat_docked_to_palette ? "⚓ Float" : "📌 Dock")) {
+					chat_docked_to_palette = !chat_docked_to_palette;
+				}
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip(chat_docked_to_palette ? "Switch to free-floating window" : "Dock to right palette area");
+				}
+				ImGui::SameLine();
+				if (ImGui::SmallButton(" _ ")) {
+					chat_minimized = true;
+				}
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Minimize to bottom status bar");
+				}
+
+				// Network Latency Display
+				if (editor.IsLiveServer()) {
+					LiveServer* server = editor.GetLiveServer();
+					ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Host Mode | Clients: %d", (int)server->clients.size());
+					if (ImGui::IsItemHovered() && !server->clients.empty()) {
+						ImGui::BeginTooltip();
+						for (auto& clientEntry : server->clients) {
+							LivePeer* peer = clientEntry.second;
+							uint32_t lat = peer->getLatency();
+							ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+							ImGui::Text("%s:", nstr(peer->getName()).c_str());
+							ImGui::SameLine();
+							if (lat <= 1) {
+								ImGui::TextColored(col, " < 1 ms | %u%% loss | %s", peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
+							} else {
+								ImGui::TextColored(col, " %u ms | %u%% loss | %s", lat, peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
+							}
+						}
+						ImGui::EndTooltip();
+					}
+				} else {
+					LiveClient* client = editor.GetLiveClient();
+					uint32_t lat = client->getLatency();
+					ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+					ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Join Mode | ");
+					ImGui::SameLine();
+					if (lat <= 1) {
+						ImGui::TextColored(col, "%s | < 1 ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), client->getPacketLoss());
+					} else {
+						ImGui::TextColored(col, "%s | %u ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), lat, client->getPacketLoss());
+					}
+				}
+				ImGui::Separator();
+
+				// Determine own name for highlighting
+				std::string ownName;
+				if (editor.IsLiveServer()) {
+					ownName = "Host";
+				} else if (editor.GetLiveClient()) {
+					ownName = nstr(editor.GetLiveClient()->getName());
+				}
+
+				// Chat history area
+				float reserve_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+				ImGui::BeginChild("ScrollingRegion", ImVec2(0, -reserve_height), false, ImGuiWindowFlags_HorizontalScrollbar);
+				for (const auto& msg : g_gui.chat_log) {
+					ImVec4 color = ImVec4(0.7f, 0.7f, 0.9f, 1.0f); // Default silver for other players
+					if (msg.sender == ownName) color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // White for self
+					else if (msg.sender == "Host") color = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); // Green for Host
+					else if (msg.sender == "Server") color = ImVec4(1.0f, 0.8f, 0.2f, 1.0f); // Gold for Server messages
+
+					ImGui::TextColored(color, "[%s]: ", msg.sender.c_str());
+					ImGui::SameLine();
+					ImGui::TextWrapped("%s", msg.text.c_str());
+				}
+				if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+					ImGui::SetScrollHereY(1.0f);
+				ImGui::EndChild();
+
+				ImGui::Separator();
+
+				// Input field
+				static char chat_input[256] = "";
+				bool reclaim_focus = false;
+				ImGui::PushItemWidth(-1.0f);
+				if (ImGui::IsWindowAppearing()) {
+					ImGui::SetKeyboardFocusHere();
+				}
+				if (ImGui::InputText("##ChatInput", chat_input, IM_ARRAYSIZE(chat_input), ImGuiInputTextFlags_EnterReturnsTrue)) {
+					std::string t = chat_input;
+					if (!t.empty()) {
+						g_gui.SendChat(t);
+						chat_input[0] = '\0';
+					}
+					reclaim_focus = true;
+				}
+				ImGui::PopItemWidth();
+				
+				if (reclaim_focus) {
+					ImGui::SetKeyboardFocusHere(-1);
+				}
+			}
+			ImGui::End();
+
+			if (!open) {
+				g_settings.setInteger(Config::SHOW_CHAT, 0);
+				if (g_gui.root) {
+					g_gui.root->UpdateMenubar();
+				}
 			}
 		}
-		ImGui::Separator();
-
-		// Determine own name for highlighting
-		std::string ownName;
-		if (editor.IsLiveServer()) {
-			ownName = "Host";
-		} else if (editor.GetLiveClient()) {
-			ownName = nstr(editor.GetLiveClient()->getName());
-		}
-
-		// Chat history area
-		float reserve_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -reserve_height), false, ImGuiWindowFlags_HorizontalScrollbar);
-		for (const auto& msg : g_gui.chat_log) {
-			ImVec4 color = ImVec4(0.7f, 0.7f, 0.9f, 1.0f); // Default silver for other players
-			if (msg.sender == ownName) color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // White for self
-			else if (msg.sender == "Host") color = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); // Green for Host
-			else if (msg.sender == "Server") color = ImVec4(1.0f, 0.8f, 0.2f, 1.0f); // Gold for Server messages
-
-			ImGui::TextColored(color, "[%s]: ", msg.sender.c_str());
-			ImGui::SameLine();
-			ImGui::TextWrapped("%s", msg.text.c_str());
-		}
-		if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
-			ImGui::SetScrollHereY(1.0f);
-		ImGui::EndChild();
-
-		ImGui::Separator();
-
-		// Input field
-		static char chat_input[256] = "";
-		bool reclaim_focus = false;
-		ImGui::PushItemWidth(-1.0f);
-		if (ImGui::IsWindowAppearing()) {
-			ImGui::SetKeyboardFocusHere();
-		}
-		if (ImGui::InputText("##ChatInput", chat_input, IM_ARRAYSIZE(chat_input), ImGuiInputTextFlags_EnterReturnsTrue)) {
-			std::string t = chat_input;
-			if (!t.empty()) {
-				g_gui.SendChat(t);
-				chat_input[0] = '\0';
-			}
-			reclaim_focus = true;
-		}
-		ImGui::PopItemWidth();
-		
-		if (reclaim_focus) {
-			ImGui::SetKeyboardFocusHere(-1);
-		}
-
-		ImGui::End();
 	}
 
 	// Graphics Error Log Overlay

@@ -337,11 +337,14 @@ void LiveServer::broadcastCursor(const LiveCursor& cursor) {
 	message.write<uint8_t>(PACKET_CURSOR_UPDATE);
 	writeCursor(message, cursor);
 
+	std::vector<LivePeer*> peerList;
 	for (auto& clientEntry : clients) {
-		LivePeer* peer = clientEntry.second;
-		if (peer->getClientId() != cursor.id) {
-			peer->send(message);
+		if (clientEntry.second && clientEntry.second->getClientId() != cursor.id) {
+			peerList.push_back(clientEntry.second);
 		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
 	}
 }
 
@@ -355,8 +358,14 @@ void LiveServer::broadcastChat(const wxString& speaker, const wxString& chatMess
 	message.write<std::string>(nstr(speaker));
 	message.write<std::string>(nstr(chatMessage));
 
+	std::vector<LivePeer*> peerList;
 	for (auto& clientEntry : clients) {
-		clientEntry.second->send(message);
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
 	}
 
 	if (log) {
@@ -373,8 +382,14 @@ void LiveServer::startOperation(const wxString& operationMessage) {
 	message.write<uint8_t>(PACKET_START_OPERATION);
 	message.write<std::string>(nstr(operationMessage));
 
+	std::vector<LivePeer*> peerList;
 	for (auto& clientEntry : clients) {
-		clientEntry.second->send(message);
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
 	}
 }
 
@@ -387,8 +402,14 @@ void LiveServer::updateOperation(int32_t percent) {
 	message.write<uint8_t>(PACKET_UPDATE_OPERATION);
 	message.write<int32_t>(percent);
 
+	std::vector<LivePeer*> peerList;
 	for (auto& clientEntry : clients) {
-		clientEntry.second->send(message);
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
 	}
 }
 
@@ -446,8 +467,14 @@ void LiveServer::broadcastLockState(const Position& pos, uint32_t ownerId, const
 		message.write<uint8_t>(ownerColor.Blue());
 	}
 
+	std::vector<LivePeer*> peerList;
 	for (auto& clientEntry : clients) {
-		clientEntry.second->send(message);
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
 	}
 }
 
@@ -463,8 +490,14 @@ void LiveServer::broadcastPing(const LivePing& ping) {
 	message.write<uint8_t>(ping.color.Blue());
 	message.write<uint64_t>(ping.timestamp);
 
+	std::vector<LivePeer*> peerList;
 	for (auto& clientEntry : clients) {
-		clientEntry.second->send(message);
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
 	}
 }
 
@@ -487,8 +520,14 @@ void LiveServer::broadcastAnnotation(const MapAnnotation& annotation, bool remov
 		message.write<uint8_t>(annotation.color.Blue());
 	}
 
+	std::vector<LivePeer*> peerList;
 	for (auto& clientEntry : clients) {
-		clientEntry.second->send(message);
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
 	}
 }
 
