@@ -1,16 +1,16 @@
 # Mio's Map Editor (MME)
 
-[![Version](https://img.shields.io/badge/version-v1.9.0-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
+[![Version](https://img.shields.io/badge/version-v1.9.2-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
-[![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://otland.net/threads/mios-map-editor-a-modern-collaborative-shader-powered-successor-to-rme.304943/)
+[![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://github.com/Mioshiru/MME)
 
 > **A modern, collaborative, shader-powered map editor and playtesting environment for OpenTibia (OTBM & SEC).**  
 > MME is the next-generation evolution of Remere's Map Editor (RME), engineered for professional level designers, high-performance rendering, multi-user live mapping, procedural generation, and instant in-editor playtesting.
 
 ---
 
-## 🌟 Key Highlights & Mapper Features (v1.9.0)
+## 🌟 Key Highlights & Mapper Features (v1.9.2)
 
 ### 🎮 In-Editor Map Playtester (`File -> Test` / `F6`)
 * **Zero-Setup In-Process Playtesting:** Test your map instantly without exporting, compiling, or launching a dedicated server and OTClient.
@@ -19,11 +19,12 @@
 * **World Interaction:** Open/close doors and gates, toggle street lamps, campfires, and torches with live sound and state changes.
 * **Dedicated Weather Simulation Suite:** Switch between *Off, Clouds, Rain, Snow, Desert Heat, and Fog* on the fly with customizable ambient particles.
 
-### 🎨 Next-Gen Rendering, HD Upscaling & Shaders
-* **Super-Smooth HD Asset Upscaling:** Advanced xBRZ & Super-xBR shader pipeline delivering smooth, anti-aliased, vector-like curves on all sprites, items, and terrain without pixel grain or noise.
-* **Atmospheric Raycasted Lighting:** Real-time 2D supercover Bresenham raycasting with true wall shadow occlusion and window/hatch light pass-through.
-* **Directional Wall Torches:** Wall-mounted lights intelligently project into the room and never leak backwards through solid walls.
-* **Max-Envelope Light Blending:** Authentic Tibia soft light accumulation preventing overexposed white blowouts across large lava lakes and torch corridors.
+### 🎨 Next-Gen Rendering, Biome Moods & Shaders
+* **Cinematic Biome Color Grading (`Preferences -> Graphics -> Visuals`):** 6 curated atmospheric color grading profiles (*Vibrant Fantasy RPG, Dark & Dangerous, Gloomy Crypt & Cave, Golden Sunset, Frozen Frost, Neutral Classic*) to preview maps in their intended biome atmosphere.
+* **Graphic Upgrader (Rich Chroma & Zero Washout):** High-clarity saturation and contrast enhancement (+25% vibrance) with preserved luminance, eliminating overexposure and whiteouts.
+* **Cinematic Vignette:** Smooth radial focus darkening with discrete 10-level slider control.
+* **Super-Smooth HD Asset Upscaling:** Catmull-Rom bicubic spline & directional edge AA delivering clean curves on sprites, outfits, and terrain.
+* **Atmospheric Raycasted Lighting:** Real-time 2D supercover Bresenham raycasting with true wall shadow occlusion and directional wall-mounted torch projection.
 * **Dynamic Animated Terrain & Borders:** Fully synchronized water ripples, bubbling lava, coastal wave breakers, and lava cascades rendered at high frame rates.
 * **Smart Performance Throttling:** Automatic idle & animation pausing when zooming out (50% down to 1%) ensuring buttery-smooth 60+ FPS even on massive map files.
 
@@ -51,6 +52,8 @@
 * **OTB & Item Inspector Suite (`Tools -> Item & Assets Editor`):** Inspect item flags, properties, and capacities with direct integration into Arch-Mina Assets Editor.
 
 ### 📁 Streamlined Palettes, Brushes & UX Polish
+* **In-Viewport "⭐ Add to Favorites":** Right-click any ground, doodad, wall, or creature directly on the canvas to add it to your Favorites palette instantly.
+* **Self-Healing Auto-Layout Palette Grid:** Palette icons dynamically recalculate layout columns on every window resize and paint event.
 * **Smart Mountain Plateau Fill:** Bucket-fill higher elevations (e.g. Floor 6 directly over Floor 7) with automatic cliff footprint detection and strict skirt exclusion.
 * **100% Reliable Undo (`Ctrl + Z`) & Redo (`Ctrl + Y`):** Complete state-based batch action queue preserving multi-step history for large fills, brush strokes, and erasures.
 * **Interactive Collapsible Tilesets:** Clean accordion categories (▼ / ▶) with dynamic search auto-expansion.

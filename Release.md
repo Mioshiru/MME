@@ -4,24 +4,46 @@
 
 ---
 
-## 🚀 Release v1.9.1 (Latest Working Version)
+## 🚀 Release v1.9.2 (Playtest Preview & Visuals Overhaul)
+
+### 🌟 Major Highlights & New Features in v1.9.2
+* **Cinematic Biome Color Grading & Post-Processing (`Preferences -> Graphics -> Visuals`):**
+  * **6 Tailored Biome Atmospheres:** Instant real-time color grading profiles for varied map areas:
+    * **Vibrant Fantasy RPG:** Crisp, saturated, and natural tones for the main surface world (Default).
+    * **Dark & Dangerous:** Ominous, desaturated high-contrast grading for undead crypts, dragon lairs, and blighted lands.
+    * **Gloomy Crypt & Cave:** Cool, deep cave tones with enhanced shadows.
+    * **Golden Sunset & Twilight:** Warm golden-amber highlights and twilight hues.
+    * **Frozen Wastes & Frost:** Crystalline ice-blue temperature grading.
+    * **Neutral / Classic Vanilla:** Unfiltered authentic pixel-art palette.
+  * **Cinematic Vignette:** Smooth radial edge-dimming with discrete 10-level scaling (10%–100%) for cinematic focus and depth.
+
+* **Re-Engineered Graphic Upgrader (Rich Chroma & Zero Washout):**
+  * **True Perceptual S-Curve Vibrance:** +25% rich color saturation boost on mid-tones without artificially overexposing, whitening, or blowing out highlights.
+  * **Clean Visual Rendering:** Removed legacy cloud rectangles, artificial water sparkles, and cliff shadow artifacts for a crystal-clear, clean canvas view.
+
+* **Palette & In-Viewport Favorites Workflow:**
+  * **In-Viewport "⭐ Add to Favorites":** Right-click any ground tile, doodad, wall, carpet, or creature directly on the canvas to add it to your Favorites palette in 1 click.
+  * **Self-Healing Auto-Layout Grid:** Favorites and brush palettes now automatically sync their columns and item dimensions to the exact panel width on every frame, eliminating blank spaces and layout glitches.
+  * **Fail-Safe Multi-Path Favorites Sync:** Robust loader and saver searching global data, local saves (`Saves/Slot 1/`), and client version paths so favorites are never lost when opening different map folders.
+
+* **Streamlined UI & Preferences:**
+  * **Removed Redundant Controls:** Deleted duplicate "Global Light Intensity" from Preferences dialog in favor of the dedicated main toolbar slider.
+  * **Consolidated Visuals Tab:** Merged all post-processing and biome options cleanly into `Visuals` and removed the obsolete `Experimental` tab.
+
+---
+
+## 📦 Release v1.9.1 (Maintenance & Quality of Life)
 
 ### 🌟 Major Highlights & New Features in v1.9.1
 * **Next-Gen Modern Pixel Art HD Super-Resolution Engine:**
   * **16-Tap Catmull-Rom Bicubic Spline + Directional Sub-Pixel Edge AA:** Reconstructs smooth $45^\circ$, $30^\circ$, and $60^\circ$ diagonal curves across all sprites and tiles, eliminating pixel crawl and jagged staircasing without losing pixel-art charm.
   * **AMD Contrast Adaptive Sharpening (CAS):** Crystal-clear micro-contrast for stone cracks, wood grain, foliage, and armor highlights without halo artifacts.
-  * **Cinema-Grade S-Curve Vibrance:** Harmonious +22% perceptual color grading on natural terrain (grass, water, sand, rocks).
   * **Seamless Alpha-Safe Shorelines & Borders:** Zero boxy seams or dark border steps on transparent sprite boundaries.
-  * **Zero-Latency Live Switch:** Instant toggle between Classic Pixel and Ultra-HD Super-Resolution directly in Preferences (`Settings -> Preferences -> Ultra-HD Super-Resolution Engine`) without restarting the editor.
-  * **Synchronized Palette HD Previews:** All item and brush preview icons in the palette windows now render with matching HD color harmony and clarity.
-
-* **Atmospheric Engine & Warm Volumetric Lighting:**
-  * **Dynamic Foliage Wind Sway:** Trees and bushes gently sway in the breeze on surface floors ($\le 7$) with grid-anchored vertex calculations preventing sprite tearing.
-  * **Clean, Crystal Water Surface:** Removed striped shadow artifacts for uniform, natural lakes and rivers.
-  * **Warm Volumetric Light Bloom:** Radial light sources (torches, lamps, campfires, coal basins) feature smooth quadratic falloff, radiant warm golden cores, and cinematic deep indigo night ambient shading (`#080C16`).
+  * **Zero-Latency Live Switch:** Instant toggle between Classic Pixel and Ultra-HD Super-Resolution directly in Preferences (`Settings -> Preferences -> Graphics -> Visuals`).
+  * **Synchronized Palette HD Previews:** All item and brush preview icons in the palette windows render with matching HD color harmony and clarity.
 
 * **UI & Context Menu Polish:**
-  * **Promoted & Highlighted Brush Selectors:** `Select Groundbrush`, `Select Wallbrush`, `Select Doodadbrush`, `Select Doorbrush`, etc. are now displayed at the **very top** of the canvas right-click context menu in glowing radiant gold (`#FFD652`).
+  * **Promoted & Highlighted Brush Selectors:** `Select Groundbrush`, `Select Wallbrush`, `Select Doodadbrush`, `Select Doorbrush`, etc. are displayed at the **very top** of the canvas right-click context menu in glowing radiant gold (`#FFD652`).
   * **Map Notes & Ping Feedback:** Renamed *"Annotation"* to *"Note"* with multiplayer visual feedback icon and ping notifications.
   * **Smart Wall Bucket Fill:** Perimeter boundary wall placement stops cleanly at existing wall structures.
 

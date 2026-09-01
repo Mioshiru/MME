@@ -18,6 +18,13 @@ data/user
 *.dll
 *.exe
 
+# archives
+*.7z
+*.zip
+*.rar
+*.tar
+*.gz
+
 # assets
 *.spr
 *.dat
