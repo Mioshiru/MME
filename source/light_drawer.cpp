@@ -27,7 +27,9 @@
 
 LightDrawer::LightDrawer() {
 	texture = 0;
-	global_color = wxColor(5, 7, 14, 255);
+	// Match OTClient: slightly blue-tinted shadow instead of pure black
+	// This matches the Tibia client's night-time tint color
+	global_color = wxColor(8, 8, 20, 255);
 }
 
 LightDrawer::~LightDrawer() {
@@ -35,7 +37,7 @@ LightDrawer::~LightDrawer() {
 	lights.clear();
 }
 
-void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x, int scroll_y, Map* map, int current_floor) {
+void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x, int scroll_y, Map* map, int current_floor, float shader_time) {
 	int w = (end_x - map_x) + 2;
 	int h = (end_y - map_y) + 2;
 	if (w <= 0 || h <= 0) return;
@@ -47,10 +49,19 @@ void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x,
 
 	glDisable(GL_TEXTURE_2D);
 	glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
-	
-	// Draw the global ambient darkening (slightly deeper nighttime)
+
 	float ambient_val = std::min(1.0f, std::max(0.0f, g_settings.getFloat(Config::LIGHT_AMBIENT)));
-	uint8_t ambient_alpha = static_cast<uint8_t>(255 * (1.0f - (ambient_val * 0.85f)));
+	
+	// Automatic Dungeon Depth Dimming:
+	// Surface (floor <= 7) has standard ambient daylight.
+	// Underground floors (8..15) gradually become darker and moodier to feel like real caves/dungeons!
+	if (current_floor > 7) {
+		int depth = current_floor - 7; // 1..8
+		float depth_factor = 1.0f - (float(depth) * 0.045f);
+		ambient_val = std::clamp(ambient_val * depth_factor, 0.25f, 1.0f);
+	}
+
+	uint8_t ambient_alpha = static_cast<uint8_t>(255 * (1.0f - ambient_val));
 	glColor4ub(global_color.Red(), global_color.Green(), global_color.Blue(), ambient_alpha);
 	glBegin(GL_QUADS);
 	glVertex2f(draw_x, draw_y);
@@ -65,7 +76,6 @@ void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x,
 		return;
 	}
 
-	// [PERFORMANCE] Fast 2D Lightmap Accumulation Grid (Zero GPU Overdraw)
 	size_t grid_size = static_cast<size_t>(w * h);
 	std::vector<float> r_acc(grid_size, 0.0f);
 	std::vector<float> g_acc(grid_size, 0.0f);
@@ -81,122 +91,49 @@ void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x,
 		if (rad <= 0) continue;
 
 		wxColor light_color = colorFromEightBit(light.color);
-		float lr = light_color.Red();
-		float lg = light_color.Green();
-		float lb = light_color.Blue();
+		float lr = static_cast<float>(light_color.Red());
+		float lg = static_cast<float>(light_color.Green());
+		float lb = static_cast<float>(light_color.Blue());
 
-		// Boost light intensity for radiant torches, lanterns, coal basins, lava
-		float base_alpha = (0.35f + (std::min(15, rad) / 15.0f) * 0.85f) * intensity_setting;
-		if (base_alpha > 0.98f) base_alpha = 0.98f;
+		// Match OTClient: softer light contribution curve
+		// Client uses squared falloff and caps individual light brightness
+		float rad_factor = std::min(15, rad) / 15.0f;
+		float base_alpha = (0.35f + rad_factor * 0.40f) * intensity_setting;
+		base_alpha = std::min(base_alpha, 0.85f); // Never fully overpower ambient
 
 		int min_x = std::max(map_x, lx - rad);
 		int max_x = std::min(end_x + 1, lx + rad);
 		int min_y = std::max(map_y, ly - rad);
 		int max_y = std::min(end_y + 1, ly + rad);
 
-		for (int ty = min_y; ty <= max_y; ++ty) {
-			for (int tx = min_x; tx <= max_x; ++tx) {
-				int dx = tx - lx;
-				int dy = ty - ly;
-				float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
-				if (dist > rad) continue;
+		for (int y = min_y; y <= max_y; ++y) {
+			int gy = y - map_y;
+			if (gy < 0 || gy >= h) continue;
 
-				// Robust Line-of-Sight Raycasting (Wall occlusion vs Window transparency)
-				bool occluded = false;
-				if (map && (dx != 0 || dy != 0)) {
-					auto isWallOcclusion = [&](int check_x, int check_y) -> bool {
-						Tile* t = map->getTile(check_x, check_y, current_floor);
-						if (!t) return false;
-						for (Item* item : t->items) {
-							if (!item) continue;
-							const ItemType& it = g_items[item->getID()];
-							if (item->isWall() || it.isWall || (it.brush && it.brush->isWall())) {
-								if (it.isOpen) return false;
-								std::string lname = it.name;
-								std::transform(lname.begin(), lname.end(), lname.begin(), ::tolower);
-								if (lname.find("window") != std::string::npos || lname.find("hatch") != std::string::npos) {
-									return false;
-								}
-								return true;
-							}
-						}
-						return false;
-					};
+			for (int x = min_x; x <= max_x; ++x) {
+				int gx = x - map_x;
+				if (gx < 0 || gx >= w) continue;
 
-					// If light source is mounted on a wall, only project away from the wall
-					Tile* origin_tile = map->getTile(lx, ly, current_floor);
-					if (origin_tile) {
-						for (Item* item : origin_tile->items) {
-							if (!item) continue;
-							const ItemType& it = g_items[item->getID()];
-							if (item->isWall() || it.isWall || (it.brush && it.brush->isWall())) {
-								if (it.hookSouth || origin_tile->hasProperty(HOOK_SOUTH)) {
-									if (ty < ly) occluded = true;
-								}
-								if (it.hookEast || origin_tile->hasProperty(HOOK_EAST)) {
-									if (tx < lx) occluded = true;
-								}
-							}
-						}
-					}
+				float dx = static_cast<float>(x - lx);
+				float dy = static_cast<float>(y - ly);
+				float dist = std::sqrt(dx * dx + dy * dy);
 
-					if (!occluded) {
-						int num_samples = std::max(std::abs(tx - lx), std::abs(ty - ly)) * 2 + 1;
-						float fx0 = static_cast<float>(lx) + 0.5f;
-						float fy0 = static_cast<float>(ly) + 0.5f;
-						float fx1 = static_cast<float>(tx) + 0.5f;
-						float fy1 = static_cast<float>(ty) + 0.5f;
+				if (dist <= static_cast<float>(rad)) {
+					// OTClient uses quadratic falloff for smoother light edges
+					float linear_falloff = (1.0f - (dist / static_cast<float>(rad)));
+					if (linear_falloff <= 0.0f) continue;
+					float falloff = linear_falloff * linear_falloff; // squared = softer edges
 
-						int last_cx = lx;
-						int last_cy = ly;
-						for (int s = 1; s < num_samples; ++s) {
-							float t_param = static_cast<float>(s) / static_cast<float>(num_samples);
-							int cx = static_cast<int>(std::floor(fx0 + (fx1 - fx0) * t_param));
-							int cy = static_cast<int>(std::floor(fy0 + (fy1 - fy0) * t_param));
+					size_t idx = gy * w + gx;
+					float cur_r = lr * falloff;
+					float cur_g = lg * falloff;
+					float cur_b = lb * falloff;
+					float cur_a = 255.0f * (falloff * base_alpha);
 
-							if (cx == tx && cy == ty) {
-								break;
-							}
-							if (cx == lx && cy == ly) {
-								continue;
-							}
-
-							if (cx != last_cx || cy != last_cy) {
-								last_cx = cx;
-								last_cy = cy;
-
-								if (isWallOcclusion(cx, cy)) {
-									occluded = true;
-									break;
-								}
-							}
-						}
-					}
-				}
-
-				if (occluded) continue;
-
-				float norm_dist = dist / static_cast<float>(rad);
-				float falloff = std::pow(0.5f * (1.0f + std::cos(norm_dist * 3.14159265358979323846f)), 0.85f);
-				float a_val = falloff * base_alpha;
-
-				int gx = tx - map_x;
-				int gy = ty - map_y;
-				if (gx >= 0 && gx < w && gy >= 0 && gy < h) {
-					int idx = gy * w + gx;
-					float cur_r = lr * a_val;
-					float cur_g = lg * a_val;
-					float cur_b = lb * a_val;
-					float cur_a = 255.0f * a_val;
-
-					r_acc[idx] = std::max(r_acc[idx], cur_r) + (cur_r * (1.0f - r_acc[idx] / 255.0f) * 0.15f);
-					g_acc[idx] = std::max(g_acc[idx], cur_g) + (cur_g * (1.0f - g_acc[idx] / 255.0f) * 0.15f);
-					b_acc[idx] = std::max(b_acc[idx], cur_b) + (cur_b * (1.0f - b_acc[idx] / 255.0f) * 0.15f);
+					r_acc[idx] = std::min(255.0f, r_acc[idx] + cur_r);
+					g_acc[idx] = std::min(255.0f, g_acc[idx] + cur_g);
+					b_acc[idx] = std::min(255.0f, b_acc[idx] + cur_b);
 					a_acc[idx] = std::max(a_acc[idx], cur_a);
-
-					r_acc[idx] = std::min(255.0f, r_acc[idx]);
-					g_acc[idx] = std::min(255.0f, g_acc[idx]);
-					b_acc[idx] = std::min(255.0f, b_acc[idx]);
 				}
 			}
 		}
@@ -224,7 +161,6 @@ void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x,
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	glColor4ub(255, 255, 255, 255);
 
-	// Render 1 Single Quad for the entire lightmap (Zero Overdraw Bottleneck)
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f); glVertex2f(draw_x, draw_y);
 	glTexCoord2f(1.0f, 0.0f); glVertex2f(draw_x + draw_width, draw_y);

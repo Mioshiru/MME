@@ -1391,10 +1391,29 @@ bool GUI::SelectBrush(const Brush *whatbrush, PaletteType primary) {
 
   SelectBrushInternal(const_cast<Brush *>(whatbrush));
   root->GetAuiToolBar()->UpdateBrushButtons();
+
+  if (pending_change_mode && whatbrush != nullptr) {
+    pending_change_mode = false;
+    MapTab* current_tab = GetCurrentMapTab();
+    if (current_tab && current_tab->GetCanvas()) {
+      current_tab->GetCanvas()->ReplaceSelectionWithBrush(const_cast<Brush*>(whatbrush));
+      SetStatusText(wxString::Format("Replaced connected elements with %s.", whatbrush->getName()));
+    }
+  }
+
   return true;
 }
 
 void GUI::SelectBrushInternal(Brush *brush) {
+  if (pending_change_mode && brush != nullptr) {
+    pending_change_mode = false;
+    MapTab* current_tab = GetCurrentMapTab();
+    if (current_tab && current_tab->GetCanvas()) {
+      current_tab->GetCanvas()->ReplaceSelectionWithBrush(brush);
+      SetStatusText(wxString::Format("Replaced connected elements with %s.", brush->getName()));
+    }
+  }
+
   // Fear no evil don't you say no evil
   if (current_brush != brush && brush) {
     previous_brush = current_brush;

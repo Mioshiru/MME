@@ -139,7 +139,8 @@ protected:
 		NormalImage();
 		virtual ~NormalImage();
 
-		// We use the sprite id as GL texture id
+		// Real generated OpenGL texture handle
+		GLuint gl_tid = 0;
 		uint32_t id;
 
 		// This contains the pixel data

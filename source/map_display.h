@@ -32,6 +32,8 @@ class MapPopupMenu;
 class AnimationTimer;
 class MapDrawer;
 
+uint16_t getItemUseSwitchID(Item* item);
+
 class MapCanvas : public wxGLCanvas {
 public:
   MapCanvas(wxWindow *parent, Editor &editor, int *attriblist);
@@ -79,6 +81,7 @@ public:
   void OnDelete(wxCommandEvent &event);
   // ----
   void OnGotoDestination(wxCommandEvent &event);
+  void OnChangeConnected(wxCommandEvent &event);
   void OnRotateItem(wxCommandEvent &event);
   void OnSwitchDoor(wxCommandEvent &event);
   void OnQuickPing(wxCommandEvent &event);
@@ -95,6 +98,7 @@ public:
   void OnSelectSpawnBrush(wxCommandEvent &event);
   void OnSelectHouseBrush(wxCommandEvent &event);
   void OnSelectCollectionBrush(wxCommandEvent &event);
+  void OnAddFavorite(wxCommandEvent &event);
   void OnSelectMoveTo(wxCommandEvent &event);
   // ---
   void OnProperties(wxCommandEvent &event);
@@ -198,6 +202,27 @@ protected:
   int tool_wheel_tile_x;
   int tool_wheel_tile_y;
   int tool_wheel_tile_z;
+
+  bool canvas_context_menu_open = false;
+  bool canvas_context_menu_just_opened = false;
+  int canvas_context_menu_x = 0;
+  int canvas_context_menu_y = 0;
+  void RenderCanvasContextMenu();
+
+  struct PingFeedback {
+    Position pos;
+    uint32_t start_time_ms = 0;
+  };
+  std::vector<PingFeedback> active_pings;
+
+public:
+  // On-Screen HUD Notification
+  std::string hud_notification_text;
+  uint32_t hud_notification_time_ms = 0;
+  uint32_t hud_notification_color = 0;
+  void ShowHUDNotification(const std::string& text, uint32_t color = 0);
+
+protected:
 
   uint8_t *screenshot_buffer;
 

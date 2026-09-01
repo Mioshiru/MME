@@ -107,8 +107,16 @@ public:
 	void OnSize(wxSizeEvent& event);
 	void OnPaint(wxPaintEvent& event);
 	void OnClick(wxMouseEvent& event);
+	void OnLeftUp(wxMouseEvent& event);
 	void OnRightClick(wxMouseEvent& event);
 	void OnMouseMove(wxMouseEvent& event);
+
+	void SetIconSize(RenderSize sz) {
+		icon_size = sz;
+		UpdateLayout();
+		Refresh();
+	}
+	RenderSize GetIconSize() const { return icon_size; }
 
 	void UpdateLayout();
 
@@ -127,6 +135,16 @@ protected:
 	RenderSize icon_size;
 	Brush* selected_brush = nullptr;
 	std::vector<BrushItemPos> item_layout;
+
+	// Drag & Drop Reordering
+	bool is_dragging_tile = false;
+	bool drag_candidate = false;
+	int drag_start_mouse_x = 0;
+	int drag_start_mouse_y = 0;
+	Brush* dragged_brush = nullptr;
+	int drop_target_index = -1;
+	wxPoint drag_current_point;
+	int last_layout_width = 0;
 
 	DECLARE_EVENT_TABLE();
 };

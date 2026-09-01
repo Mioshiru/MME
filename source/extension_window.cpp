@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
+#include "style_manager.h"
 
 #include "extension_window.h"
 
@@ -44,6 +45,7 @@ ExtensionsDialog::ExtensionsDialog(wxWindow* parent) :
 	topSizer->Add(buttonSizer, 0, wxCENTER | wxLEFT | wxRIGHT | wxBOTTOM, 20);
 
 	SetSizerAndFit(topSizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 	Centre(wxBOTH);
 }
 

@@ -85,7 +85,6 @@ public:
 	wxChoice* screenshot_format_choice = nullptr;
 	wxCheckBox* hide_items_when_zoomed_chkbox = nullptr;
 	wxCheckBox* fake_hd_chkbox = nullptr;
-	wxCheckBox* ambient_effects_chkbox = nullptr;
 
 	// Interface
 	wxChoice* terrain_palette_style_choice = nullptr;
@@ -106,10 +105,14 @@ public:
 	wxSlider* crt_strength_slider = nullptr;
 	wxChoice* aa_choice = nullptr;
 	wxSlider* water_anim_slider = nullptr;
-	wxSlider* light_intensity_slider = nullptr;
 	wxChoice* bg_color_choice = nullptr;
 	wxSlider* grid_opacity_slider = nullptr;
 	wxCheckBox* multi_monitor_workspace_chkbox = nullptr;
+
+	// Biome & Post-Processing Graphics
+	wxChoice* exp_color_grading_choice = nullptr;
+	wxCheckBox* exp_vignette_chkbox = nullptr;
+	wxSlider* exp_vignette_slider = nullptr;
 
 	wxCheckBox* large_terrain_tools_chkbox = nullptr;
 	wxCheckBox* large_collection_tools_chkbox = nullptr;

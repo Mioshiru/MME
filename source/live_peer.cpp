@@ -24,6 +24,7 @@
 
 
 #include "editor.h"
+#include "radio_player.h"
 
 LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket, uint32_t id)
     : LiveSocket(), readMessage(), server(server), socket(std::move(socket)),
@@ -390,6 +391,34 @@ void LivePeer::parseReady(NetworkMessage &message) {
     focusPos = hostTab->GetScreenCenterPosition();
   }
   outMessage.write<Position>(focusPos);
+
+  // Pack host active View Settings
+  uint32_t viewFlags = 0;
+  if (g_settings.getBoolean(Config::SHOW_ALL_FLOORS)) viewFlags |= (1 << 0);
+  if (g_settings.getBoolean(Config::SHOW_CREATURES)) viewFlags |= (1 << 1);
+  if (g_settings.getBoolean(Config::SHOW_SPAWNS)) viewFlags |= (1 << 2);
+  if (g_settings.getBoolean(Config::SHOW_HOUSES)) viewFlags |= (1 << 3);
+  if (g_settings.getBoolean(Config::SHOW_SHADE)) viewFlags |= (1 << 4);
+  if (g_settings.getBoolean(Config::SHOW_SPECIAL_TILES)) viewFlags |= (1 << 5);
+  if (g_settings.getBoolean(Config::SHOW_ITEMS)) viewFlags |= (1 << 6);
+  if (g_settings.getBoolean(Config::SHOW_BLOCKING)) viewFlags |= (1 << 7);
+  if (g_settings.getBoolean(Config::SHOW_TOOLTIPS)) viewFlags |= (1 << 8);
+  if (g_settings.getBoolean(Config::SHOW_WALL_HOOKS)) viewFlags |= (1 << 9);
+  if (g_settings.getBoolean(Config::SHOW_AS_MINIMAP)) viewFlags |= (1 << 10);
+  if (g_settings.getBoolean(Config::SHOW_ONLY_TILEFLAGS)) viewFlags |= (1 << 11);
+  if (g_settings.getBoolean(Config::TRANSPARENT_FLOORS)) viewFlags |= (1 << 13);
+  if (g_settings.getBoolean(Config::TRANSPARENT_ITEMS)) viewFlags |= (1 << 14);
+  if (g_settings.getBoolean(Config::HIGHLIGHT_ITEMS)) viewFlags |= (1 << 15);
+  if (g_settings.getBoolean(Config::HIGHLIGHT_LOCKED_DOORS)) viewFlags |= (1 << 16);
+  if (g_settings.getBoolean(Config::SHOW_MINIMAP_HUD)) viewFlags |= (1 << 17);
+  if (g_settings.getBoolean(Config::SHOW_GRID)) viewFlags |= (1 << 18);
+  if (g_settings.getBoolean(Config::SHOW_TECHNICAL_ITEMS)) viewFlags |= (1 << 19);
+  if (g_settings.getBoolean(Config::SHOW_WAYPOINTS)) viewFlags |= (1 << 20);
+  if (g_settings.getBoolean(Config::SHOW_TOWNS)) viewFlags |= (1 << 21);
+  if (g_settings.getBoolean(Config::ALWAYS_SHOW_ZONES)) viewFlags |= (1 << 22);
+  if (RadioPlayerWindow::IsDocked() || RadioPlayerWindow::GetInstance() != nullptr) viewFlags |= (1 << 23);
+
+  outMessage.write<uint32_t>(viewFlags);
   send(outMessage);
 
   // Step 2: Send chat messages (after HELLO, so the client is ready)

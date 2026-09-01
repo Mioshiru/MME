@@ -853,11 +853,12 @@ void BrushButton::OnContextMenu(wxContextMenuEvent& event) {
 	} else {
 		menu.Append(10001, "Favorite");
 	}
-	
+
 	Bind(wxEVT_MENU, [this](wxCommandEvent& ev) {
-		if (ev.GetId() == 10001) {
+		int id = ev.GetId();
+		if (id == 10001) {
 			AddFavoriteBrush(this->brush);
-		} else if (ev.GetId() == 10002) {
+		} else if (id == 10002) {
 			RemoveFavoriteBrush(this->brush);
 		}
 		PaletteWindow* pw = nullptr;

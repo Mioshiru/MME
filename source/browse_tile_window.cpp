@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
+#include "style_manager.h"
 
 #include "map.h"
 #include "gui.h"
@@ -174,6 +175,7 @@ BrowseTileWindow::BrowseTileWindow(wxWindow* parent, Tile* tile, wxPoint positio
 	sizer->Add(btnSizer, wxSizerFlags(0).Center().DoubleBorder());
 
 	SetSizerAndFit(sizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 
 	// Connect Events
 	item_list->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(BrowseTileWindow::OnItemSelected), NULL, this);

@@ -216,6 +216,8 @@ public:
 		return g_items[id].border_group;
 	}
 
+	bool isOreRockAsset() const;
+
 	// Drawing related
 	uint8_t getMiniMapColor() const;
 	int getHeight() const;

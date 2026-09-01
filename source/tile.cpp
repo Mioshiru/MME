@@ -262,7 +262,10 @@ void Tile::addItem(Item* item) {
 		return;
 	}
 	if (item->isGroundTile()) {
-		// printf("ADDING GROUND\n");
+		if (ground && ground->getID() == item->getID() && ground->getActionID() == item->getActionID() && ground->getUniqueID() == item->getUniqueID() && ground->getText() == item->getText()) {
+			delete item;
+			return;
+		}
 		delete ground;
 		ground = item;
 		return;
@@ -279,13 +282,25 @@ void Tile::addItem(Item* item) {
 	bool is_doodad_dup = (it_info.doodad_brush && it_info.doodad_brush->isDoodad() && it_info.doodad_brush->asDoodad()->placeOnDuplicate());
 	bool allow_stacking = item->isStackable() || it_info.moveable || it_info.pickupable || it_info.hasElevation || is_doodad_dup;
 
+	// Passive duplicate prevention: avoid stacking exact identical static items
+	if (!allow_stacking) {
+		for (auto* existing : items) {
+			if (existing && existing->getID() == item->getID() &&
+			    existing->getActionID() == item->getActionID() && existing->getUniqueID() == item->getUniqueID()) {
+				delete item;
+				return;
+			}
+		}
+	}
+
 
 
 	if (!allow_stacking) {
 		bool item_fc = it_info.isFloorChange();
 		for (ItemVector::iterator iter = items.begin(); iter != items.end();) {
 			bool iter_fc = g_items[(*iter)->getID()].isFloorChange();
-			if (*iter != item && ((*iter)->getID() == item->getID() || (item_fc && iter_fc))) {
+			bool iter_border = (*iter)->isBorder() || g_items[(*iter)->getID()].isBorder;
+			if (*iter != item && ((*iter)->getID() == item->getID() || (item_fc && (iter_fc || iter_border)))) {
 				delete *iter;
 				iter = items.erase(iter);
 			} else {
@@ -591,16 +606,12 @@ GroundBrush* Tile::getGroundBrush() const {
 }
 
 void Tile::cleanBorders() {
-	ItemVector::iterator it;
-
-	it = items.begin();
-	while (it != items.end()) {
-		if ((*it)->isBorder()) {
+	for (auto it = items.begin(); it != items.end();) {
+		if ((*it)->isBorder() || g_items[(*it)->getID()].isBorder) {
 			delete *it;
 			it = items.erase(it);
 		} else {
-			// Borders should only be on the bottom, we can ignore the rest of the items
-			return;
+			++it;
 		}
 	}
 }

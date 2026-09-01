@@ -22,6 +22,7 @@
 #include "live_action.h"
 #include "map_tab.h"
 #include "editor.h"
+#include "radio_player.h"
 
 #include <chrono>
 #include <new>
@@ -617,6 +618,14 @@ void LiveClient::parseHello(NetworkMessage& message) {
 	map.setWidth(message.read<uint16_t>());
 	map.setHeight(message.read<uint16_t>());
 	pendingFocusPos = message.read<Position>();
+
+	uint32_t hostViewFlags = 0;
+	bool hasHostViewFlags = false;
+	if (message.position + sizeof(uint32_t) <= message.buffer.size()) {
+		hostViewFlags = message.read<uint32_t>();
+		hasHostViewFlags = true;
+	}
+
 	map.clearChanges();
 
 	MapVersion ver;
@@ -628,6 +637,52 @@ void LiveClient::parseHello(NetworkMessage& message) {
 	g_settings.setInteger(Config::USE_AUTOMAGIC, 1);
 	if (g_gui.root) {
 		g_gui.root->UpdateMenubar();
+	}
+
+	if (hasHostViewFlags) {
+		wxTheApp->CallAfter([hostViewFlags]() {
+			wxMessageDialog dlg(g_gui.root,
+				"The Host is sharing their active View & Workspace Settings (Overlays, Layers, Minimap, Docked Radio Player, Grid, etc.).\n\nWould you like to adopt the Host's View Settings, or keep your own?",
+				"Adopt Host View Settings?",
+				wxYES_NO | wxICON_QUESTION);
+			dlg.SetYesNoLabels("Adopt Host Settings", "Keep My Settings");
+			if (dlg.ShowModal() == wxID_YES) {
+				g_settings.setInteger(Config::SHOW_ALL_FLOORS, (hostViewFlags & (1 << 0)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_CREATURES, (hostViewFlags & (1 << 1)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_SPAWNS, (hostViewFlags & (1 << 2)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_HOUSES, (hostViewFlags & (1 << 3)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_SHADE, (hostViewFlags & (1 << 4)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_SPECIAL_TILES, (hostViewFlags & (1 << 5)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_ITEMS, (hostViewFlags & (1 << 6)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_BLOCKING, (hostViewFlags & (1 << 7)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_TOOLTIPS, (hostViewFlags & (1 << 8)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_WALL_HOOKS, (hostViewFlags & (1 << 9)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_AS_MINIMAP, (hostViewFlags & (1 << 10)) ? 1 : 0);
+				g_settings.setInteger(Config::TRANSPARENT_FLOORS, (hostViewFlags & (1 << 13)) ? 1 : 0);
+				g_settings.setInteger(Config::TRANSPARENT_ITEMS, (hostViewFlags & (1 << 14)) ? 1 : 0);
+				g_settings.setInteger(Config::HIGHLIGHT_ITEMS, (hostViewFlags & (1 << 15)) ? 1 : 0);
+				g_settings.setInteger(Config::HIGHLIGHT_LOCKED_DOORS, (hostViewFlags & (1 << 16)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_MINIMAP_HUD, (hostViewFlags & (1 << 17)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_GRID, (hostViewFlags & (1 << 18)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_TECHNICAL_ITEMS, (hostViewFlags & (1 << 19)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_WAYPOINTS, (hostViewFlags & (1 << 20)) ? 1 : 0);
+				g_settings.setInteger(Config::SHOW_TOWNS, (hostViewFlags & (1 << 21)) ? 1 : 0);
+				g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, (hostViewFlags & (1 << 22)) ? 1 : 0);
+
+				if (hostViewFlags & (1 << 23)) {
+					if (!RadioPlayerWindow::IsDocked() && !RadioPlayerWindow::GetInstance()) {
+						RadioPlayerWindow::ShowDocked(true);
+					}
+				}
+
+				if (g_gui.root) {
+					g_gui.root->UpdateMenubar();
+				}
+				g_gui.RefreshView();
+				g_gui.RefreshPalettes();
+				g_gui.RefreshMinimapPanel();
+			}
+		});
 	}
 
 	if (reconnectAttempts > 0) {

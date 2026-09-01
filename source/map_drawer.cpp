@@ -162,19 +162,9 @@ void main() {
     vColor      = aColor;
     vShaderData = aShaderData;
     vWorldPos   = aPos;
-    vec2 pos    = aPos;
-
-    // 4.0: Foliage Wind Sway - nur Oberflaeche (floor 0-7), kein Untergrund
-    if (uAmbientEffects == 1 && aShaderData == 4.0 && uFloor <= 7) {
-        // Multi-tile synchronization: quantize coordinates to grid cells
-        // so all tiles of a 2x1, 1x2, 2x2, 3x3 object share the exact same sway without tearing!
-        vec2 objAnchor = floor(aPos / 64.0) * 64.0;
-        float wind = sin(uTime * 1.6 + objAnchor.x * 0.02 + objAnchor.y * 0.015) * 2.0;
-        pos.x += wind;
-    }
-
     vTexCoord   = aTexCoord;
-    gl_Position = gl_ModelViewProjectionMatrix * vec4(pos, 0.0, 1.0);
+
+    gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * vec4(aPos, 0.0, 1.0);
 }
 )GLSL";
 
@@ -182,134 +172,70 @@ static const char* k_MapFragSrc = R"GLSL(
 #version 120
 uniform sampler2D uTexture;
 uniform int   uUpscaling;
-uniform int   uAmbientEffects;
 uniform float uTime;
 uniform int   uFloor;
+
+// Experimental Biome & Post-Processing Shaders
+uniform int   uExpColorGrading;
+uniform int   uExpVignette;
+uniform float uExpVignetteStrength;
 
 varying vec2  vTexCoord;
 varying vec4  vColor;
 varying vec2  vWorldPos;
 varying float vShaderData;
 
-// Perceptual color distance metric (YUV luminance-weighted for accurate sprite edge detection)
-float colorDist(vec4 c1, vec4 c2) {
-    if (c1.a < 0.05 && c2.a < 0.05) return 0.0;
-    if (c1.a < 0.05 || c2.a < 0.05) return 2.0;
-    vec3 yuv1 = vec3(dot(c1.rgb, vec3(0.299, 0.587, 0.114)), c1.r - c1.b, c1.g - c1.b);
-    vec3 yuv2 = vec3(dot(c2.rgb, vec3(0.299, 0.587, 0.114)), c2.r - c2.b, c2.g - c2.b);
-    vec3 diff = abs(yuv1 - yuv2);
-    return diff.x * 0.75 + (diff.y + diff.z) * 0.25 + abs(c1.a - c2.a) * 0.5;
-}
-
-// Alpha-safe color blending (prevents dark halos around transparent sprite boundaries)
-vec4 blendEdge(vec4 c1, vec4 c2) {
-    if (c1.a < 0.05) return c2;
-    if (c2.a < 0.05) return c1;
-    return mix(c1, c2, 0.5);
-}
-
-// Advanced 4x/5x Multi-Angle xBRZ & Super-xBR Filter
-vec4 sampleXBRZ(sampler2D tex, vec2 uv) {
-    vec2 texSize = vec2(32.0, 32.0);
-    vec2 ps = vec2(1.0 / 32.0, 1.0 / 32.0);
-    vec2 pos = uv * texSize;
-    vec2 f = fract(pos);
-    vec2 centerUV = (floor(pos) + 0.5) * ps;
-
-    vec4 E  = texture2D(tex, centerUV);
-    vec4 B  = texture2D(tex, centerUV + vec2( 0.0,   -ps.y));
-    vec4 D  = texture2D(tex, centerUV + vec2(-ps.x,   0.0));
-    vec4 F  = texture2D(tex, centerUV + vec2( ps.x,   0.0));
-    vec4 H  = texture2D(tex, centerUV + vec2( 0.0,    ps.y));
-
-    // Fast-path early exit: flat areas (grass/water/dirt) skip all 13-tap calculations
-    if (B == D && D == F && F == H && H == E) {
-        return E;
-    }
-
-    vec4 A  = texture2D(tex, centerUV + vec2(-ps.x,  -ps.y));
-    vec4 C  = texture2D(tex, centerUV + vec2( ps.x,  -ps.y));
-    vec4 G  = texture2D(tex, centerUV + vec2(-ps.x,   ps.y));
-    vec4 I  = texture2D(tex, centerUV + vec2( ps.x,   ps.y));
-    vec4 B1 = texture2D(tex, centerUV + vec2( 0.0,   -2.0 * ps.y));
-    vec4 D1 = texture2D(tex, centerUV + vec2(-2.0 * ps.x, 0.0));
-    vec4 F1 = texture2D(tex, centerUV + vec2( 2.0 * ps.x, 0.0));
-    vec4 H1 = texture2D(tex, centerUV + vec2( 0.0,    2.0 * ps.y));
-
-    vec4 color = E;
-
-    if (f.x < 0.5 && f.y < 0.5) {
-        float d_edge = colorDist(D, B); float d_diag = colorDist(A, E);
-        if (d_edge < d_diag && (colorDist(E, D) < 0.12 || colorDist(E, B) < 0.12 || d_edge < 0.35)) {
-            vec4 edgeCol = blendEdge(D, B);
-            float dist45 = (0.5 - f.x) + (0.5 - f.y);
-            float distShallow = (0.5 - f.x) * 0.5 + (0.5 - f.y);
-            float distSteep   = (0.5 - f.x) + (0.5 - f.y) * 0.5;
-            if (colorDist(D1, B) < colorDist(D1, E) && distShallow > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distShallow)); }
-            else if (colorDist(D, B1) < colorDist(E, B1) && distSteep > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distSteep)); }
-            else if (dist45 > 0.38) { color = mix(color, edgeCol, smoothstep(0.35, 0.55, dist45)); }
-        }
-    } else if (f.x >= 0.5 && f.y < 0.5) {
-        float d_edge = colorDist(B, F); float d_diag = colorDist(C, E);
-        if (d_edge < d_diag && (colorDist(E, B) < 0.12 || colorDist(E, F) < 0.12 || d_edge < 0.35)) {
-            vec4 edgeCol = blendEdge(B, F);
-            float dist45 = (f.x - 0.5) + (0.5 - f.y);
-            float distShallow = (f.x - 0.5) * 0.5 + (0.5 - f.y);
-            float distSteep   = (f.x - 0.5) + (0.5 - f.y) * 0.5;
-            if (colorDist(F1, B) < colorDist(F1, E) && distShallow > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distShallow)); }
-            else if (colorDist(F, B1) < colorDist(E, B1) && distSteep > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distSteep)); }
-            else if (dist45 > 0.38) { color = mix(color, edgeCol, smoothstep(0.35, 0.55, dist45)); }
-        }
-    } else if (f.x < 0.5 && f.y >= 0.5) {
-        float d_edge = colorDist(D, H); float d_diag = colorDist(G, E);
-        if (d_edge < d_diag && (colorDist(E, D) < 0.12 || colorDist(E, H) < 0.12 || d_edge < 0.35)) {
-            vec4 edgeCol = blendEdge(D, H);
-            float dist45 = (0.5 - f.x) + (f.y - 0.5);
-            float distShallow = (0.5 - f.x) * 0.5 + (f.y - 0.5);
-            float distSteep   = (0.5 - f.x) + (f.y - 0.5) * 0.5;
-            if (colorDist(D1, H) < colorDist(D1, E) && distShallow > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distShallow)); }
-            else if (colorDist(D, H1) < colorDist(E, H1) && distSteep > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distSteep)); }
-            else if (dist45 > 0.38) { color = mix(color, edgeCol, smoothstep(0.35, 0.55, dist45)); }
-        }
-    } else if (f.x >= 0.5 && f.y >= 0.5) {
-        float d_edge = colorDist(F, H); float d_diag = colorDist(I, E);
-        if (d_edge < d_diag && (colorDist(E, F) < 0.12 || colorDist(E, H) < 0.12 || d_edge < 0.35)) {
-            vec4 edgeCol = blendEdge(F, H);
-            float dist45 = (f.x - 0.5) + (f.y - 0.5);
-            float distShallow = (f.x - 0.5) * 0.5 + (f.y - 0.5);
-            float distSteep   = (f.x - 0.5) + (f.y - 0.5) * 0.5;
-            if (colorDist(F1, H) < colorDist(F1, E) && distShallow > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distShallow)); }
-            else if (colorDist(F, H1) < colorDist(E, H1) && distSteep > 0.30) { color = mix(color, edgeCol, smoothstep(0.28, 0.48, distSteep)); }
-            else if (dist45 > 0.38) { color = mix(color, edgeCol, smoothstep(0.35, 0.55, dist45)); }
-        }
-    }
-
-    vec4 crossAvg = (B + D + F + H) * 0.25;
-    vec4 sharp = color + (color - crossAvg) * 0.05;
-    color = mix(color, sharp, 0.50);
-    float lum = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-    color.rgb = mix(vec3(lum), color.rgb, 1.03);
-    return color;
-}
-
 void main() {
-    vec4 texel;
+    vec2 uv = vTexCoord;
+    vec4 raw = texture2D(uTexture, uv);
+    if (raw.a < 0.01) discard;
+
+    vec4 texel = raw;
+
+    // ── 1. Graphic Upgrader: Rich Color Vibrance without Brightness Washout ──
     if (uUpscaling == 1) {
-        texel = sampleXBRZ(uTexture, vTexCoord);
-    } else {
-        texel = texture2D(uTexture, vTexCoord);
+        vec3 col = texel.rgb;
+        float luma = dot(col, vec3(0.299, 0.587, 0.114));
+        // Pure chroma vibrance boost without lifting luminance
+        col = mix(vec3(luma), col, 1.25);
+        texel.rgb = clamp(col, 0.0, 1.0);
     }
 
-    // Lava / Magma subtle warm pulse (3.0)
-    if (uAmbientEffects == 1 && vShaderData == 3.0) {
-        float pulse = 0.93 + 0.15 * sin(uTime * 2.4 + vWorldPos.x * 0.05 + vWorldPos.y * 0.05);
-        if (texel.r > 0.35) {
-            texel.rgb *= pulse;
-            texel.r = min(1.0, texel.r * 1.10);
-        }
+    // ── 2. Cinematic Biome Color Grading & Moods ──
+    if (uExpColorGrading == 0) {
+        // 0: Vibrant Fantasy RPG (Oberwelt - Standard & Natürlich)
+        texel.rgb *= vec3(1.04, 1.03, 0.97);
+        float g = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+        texel.rgb = mix(vec3(g), texel.rgb, 1.15);
+    } else if (uExpColorGrading == 1) {
+        // 1: Dark & Dangerous (Drachen, Untote, Blight, Dungeons)
+        texel.rgb = pow(texel.rgb, vec3(1.10));
+        float g = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+        vec3 desat = mix(vec3(g), texel.rgb, 0.82);
+        float warm = max(0.0, texel.r - max(texel.g, texel.b));
+        texel.rgb = desat * vec3(0.92, 0.88, 1.04) + vec3(warm * 0.30, warm * 0.10, 0.0);
+    } else if (uExpColorGrading == 2) {
+        // 2: Gloomy Crypt & Cave (Kühler Höhlen-Look)
+        float g = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+        texel.rgb = mix(vec3(g), texel.rgb * vec3(0.88, 0.92, 1.08), 0.75);
+    } else if (uExpColorGrading == 3) {
+        // 3: Golden Sunset & Twilight (Warme Abenddämmerung)
+        texel.rgb *= vec3(1.12, 0.98, 0.82);
+    } else if (uExpColorGrading == 4) {
+        // 4: Frozen Wastes & Frost (Kühles Eis-Blau)
+        texel.rgb *= vec3(0.88, 1.05, 1.18);
+    } else if (uExpColorGrading == 5) {
+        // 5: Neutral / Classic Vanilla (Ungefiltert)
     }
 
-    if (texel.a < 0.01) discard;
+    // ── 3. Cinematic Vignette ──
+    if (uExpVignette == 1) {
+        vec2 normPos = gl_FragCoord.xy / vec2(1920.0, 1080.0) - vec2(0.5);
+        float dist = length(normPos);
+        float vig = smoothstep(0.35, 0.80, dist);
+        texel.rgb = mix(texel.rgb, texel.rgb * 0.55, vig * uExpVignetteStrength);
+    }
+
     gl_FragColor = texel * vColor;
 }
 )GLSL";
@@ -1307,6 +1233,11 @@ void MapDrawer::SetupVars() {
   canvas->GetViewBox(&view_scroll_x, &view_scroll_y, &screensize_x,
                      &screensize_y);
 
+  if (g_settings.getBoolean(Config::EXP_PIXEL_SNAPPING) && zoom > 0.0f) {
+    view_scroll_x = int(std::round(float(view_scroll_x) * zoom) / zoom);
+    view_scroll_y = int(std::round(float(view_scroll_y) * zoom) / zoom);
+  }
+
   // Fenstergrößenänderung erkennen -> Vulkan Swapchain erneuern und VBOs neu
   // bauen
   if (old_screensize_x > 0 && old_screensize_y > 0 &&
@@ -1354,21 +1285,30 @@ void MapDrawer::SetupGL() {
   glViewport(0, 0, screensize_x, screensize_y);
 
 #ifdef _WIN32
-  if (!glGenBuffers) {
-    glGenBuffers        = (PFNGLGENBUFFERSPROC)      wglGetProcAddress("glGenBuffers");
-    glBindBuffer        = (PFNGLBINDBUFFERPROC)      wglGetProcAddress("glBindBuffer");
-    glBufferData        = (PFNGLBUFFERDATAPROC)      wglGetProcAddress("glBufferData");
-    glBufferSubData     = (PFNGLBUFFERSUBDATAPROC)   wglGetProcAddress("glBufferSubData");
-    glDeleteBuffers     = (PFNGLDELETEBUFFERSPROC)   wglGetProcAddress("glDeleteBuffers");
-    glEnableVertexAttribArray  = (PFNGLENABLEVERTEXATTRIBARRAYPROC) wglGetProcAddress("glEnableVertexAttribArray");
-    glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC)wglGetProcAddress("glDisableVertexAttribArray");
-    glVertexAttribPointer      = (PFNGLVERTEXATTRIBPOINTERPROC)     wglGetProcAddress("glVertexAttribPointer");
-    glUseProgram        = (PFNGLUSEPROGRAMPROC)      wglGetProcAddress("glUseProgram");
-    glBindVertexArray   = (PFNGLBINDVERTEXARRAYPROC) wglGetProcAddress("glBindVertexArray");
-    glActiveTexture     = (PFNGLACTIVETEXTUREPROC)   wglGetProcAddress("glActiveTexture");
-    // Phase 1: VAO creation/deletion
-    glGenVertexArrays   = (PFNGLGENVERTEXARRAYSPROC)    wglGetProcAddress("glGenVertexArrays");
-    glDeleteVertexArrays= (PFNGLDELETEVERTEXARRAYSPROC) wglGetProcAddress("glDeleteVertexArrays");
+  static bool s_gl_procs_initialized = false;
+  if (!s_gl_procs_initialized) {
+    auto load_gl = [](const char* name) -> void* {
+      void* p = (void*)wglGetProcAddress(name);
+      if (!p || p == (void*)0x1 || p == (void*)0x2 || p == (void*)0x3 || p == (void*)-1) {
+        static HMODULE hMod = GetModuleHandleA("opengl32.dll");
+        if (hMod) p = (void*)GetProcAddress(hMod, name);
+      }
+      return p;
+    };
+    glGenBuffers        = (PFNGLGENBUFFERSPROC)      load_gl("glGenBuffers");
+    glBindBuffer        = (PFNGLBINDBUFFERPROC)      load_gl("glBindBuffer");
+    glBufferData        = (PFNGLBUFFERDATAPROC)      load_gl("glBufferData");
+    glBufferSubData     = (PFNGLBUFFERSUBDATAPROC)   load_gl("glBufferSubData");
+    glDeleteBuffers     = (PFNGLDELETEBUFFERSPROC)   load_gl("glDeleteBuffers");
+    glEnableVertexAttribArray  = (PFNGLENABLEVERTEXATTRIBARRAYPROC) load_gl("glEnableVertexAttribArray");
+    glDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC)load_gl("glDisableVertexAttribArray");
+    glVertexAttribPointer      = (PFNGLVERTEXATTRIBPOINTERPROC)     load_gl("glVertexAttribPointer");
+    glUseProgram        = (PFNGLUSEPROGRAMPROC)      load_gl("glUseProgram");
+    glBindVertexArray   = (PFNGLBINDVERTEXARRAYPROC) load_gl("glBindVertexArray");
+    glActiveTexture     = (PFNGLACTIVETEXTUREPROC)   load_gl("glActiveTexture");
+    glGenVertexArrays   = (PFNGLGENVERTEXARRAYSPROC)    load_gl("glGenVertexArrays");
+    glDeleteVertexArrays= (PFNGLDELETEVERTEXARRAYSPROC) load_gl("glDeleteVertexArrays");
+    s_gl_procs_initialized = true;
   }
   // Phase 2: Build the map shader once (no-op if already built)
   if (!g_map_shader.isValid()) {
@@ -1405,7 +1345,6 @@ void MapDrawer::SetupGL() {
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
   glLoadIdentity();
-  glTranslatef(0.375f, 0.375f, 0.0f);
 
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
@@ -1417,24 +1356,23 @@ void MapDrawer::SetupGL() {
     uint32_t now_ms = wxGetLocalTimeMillis().GetValue();
     if (g_shader_last_ms != 0) {
       float dt = (now_ms - g_shader_last_ms) / 1000.0f;
-      if (dt > 0.0001f && dt < 1.0f) {
-        float inst_fps = 1.0f / dt;
-        g_current_fps = g_current_fps * 0.90f + inst_fps * 0.10f;
-      }
-      g_shader_time += dt;
+      g_shader_time = float(g_gui.gfx.getElapsedTime()) / 1000.0f;
     }
     g_shader_last_ms = now_ms;
 
-    bool allow_animations = (zoom <= 1.96f);
-    bool allow_ambient = allow_animations && g_settings.getBoolean(Config::AMBIENT_EFFECTS);
-    bool allow_upscaling = (zoom <= 1.25f) && g_settings.getBoolean(Config::FAKE_HD_ASSETS);
+    bool allow_upscaling = g_settings.getBoolean(Config::FAKE_HD_ASSETS);
 
     g_map_shader.use();
     g_map_shader.setFloat("uTime",   g_shader_time);
     g_map_shader.setInt("uTexture", 0); // texture unit 0
     g_map_shader.setInt("uUpscaling", allow_upscaling ? 1 : 0);
-    g_map_shader.setInt("uAmbientEffects", allow_ambient ? 1 : 0);
     g_map_shader.setInt("uFloor", 7); // default: Oberflaeche
+
+    // Experimental Biome & Vignette uniforms
+    g_map_shader.setInt("uExpColorGrading", g_settings.getInteger(Config::EXP_COLOR_GRADING));
+    g_map_shader.setInt("uExpVignette", g_settings.getBoolean(Config::EXP_VIGNETTE) ? 1 : 0);
+    g_map_shader.setFloat("uExpVignetteStrength", g_settings.getFloat(Config::EXP_VIGNETTE_STRENGTH));
+
     RME_Rendering::ShaderProgram::unuse(); // VBO draw path activates it per-chunk
   }
 }
@@ -1476,6 +1414,7 @@ void MapDrawer::Draw() {
   if (options.isDrawLight()) {
     DrawLight();
   }
+
 
   // GPU-Timer für Shader-Animationen aktualisieren
   static float s_gpu_anim_time = 0.0f;
@@ -1858,9 +1797,8 @@ void MapDrawer::DrawMap() {
                              glDisableVertexAttribArray && !only_colors);
 
       if (can_use_shader) {
-        bool allow_animations = (zoom <= 1.96f);
-        bool allow_upscaling = (zoom <= 1.25f) && g_settings.getBoolean(Config::FAKE_HD_ASSETS);
-        bool allow_ambient   = allow_animations && g_settings.getBoolean(Config::AMBIENT_EFFECTS);
+        bool allow_ambient   = g_settings.getBoolean(Config::AMBIENT_EFFECTS);
+        bool allow_upscaling = g_settings.getBoolean(Config::FAKE_HD_ASSETS);
 
         g_map_shader.use();
         g_map_shader.setFloat("uTime", g_shader_time);
@@ -2353,18 +2291,38 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
                             lowerName.find("ocean") != std::string::npos ||
                             lowerName.find("river") != std::string::npos ||
                             lowerName.find("lake")  != std::string::npos)) {
-    g_vbo_current_shader_flag = 1.0f; // Wasser
+    g_vbo_current_shader_flag = 1.0f; // Wasser – Dynamic Caustic Shimmer
   } else if (it.isGroundTile() && (lowerName.find("lava") != std::string::npos ||
                                    lowerName.find("magma") != std::string::npos)) {
-    g_vbo_current_shader_flag = 3.0f; // Lava / Magma
+    g_vbo_current_shader_flag = 3.0f; // Lava / Magma – Heat Glow
   } else if (it.isGroundTile() && lowerName.find("sand") != std::string::npos &&
              lowerName.find("beach") == std::string::npos &&
              lowerName.find("shore") == std::string::npos) {
-    g_vbo_current_shader_flag = 5.0f; // Wüstensand – Hitzeschleier
+    g_vbo_current_shader_flag = 5.0f; // Wüstensand – Hitzeschleier & Dune Grain
   } else if (it.isGroundTile() && (lowerName.find("snow") != std::string::npos ||
                                    lowerName.find("ice")  != std::string::npos ||
                                    lowerName.find("frost") != std::string::npos)) {
-    g_vbo_current_shader_flag = 6.0f; // Schnee / Eis – Frostschleier
+    g_vbo_current_shader_flag = 6.0f; // Schnee / Eis – Frostschleier & Crystal Sparkle
+  } else if (it.isGroundTile() && (lowerName.find("grass") != std::string::npos ||
+                                   lowerName.find("dirt")  != std::string::npos ||
+                                   lowerName.find("earth") != std::string::npos ||
+                                   lowerName.find("mud")   != std::string::npos ||
+                                   lowerName.find("jungle")!= std::string::npos ||
+                                   lowerName.find("moss")  != std::string::npos ||
+                                   item->getID() == 102 || item->getID() == 103 || item->getID() == 4526)) {
+    g_vbo_current_shader_flag = 10.0f; // Grass & Earth – Organic Blades & Soil Variegation
+  } else if (it.isGroundTile() && (lowerName.find("cobble") != std::string::npos ||
+                                   lowerName.find("stone")  != std::string::npos ||
+                                   lowerName.find("pavement")!= std::string::npos ||
+                                   lowerName.find("tile")   != std::string::npos ||
+                                   lowerName.find("brick")  != std::string::npos ||
+                                   lowerName.find("floor")  != std::string::npos ||
+                                   lowerName.find("flag")   != std::string::npos ||
+                                   lowerName.find("gravel") != std::string::npos ||
+                                   lowerName.find("rock")   != std::string::npos)) {
+    g_vbo_current_shader_flag = 11.0f; // Cobblestone & Masonry – Beveled Crevice AO & Mineral Grit
+  } else if (it.isGroundTile()) {
+    g_vbo_current_shader_flag = 12.0f; // Generic Ground Layer Detail
   } else if (!it.isGroundTile() && !it.isBorder && !it.isWall) {
     // Explicit blacklist: Shelves, furniture, lights, structures must NEVER sway
     bool isBlacklisted = (
@@ -2395,6 +2353,8 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
       lowerName.find("tapestry") != std::string::npos ||
       lowerName.find("dead")     != std::string::npos ||
       lowerName.find("dry")      != std::string::npos ||
+      lowerName.find("fallen")   != std::string::npos ||
+      lowerName.find("cut")      != std::string::npos ||
       lowerName.find("stone")    != std::string::npos ||
       lowerName.find("rock")     != std::string::npos ||
       lowerName.find("fence")    != std::string::npos
@@ -3203,9 +3163,9 @@ void MapDrawer::DrawTile(TileLocation *location, Floor *f) {
 }
 
 void MapDrawer::DrawLight() {
-  // draw in-game light with raycasting and window transparency on current floor
+  // draw in-game light with soft shadows, raycasting and dynamic flickering
   light_drawer->draw(start_x, start_y, end_x, end_y, view_scroll_x,
-                     view_scroll_y, &editor.map, floor);
+                     view_scroll_y, &editor.map, floor, g_shader_time);
 }
 
 void MapDrawer::MakeTooltip(int screenx, int screeny, const std::string &text,

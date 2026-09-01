@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
+#include "style_manager.h"
 
 #include "palette_house.h"
 
@@ -73,6 +74,15 @@ HousePalettePanel::HousePalettePanel(wxWindow* parent, wxWindowID id) :
 #endif
 	sidesizer->Add(house_list, 1, wxEXPAND);
 
+	auto_mode_checkbox = new wxCheckBox(this, wxID_ANY, "Auto-Mode (Auto House-Tiles)");
+	auto_mode_checkbox->SetForegroundColour(wxColour(248, 250, 252));
+	auto_mode_checkbox->SetToolTip("When placing a House Exit, automatically detect the room boundaries and assign house tiles.");
+	auto_mode_checkbox->SetValue(g_settings.getInteger(Config::AUTO_HOUSE_MODE) != 0);
+	auto_mode_checkbox->Bind(wxEVT_CHECKBOX, [](wxCommandEvent& evt) {
+		g_settings.setInteger(Config::AUTO_HOUSE_MODE, evt.IsChecked() ? 1 : 0);
+	});
+	sidesizer->Add(auto_mode_checkbox, 0, wxEXPAND | wxTOP | wxBOTTOM, 4);
+
 	add_house_button = nullptr;
 	set_exit_button = nullptr;
 	edit_house_button = nullptr;
@@ -81,6 +91,7 @@ HousePalettePanel::HousePalettePanel(wxWindow* parent, wxWindowID id) :
 	topsizer->Add(sidesizer, 1, wxEXPAND);
 
 	SetSizerAndFit(topsizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 HousePalettePanel::~HousePalettePanel() {
@@ -605,6 +616,7 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 	topsizer->Add(buttonsSizer, wxSizerFlags(0).Center().Border(wxLEFT | wxRIGHT, 20));
 
 	SetSizerAndFit(topsizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 EditHouseDialog::~EditHouseDialog() {

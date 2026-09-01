@@ -62,6 +62,7 @@ private:
 	wxAuiToolBar* brushes_toolbar;
 	wxAuiToolBar* position_toolbar;
 	wxChoice* z_choice;
+	wxSlider* light_slider;
 	wxAuiToolBar* sizes_toolbar;
 };
 

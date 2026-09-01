@@ -52,6 +52,62 @@ CreaturePalettePanel::CreaturePalettePanel(wxWindow* parent, wxWindowID id) :
 	sidesizer->Add(tileset_choice, 0, wxEXPAND);
 
 	creature_list = newd SortableListBox(this, PALETTE_CREATURE_LISTBOX);
+	creature_list->Bind(wxEVT_CONTEXT_MENU, [this](wxContextMenuEvent& event) {
+		wxPoint pos = event.GetPosition();
+		wxPoint client_pos = creature_list->ScreenToClient(pos);
+		int item_idx = creature_list->HitTest(client_pos);
+		if (item_idx == wxNOT_FOUND) {
+			item_idx = creature_list->GetSelection();
+		}
+		if (item_idx != wxNOT_FOUND && item_idx < (int)creature_list->GetCount()) {
+			creature_list->SetSelection(item_idx);
+			SelectCreature(item_idx);
+			Brush* brush = reinterpret_cast<Brush*>(creature_list->GetClientData(item_idx));
+			if (brush) {
+				wxMenu menu;
+				Tileset* favs = g_materials.tilesets["Favorites"];
+				bool is_favorited = false;
+				if (favs) {
+					for (TilesetCategory* cat : favs->categories) {
+						if (cat && cat->containsBrush(brush)) {
+							is_favorited = true;
+							break;
+						}
+					}
+				}
+
+				if (is_favorited) {
+					menu.Append(10002, "Remove Favorite");
+				} else {
+					menu.Append(10001, "Favorite");
+				}
+
+				menu.Bind(wxEVT_MENU, [brush](wxCommandEvent& ev) {
+					Tileset* f = g_materials.tilesets["Favorites"];
+					if (!f) return;
+					if (ev.GetId() == 10001) {
+						TilesetCategory* catFav = f->getCategory(TILESET_CREATURE);
+						if (!catFav) catFav = f->getCategory(TILESET_FAVORITE);
+						if (catFav && !catFav->containsBrush(brush)) {
+							catFav->brushlist.push_back(brush);
+						}
+					} else if (ev.GetId() == 10002) {
+						for (TilesetCategory* cat : f->categories) {
+							auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), brush);
+							if (it != cat->brushlist.end()) {
+								cat->brushlist.erase(it);
+							}
+						}
+					}
+					g_materials.rebuildFavorites();
+					g_materials.saveFavorites();
+					g_gui.RefreshFavoritesBox();
+				});
+
+				creature_list->PopupMenu(&menu, client_pos);
+			}
+		}
+	});
 	sidesizer->Add(creature_list, 1, wxEXPAND);
 	topsizer->Add(sidesizer, 1, wxEXPAND);
 

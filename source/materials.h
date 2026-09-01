@@ -25,44 +25,58 @@ class Brush;
 
 class Materials {
 public:
-	Materials();
-	~Materials();
+  Materials();
+  ~Materials();
 
-	void clear();
+  void clear();
 
-	const MaterialsExtensionList& getExtensions();
-	MaterialsExtensionList getExtensionsByVersion(uint16_t version_id);
+  const MaterialsExtensionList &getExtensions();
+  MaterialsExtensionList getExtensionsByVersion(uint16_t version_id);
 
-	TilesetContainer tilesets;
+  TilesetContainer tilesets;
 
-	bool loadMaterials(const FileName& identifier, wxString& error, wxArrayString& warnings);
-	bool loadExtensions(FileName identifier, wxString& error, wxArrayString& warnings);
-	void createOtherTileset();
-	void saveFavorites();
-	void loadFavorites();
-	void rebuildFavorites();
-	void addToTileset(std::string tilesetName, int itemId, TilesetCategoryType categoryType);
+  bool loadMaterials(const FileName &identifier, wxString &error,
+                     wxArrayString &warnings);
+  bool loadExtensions(FileName identifier, wxString &error,
+                      wxArrayString &warnings);
+  void createOtherTileset();
+  void saveFavorites();
+  void loadFavorites();
+  void rebuildFavorites();
+  bool addFavoriteBrush(Brush *brush);
+  void addToTileset(std::string tilesetName, int itemId,
+                    TilesetCategoryType categoryType);
 
-	bool isInTileset(Item* item, std::string tileset) const;
-	bool isInTileset(Brush* brush, std::string tileset) const;
-	bool needSave() const {
-		return modified;
-	}
+  void setFavoriteTagColor(const std::string &brush_name, uint32_t color) {
+    if (color == 0) {
+      favorite_tags.erase(brush_name);
+    } else {
+      favorite_tags[brush_name] = color;
+    }
+  }
+  uint32_t getFavoriteTagColor(const std::string &brush_name) const {
+    auto it = favorite_tags.find(brush_name);
+    return it != favorite_tags.end() ? it->second : 0;
+  }
+  std::map<std::string, uint32_t> favorite_tags;
 
-	void modify(bool newValue = true) {
-		this->modified = newValue;
-	}
+  bool isInTileset(Item *item, std::string tileset) const;
+  bool isInTileset(Brush *brush, std::string tileset) const;
+  bool needSave() const { return modified; }
+
+  void modify(bool newValue = true) { this->modified = newValue; }
 
 protected:
-	bool unserializeMaterials(const FileName& filename, pugi::xml_node node, wxString& error, wxArrayString& warnings);
-	bool unserializeTileset(pugi::xml_node node, wxArrayString& warnings);
+  bool unserializeMaterials(const FileName &filename, pugi::xml_node node,
+                            wxString &error, wxArrayString &warnings);
+  bool unserializeTileset(pugi::xml_node node, wxArrayString &warnings);
 
-	MaterialsExtensionList extensions;
+  MaterialsExtensionList extensions;
 
 private:
-	bool modified = false;
-	Materials(const Materials&);
-	Materials& operator=(const Materials&);
+  bool modified = false;
+  Materials(const Materials &);
+  Materials &operator=(const Materials &);
 };
 
 extern Materials g_materials;

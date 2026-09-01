@@ -377,8 +377,12 @@ bool hasMatchingWallBrushAtTile(BaseMap* map, WallBrush* wall_brush, unsigned in
 	for (Item* item : t->items) {
 		if (!item) continue;
 		ItemType& it = g_items[item->getID()];
-		if (item->isWall() || it.isWall) {
+		if (item->isWall() || it.isWall || (wall_brush && wall_brush->hasWallId(item->getID()))) {
 			WallBrush* wb = item->getWallBrush();
+			if (!wb) {
+				if (it.brush && it.brush->isWall()) wb = it.brush->asWall();
+				else if (wall_brush && wall_brush->hasWallId(item->getID())) wb = wall_brush;
+			}
 			if (wb && wb->isWallDecoration()) {
 				continue;
 			}
@@ -424,7 +428,7 @@ void WallBrush::doWalls(BaseMap* map, Tile* tile) {
 				Brush* b = pair.second;
 				if (b && b->isWall()) {
 					WallBrush* wb = b->asWall();
-					if (wb->hasWall(wall)) {
+					if (wb->hasWallId(wall->getID())) {
 						wall_brush = wb;
 						break;
 					}
@@ -664,20 +668,24 @@ void WallBrush::doWalls(BaseMap* map, Tile* tile) {
 }
 
 bool WallBrush::hasWall(Item* item) {
-	ASSERT(item->isWall());
-	::BorderType bt = item->getWallAlignment();
+	if (!item) return false;
+	return hasWallId(item->getID());
+}
 
-	WallBrush* test_wall = this;
+bool WallBrush::hasWallId(uint16_t id) const {
+	const WallBrush* test_wall = this;
 
 	while (test_wall != nullptr) {
-		for (std::vector<WallType>::const_iterator it = test_wall->wall_items[int(bt)].items.begin(); it != test_wall->wall_items[int(bt)].items.end(); ++it) {
-			if (it->id == item->getID()) {
-				return true;
+		for (int index = 0; index < 16; ++index) {
+			for (const auto& wt : test_wall->wall_items[index].items) {
+				if (wt.id == id) {
+					return true;
+				}
 			}
-		}
-		for (std::vector<DoorType>::const_iterator it = test_wall->door_items[int(bt)].begin(); it != test_wall->door_items[int(bt)].end(); ++it) {
-			if (it->id == item->getID()) {
-				return true;
+			for (const auto& dt : test_wall->door_items[index]) {
+				if (dt.id == id) {
+					return true;
+				}
 			}
 		}
 
@@ -808,19 +816,6 @@ void WallDecorationBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 		}
 		++iter;
 	}
-}
-
-bool WallBrush::hasWallId(uint16_t id) const {
-	if (id == 0) return false;
-	for (int i = 0; i < 17; ++i) {
-		for (const auto& wt : wall_items[i].items) {
-			if (wt.id == id) return true;
-		}
-		for (const auto& dt : door_items[i]) {
-			if (dt.id == id) return true;
-		}
-	}
-	return false;
 }
 
 uint16_t WallBrush::getWallItem(uint32_t alignment) const {

@@ -42,7 +42,7 @@ public:
 	// Clears the copybuffer (eg. resets it)
 	void clear();
 	void setFrom(const CopyBuffer* other);
-
+	void rotate90(bool clockwise = true);
 
 	size_t GetTileCount();
 

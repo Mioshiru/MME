@@ -2,7 +2,15 @@
 
 #ifdef _WIN32
 #  include <windows.h>
-#  define GL_GET_PROC(name) wglGetProcAddress(name)
+static void* safe_gl_get_proc(const char* name) {
+    void* p = (void*)wglGetProcAddress(name);
+    if (!p || p == (void*)0x1 || p == (void*)0x2 || p == (void*)0x3 || p == (void*)-1) {
+        static HMODULE hMod = GetModuleHandleA("opengl32.dll");
+        if (hMod) p = (void*)GetProcAddress(hMod, name);
+    }
+    return p;
+}
+#  define GL_GET_PROC(name) safe_gl_get_proc(name)
 #endif
 
 #include <wx/log.h>
@@ -133,8 +141,8 @@ bool ShaderProgram::build(const char* vertSrc, const char* fragSrc) {
         return false;
     }
 
-    destroy();       // release any previous program
     m_program = prog;
+    wxLogDebug("ShaderProgram: build successful, program ID: %u", prog);
     return true;
 #else
     (void)vertSrc; (void)fragSrc;

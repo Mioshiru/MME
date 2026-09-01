@@ -19,12 +19,10 @@ void main() {
     vWorldPos   = aPos;
     vec2 pos    = aPos;
 
-    // 4.0: Foliage Wind Sway - nur Oberflaeche (floor 0-7), kein Untergrund
+    // Atmospheric Vertex Displacements: Foliage & Tree Wind Sway (Oberflaeche: Floor <= 7)
     if (uAmbientEffects == 1 && aShaderData == 4.0 && uFloor <= 7) {
-        // Multi-tile synchronization: quantize coordinates to grid cells
-        // so all tiles of a 2x1, 1x2, 2x2, 3x3 object share the exact same sway without tearing!
         vec2 objAnchor = floor(aPos / 64.0) * 64.0;
-        float wind = sin(uTime * 1.6 + objAnchor.x * 0.02 + objAnchor.y * 0.015) * 2.0;
+        float wind = sin(uTime * 1.8 + objAnchor.x * 0.025 + objAnchor.y * 0.02) * 1.8;
         pos.x += wind;
     }
 

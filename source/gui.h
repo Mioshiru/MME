@@ -253,6 +253,12 @@ public:
 	[[nodiscard]] bool IsFillBrushMode() const {
 		return fill_brush_mode;
 	}
+	void SetPendingChangeMode(bool enabled) {
+		pending_change_mode = enabled;
+	}
+	[[nodiscard]] bool IsInChangeMode() const {
+		return pending_change_mode;
+	}
 	[[nodiscard]] bool IsSelectionMode() const {
 		return mode == SELECTION_MODE;
 	}
@@ -495,7 +501,8 @@ protected:
 	int brush_size;
 	int brush_variation;
 	int creature_spawntime;
-	bool fill_brush_mode;
+	bool fill_brush_mode = false;
+	bool pending_change_mode = false;
 
 	bool draw_locked_doors;
 	bool use_custom_thickness;

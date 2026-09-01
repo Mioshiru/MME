@@ -22,8 +22,11 @@
 #include "table_brush.h"
 #include "brush.h"
 #include "complexitem.h"
+#include "application.h"
+#include "materials.h"
+#include "spawn.h"
 
-static uint16_t getItemUseSwitchID(Item* item) {
+uint16_t getItemUseSwitchID(Item* item) {
 	if (!item || item->getID() == 0) return 0;
 	uint16_t id = item->getID();
 
@@ -168,15 +171,15 @@ void MapCanvas::OnSelectMoveTo(wxCommandEvent& WXUNUSED(event)) {
 		}
 	}
 
+	int ret = 0;
 	if (item) {
-		w = newd TilesetWindow(g_gui.root, &editor.map, new_tile, item);
+		TilesetWindow w(g_gui.root, &editor.map, new_tile, item);
+		ret = w.ShowModal();
 	} else {
+		delete new_tile;
 		return;
 	}
 
-	int ret = w->ShowModal();
-	ObjectPropertiesWindowBase* propBase = dynamic_cast<ObjectPropertiesWindowBase*>(w);
-	if (propBase) propBase->clearReferences();
 	if (ret != 0) {
 		Action* action = editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
 		action->addChange(newd Change(new_tile));
@@ -187,7 +190,6 @@ void MapCanvas::OnSelectMoveTo(wxCommandEvent& WXUNUSED(event)) {
 		// Cancel!
 		delete new_tile;
 	}
-	w->Destroy();
 }
 
 void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
@@ -231,14 +233,16 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 
 	Tile* new_tile = tile->deepCopy(editor.map);
 
-	wxDialog* w = nullptr; 
+	int ret = 0;
+	Item* new_item = nullptr;
 
 	if (new_tile->spawn && g_settings.getInteger(Config::SHOW_SPAWNS)) {
-		w = newd OldPropertiesWindow(g_gui.root, &editor.map, new_tile, new_tile->spawn);
+		OldPropertiesWindow w(g_gui.root, &editor.map, new_tile, new_tile->spawn);
+		ret = w.ShowModal();
 	} else if (new_tile->creature && g_settings.getInteger(Config::SHOW_CREATURES)) {
-		w = newd OldPropertiesWindow(g_gui.root, &editor.map, new_tile, new_tile->creature);
+		OldPropertiesWindow w(g_gui.root, &editor.map, new_tile, new_tile->creature);
+		ret = w.ShowModal();
 	} else if (item) {
-		Item* new_item = nullptr;
 		if (item == tile->ground) {
 			new_item = new_tile->ground;
 		} else {
@@ -250,19 +254,18 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 			}
 		}
 		if (new_item) {
-			w = newd PropertiesWindow(g_gui.root, &editor.map, new_tile, new_item); 
+			PropertiesWindow w(g_gui.root, &editor.map, new_tile, new_item);
+			ret = w.ShowModal();
+		} else {
+			delete new_tile;
+			return;
 		}
-	}
-
-	if (!w) {
+	} else {
 		delete new_tile;
 		return;
 	}
 
-	int ret = w->ShowModal();
-	ObjectPropertiesWindowBase* propBase = dynamic_cast<ObjectPropertiesWindowBase*>(w);
-	if (propBase) propBase->clearReferences();
-	if (ret != 0) {
+	if (ret == wxID_OK || ret == 1) {
 		Action* action = editor.actionQueue->createAction(ACTION_CHANGE_PROPERTIES);
 		action->addChange(newd Change(new_tile));
 		editor.addAction(action);
@@ -270,7 +273,6 @@ void MapCanvas::OnProperties(wxCommandEvent& WXUNUSED(event)) {
 		// Cancel!
 		delete new_tile;
 	}
-	w->Destroy();
 }
 
 MapPopupMenu::MapPopupMenu(MapEditor& map_editor_ref) :
@@ -352,6 +354,7 @@ void MapPopupMenu::Update() {
 				bool has_items_added = false;
 
 				Item* rotatableItem = topSelectedItem ? topSelectedItem : topItem;
+				Append(MAP_POPUP_MENU_CHANGE, "&Change...\tAlt+C", "Change connected elements to a different brush or type via Palette");
 				if (rotatableItem && rotatableItem->isRoteable()) {
 					Append(MAP_POPUP_MENU_ROTATE, "&Rotate item", "Rotate this item");
 					has_items_added = true;
@@ -437,7 +440,8 @@ void MapPopupMenu::Update() {
 
 				if (tile->hasGround() || topSelectedItem || topItem || topCreature || topSpawn) {
 					AppendSeparator();
-					Append(MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
+					Append(MAP_POPUP_MENU_ADD_FAVORITE, "⭐ Add to Favorites", "Add this brush/item directly to your Favorites");
+					Append(MAP_POPUP_MENU_PROPERTIES, "&Attributes\tAlt+Enter", "Edit attributes and properties for the current object");
 				}
 			} else {
 				bool has_items_added = false;
@@ -452,6 +456,9 @@ void MapPopupMenu::Update() {
 					has_items_added = true;
 				}
 
+				if (tile->hasGround() || !tile->empty()) {
+					Append(MAP_POPUP_MENU_CHANGE, "&Change...\tAlt+C", "Change connected elements to a different brush or type via Palette");
+				}
 				if (hasWall) {
 					Append(MAP_POPUP_MENU_SELECT_WALL_BRUSH, "Select Wallbrush", "Uses the current item as a wallbrush");
 				}
@@ -481,7 +488,8 @@ void MapPopupMenu::Update() {
 
 				if (tile->hasGround() || topSelectedItem || topItem || topCreature || topSpawn) {
 					AppendSeparator();
-					Append(MAP_POPUP_MENU_PROPERTIES, "&Properties", "Properties for the current object");
+					Append(MAP_POPUP_MENU_ADD_FAVORITE, "⭐ Add to Favorites", "Add this brush/item directly to your Favorites");
+					Append(MAP_POPUP_MENU_PROPERTIES, "&Attributes\tAlt+Enter", "Edit attributes and properties for the current object");
 				}
 			}
 
@@ -592,7 +600,224 @@ void MapCanvas::OnCopyClientId(wxCommandEvent& WXUNUSED(event)) {}
 void MapCanvas::OnCopyName(wxCommandEvent& WXUNUSED(event)) {}
 void MapCanvas::OnBrowseTile(wxCommandEvent& WXUNUSED(event)) {}
 void MapCanvas::OnGotoDestination(wxCommandEvent& WXUNUSED(event)) {}
+void MapCanvas::OnChangeConnected(wxCommandEvent& WXUNUSED(event)) {
+	int click_x = last_click_map_x;
+	int click_y = last_click_map_y;
+	int click_z = floor;
+
+	if (editor.selection.size() == 1) {
+		Tile* sel_tile = editor.selection.getSelectedTile();
+		if (sel_tile) {
+			click_x = sel_tile->getX();
+			click_y = sel_tile->getY();
+			click_z = sel_tile->getZ();
+		}
+	}
+
+	Tile* start_tile = editor.map.getTile(click_x, click_y, click_z);
+	if (!start_tile) {
+		return;
+	}
+
+	// Determine what is clicked: wall, carpet, table, doodad, raw item, or ground
+	Item* target_item = nullptr;
+	if (editor.selection.size() == 1) {
+		ItemVector selected_items = start_tile->getSelectedItems();
+		for (Item* it : selected_items) {
+			if (it->isSelected()) {
+				target_item = it;
+				break;
+			}
+		}
+	}
+	if (!target_item) {
+		target_item = start_tile->getTopItem();
+		if (!target_item) {
+			target_item = start_tile->ground;
+		}
+	}
+
+	const int map_width = editor.map.getWidth();
+	const int map_height = editor.map.getHeight();
+
+	auto get_ground_id = [](Tile* t) -> uint32_t {
+		if (!t) return 0;
+		if (t->getGroundBrush()) return t->getGroundBrush()->getID();
+		if (t->ground) return t->ground->getID();
+		return 0;
+	};
+
+	bool match_ground = (target_item == nullptr || target_item == start_tile->ground || start_tile->empty());
+	uint32_t target_ground_id = get_ground_id(start_tile);
+	uint16_t target_item_id = target_item ? target_item->getID() : 0;
+	WallBrush* target_wall_brush = target_item ? target_item->getWallBrush() : nullptr;
+	CarpetBrush* target_carpet_brush = target_item ? target_item->getCarpetBrush() : nullptr;
+	TableBrush* target_table_brush = target_item ? target_item->getTableBrush() : nullptr;
+	Brush* target_doodad_brush = target_item ? target_item->getDoodadBrush() : nullptr;
+
+	int min_x = 1, min_y = 1, max_x = map_width - 1, max_y = map_height - 1;
+	int screen_w = 0, screen_h = 0;
+	GetClientSize(&screen_w, &screen_h);
+	if (screen_w > 0 && screen_h > 0) {
+		int vis_min_x = 0, vis_min_y = 0, vis_max_x = 0, vis_max_y = 0;
+		ScreenToMap(0, 0, &vis_min_x, &vis_min_y);
+		ScreenToMap(screen_w, screen_h, &vis_max_x, &vis_max_y);
+
+		int v_left = std::min(vis_min_x, vis_max_x);
+		int v_right = std::max(vis_min_x, vis_max_x);
+		int v_top = std::min(vis_min_y, vis_max_y);
+		int v_bottom = std::max(vis_min_y, vis_max_y);
+
+		min_x = std::max(1, v_left - 10);
+		min_y = std::max(1, v_top - 10);
+		max_x = std::min(map_width - 1, v_right + 10);
+		max_y = std::min(map_height - 1, v_bottom + 10);
+	}
+
+	min_x = std::min(min_x, click_x);
+	max_x = std::max(max_x, click_x);
+	min_y = std::min(min_y, click_y);
+	max_y = std::max(max_y, click_y);
+
+	const size_t range_w = static_cast<size_t>(max_x - min_x + 1);
+	const size_t range_h = static_cast<size_t>(max_y - min_y + 1);
+	const size_t max_fill_tiles = range_w * range_h;
+
+	std::queue<Position> queue;
+	std::vector<uint8_t> visited(range_w * range_h, 0);
+	std::vector<std::pair<Tile*, Item*>> flooded_elements;
+
+	auto is_visited = [&](int x, int y) -> bool {
+		return visited[static_cast<size_t>(y - min_y) * range_w + static_cast<size_t>(x - min_x)] != 0;
+	};
+	auto set_visited = [&](int x, int y) {
+		visited[static_cast<size_t>(y - min_y) * range_w + static_cast<size_t>(x - min_x)] = 1;
+	};
+
+	Position start_pos(click_x, click_y, click_z);
+	queue.push(start_pos);
+	set_visited(click_x, click_y);
+
+	while (!queue.empty() && flooded_elements.size() < max_fill_tiles) {
+		Position current = queue.front();
+		queue.pop();
+
+		Tile* tile = editor.map.getTile(current);
+		if (!tile) continue;
+
+		Item* matching_item = nullptr;
+		if (match_ground) {
+			if (tile->ground && get_ground_id(tile) == target_ground_id) {
+				matching_item = tile->ground;
+			}
+		} else if (target_wall_brush) {
+			for (Item* it : tile->items) {
+				if (it && (it->getWallBrush() == target_wall_brush || target_wall_brush->hasWall(it))) {
+					matching_item = it;
+					break;
+				}
+			}
+		} else if (target_carpet_brush) {
+			for (Item* it : tile->items) {
+				if (it && it->getCarpetBrush() == target_carpet_brush) {
+					matching_item = it;
+					break;
+				}
+			}
+		} else if (target_table_brush) {
+			for (Item* it : tile->items) {
+				if (it && it->getTableBrush() == target_table_brush) {
+					matching_item = it;
+					break;
+				}
+			}
+		} else if (target_doodad_brush) {
+			for (Item* it : tile->items) {
+				if (it && it->getDoodadBrush() == target_doodad_brush) {
+					matching_item = it;
+					break;
+				}
+			}
+		} else if (target_item_id > 0) {
+			for (Item* it : tile->items) {
+				if (it && it->getID() == target_item_id) {
+					matching_item = it;
+					break;
+				}
+			}
+		}
+
+		if (!matching_item) {
+			continue;
+		}
+
+		flooded_elements.push_back({tile, matching_item});
+
+		static const int dx[4] = {-1, 1, 0, 0};
+		static const int dy[4] = {0, 0, -1, 1};
+		for (int i = 0; i < 4; ++i) {
+			int nx = current.x + dx[i];
+			int ny = current.y + dy[i];
+			if (nx >= min_x && nx <= max_x && ny >= min_y && ny <= max_y) {
+				if (!is_visited(nx, ny)) {
+					set_visited(nx, ny);
+					queue.push(Position(nx, ny, current.z));
+				}
+			}
+		}
+	}
+
+	if (flooded_elements.empty()) {
+		return;
+	}
+
+	editor.selection.clear();
+	editor.selection.start(Selection::INTERNAL);
+	for (const auto& elem : flooded_elements) {
+		Tile* t = elem.first;
+		Item* it = elem.second;
+		if (t && it) {
+			editor.selection.add(t, it);
+		}
+	}
+	editor.selection.finish(Selection::INTERNAL);
+
+	g_gui.SetPendingChangeMode(true);
+	g_gui.SetStatusText("Change Mode: Select replacement brush from Palette to replace connected elements (or press Esc/click canvas to cancel)");
+	markDirty();
+	Refresh();
+}
+
 void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event)) {
+	if (editor.selection.empty()) {
+		Brush* brush = g_gui.GetCurrentBrush();
+		if (brush) {
+			if (brush->isRaw()) {
+				RAWBrush* raw_brush = static_cast<RAWBrush*>(brush);
+				const ItemType& itemtype = g_items[raw_brush->getItemID()];
+				if (itemtype.rotateTo != 0) {
+					const ItemType& rotated_type = g_items[itemtype.rotateTo];
+					if (rotated_type.raw_brush) {
+						g_gui.SelectBrush(rotated_type.raw_brush);
+					} else {
+						raw_brush->setItemID(itemtype.rotateTo);
+					}
+					Refresh();
+					return;
+				}
+			} else if (brush->isDoodad()) {
+				DoodadBrush* doodad = static_cast<DoodadBrush*>(brush);
+				if (doodad->getMaxVariation() > 1) {
+					int current_var = g_gui.GetBrushVariation();
+					int next_var = (current_var + 1) % doodad->getMaxVariation();
+					g_gui.SetBrushVariation(next_var);
+					Refresh();
+					return;
+				}
+			}
+		}
+	}
+
 	BatchAction* batch = editor.actionQueue->createBatch(ACTION_DRAW);
 	Action* action = editor.actionQueue->createAction(batch);
 	bool rotated_any = false;
@@ -642,7 +867,20 @@ void MapCanvas::OnRotateItem(wxCommandEvent& WXUNUSED(event)) {
 			}
 		}
 	} else {
-		Tile* tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
+		int target_x = last_click_map_x;
+		int target_y = last_click_map_y;
+		int target_z = last_click_map_z != -1 ? last_click_map_z : floor;
+
+		int mouse_map_x, mouse_map_y;
+		ScreenToMap(cursor_x, cursor_y, &mouse_map_x, &mouse_map_y);
+		Tile* hover_tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+		if (hover_tile && (!hover_tile->empty() || hover_tile->ground)) {
+			target_x = mouse_map_x;
+			target_y = mouse_map_y;
+			target_z = floor;
+		}
+
+		Tile* tile = editor.map.getTile(target_x, target_y, target_z);
 		if (tile && (!tile->empty() || tile->ground)) {
 			Item* target = nullptr;
 			Item* top = tile->getTopItem();
@@ -897,6 +1135,62 @@ void MapCanvas::OnSelectCollectionBrush(wxCommandEvent& WXUNUSED(event)) {
 	}
 }
 
+void MapCanvas::OnAddFavorite(wxCommandEvent& WXUNUSED(event)) {
+	Tile* tile = editor.selection.getSelectedTile();
+	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
+	if (!tile) return;
+
+	Brush* target_brush = nullptr;
+
+	// 1. Check selected items first
+	for (auto* item : tile->items) {
+		if (item && item->isSelected()) {
+			if (item->getDoodadBrush()) target_brush = item->getDoodadBrush();
+			else if (item->getWallBrush()) target_brush = item->getWallBrush();
+			else if (item->getCarpetBrush()) target_brush = item->getCarpetBrush();
+			else if (item->getTableBrush()) target_brush = item->getTableBrush();
+			else if (item->getRAWBrush()) target_brush = item->getRAWBrush();
+			if (target_brush) break;
+		}
+	}
+
+	// 2. If nothing selected, inspect items top to bottom
+	if (!target_brush) {
+		for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
+			if (!*it) continue;
+			if ((*it)->getDoodadBrush()) { target_brush = (*it)->getDoodadBrush(); break; }
+			if ((*it)->getWallBrush()) { target_brush = (*it)->getWallBrush(); break; }
+			if ((*it)->getCarpetBrush()) { target_brush = (*it)->getCarpetBrush(); break; }
+			if ((*it)->getTableBrush()) { target_brush = (*it)->getTableBrush(); break; }
+			if ((*it)->getRAWBrush()) { target_brush = (*it)->getRAWBrush(); break; }
+		}
+	}
+
+	// 3. Check creature / spawn
+	if (!target_brush) {
+		if (tile->creature && tile->creature->getBrush()) {
+			target_brush = tile->creature->getBrush();
+		} else if (tile->spawn) {
+			target_brush = g_gui.spawn_brush;
+		}
+	}
+
+	// 4. Check ground
+	if (!target_brush && tile->ground) {
+		if (tile->getGroundBrush()) {
+			target_brush = tile->getGroundBrush();
+		} else if (tile->ground->getRAWBrush()) {
+			target_brush = tile->ground->getRAWBrush();
+		}
+	}
+
+	if (target_brush) {
+		g_materials.addFavoriteBrush(target_brush);
+		g_gui.RefreshFavoritesBox();
+		g_gui.SetStatusText(wxString::Format("Added '%s' to Favorites!", target_brush->getName()));
+	}
+}
+
 void MapCanvas::OnCreateTown(wxCommandEvent& WXUNUSED(event)) {
 	Position click_pos(last_click_map_x, last_click_map_y, floor);
 	uint32_t max_id = 0;
@@ -915,9 +1209,14 @@ void MapCanvas::OnCreateTown(wxCommandEvent& WXUNUSED(event)) {
 	}
 	editor.map.doChange();
 
-	wxDialog* town_dialog = newd EditTownsDialog(static_cast<wxWindow*>(GetParent()), editor, new_town->getID());
-	town_dialog->ShowModal();
-	town_dialog->Destroy();
+	uint32_t town_id = new_town->getID();
+	wxWindow* parent_win = static_cast<wxWindow*>(GetParent());
+	CallAfter([this, parent_win, town_id]() {
+		wxDialog* town_dialog = newd EditTownsDialog(parent_win, editor, town_id);
+		town_dialog->ShowModal();
+		town_dialog->Destroy();
+		Refresh();
+	});
 }
 
 void MapCanvas::OnEditTown(wxCommandEvent& WXUNUSED(event)) {
@@ -931,8 +1230,13 @@ void MapCanvas::OnEditTown(wxCommandEvent& WXUNUSED(event)) {
 	}
 	if (clicked_town) {
 		clicked_town->setTemplePosition(click_pos);
-		wxDialog* town_dialog = newd EditTownsDialog(static_cast<wxWindow*>(GetParent()), editor, clicked_town->getID());
-		town_dialog->ShowModal();
-		town_dialog->Destroy();
+		uint32_t town_id = clicked_town->getID();
+		wxWindow* parent_win = static_cast<wxWindow*>(GetParent());
+		CallAfter([this, parent_win, town_id]() {
+			wxDialog* town_dialog = newd EditTownsDialog(parent_win, editor, town_id);
+			town_dialog->ShowModal();
+			town_dialog->Destroy();
+			Refresh();
+		});
 	}
 }

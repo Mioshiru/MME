@@ -58,6 +58,7 @@
 #include "prefab_manager.h"
 #include "map_diagnostic_window.h"
 #include "map_diff_window.h"
+#include "tileset_manager_window.h"
 #include "tfs_quest_generator.h"
 #include "tfs_key_manager.h"
 #include "tfs_npc_editor.h"
@@ -279,6 +280,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(TOOLS_PREFAB_LIBRARY, wxITEM_NORMAL, OnPrefabLibrary);
 	MAKE_ACTION(TOOLS_MAP_DIAGNOSTIC, wxITEM_NORMAL, OnMapDiagnostic);
 	MAKE_ACTION(TOOLS_MAP_DIFF, wxITEM_NORMAL, OnMapDiff);
+	MAKE_ACTION(TOOLS_TILESET_MANAGER, wxITEM_NORMAL, OnTilesetManager);
 	MAKE_ACTION(TOOLS_RADIO_PLAYER, wxITEM_NORMAL, OnRadioPlayer);
 	MAKE_ACTION(TOOLS_MONSTER_EDITOR, wxITEM_NORMAL, OnMonsterEditor);
 	MAKE_ACTION(TOOLS_ITEM_EDITOR, wxITEM_NORMAL, OnItemEditor);
@@ -367,6 +369,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	frame->Connect(TOOLS_PREFAB_LIBRARY, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnPrefabLibrary), nullptr, this);
 	frame->Connect(TOOLS_MAP_DIAGNOSTIC, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiagnostic), nullptr, this);
 	frame->Connect(TOOLS_MAP_DIFF, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMapDiff), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_TILESET_MANAGER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTilesetManager), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_RADIO_PLAYER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnRadioPlayer), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::WIZARD_NPC, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnWizardNPC), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::WIZARD_SPECIAL_OBJECTS, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnWizardSpecialObjects), nullptr, this);
@@ -550,7 +553,7 @@ void MainMenuBar::Update() {
 	EnableItem(EDIT_MONSTERS, false);
 
 	EnableItem(MAP_CLEANUP, is_local);
-	EnableItem(MAP_PROPERTIES, is_local);
+	EnableItem(MAP_PROPERTIES, is_host);
 	EnableItem(MAP_STATISTICS, is_local);
 
 	EnableItem(NEW_VIEW, has_map);
@@ -1801,6 +1804,11 @@ void MainMenuBar::OnMapDiagnostic(wxCommandEvent& WXUNUSED(event)) {
 void MainMenuBar::OnMapDiff(wxCommandEvent& WXUNUSED(event)) {
 	if (!g_gui.GetCurrentEditor()) return;
 	MapDiffDialog dialog(frame, *g_gui.GetCurrentEditor());
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnTilesetManager(wxCommandEvent& WXUNUSED(event)) {
+	TilesetManagerDialog dialog(frame);
 	dialog.ShowModal();
 }
 

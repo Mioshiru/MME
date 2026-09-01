@@ -266,23 +266,43 @@ double Item::getWeight() const {
 }
 
 void Item::setUniqueID(unsigned short n) {
-	setAttribute("uid", n);
+	if (n == 0) {
+		eraseAttribute("uid");
+	} else {
+		setAttribute("uid", n);
+	}
 }
 
 void Item::setActionID(unsigned short n) {
-	setAttribute("aid", n);
+	if (n == 0) {
+		eraseAttribute("aid");
+	} else {
+		setAttribute("aid", n);
+	}
 }
 
 void Item::setText(const std::string& str) {
-	setAttribute("text", str);
+	if (str.empty()) {
+		eraseAttribute("text");
+	} else {
+		setAttribute("text", str);
+	}
 }
 
 void Item::setDescription(const std::string& str) {
-	setAttribute("desc", str);
+	if (str.empty()) {
+		eraseAttribute("desc");
+	} else {
+		setAttribute("desc", str);
+	}
 }
 
 void Item::setTier(unsigned short n) {
-	setAttribute("tier", n);
+	if (n == 0) {
+		eraseAttribute("tier");
+	} else {
+		setAttribute("tier", n);
+	}
 }
 
 double Item::getWeight() {
@@ -555,4 +575,10 @@ Item* Item::Create(pugi::xml_node xml) {
 	}
 
 	return Create(id, count);
+}
+
+bool Item::isOreRockAsset() const {
+	if (!typeExists()) return false;
+	uint16_t id = getID();
+	return (id == 9421 || id == 9422 || id == 8742 || id == 1358 || id == 1290 || id == 1359);
 }

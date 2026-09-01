@@ -78,6 +78,74 @@ void CopyBuffer::setFrom(const CopyBuffer* other) {
 	}
 }
 
+void CopyBuffer::rotate90(bool clockwise) {
+	if (!tiles || tiles->size() == 0) return;
+
+	int min_x = 0x7FFFFFFF, min_y = 0x7FFFFFFF;
+	int max_x = -1, max_y = -1;
+	for (MapIterator it = tiles->begin(); it != tiles->end(); ++it) {
+		Tile* t = (*it)->get();
+		if (!t) continue;
+		min_x = std::min(min_x, t->getX());
+		min_y = std::min(min_y, t->getY());
+		max_x = std::max(max_x, t->getX());
+		max_y = std::max(max_y, t->getY());
+	}
+
+	if (min_x > max_x || min_y > max_y) return;
+
+	BaseMap* new_tiles = newd BaseMap();
+	Position new_copy_pos(0xFFFF, 0xFFFF, copyPos.z);
+
+	for (MapIterator it = tiles->begin(); it != tiles->end(); ++it) {
+		Tile* srcTile = (*it)->get();
+		if (!srcTile) continue;
+
+		int rel_x = srcTile->getX() - min_x;
+		int rel_y = srcTile->getY() - min_y;
+
+		int new_rel_x = 0;
+		int new_rel_y = 0;
+		if (clockwise) {
+			new_rel_x = (max_y - min_y) - rel_y;
+			new_rel_y = rel_x;
+		} else {
+			new_rel_x = rel_y;
+			new_rel_y = (max_x - min_x) - rel_x;
+		}
+
+		int new_x = min_x + new_rel_x;
+		int new_y = min_y + new_rel_y;
+
+		new_copy_pos.x = std::min(new_copy_pos.x, new_x);
+		new_copy_pos.y = std::min(new_copy_pos.y, new_y);
+
+		TileLocation* newloc = new_tiles->createTileL(new_x, new_y, srcTile->getZ());
+		Tile* destTile = new_tiles->allocator(newloc);
+
+		if (srcTile->ground) {
+			destTile->house_id = srcTile->house_id;
+			destTile->setMapFlags(srcTile->getMapFlags());
+			Item* groundCopy = srcTile->ground->deepCopy();
+			groundCopy->doRotate();
+			destTile->addItem(groundCopy);
+		}
+		for (Item* item : srcTile->items) {
+			if (item) {
+				Item* itemCopy = item->deepCopy();
+				itemCopy->doRotate();
+				destTile->addItem(itemCopy);
+			}
+		}
+		if (srcTile->creature) destTile->creature = srcTile->creature->deepCopy();
+		if (srcTile->spawn) destTile->spawn = srcTile->spawn->deepCopy();
+		new_tiles->setTile(destTile);
+	}
+
+	delete tiles;
+	tiles = new_tiles;
+	copyPos = new_copy_pos;
+}
 
 void CopyBuffer::copy(Editor& editor, int floor) {
 	if (editor.selection.size() == 0) {

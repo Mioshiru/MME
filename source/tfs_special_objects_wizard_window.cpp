@@ -1,20 +1,37 @@
 #include "tfs_special_objects_wizard_window.h"
+#include "style_manager.h"
 #include "gui.h"
+#include "style_manager.h"
 #include "editor.h"
+#include "style_manager.h"
 #include "items.h"
+#include "style_manager.h"
 #include "graphics.h"
+#include "style_manager.h"
 #include "find_item_window.h"
+#include "style_manager.h"
 #include "map.h"
+#include "style_manager.h"
 #include <wx/stattext.h>
+#include "style_manager.h"
 #include <wx/button.h>
+#include "style_manager.h"
 #include <wx/sizer.h>
+#include "style_manager.h"
 #include <wx/msgdlg.h>
+#include "style_manager.h"
 #include <wx/filedlg.h>
+#include "style_manager.h"
 #include <wx/dcclient.h>
+#include "style_manager.h"
 #include <wx/clipbrd.h>
+#include "style_manager.h"
 #include <wx/dataobj.h>
+#include "style_manager.h"
 #include <sstream>
+#include "style_manager.h"
 #include <iomanip>
+#include "style_manager.h"
 
 enum {
 	OBJ_CHEST_MODEL = wxID_HIGHEST + 600,
@@ -346,6 +363,7 @@ SpecialObjectsWizardDialog::SpecialObjectsWizardDialog(wxWindow* parent) :
 	rootSizer->Add(botSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
 	SetSizer(rootSizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 	Layout();
 	CenterOnParent();
 

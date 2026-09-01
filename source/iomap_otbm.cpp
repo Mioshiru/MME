@@ -1164,6 +1164,8 @@ bool IOMapOTBM::loadSpawns(Map& map, pugi::xml_document& doc) {
 				spawntime = g_settings.getInteger(Config::DEFAULT_SPAWNTIME);
 			}
 
+			int32_t lootRate = creatureNode.attribute("loot_rate").as_int(0);
+
 			Direction direction = NORTH;
 			int dir = creatureNode.attribute("direction").as_int(-1);
 			if (dir >= DIRECTION_FIRST && dir <= DIRECTION_LAST) {
@@ -1217,6 +1219,9 @@ bool IOMapOTBM::loadSpawns(Map& map, pugi::xml_document& doc) {
 			Creature* creature = newd Creature(type);
 			creature->setDirection(direction);
 			creature->setSpawnTime(spawntime);
+			if (lootRate > 0) {
+				creature->setLootRate(lootRate);
+			}
 			creatureTile->creature = creature;
 
 			if (creatureTile->getLocation()->getSpawnCount() == 0) {
@@ -1773,6 +1778,10 @@ bool IOMapOTBM::saveSpawns(Map& map, pugi::xml_document& doc) {
 					creatureNode.append_attribute("x") = x;
 					creatureNode.append_attribute("y") = y;
 					creatureNode.append_attribute("spawntime") = creature->getSpawnTime();
+
+					if (creature->getLootRate() > 0 && creature->getLootRate() != 100) {
+						creatureNode.append_attribute("loot_rate") = creature->getLootRate();
+					}
 
 					if (creature->getDirection() != NORTH) {
 						creatureNode.append_attribute("direction") = static_cast<int>(creature->getDirection());

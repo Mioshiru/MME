@@ -19,12 +19,15 @@ public:
 	void renamePrefab(const wxString& old_name, const wxString& new_name);
 	std::vector<wxString> getPrefabNames() const;
 
+	void loadPrefabs();
+	void savePrefabs();
 
 private:
-	PrefabManager() {}
-	~PrefabManager() {}
+	PrefabManager();
+	~PrefabManager();
 
 	std::map<wxString, CopyBuffer*> prefabs;
+	bool loaded = false;
 };
 
 class PrefabLibraryDialog : public wxDialog {
@@ -34,6 +37,8 @@ public:
 
 	void OnClickSaveCurrentSelection(wxCommandEvent& event);
 	void OnClickPastePrefab(wxCommandEvent& event);
+	void OnClickDeletePrefab(wxCommandEvent& event);
+	void OnClickRenamePrefab(wxCommandEvent& event);
 	void OnClickClose(wxCommandEvent& event);
 
 private:

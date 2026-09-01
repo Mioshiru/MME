@@ -1,12 +1,21 @@
 #include "map_diff_window.h"
+#include "style_manager.h"
 #include "editor.h"
+#include "style_manager.h"
 #include "gui.h"
+#include "style_manager.h"
 #include "iomap_otbm.h"
+#include "style_manager.h"
 #include "map.h"
+#include "style_manager.h"
 #include <wx/stattext.h>
+#include "style_manager.h"
 #include <wx/button.h>
+#include "style_manager.h"
 #include <wx/sizer.h>
+#include "style_manager.h"
 #include <wx/msgdlg.h>
+#include "style_manager.h"
 
 enum {
 	DIFF_BTN_COMPARE = wxID_HIGHEST + 400,
@@ -54,6 +63,7 @@ MapDiffDialog::MapDiffDialog(wxWindow* parent, Editor& editor) :
 
 	topsizer->Add(buttonSizer, 0, wxALIGN_RIGHT | wxALL, 10);
 	SetSizerAndFit(topsizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 MapDiffDialog::~MapDiffDialog() {

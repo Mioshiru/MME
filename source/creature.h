@@ -72,6 +72,13 @@ public:
 		this->spawntime = spawntime;
 	}
 
+	int getLootRate() const {
+		return loot_rate;
+	}
+	void setLootRate(int rate) {
+		this->loot_rate = rate;
+	}
+
 	Direction getDirection() const {
 		return direction;
 	}
@@ -83,6 +90,7 @@ protected:
 	std::string type_name;
 	Direction direction;
 	int spawntime;
+	int loot_rate;
 	bool saved;
 	bool selected;
 };

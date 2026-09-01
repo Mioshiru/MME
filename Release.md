@@ -4,7 +4,30 @@
 
 ---
 
-## 🚀 Release v1.9.0 (Latest Working Version)
+## 🚀 Release v1.9.1 (Latest Working Version)
+
+### 🌟 Major Highlights & New Features in v1.9.1
+* **Next-Gen Modern Pixel Art HD Super-Resolution Engine:**
+  * **16-Tap Catmull-Rom Bicubic Spline + Directional Sub-Pixel Edge AA:** Reconstructs smooth $45^\circ$, $30^\circ$, and $60^\circ$ diagonal curves across all sprites and tiles, eliminating pixel crawl and jagged staircasing without losing pixel-art charm.
+  * **AMD Contrast Adaptive Sharpening (CAS):** Crystal-clear micro-contrast for stone cracks, wood grain, foliage, and armor highlights without halo artifacts.
+  * **Cinema-Grade S-Curve Vibrance:** Harmonious +22% perceptual color grading on natural terrain (grass, water, sand, rocks).
+  * **Seamless Alpha-Safe Shorelines & Borders:** Zero boxy seams or dark border steps on transparent sprite boundaries.
+  * **Zero-Latency Live Switch:** Instant toggle between Classic Pixel and Ultra-HD Super-Resolution directly in Preferences (`Settings -> Preferences -> Ultra-HD Super-Resolution Engine`) without restarting the editor.
+  * **Synchronized Palette HD Previews:** All item and brush preview icons in the palette windows now render with matching HD color harmony and clarity.
+
+* **Atmospheric Engine & Warm Volumetric Lighting:**
+  * **Dynamic Foliage Wind Sway:** Trees and bushes gently sway in the breeze on surface floors ($\le 7$) with grid-anchored vertex calculations preventing sprite tearing.
+  * **Clean, Crystal Water Surface:** Removed striped shadow artifacts for uniform, natural lakes and rivers.
+  * **Warm Volumetric Light Bloom:** Radial light sources (torches, lamps, campfires, coal basins) feature smooth quadratic falloff, radiant warm golden cores, and cinematic deep indigo night ambient shading (`#080C16`).
+
+* **UI & Context Menu Polish:**
+  * **Promoted & Highlighted Brush Selectors:** `Select Groundbrush`, `Select Wallbrush`, `Select Doodadbrush`, `Select Doorbrush`, etc. are now displayed at the **very top** of the canvas right-click context menu in glowing radiant gold (`#FFD652`).
+  * **Map Notes & Ping Feedback:** Renamed *"Annotation"* to *"Note"* with multiplayer visual feedback icon and ping notifications.
+  * **Smart Wall Bucket Fill:** Perimeter boundary wall placement stops cleanly at existing wall structures.
+
+---
+
+## 📦 Release v1.9.0 (Stable Release)
 
 ### 🌟 Major Highlights & New Features in v1.9.0
 * **Integrated Interactive Map Playtester (`File -> Test` / `F6`):**

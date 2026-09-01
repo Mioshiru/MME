@@ -1350,9 +1350,22 @@ void doSurroundingBorders(DoodadBrush* doodad_brush, PositionList& tilestoborder
 }
 
 void removeDuplicateWalls(Tile* buffer, Tile* tile) {
-	for (ItemVector::const_iterator iter = buffer->items.begin(); iter != buffer->items.end(); ++iter) {
-		if ((*iter)->getWallBrush()) {
-			tile->cleanWalls((*iter)->getWallBrush());
+	bool buffer_has_wall_or_arch = false;
+	for (Item* it : buffer->items) {
+		if (it && (it->isWall() || it->getWallBrush() || it->isDoor() || it->isBrushDoor() || it->isHangable())) {
+			buffer_has_wall_or_arch = true;
+			break;
+		}
+	}
+
+	if (buffer_has_wall_or_arch) {
+		// Replace existing walls at this tile position seamlessly (e.g. wall arch, archway, doors)
+		tile->cleanWalls();
+	} else {
+		for (ItemVector::const_iterator iter = buffer->items.begin(); iter != buffer->items.end(); ++iter) {
+			if ((*iter)->getWallBrush()) {
+				tile->cleanWalls((*iter)->getWallBrush());
+			}
 		}
 	}
 }
@@ -1983,6 +1996,91 @@ void MapEditor::drawInternal(const PositionVector& tilestodraw, PositionVector& 
 				BatchAction* batch = actionQueue->createBatch(ACTION_DRAW);
 				Action* action = actionQueue->createAction(batch);
 				action->addChange(Change::Create(house, pos));
+
+				// Auto-detect and set enclosed room tiles for this house if Auto-Mode is enabled
+				if (g_settings.getInteger(Config::AUTO_HOUSE_MODE) != 0) {
+					uint32_t hid = house->getID();
+					std::set<Position> visited;
+					std::vector<Position> queue;
+					visited.insert(pos);
+
+					// Seed neighbors around the exit
+					for (int dy = -1; dy <= 1; ++dy) {
+						for (int dx = -1; dx <= 1; ++dx) {
+							if (dx == 0 && dy == 0) continue;
+							Position adj(pos.x + dx, pos.y + dy, pos.z);
+							Tile* adj_tile = map.getTile(adj);
+							if (adj_tile && adj_tile->hasGround() && !adj_tile->isBlocking()) {
+								bool is_wall = false;
+								for (Item* it : adj_tile->items) {
+									if (it && it->getWallBrush()) {
+										is_wall = true;
+										break;
+									}
+								}
+								if (!is_wall) {
+									visited.insert(adj);
+									queue.push_back(adj);
+								}
+							}
+						}
+					}
+
+				// BFS flood-fill inside enclosed room (limit 500 tiles to prevent runaway in open areas)
+				size_t head = 0;
+				std::vector<Tile*> tiles_to_assign;
+				while (head < queue.size() && queue.size() < 500) {
+					Position curr = queue[head++];
+					Tile* t = map.getTile(curr);
+					if (!t || !t->hasGround()) continue;
+
+					// Check if tile is blocked by wall
+					bool is_wall = false;
+					for (Item* it : t->items) {
+						if (it && it->getWallBrush()) {
+							is_wall = true;
+							break;
+						}
+					}
+					if (is_wall) continue;
+
+					tiles_to_assign.push_back(t);
+
+					// Expand 4-directional neighbors
+					static const int dir_x[4] = {0, 1, 0, -1};
+					static const int dir_y[4] = {-1, 0, 1, 0};
+					for (int d = 0; d < 4; ++d) {
+						Position next(curr.x + dir_x[d], curr.y + dir_y[d], curr.z);
+						if (visited.insert(next).second) {
+							Tile* nt = map.getTile(next);
+							if (nt && nt->hasGround() && !nt->isBlocking()) {
+								bool n_wall = false;
+								for (Item* nit : nt->items) {
+									if (nit && nit->getWallBrush()) {
+										n_wall = true;
+										break;
+									}
+								}
+								if (!n_wall) {
+									queue.push_back(next);
+								}
+							}
+						}
+					}
+				}
+
+				// Assign house tiles if we found an enclosed room
+				if (tiles_to_assign.size() > 0 && tiles_to_assign.size() < 500) {
+					for (Tile* t : tiles_to_assign) {
+						if (t->getHouseID() != hid) {
+							Tile* new_tile = t->deepCopy(map);
+							new_tile->setHouse(house);
+							action->addChange(newd Change(new_tile));
+						}
+					}
+				}
+				}
+
 				batch->addAndCommitAction(action);
 				addBatch(batch, 2);
 			}

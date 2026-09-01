@@ -367,16 +367,21 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 
 	palette_choice = newd wxChoice(this, wxID_ANY);
 	palette_choice->SetBackgroundColour(wxColour(10, 20, 35));
-	palette_choice->SetForegroundColour(wxColour(180, 150, 50));
-
 	search_box = newd wxTextCtrl(this, PALETTE_SEARCH_BOX, "", wxDefaultPosition, wxDefaultSize, 0);
-	search_box->SetHint("Search brushes...");
-	search_box->Bind(wxEVT_CHAR_HOOK, [](wxKeyEvent& event) {
-		if (event.GetKeyCode() == WXK_ESCAPE) {
-			event.Skip();
-		} else {
-			event.DoAllowNextEvent();
+	search_box->SetHint("Search");
+	search_box->Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& event) {
+		int code = event.GetKeyCode();
+		if (code == WXK_ESCAPE) {
+			if (search_box) {
+				search_box->SetValue("");
+			}
+			if (g_gui.root) {
+				g_gui.root->SetFocus();
+			}
+			return;
 		}
+		// Allow normal text navigation and standard clipboard hotkeys in text field without bubbling to map accelerators
+		event.Skip();
 	});
 
 	choicebook = newd wxChoicebook(this, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(180, 250));
@@ -723,6 +728,14 @@ void PaletteWindow::RefreshFavoritesBox() {
 	if (favorites_palette) {
 		favorites_palette->InvalidateContents();
 		favorites_palette->LoadCurrentContents();
+		favorites_palette->Layout();
+		favorites_palette->Refresh();
+		wxTheApp->CallAfter([this]() {
+			if (favorites_palette) {
+				favorites_palette->Layout();
+				favorites_palette->Refresh();
+			}
+		});
 	}
 }
 

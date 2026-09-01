@@ -46,6 +46,7 @@ protected:
 	wxSpinCtrl* count_field;
 	wxSpinCtrl* action_id_field;
 	wxSpinCtrl* unique_id_field;
+	wxChoice* ore_type_choice;
 	wxSpinCtrl* door_id_field;
 	wxSpinCtrl* tier_field;
 	wxChoice* depot_id_field;
@@ -60,7 +61,11 @@ protected:
 
 	// spawn properties
 	wxSpinCtrl* spawn_interval_field;
+	wxSpinCtrl* spawn_loot_rate_field;
 	wxCheckBox* apply_to_all_monsters;
+
+	// creature
+	wxSpinCtrl* loot_rate_field;
 
 	// podium
 	wxCheckBox* show_outfit;

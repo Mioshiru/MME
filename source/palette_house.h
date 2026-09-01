@@ -82,6 +82,7 @@ protected:
 	wxButton* edit_house_button;
 	wxButton* remove_house_button;
 	wxToggleButton* set_exit_button;
+	wxCheckBox* auto_mode_checkbox;
 	bool is_exit_mode;
 
 	// Used for ugly hack

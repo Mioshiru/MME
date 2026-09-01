@@ -490,7 +490,11 @@ void BrushPanel::InvalidateContents() {
 	if (loaded && brushbox) {
 		if (BrushIconBox* iconbox = dynamic_cast<BrushIconBox*>(brushbox->GetSelfWindow())) {
 			iconbox->SetBrushes(all_brushes);
+		} else if (BrushListBox* listbox = dynamic_cast<BrushListBox*>(brushbox->GetSelfWindow())) {
+			listbox->UpdateVisibleList();
 		}
+		Layout();
+		Refresh();
 	}
 }
 
@@ -595,6 +599,7 @@ void BrushPanel::OnClickListBoxRow(wxCommandEvent& event) {
 BEGIN_EVENT_TABLE(BrushIconBox, wxScrolledWindow)
 EVT_PAINT(BrushIconBox::OnPaint)
 EVT_LEFT_DOWN(BrushIconBox::OnClick)
+EVT_LEFT_UP(BrushIconBox::OnLeftUp)
 EVT_RIGHT_DOWN(BrushIconBox::OnRightClick)
 EVT_MOTION(BrushIconBox::OnMouseMove)
 EVT_SIZE(BrushIconBox::OnSize)
@@ -699,6 +704,19 @@ void BrushIconBox::OnSize(wxSizeEvent& event) {
 void BrushIconBox::UpdateLayout() {
 	item_layout.clear();
 	int client_width = GetClientSize().x;
+	if (client_width <= 0) {
+		if (GetParent()) {
+			client_width = GetParent()->GetClientSize().x;
+		}
+	}
+	if (client_width <= 0) {
+		client_width = GetSize().x;
+	}
+	if (client_width <= 0) {
+		client_width = 240; // Sensible default palette width
+	}
+	last_layout_width = client_width;
+
 	int btn_width = 36;
 	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
 	if (scale_percent < 100) scale_percent = 100;
@@ -780,6 +798,11 @@ void BrushIconBox::UpdateLayout() {
 }
 
 void BrushIconBox::OnPaint(wxPaintEvent& event) {
+	int current_width = GetClientSize().x;
+	if (current_width > 0 && current_width != last_layout_width) {
+		UpdateLayout();
+	}
+
 	wxBufferedPaintDC dc(this);
 	DoPrepareDC(dc);
 
@@ -904,13 +927,42 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 			if (sprite) {
 				sprite->DrawTo(&dc, spr_sz, x + offset, y + offset, spr_w, spr_w);
 			}
+
+			// Render Tag Color (Color coding for Favorites)
+			uint32_t tagColor = g_materials.getFavoriteTagColor(brush->getName());
+			if (tagColor != 0) {
+				uint8_t r = (tagColor >> 16) & 0xFF;
+				uint8_t g = (tagColor >> 8) & 0xFF;
+				uint8_t b = tagColor & 0xFF;
+				// Colored inner border
+				dc.SetBrush(*wxTRANSPARENT_BRUSH);
+				dc.SetPen(wxPen(wxColor(r, g, b), 2, wxSOLID));
+				dc.DrawRectangle(x + 1, y + 1, btn_width - 2, btn_width - 2);
+
+				// Small color tag dot in bottom-right corner
+				dc.SetBrush(wxBrush(wxColor(r, g, b)));
+				dc.SetPen(wxPen(wxColor(15, 23, 42), 1, wxSOLID));
+				dc.DrawCircle(x + btn_width - 5, y + btn_width - 5, 3);
+			}
 		}
+	}
+
+	// Render Drag & Drop Reordering indicator line / preview
+	if (is_dragging_tile && dragged_brush && drop_target_index >= 0 && drop_target_index < (int)item_layout.size()) {
+		const auto& target_item = item_layout[drop_target_index];
+		dc.SetPen(wxPen(wxColor(251, 191, 36), 3, wxSOLID)); // Gold insertion line
+		dc.DrawLine(target_item.x - 2, target_item.y, target_item.x - 2, target_item.y + target_item.height);
 	}
 }
 
 void BrushIconBox::OnClick(wxMouseEvent& event) {
 	int logical_x, logical_y;
 	CalcUnscrolledPosition(event.GetX(), event.GetY(), &logical_x, &logical_y);
+
+	drag_candidate = false;
+	is_dragging_tile = false;
+	dragged_brush = nullptr;
+	drop_target_index = -1;
 
 	for (const auto& item : item_layout) {
 		if (logical_x >= item.x && logical_x < item.x + item.width &&
@@ -927,6 +979,12 @@ void BrushIconBox::OnClick(wxMouseEvent& event) {
 			Brush* clicked_brush = item.brush;
 			if (!clicked_brush) return;
 			SelectBrush(clicked_brush);
+
+			// Setup drag candidate
+			drag_candidate = true;
+			drag_start_mouse_x = event.GetX();
+			drag_start_mouse_y = event.GetY();
+			dragged_brush = clicked_brush;
 
 			wxWindow* w = this;
 			while ((w = w->GetParent()) && dynamic_cast<PaletteWindow*>(w) == nullptr)
@@ -949,6 +1007,48 @@ void BrushIconBox::OnClick(wxMouseEvent& event) {
 		}
 	}
 	SetFocus();
+}
+
+void BrushIconBox::OnLeftUp(wxMouseEvent& event) {
+	if (is_dragging_tile && dragged_brush && drop_target_index >= 0) {
+		Tileset* favs = g_materials.tilesets["Favorites"];
+		if (favs) {
+			TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+			if (catFav) {
+				auto it = std::find(catFav->brushlist.begin(), catFav->brushlist.end(), dragged_brush);
+				if (it != catFav->brushlist.end()) {
+					catFav->brushlist.erase(it);
+
+					// Determine target brush in catFav
+					if (drop_target_index < (int)item_layout.size() && item_layout[drop_target_index].brush) {
+						Brush* target_b = item_layout[drop_target_index].brush;
+						auto target_it = std::find(catFav->brushlist.begin(), catFav->brushlist.end(), target_b);
+						if (target_it != catFav->brushlist.end()) {
+							catFav->brushlist.insert(target_it, dragged_brush);
+						} else {
+							catFav->brushlist.push_back(dragged_brush);
+						}
+					} else {
+						catFav->brushlist.push_back(dragged_brush);
+					}
+
+					g_materials.rebuildFavorites();
+					g_materials.saveFavorites();
+					g_gui.RefreshFavoritesBox();
+				}
+			}
+		}
+	}
+
+	drag_candidate = false;
+	is_dragging_tile = false;
+	dragged_brush = nullptr;
+	drop_target_index = -1;
+	if (HasCapture()) {
+		ReleaseMouse();
+	}
+	Refresh();
+	event.Skip();
 }
 
 static void AddFavoriteBrushIconBox(Brush* brush) {
@@ -995,8 +1095,8 @@ void BrushIconBox::OnRightClick(wxMouseEvent& event) {
 		}
 	}
 
+	wxMenu menu;
 	if (clicked_brush) {
-		wxMenu menu;
 		Tileset* favs = g_materials.tilesets["Favorites"];
 		bool is_favorited = false;
 		if (favs) {
@@ -1012,22 +1112,111 @@ void BrushIconBox::OnRightClick(wxMouseEvent& event) {
 			menu.Append(10001, "Favorite");
 		}
 
-		Bind(wxEVT_MENU, [this, clicked_brush](wxCommandEvent& ev) {
-			if (ev.GetId() == 10001) {
-				AddFavoriteBrushIconBox(clicked_brush);
-			} else if (ev.GetId() == 10002) {
-				RemoveFavoriteBrushIconBox(clicked_brush);
-			}
-			g_gui.RefreshFavoritesBox();
-		});
+		menu.AppendSeparator();
 
-		PopupMenu(&menu);
+		// Color Tagging Submenu
+		wxMenu* tagMenu = newd wxMenu();
+		tagMenu->Append(10201, "Red (#EF4444)");
+		tagMenu->Append(10202, "Green (#22C55E)");
+		tagMenu->Append(10203, "Blue (#3B82F6)");
+		tagMenu->Append(10204, "Amber / Gold (#F59E0B)");
+		tagMenu->Append(10205, "Purple (#A855F7)");
+		tagMenu->Append(10206, "Cyan (#06B6D4)");
+		tagMenu->AppendSeparator();
+		tagMenu->Append(10200, "Clear Tag");
+		menu.AppendSubMenu(tagMenu, "Color Tag");
+
+		menu.AppendSeparator();
 	}
+
+	// Grid Size Toggle
+	wxMenu* sizeMenu = newd wxMenu();
+	sizeMenu->AppendCheckItem(10301, "Compact Icons (16x16)")->Check(icon_size == RENDER_SIZE_16x16);
+	sizeMenu->AppendCheckItem(10302, "Large Icons (32x32)")->Check(icon_size == RENDER_SIZE_32x32);
+	menu.AppendSubMenu(sizeMenu, "Tile Grid Size");
+
+	Bind(wxEVT_MENU, [this, clicked_brush](wxCommandEvent& ev) {
+		int id = ev.GetId();
+		if (clicked_brush) {
+			if (id == 10001) {
+				AddFavoriteBrushIconBox(clicked_brush);
+				g_gui.RefreshFavoritesBox();
+			} else if (id == 10002) {
+				RemoveFavoriteBrushIconBox(clicked_brush);
+				g_gui.RefreshFavoritesBox();
+			} else if (id == 10201) {
+				g_materials.setFavoriteTagColor(clicked_brush->getName(), 0xEF4444);
+				g_materials.saveFavorites();
+				g_gui.RefreshFavoritesBox();
+			} else if (id == 10202) {
+				g_materials.setFavoriteTagColor(clicked_brush->getName(), 0x22C55E);
+				g_materials.saveFavorites();
+				g_gui.RefreshFavoritesBox();
+			} else if (id == 10203) {
+				g_materials.setFavoriteTagColor(clicked_brush->getName(), 0x3B82F6);
+				g_materials.saveFavorites();
+				g_gui.RefreshFavoritesBox();
+			} else if (id == 10204) {
+				g_materials.setFavoriteTagColor(clicked_brush->getName(), 0xF59E0B);
+				g_materials.saveFavorites();
+				g_gui.RefreshFavoritesBox();
+			} else if (id == 10205) {
+				g_materials.setFavoriteTagColor(clicked_brush->getName(), 0xA855F7);
+				g_materials.saveFavorites();
+				g_gui.RefreshFavoritesBox();
+			} else if (id == 10206) {
+				g_materials.setFavoriteTagColor(clicked_brush->getName(), 0x06B6D4);
+				g_materials.saveFavorites();
+				g_gui.RefreshFavoritesBox();
+			} else if (id == 10200) {
+				g_materials.setFavoriteTagColor(clicked_brush->getName(), 0);
+				g_materials.saveFavorites();
+				g_gui.RefreshFavoritesBox();
+			}
+		}
+
+		if (id == 10301) {
+			SetIconSize(RENDER_SIZE_16x16);
+		} else if (id == 10302) {
+			SetIconSize(RENDER_SIZE_32x32);
+		}
+	});
+
+	PopupMenu(&menu);
 }
 
 void BrushIconBox::OnMouseMove(wxMouseEvent& event) {
 	int logical_x, logical_y;
 	CalcUnscrolledPosition(event.GetX(), event.GetY(), &logical_x, &logical_y);
+
+	// Handle Drag threshold
+	if (drag_candidate && !is_dragging_tile) {
+		int dx = abs(event.GetX() - drag_start_mouse_x);
+		int dy = abs(event.GetY() - drag_start_mouse_y);
+		if (dx > 4 || dy > 4) {
+			is_dragging_tile = true;
+			if (!HasCapture()) {
+				CaptureMouse();
+			}
+		}
+	}
+
+	if (is_dragging_tile) {
+		drag_current_point = wxPoint(logical_x, logical_y);
+		drop_target_index = -1;
+
+		for (size_t i = 0; i < item_layout.size(); ++i) {
+			const auto& item = item_layout[i];
+			if (item.is_separator) continue;
+			if (logical_x >= item.x - 6 && logical_x < item.x + item.width + 6 &&
+				logical_y >= item.y && logical_y < item.y + item.height) {
+				drop_target_index = (int)i;
+				break;
+			}
+		}
+		Refresh();
+		return;
+	}
 
 	Brush* hovered = nullptr;
 	for (const auto& item : item_layout) {

@@ -43,6 +43,7 @@
 #include "map_display.h"
 #include "map_window.h"
 #include "map_drawer.h"
+#include "materials.h"
 #include "old_properties_window.h"
 #include "palette_window.h"
 #include "procedural_generator_window.h"
@@ -102,6 +103,7 @@ EVT_MENU(MAP_POPUP_MENU_COPY_SERVER_ID, MapCanvas::OnCopyServerId)
 EVT_MENU(MAP_POPUP_MENU_COPY_CLIENT_ID, MapCanvas::OnCopyClientId)
 EVT_MENU(MAP_POPUP_MENU_COPY_NAME, MapCanvas::OnCopyName)
 // ----
+EVT_MENU(MAP_POPUP_MENU_CHANGE, MapCanvas::OnChangeConnected)
 EVT_MENU(MAP_POPUP_MENU_ROTATE, MapCanvas::OnRotateItem)
 EVT_MENU(MAP_POPUP_MENU_GOTO, MapCanvas::OnGotoDestination)
 EVT_MENU(MAP_POPUP_MENU_SWITCH_DOOR, MapCanvas::OnSwitchDoor)
@@ -120,6 +122,7 @@ EVT_MENU(MAP_POPUP_MENU_SELECT_TABLE_BRUSH, MapCanvas::OnSelectTableBrush)
 EVT_MENU(MAP_POPUP_MENU_SELECT_CREATURE_BRUSH, MapCanvas::OnSelectCreatureBrush)
 EVT_MENU(MAP_POPUP_MENU_SELECT_SPAWN_BRUSH, MapCanvas::OnSelectSpawnBrush)
 EVT_MENU(MAP_POPUP_MENU_SELECT_HOUSE_BRUSH, MapCanvas::OnSelectHouseBrush)
+EVT_MENU(MAP_POPUP_MENU_ADD_FAVORITE, MapCanvas::OnAddFavorite)
 EVT_MENU(MAP_POPUP_MENU_MOVE_TO_TILESET, MapCanvas::OnSelectMoveTo)
 // ----
 EVT_MENU(MAP_POPUP_MENU_PROPERTIES, MapCanvas::OnProperties)
@@ -208,6 +211,12 @@ wxString ResolveBucketIconPath() {
 
   return wxString();
 }
+} // namespace
+
+void MapCanvas::ShowHUDNotification(const std::string& text, uint32_t color) {
+  hud_notification_text = text;
+  hud_notification_time_ms = wxGetLocalTimeMillis().GetValue();
+  hud_notification_color = (color != 0) ? color : 0xFFFBBF24; // Default gold
 }
 
 void MapCanvas::OnKeyDown(wxKeyEvent& event) {
@@ -248,7 +257,20 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
 		return;
 	}
 
-	if (tool_wheel_open && event.GetKeyCode() == WXK_ESCAPE) {
+  if (canvas_context_menu_open && event.GetKeyCode() == WXK_ESCAPE) {
+    canvas_context_menu_open = false;
+    Refresh();
+    return;
+  }
+
+  if (g_gui.IsInChangeMode() && event.GetKeyCode() == WXK_ESCAPE) {
+    g_gui.SetPendingChangeMode(false);
+    g_gui.SetStatusText("Change mode cancelled.");
+    Refresh();
+    return;
+  }
+
+  if (tool_wheel_open && event.GetKeyCode() == WXK_ESCAPE) {
     tool_wheel_open = false;
     Refresh();
     return;
@@ -318,7 +340,21 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     return;
   }
 
-  if (!g_settings.getBoolean(Config::NO_HOTKEYS_MODE) && !event.ControlDown() && (event.GetKeyCode() == 'R' || event.GetKeyCode() == 'r' || event.GetKeyCode() == 'Z' || event.GetKeyCode() == 'z')) {
+  if (!event.ControlDown() && (event.GetKeyCode() == 'R' || event.GetKeyCode() == 'r' || event.GetKeyCode() == 'Z' || event.GetKeyCode() == 'z')) {
+    if (isPasting()) {
+      editor.copybuffer.rotate90(true);
+      if (g_gui.secondary_map) {
+        g_gui.secondary_map->clear();
+        for (MapIterator it = editor.copybuffer.getBufferMap().begin(); it != editor.copybuffer.getBufferMap().end(); ++it) {
+          Tile* t = (*it)->get();
+          if (t) g_gui.secondary_map->setTile(t->getPosition(), t->deepCopy(*g_gui.secondary_map));
+        }
+      }
+      ShowHUDNotification("Rotated Prefab / Stamp 90°", 0xFF38BDF8);
+      Refresh();
+      return;
+    }
+
     Brush* brush = g_gui.GetCurrentBrush();
     if (brush) {
       if (brush->isRaw()) {
@@ -362,7 +398,25 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     }
   }
 
-  if (!event.ControlDown() && !event.AltDown()) {
+  // B Key: Toggle Auto-Bordering with on-screen HUD notification
+  if (!event.ControlDown() && !event.AltDown() && !event.ShiftDown() && (event.GetKeyCode() == 'B' || event.GetKeyCode() == 'b')) {
+    bool current = (g_settings.getInteger(Config::USE_AUTOMAGIC) != 0);
+    bool next_state = !current;
+    g_settings.setInteger(Config::USE_AUTOMAGIC, next_state ? 1 : 0);
+    g_settings.setInteger(Config::BORDER_IS_GROUND, next_state ? 1 : 0);
+    if (next_state) {
+      ShowHUDNotification("Auto-Border: ON (Active)", 0xFF10B981); // Emerald Green
+      g_gui.SetStatusText("Auto-Border: ON (Automatic bordering enabled)");
+    } else {
+      ShowHUDNotification("Auto-Border: OFF (Manual)", 0xFFF59E0B); // Amber Gold
+      g_gui.SetStatusText("Auto-Border: OFF (Manual bordering mode)");
+    }
+    Refresh();
+    return;
+  }
+
+  // Keys 1..7 (Top row and Numpad): Brush Size Quick Keys
+  if (!event.ControlDown() && !event.AltDown() && !event.ShiftDown()) {
     int key = event.GetKeyCode();
     if (key == '1' || key == WXK_NUMPAD1) {
       g_gui.SetBrushSize(0);
@@ -392,7 +446,13 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
       g_gui.SetBrushSize(11);
       Refresh();
       return;
-    } else if (key == WXK_ADD || key == WXK_NUMPAD_ADD || key == '+' || key == '=') {
+    }
+  }
+
+  // Brush Size +/- Quick Keys
+  if (!event.ControlDown() && !event.AltDown()) {
+    int key = event.GetKeyCode();
+    if (key == WXK_ADD || key == WXK_NUMPAD_ADD || key == '+' || key == '=') {
       g_gui.IncreaseBrushSize();
       Refresh();
       return;
@@ -497,6 +557,11 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
   if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
     Refresh();
     return;
+  }
+
+  if (canvas_context_menu_open) {
+    canvas_context_menu_open = false;
+    Refresh();
   }
 
   if (tool_wheel_open) {
@@ -650,18 +715,44 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 
 	if (drawing) {
 		Brush* current_brush = g_gui.GetCurrentBrush();
-		if (event.AltDown() && current_brush && current_brush->isDoodad()) {
-			DoodadBrush* doodad = static_cast<DoodadBrush*>(current_brush);
-			if (doodad->getMaxVariation() > 1) {
-				int current_var = g_gui.GetBrushVariation();
-				int next_var = (current_var + 1) % doodad->getMaxVariation();
-				g_gui.SetBrushVariation(next_var);
+		if (event.AltDown()) {
+			if (current_brush && current_brush->isDoodad()) {
+				DoodadBrush* doodad = static_cast<DoodadBrush*>(current_brush);
+				if (doodad->getMaxVariation() > 1) {
+					int current_var = g_gui.GetBrushVariation();
+					int next_var = (current_var + 1) % doodad->getMaxVariation();
+					g_gui.SetBrushVariation(next_var);
+				} else {
+					g_gui.FillDoodadPreviewBuffer();
+				}
+				dragging_draw = false;
+				CallAfter([this]() { Refresh(); });
+				return;
 			} else {
-				g_gui.FillDoodadPreviewBuffer();
+				// Eyedropper / Pipette tool: Alt + Click on tile picks top item or ground brush
+				Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+				if (tile) {
+					Brush* picked_brush = nullptr;
+					Item* top_item = tile->getTopItem();
+					if (top_item) {
+						picked_brush = top_item->getBrush();
+						if (!picked_brush) picked_brush = top_item->getRAWBrush();
+					}
+					if (!picked_brush && tile->ground) {
+						picked_brush = tile->ground->getGroundBrush();
+						if (!picked_brush) picked_brush = tile->ground->getBrush();
+						if (!picked_brush) picked_brush = tile->ground->getRAWBrush();
+					}
+					if (picked_brush) {
+						g_gui.SelectBrush(picked_brush);
+						ShowHUDNotification("Eyedropper Picked: " + picked_brush->getName(), 0xFF38BDF8);
+						g_gui.SetStatusText("Eyedropper picked '" + wxString(picked_brush->getName()) + "'");
+						dragging_draw = false;
+						CallAfter([this]() { Refresh(); });
+						return;
+					}
+				}
 			}
-			dragging_draw = false;
-			CallAfter([this]() { Refresh(); });
-			return;
 		}
 
     // Live automagic bordering during mouse drag: do not defer borders
@@ -677,6 +768,18 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
         editor.undraw(tilestodraw, tilestoborder, false);
       } else {
         editor.draw(tilestodraw, tilestoborder, false);
+        if (current_brush && current_brush->isWall()) {
+          for (const Position& pos : tilestodraw) {
+            for (int dy = -1; dy <= 1; ++dy) {
+              for (int dx = -1; dx <= 1; ++dx) {
+                Tile* t = editor.map.getTile(pos.x + dx, pos.y + dy, pos.z);
+                if (t) {
+                  WallBrush::doWalls(&editor.map, t);
+                }
+              }
+            }
+          }
+        }
       }
     } else if (!rectangle_mode) {
 			PositionVector tilestodraw;
@@ -931,6 +1034,13 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 	// 	cursor_x, cursor_y, mouse_map_x, mouse_map_y, floor, drawing,
 	// 	g_gui.GetCurrentBrush() ? g_gui.GetCurrentBrush()->getName().c_str() : "nullptr").ToStdString());
 
+	if (g_gui.IsInChangeMode()) {
+		g_gui.SetPendingChangeMode(false);
+		g_gui.SetStatusText("Change mode cancelled.");
+		Refresh();
+		return;
+	}
+
 	last_click_x = int(cursor_x * zoom);
 	last_click_y = int(cursor_y * zoom);
 
@@ -972,9 +1082,11 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 		}
 	}
 
-	popup_menu->Update();
-	PopupMenu(popup_menu);
-	CallAfter([this]() { Refresh(); });
+	canvas_context_menu_open = true;
+	canvas_context_menu_just_opened = true;
+	canvas_context_menu_x = cursor_x;
+	canvas_context_menu_y = cursor_y;
+	Refresh();
 }
 
 void MapCanvas::OnMouseRightRelease(wxMouseEvent& event) {
@@ -1554,7 +1666,10 @@ void MapCanvas::UpdateSmoothZoom() {
 
 bool MapCanvas::IsAnimating() const {
   MapWindow* parent_win = static_cast<MapWindow*>(GetParent());
-  return is_kinetic_scrolling || is_smooth_zooming || (parent_win && parent_win->is_smooth_scrolling);
+  bool scrolling = is_kinetic_scrolling || is_smooth_zooming || (parent_win && parent_win->is_smooth_scrolling);
+  if (scrolling) return true;
+  if (hud_notification_time_ms != 0 && (wxGetLocalTimeMillis().GetValue() - hud_notification_time_ms < 3000)) return true;
+  return false;
 }
 
 
@@ -1783,12 +1898,24 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
     queue.push(start);
     set_visited(start.x, start.y);
 
+    auto tile_has_wall = [&](Tile* t) -> bool {
+      if (!t) return false;
+      for (Item* item : t->items) {
+        if (item && (item->isWall() || g_items[item->getID()].isWall)) return true;
+      }
+      return false;
+    };
+
     while (!queue.empty() && temp_tiles.size() < max_fill_tiles) {
       const Position current = queue.front();
       queue.pop();
 
       Tile *tile = editor.map.getTile(current);
       bool tile_has_ground = (tile != nullptr && tile->ground != nullptr);
+
+      if (is_wall && tile_has_wall(tile)) {
+        continue;
+      }
 
       if (fill_mountain_top) {
         if (tile_has_ground) {
@@ -1815,6 +1942,11 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
         int ny = current.y + dy[i];
         if (nx >= min_x && nx <= max_x && ny >= min_y && ny <= max_y) {
           if (!is_visited(nx, ny)) {
+            Tile* neighbor_tile = editor.map.getTile(nx, ny, current.z);
+            if (is_wall && tile_has_wall(neighbor_tile)) {
+              set_visited(nx, ny);
+              continue;
+            }
             set_visited(nx, ny);
             if (fill_mountain_top) {
               Tile* neighbor_lower = editor.map.getTile(nx, ny, current.z + 1);
@@ -1842,26 +1974,60 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
         component_set.insert(encode(pos.x, pos.y, pos.z));
       }
 
+      std::unordered_set<uint64_t> wall_coords;
       for (const auto& pos : temp_tiles) {
-        bool is_boundary = false;
-        Position neighbors[] = {
-          Position(pos.x - 1, pos.y, pos.z),
-          Position(pos.x + 1, pos.y, pos.z),
-          Position(pos.x, pos.y - 1, pos.z),
-          Position(pos.x, pos.y + 1, pos.z)
-        };
-        for (const auto& neighbor : neighbors) {
-          if (neighbor.x <= 0 || neighbor.y <= 0 || neighbor.x >= map_width || neighbor.y >= map_height) {
-            is_boundary = true;
-            break;
-          }
-          if (component_set.find(encode(neighbor.x, neighbor.y, neighbor.z)) == component_set.end()) {
-            is_boundary = true;
-            break;
-          }
+        Tile* t_north = editor.map.getTile(pos.x, pos.y - 1, pos.z);
+        Tile* t_south = editor.map.getTile(pos.x, pos.y + 1, pos.z);
+        Tile* t_west  = editor.map.getTile(pos.x - 1, pos.y, pos.z);
+        Tile* t_east  = editor.map.getTile(pos.x + 1, pos.y, pos.z);
+
+        bool no_north = (pos.y <= 0 || tile_has_wall(t_north) || component_set.find(encode(pos.x, pos.y - 1, pos.z)) == component_set.end());
+        bool no_south = (pos.y >= map_height - 1 || tile_has_wall(t_south) || component_set.find(encode(pos.x, pos.y + 1, pos.z)) == component_set.end());
+        bool no_west  = (pos.x <= 0 || tile_has_wall(t_west) || component_set.find(encode(pos.x - 1, pos.y, pos.z)) == component_set.end());
+        bool no_east  = (pos.x >= map_width - 1 || tile_has_wall(t_east) || component_set.find(encode(pos.x + 1, pos.y, pos.z)) == component_set.end());
+
+        // North wall on the outer tile (pos.x, pos.y - 1)
+        if (no_north && pos.y > 0) {
+          wall_coords.insert(encode(pos.x, pos.y - 1, pos.z));
         }
-        if (is_boundary) {
-          tilestodraw->push_back(pos);
+        // West wall on the outer tile (pos.x - 1, pos.y)
+        if (no_west && pos.x > 0) {
+          wall_coords.insert(encode(pos.x - 1, pos.y, pos.z));
+        }
+        // South wall on the outer tile (pos.x, pos.y + 1)
+        if (no_south && pos.y + 1 < map_height) {
+          wall_coords.insert(encode(pos.x, pos.y + 1, pos.z));
+        }
+        // East wall on the outer tile (pos.x + 1, pos.y)
+        if (no_east && pos.x + 1 < map_width) {
+          wall_coords.insert(encode(pos.x + 1, pos.y, pos.z));
+        }
+        // North-West outer corner on (pos.x - 1, pos.y - 1)
+        if (no_north && no_west && pos.x > 0 && pos.y > 0) {
+          wall_coords.insert(encode(pos.x - 1, pos.y - 1, pos.z));
+        }
+        // North-East outer corner on (pos.x + 1, pos.y - 1)
+        if (no_north && no_east && pos.x + 1 < map_width && pos.y > 0) {
+          wall_coords.insert(encode(pos.x + 1, pos.y - 1, pos.z));
+        }
+        // South-West outer corner on (pos.x - 1, pos.y + 1)
+        if (no_south && no_west && pos.x > 0 && pos.y + 1 < map_height) {
+          wall_coords.insert(encode(pos.x - 1, pos.y + 1, pos.z));
+        }
+        // South-East outer corner on (pos.x + 1, pos.y + 1)
+        if (no_south && no_east && pos.x + 1 < map_width && pos.y + 1 < map_height) {
+          wall_coords.insert(encode(pos.x + 1, pos.y + 1, pos.z));
+        }
+      }
+
+      for (uint64_t code : wall_coords) {
+        int x = static_cast<int>((code >> 24) & 0xFFFFFF);
+        int y = static_cast<int>(code & 0xFFFFFF);
+        int z = static_cast<int>(code >> 48);
+
+        Tile* existing_tile = editor.map.getTile(x, y, z);
+        if (!tile_has_wall(existing_tile)) {
+          tilestodraw->push_back(Position(x, y, z));
         }
       }
     }
@@ -2080,6 +2246,61 @@ void MapCanvas::ExecuteMagicWandSelect(int mouse_map_x, int mouse_map_y, int flo
     }
   }
 
+  Brush* current_brush = g_gui.GetCurrentBrush();
+  if (current_brush && current_brush->isWall() && !flooded_tiles.empty() && !fill_empty) {
+    // If a WallBrush is active, outline the connected ground perimeter with walls
+    std::unordered_set<uint64_t> component_set;
+    component_set.reserve(flooded_tiles.size());
+    auto encode_pos = [](int x, int y, int z) -> uint64_t {
+      return (static_cast<uint64_t>(z) << 48) |
+             (static_cast<uint64_t>(x & 0xFFFFFF) << 24) |
+              static_cast<uint64_t>(y & 0xFFFFFF);
+    };
+    for (Tile* t : flooded_tiles) {
+      if (t) {
+        component_set.insert(encode_pos(t->getX(), t->getY(), t->getZ()));
+      }
+    }
+
+    PositionVector tilestodraw;
+    PositionVector tilestoborder;
+    for (Tile* t : flooded_tiles) {
+      if (!t) continue;
+      int tx = t->getX();
+      int ty = t->getY();
+      int tz = t->getZ();
+      bool is_boundary = false;
+      Position neighbors[4] = {
+        Position(tx - 1, ty, tz),
+        Position(tx + 1, ty, tz),
+        Position(tx, ty - 1, tz),
+        Position(tx, ty + 1, tz)
+      };
+      for (int ni = 0; ni < 4; ++ni) {
+        const Position& neighbor = neighbors[ni];
+        if (neighbor.x <= 0 || neighbor.y <= 0 || neighbor.x >= map_width || neighbor.y >= map_height) {
+          is_boundary = true;
+          break;
+        }
+        if (component_set.find(encode_pos(neighbor.x, neighbor.y, neighbor.z)) == component_set.end()) {
+          is_boundary = true;
+          break;
+        }
+      }
+      if (is_boundary) {
+        tilestodraw.push_back(Position(tx, ty, tz));
+      }
+    }
+
+    if (!tilestodraw.empty()) {
+      editor.selection.clear();
+      editor.draw(tilestodraw, tilestoborder, false);
+      markDirty();
+      Refresh();
+      return;
+    }
+  }
+
   if (!add_to_selection) {
     editor.selection.clear();
   }
@@ -2119,8 +2340,24 @@ void MapCanvas::ReplaceSelectionWithBrush(Brush* brush) {
   }
 
   if (!tilestodraw.empty()) {
+    if (!brush->isGround()) {
+      editor.destroySelection();
+    } else {
+      editor.selection.clear();
+    }
+
+    g_gui.SelectBrush(brush);
     editor.draw(tilestodraw, tilestoborder, false);
-    editor.selection.clear();
+
+    if (brush->isWall()) {
+      for (const Position& pos : tilestodraw) {
+        Tile* t = editor.map.getTile(pos);
+        if (t) {
+          WallBrush::doWalls(&editor.map, t);
+        }
+      }
+    }
+
     markDirty();
     Refresh();
   }
@@ -2204,7 +2441,7 @@ void AnimationTimer::Notify() {
     if (is_dirty) {
         map_canvas->clearDirty();
     }
-    if (is_dirty || map_canvas->IsAnimating() || map_canvas->GetZoom() < 1.95) {
+    if (is_dirty || map_canvas->IsAnimating()) {
         map_canvas->Refresh(false);
     }
 }
@@ -2334,6 +2571,11 @@ void MapCanvas::OnQuickPing(wxCommandEvent &event) {
   int map_y = last_click_map_y;
   Position pos(map_x, map_y, floor);
 
+  PingFeedback feedback;
+  feedback.pos = pos;
+  feedback.start_time_ms = wxGetLocalTimeMillis().GetValue();
+  active_pings.push_back(feedback);
+
   if (editor.IsLiveClient()) {
     editor.GetLiveClient()->sendPing(pos);
   } else if (editor.IsLiveServer()) {
@@ -2345,6 +2587,7 @@ void MapCanvas::OnQuickPing(wxCommandEvent &event) {
     ping.timestamp = wxGetLocalTimeMillis().GetValue();
     editor.GetLiveServer()->broadcastPing(ping);
   }
+  g_gui.SetStatusText(wxString::Format("Quick Ping placed at (%d, %d, %d)", pos.x, pos.y, pos.z));
   Refresh();
 }
 
@@ -2353,25 +2596,35 @@ void MapCanvas::OnAddAnnotation(wxCommandEvent &event) {
   int map_y = last_click_map_y;
   Position pos(map_x, map_y, floor);
 
-  wxTextEntryDialog dialog(this, "Enter a note / annotation for this map position:", "Add Map Annotation");
-  if (dialog.ShowModal() == wxID_OK) {
-    wxString text = dialog.GetValue();
-    if (!text.IsEmpty()) {
-      if (editor.IsLiveClient()) {
-        editor.GetLiveClient()->sendAddAnnotation(pos, text);
-      } else if (editor.IsLiveServer()) {
+  CallAfter([this, pos]() {
+    wxTextEntryDialog dialog(this, "Enter note text for this map position:", "Add Map Note");
+    if (dialog.ShowModal() == wxID_OK) {
+      wxString text = dialog.GetValue();
+      if (!text.IsEmpty()) {
         static uint32_t nextId = 1;
-        MapAnnotation annotation;
-        annotation.id = nextId++;
-        annotation.pos = pos;
-        annotation.text = text;
-        annotation.author = editor.GetLiveServer()->getName();
-        annotation.color = *wxGREEN;
-        editor.GetLiveServer()->broadcastAnnotation(annotation, false);
+        MapEditor::MapNote note;
+        note.id = nextId++;
+        note.pos = pos;
+        note.text = text;
+        note.author = editor.IsLive() ? editor.GetLiveServer()->getName() : wxString("Mapper");
+        editor.map_notes.push_back(note);
+
+        if (editor.IsLiveClient()) {
+          editor.GetLiveClient()->sendAddAnnotation(pos, text);
+        } else if (editor.IsLiveServer()) {
+          MapAnnotation annotation;
+          annotation.id = note.id;
+          annotation.pos = pos;
+          annotation.text = text;
+          annotation.author = note.author;
+          annotation.color = *wxGREEN;
+          editor.GetLiveServer()->broadcastAnnotation(annotation, false);
+        }
+        g_gui.SetStatusText(wxString::Format("Added Note at (%d, %d, %d): %s", pos.x, pos.y, pos.z, text));
+        Refresh();
       }
-      Refresh();
     }
-  }
+  });
 }
 
 

@@ -145,6 +145,7 @@ MapPropertiesWindow::MapPropertiesWindow(wxWindow* parent, MapTab* view, Editor&
 
 	SetSizerAndFit(topsizer);
 	Centre(wxBOTH);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 	// No need to update protocol list
 }
 
@@ -286,6 +287,7 @@ ImportMapWindow::ImportMapWindow(wxWindow* parent, Editor& editor) :
 	SetSizer(sizer);
 	Layout();
 	Centre(wxBOTH);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 ImportMapWindow::~ImportMapWindow() = default;
@@ -415,6 +417,7 @@ ExportMiniMapWindow::ExportMiniMapWindow(wxWindow* parent, Editor& editor) :
 	Layout();
 	Centre(wxBOTH);
 	CheckValues();
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 ExportMiniMapWindow::~ExportMiniMapWindow() = default;
@@ -572,6 +575,7 @@ ExportTilesetsWindow::ExportTilesetsWindow(wxWindow* parent, Editor& editor) :
 	Layout();
 	Centre(wxBOTH);
 	CheckValues();
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 ExportTilesetsWindow::~ExportTilesetsWindow() = default;
@@ -1215,7 +1219,7 @@ ObjectPropertiesWindowBase::~ObjectPropertiesWindowBase() {
 }
 
 void ObjectPropertiesWindowBase::acquireLock() {
-	if (!edit_tile || !g_gui.GetCurrentEditor()) return;
+	if (!edit_tile || !edit_tile->getLocation() || !g_gui.GetCurrentEditor()) return;
 	Position pos = edit_tile->getPosition();
 	Editor* editor = g_gui.GetCurrentEditor();
 	if (editor->IsLiveClient()) {
@@ -1226,7 +1230,7 @@ void ObjectPropertiesWindowBase::acquireLock() {
 }
 
 void ObjectPropertiesWindowBase::releaseLock() {
-	if (!edit_tile || !g_gui.GetCurrentEditor()) return;
+	if (!edit_tile || !edit_tile->getLocation() || !g_gui.GetCurrentEditor()) return;
 	Position pos = edit_tile->getPosition();
 	Editor* editor = g_gui.GetCurrentEditor();
 	if (editor->IsLiveClient()) {
@@ -1644,6 +1648,7 @@ GotoPositionDialog::GotoPositionDialog(wxWindow* parent, Editor& editor) :
 
 	SetSizerAndFit(sizer);
 	Centre(wxBOTH);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 void GotoPositionDialog::OnClickCancel(wxCommandEvent&) {

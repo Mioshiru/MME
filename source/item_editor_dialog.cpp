@@ -1,21 +1,39 @@
 #include "item_editor_dialog.h"
+#include "style_manager.h"
 #include "find_item_window.h"
+#include "style_manager.h"
 #include "gui.h"
+#include "style_manager.h"
 #include "editor.h"
+#include "style_manager.h"
 #include "items.h"
+#include "style_manager.h"
 #include "graphics.h"
+#include "style_manager.h"
 #include "raw_brush.h"
+#include "style_manager.h"
 #include <wx/stattext.h>
+#include "style_manager.h"
 #include <wx/button.h>
+#include "style_manager.h"
 #include <wx/sizer.h>
+#include "style_manager.h"
 #include <wx/msgdlg.h>
+#include "style_manager.h"
 #include <wx/filedlg.h>
+#include "style_manager.h"
 #include <wx/dcclient.h>
+#include "style_manager.h"
 #include <wx/utils.h>
+#include "style_manager.h"
 #include <wx/clipbrd.h>
+#include "style_manager.h"
 #include <wx/dataobj.h>
+#include "style_manager.h"
 #include <sstream>
+#include "style_manager.h"
 #include <algorithm>
+#include "style_manager.h"
 
 enum {
 	ID_ITEM_SEARCH = wxID_HIGHEST + 800,
@@ -329,6 +347,7 @@ ItemEditorDialog::ItemEditorDialog(wxWindow* parent) :
 	rootSizer->Add(bottomSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 
 	SetSizer(rootSizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 	Layout();
 	CenterOnParent();
 

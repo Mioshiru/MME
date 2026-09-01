@@ -1,11 +1,19 @@
 #include "find_creature_dialog.h"
+#include "style_manager.h"
 #include "tfs_npc_wizard_window.h"
+#include "style_manager.h"
 #include "gui.h"
+#include "style_manager.h"
 #include "creatures.h"
+#include "style_manager.h"
 #include <wx/sizer.h>
+#include "style_manager.h"
 #include <wx/stattext.h>
+#include "style_manager.h"
 #include <wx/button.h>
+#include "style_manager.h"
 #include <algorithm>
+#include "style_manager.h"
 
 enum {
 	ID_FC_SEARCH = wxID_HIGHEST + 900,
@@ -98,6 +106,7 @@ FindCreatureDialog::FindCreatureDialog(wxWindow* parent, const wxString& title) 
 	rootSizer->Add(bottomSizer, 0, wxALIGN_RIGHT | wxALL, 8);
 
 	SetSizer(rootSizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 	Layout();
 	CenterOnParent();
 

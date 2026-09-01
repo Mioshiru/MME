@@ -486,6 +486,15 @@ ProceduralGeneratorDialog::ProceduralGeneratorDialog(wxWindow* parent, Editor& e
 	h_shapeChoice = new wxChoice(housePanel, wxID_ANY, wxDefaultPosition, wxSize(120, -1), shapes);
 	styleChoice(h_shapeChoice);
 	h_shapeChoice->SetSelection(0);
+	h_shapeChoice->Bind(wxEVT_CHOICE, [this](wxCommandEvent&) {
+		UpdatePreview();
+	});
+	h_widthSpin->Bind(wxEVT_SPINCTRL, [this](wxSpinEvent&) {
+		UpdatePreview();
+	});
+	h_heightSpin->Bind(wxEVT_SPINCTRL, [this](wxSpinEvent&) {
+		UpdatePreview();
+	});
 	h_paramGrid->Add(h_shapeChoice, 0, wxALIGN_LEFT);
 
 	addHFieldLabel("Name & Rent:");
@@ -501,13 +510,14 @@ ProceduralGeneratorDialog::ProceduralGeneratorDialog(wxWindow* parent, Editor& e
 
 	addHFieldLabel("Town:");
 	wxArrayString townList;
+	townList.Add("None (No Town)");
 	townList.Add("(Auto-Detect Nearest)");
 	for (TownMap::const_iterator it = editor.map.towns.begin(); it != editor.map.towns.end(); ++it) {
 		if (it->second) {
 			townList.Add(wxString::Format("%s", it->second->getName().c_str()));
 		}
 	}
-	h_townChoice = new wxChoice(housePanel, wxID_ANY, wxDefaultPosition, wxSize(130, -1), townList);
+	h_townChoice = new wxChoice(housePanel, wxID_ANY, wxDefaultPosition, wxSize(140, -1), townList);
 	styleChoice(h_townChoice);
 	h_townChoice->SetSelection(0);
 	h_paramGrid->Add(h_townChoice, 0, wxALIGN_LEFT);
@@ -878,14 +888,40 @@ void ProceduralGeneratorDialog::UpdatePreview() {
 	} else if (mode == 2) {
 		int hw = h_widthSpin->GetValue();
 		int hh = h_heightSpin->GetValue();
+		int shapeSel = h_shapeChoice->GetSelection();
 		int sx = (pw - hw) / 2;
 		int sy = (ph - hh) / 2;
+
+		std::vector<std::vector<bool>> is_inside(ph, std::vector<bool>(pw, false));
+
 		for (int y = sy; y < sy + hh; ++y) {
 			for (int x = sx; x < sx + hw; ++x) {
-				if (x == sx || x == sx + hw - 1 || y == sy || y == sy + hh - 1) {
-					grid[y][x] = 2;
+				if (shapeSel == 1) {
+					// L-Shape: Cut out top-right quadrant
+					if (x >= sx + hw / 2 && y < sy + hh / 2) {
+						continue;
+					}
+				}
+				if (y >= 0 && y < ph && x >= 0 && x < pw) {
+					is_inside[y][x] = true;
+				}
+			}
+		}
+
+		for (int y = sy; y < sy + hh; ++y) {
+			for (int x = sx; x < sx + hw; ++x) {
+				if (!is_inside[y][x]) continue;
+
+				bool is_perimeter = false;
+				if (y == 0 || !is_inside[y - 1][x]) is_perimeter = true;
+				else if (y == ph - 1 || !is_inside[y + 1][x]) is_perimeter = true;
+				else if (x == 0 || !is_inside[y][x - 1]) is_perimeter = true;
+				else if (x == pw - 1 || !is_inside[y][x + 1]) is_perimeter = true;
+
+				if (is_perimeter) {
+					grid[y][x] = 2; // Wall
 				} else {
-					grid[y][x] = 1;
+					grid[y][x] = 1; // Floor
 				}
 			}
 		}
@@ -1149,6 +1185,9 @@ void ProceduralGeneratorDialog::GenerateDungeon(BatchAction* batch, int start_x,
 
 	std::set<Position> touched_positions;
 
+	WallBrush* wb = FindWallBrushForId(wallId);
+	GroundBrush* gb = g_items[floorId].brush ? g_items[floorId].brush->asGround() : nullptr;
+
 	// =========================================================================
 	// PASS 1: PLACE BASE FLOORS AND BASE WALLS & COMMIT TO MAP
 	// =========================================================================
@@ -1164,9 +1203,13 @@ void ProceduralGeneratorDialog::GenerateDungeon(BatchAction* batch, int start_x,
 				Tile* tile = editor.map.getOrCreateTile(pos);
 				if (tile && !IsTileOccupiedByPlayer(tile)) {
 					Tile* newTile = tile->deepCopy(editor.map);
-					Item* gr = Item::Create(floorId);
-					if (gr) {
-						newTile->addItem(gr);
+					if (gb) {
+						gb->draw(&editor.map, newTile, nullptr);
+					} else {
+						Item* gr = Item::Create(floorId);
+						if (gr) {
+							newTile->addItem(gr);
+						}
 					}
 					action1->addChange(newd Change(newTile));
 					touched_positions.insert(pos);
@@ -1175,10 +1218,22 @@ void ProceduralGeneratorDialog::GenerateDungeon(BatchAction* batch, int start_x,
 				Tile* tile = editor.map.getOrCreateTile(pos);
 				if (tile && !IsTileOccupiedByPlayer(tile)) {
 					Tile* newTile = tile->deepCopy(editor.map);
+					if (gb) {
+						gb->draw(&editor.map, newTile, nullptr);
+					} else if (floorId != 0) {
+						Item* gr = Item::Create(floorId);
+						if (gr) {
+							newTile->addItem(gr);
+						}
+					}
 					newTile->cleanWalls();
-					Item* wallItem = Item::Create(wallId);
-					if (wallItem) {
-						newTile->addItem(wallItem);
+					if (wb) {
+						wb->draw(&editor.map, newTile, nullptr);
+					} else {
+						Item* wallItem = Item::Create(wallId);
+						if (wallItem) {
+							newTile->addItem(wallItem);
+						}
 					}
 					action1->addChange(newd Change(newTile));
 					touched_positions.insert(pos);
@@ -1281,6 +1336,8 @@ void ProceduralGeneratorDialog::GenerateCave(BatchAction* batch, int start_x, in
 	}
 
 	std::set<Position> touched_positions;
+	WallBrush* wb = FindWallBrushForId(wallId);
+	GroundBrush* gb = g_items[floorId].brush ? g_items[floorId].brush->asGround() : nullptr;
 
 	// PASS 1: Place Cave Floors & Walls
 	Action* action1 = editor.actionQueue->createAction(batch);
@@ -1295,9 +1352,13 @@ void ProceduralGeneratorDialog::GenerateCave(BatchAction* batch, int start_x, in
 				Tile* tile = editor.map.getOrCreateTile(pos);
 				if (tile && !IsTileOccupiedByPlayer(tile)) {
 					Tile* newTile = tile->deepCopy(editor.map);
-					Item* gr = Item::Create(floorId);
-					if (gr) {
-						newTile->addItem(gr);
+					if (gb) {
+						gb->draw(&editor.map, newTile, nullptr);
+					} else {
+						Item* gr = Item::Create(floorId);
+						if (gr) {
+							newTile->addItem(gr);
+						}
 					}
 					action1->addChange(newd Change(newTile));
 					touched_positions.insert(pos);
@@ -1306,10 +1367,22 @@ void ProceduralGeneratorDialog::GenerateCave(BatchAction* batch, int start_x, in
 				Tile* tile = editor.map.getOrCreateTile(pos);
 				if (tile && !IsTileOccupiedByPlayer(tile)) {
 					Tile* newTile = tile->deepCopy(editor.map);
+					if (gb) {
+						gb->draw(&editor.map, newTile, nullptr);
+					} else if (floorId != 0) {
+						Item* gr = Item::Create(floorId);
+						if (gr) {
+							newTile->addItem(gr);
+						}
+					}
 					newTile->cleanWalls();
-					Item* wItem = Item::Create(wallId);
-					if (wItem) {
-						newTile->addItem(wItem);
+					if (wb) {
+						wb->draw(&editor.map, newTile, nullptr);
+					} else {
+						Item* wItem = Item::Create(wallId);
+						if (wItem) {
+							newTile->addItem(wItem);
+						}
 					}
 					action1->addChange(newd Change(newTile));
 					touched_positions.insert(pos);
@@ -1352,29 +1425,21 @@ void ProceduralGeneratorDialog::GenerateCave(BatchAction* batch, int start_x, in
 void ProceduralGeneratorDialog::GenerateHouse(BatchAction* batch, int center_x, int center_y, int floor) {
 	int w = h_widthSpin->GetValue();
 	int h = h_heightSpin->GetValue();
-	bool isLshape = (h_shapeChoice->GetSelection() == 1);
+	int shapeSel = h_shapeChoice->GetSelection();
 	uint16_t floorId = (uint16_t)h_floorItemSpin->GetValue();
 	uint16_t wallId = (uint16_t)h_wallItemSpin->GetValue();
 
+	WallBrush* wb = FindWallBrushForId(wallId);
+	GroundBrush* gb = g_items[floorId].brush ? g_items[floorId].brush->asGround() : nullptr;
+
 	int x1 = center_x - w / 2;
 	int y1 = center_y - h / 2;
-	int x2 = x1 + w - 1;
-	int y2 = y1 + h - 1;
 
 	uint32_t resolved_town_id = 0;
 	int townSel = h_townChoice->GetSelection();
-	if (townSel > 0) {
-		int idx = 1;
-		for (TownMap::const_iterator it = editor.map.towns.begin(); it != editor.map.towns.end(); ++it) {
-			if (it->second) {
-				if (idx == townSel) {
-					resolved_town_id = it->second->getID();
-					break;
-				}
-				idx++;
-			}
-		}
-	} else {
+	if (townSel == 0) {
+		resolved_town_id = 0; // None (No Town)
+	} else if (townSel == 1) {
 		double minDist = 1e9;
 		for (TownMap::const_iterator it = editor.map.towns.begin(); it != editor.map.towns.end(); ++it) {
 			if (it->second) {
@@ -1386,47 +1451,99 @@ void ProceduralGeneratorDialog::GenerateHouse(BatchAction* batch, int center_x, 
 				}
 			}
 		}
+	} else {
+		int idx = 2;
+		for (TownMap::const_iterator it = editor.map.towns.begin(); it != editor.map.towns.end(); ++it) {
+			if (it->second) {
+				if (idx == townSel) {
+					resolved_town_id = it->second->getID();
+					break;
+				}
+				idx++;
+			}
+		}
 	}
 
-	House* house = newd House(editor.map);
-	house->setID(editor.map.houses.getEmptyID());
-	house->name = h_nameText->GetValue().ToStdString();
-	house->rent = h_rentSpin->GetValue();
-	house->townid = resolved_town_id;
-	editor.map.houses.addHouse(house);
+	House* house = nullptr;
+	if (resolved_town_id != 0 || townSel > 0) {
+		house = newd House(editor.map);
+		house->setID(editor.map.houses.getEmptyID());
+		house->name = h_nameText->GetValue().ToStdString();
+		house->rent = h_rentSpin->GetValue();
+		house->townid = resolved_town_id;
+		editor.map.houses.addHouse(house);
+	}
+
+	std::vector<std::vector<bool>> is_inside(h, std::vector<bool>(w, false));
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			if (shapeSel == 1) {
+				// L-Shape Layout: cut out top-right quadrant
+				if (x >= w / 2 && y < h / 2) {
+					continue;
+				}
+			}
+			is_inside[y][x] = true;
+		}
+	}
+
+	std::vector<std::vector<bool>> is_wall_pos(h, std::vector<bool>(w, false));
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			if (!is_inside[y][x]) continue;
+			if (y == 0 || !is_inside[y - 1][x] ||
+				y == h - 1 || !is_inside[y + 1][x] ||
+				x == 0 || !is_inside[y][x - 1] ||
+				x == w - 1 || !is_inside[y][x + 1]) {
+				is_wall_pos[y][x] = true;
+			}
+		}
+	}
 
 	std::set<Position> touched_positions;
 
 	// PASS 1: Place Floors & Walls
 	Action* action1 = editor.actionQueue->createAction(batch);
 
-	for (int y = y1; y <= y2; ++y) {
-		for (int x = x1; x <= x2; ++x) {
-			if (isLshape && x > x1 + w / 2 && y < y1 + h / 2) {
-				continue;
-			}
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			if (!is_inside[y][x]) continue;
 
-			bool isOuter = (x == x1 || x == x2 || y == y1 || y == y2 ||
-				(isLshape && (x == x1 + w / 2 && y <= y1 + h / 2)) ||
-				(isLshape && (y == y1 + h / 2 && x >= x1 + w / 2)));
-
-			Position pos(x, y, floor);
+			Position pos(x1 + x, y1 + y, floor);
 			Tile* tile = editor.map.getOrCreateTile(pos);
 			if (!tile || IsTileOccupiedByPlayer(tile)) continue;
 
 			Tile* newTile = tile->deepCopy(editor.map);
-			if (isOuter) {
+			if (is_wall_pos[y][x]) {
+				if (gb) {
+					gb->draw(&editor.map, newTile, nullptr);
+				} else if (floorId != 0) {
+					Item* gr = Item::Create(floorId);
+					if (gr) {
+						newTile->addItem(gr);
+					}
+				}
 				newTile->cleanWalls();
-				Item* wItem = Item::Create(wallId);
-				if (wItem) {
-					newTile->addItem(wItem);
+				if (wb) {
+					wb->draw(&editor.map, newTile, nullptr);
+				} else {
+					Item* wItem = Item::Create(wallId);
+					if (wItem) {
+						newTile->addItem(wItem);
+					}
 				}
 			} else {
-				Item* gr = Item::Create(floorId);
-				if (gr) {
-					newTile->addItem(gr);
+				if (gb) {
+					gb->draw(&editor.map, newTile, nullptr);
+				} else if (floorId != 0) {
+					Item* gr = Item::Create(floorId);
+					if (gr) {
+						newTile->addItem(gr);
+					}
 				}
-				newTile->setHouse(house);
+				if (house) {
+					newTile->setHouse(house);
+				}
 			}
 			action1->addChange(newd Change(newTile));
 			touched_positions.insert(pos);

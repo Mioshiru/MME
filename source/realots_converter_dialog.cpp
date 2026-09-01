@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
+#include "style_manager.h"
 #include "realots_converter_dialog.h"
 #include "editor.h"
 #include "map.h"
@@ -256,6 +257,7 @@ RealOTSConverterDialog::RealOTSConverterDialog(wxWindow* parent, Editor* editor)
 
 	SetSizer(main_sizer);
 	Centre();
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 
 	UpdateIdInspector(100, 100, 100, 0);
 }

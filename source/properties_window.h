@@ -19,88 +19,94 @@
 #define RME_PROPERTIES_WINDOW_H_
 
 #include "main.h"
-
-#include "common_windows.h"
+#include <wx/checkbox.h>
+#include <wx/choice.h>
+#include <wx/dialog.h>
+#include <wx/grid.h>
+#include <wx/notebook.h>
+#include <wx/spinctrl.h>
+#include <wx/textctrl.h>
 
 class ContainerItemButton;
-class ContainerItemPopupMenu;
 class ItemAttribute;
+class Tile;
+class Item;
+class Map;
 
-class PropertiesWindow : public ObjectPropertiesWindowBase {
+class PropertiesWindow : public wxDialog {
 public:
-	PropertiesWindow(wxWindow* parent, const Map* map, const Tile* tile, Item* item, wxPoint position = wxDefaultPosition);
-	~PropertiesWindow();
+  PropertiesWindow(wxWindow *parent, const Map *map, const Tile *tile,
+                   Item *item, wxPoint position = wxDefaultPosition);
+  virtual ~PropertiesWindow();
 
-	void OnClickOK(wxCommandEvent&);
-	void OnClickCancel(wxCommandEvent&);
-	void OnClose(wxCloseEvent&);
-	void OnClickAddAttribute(wxCommandEvent&);
-	void OnClickRemoveAttribute(wxCommandEvent&);
-	void OnClickTown(wxCommandEvent&);
+  void OnClickOK(wxCommandEvent &event);
+  void OnClickCancel(wxCommandEvent &event);
+  void OnClose(wxCloseEvent &event);
+  void OnClickAddAttribute(wxCommandEvent &event);
+  void OnClickRemoveAttribute(wxCommandEvent &event);
+  void OnClickTown(wxCommandEvent &event);
+  void OnGridValueChanged(wxGridEvent &event);
 
-	void OnResize(wxSizeEvent&);
-	void OnNotebookPageChanged(wxNotebookEvent&);
-	void OnGridValueChanged(wxGridEvent&);
+  void Update();
 
-	void Update();
-
-protected:
-	// Simple pane
-	wxWindow* createGeneralPanel(wxWindow* parent);
-	void saveGeneralPanel();
-
-	// Container pane
-	std::vector<ContainerItemButton*> container_items;
-	wxWindow* createContainerPanel(wxWindow* parent);
-	void saveContainerPanel();
-
-	// Door Special pane
-	wxChoice* door_type_choice;
-	wxSpinCtrl* door_req_level;
-	wxSpinCtrl* door_action_id;
-	wxSpinCtrl* door_storage_key;
-	wxWindow* createDoorSpecialPanel(wxWindow* parent);
-	void saveDoorSpecialPanel();
-
-	// Container / Quest Chest Special pane
-	wxChoice* chest_mode_choice;
-	wxPanel* chest_quest_panel;
-	wxSpinCtrl* chest_req_level;
-	wxSpinCtrl* chest_action_id;
-	wxTextCtrl* chest_reward_msg;
-	void saveContainerSpecialPanel();
-
-	// Teleporter / Switch Special pane
-	wxSpinCtrl* tele_dest_x;
-	wxSpinCtrl* tele_dest_y;
-	wxSpinCtrl* tele_dest_z;
-	wxWindow* createTeleportSpecialPanel(wxWindow* parent);
-	void saveTeleportSpecialPanel();
-
-	// Advanced pane
-	wxGrid* attributesGrid;
-	wxWindow* createAttributesPanel(wxWindow* parent);
-	void saveAttributesPanel();
-	void SetGridValue(wxGrid* grid, int rowIndex, std::string name, const ItemAttribute& attr);
-
-	// Waypoint pane
-	wxTextCtrl* waypoint_name_field;
-	wxWindow* createWaypointPanel(wxWindow* parent);
-	void saveWaypointPanel();
-	bool validateWaypointPanel();
+  Item *getItemBeingEdited() { return edit_item; }
 
 protected:
-	wxNotebook* notebook;
-	wxWindow* currentPanel;
+  const Map *edit_map = nullptr;
+  const Tile *edit_tile = nullptr;
+  Item *edit_item = nullptr;
 
-	wxSpinCtrl* action_id_field;
-	wxSpinCtrl* unique_id_field;
-	wxSpinCtrl* count_field;
-	wxTextCtrl* text_field;
-	wxChoice* depot_town_field;
-	wxCheckBox* locked_door_checkbox;
+  // Panels
+  wxWindow *createGeneralPanel(wxWindow *parent);
+  void saveGeneralPanel();
 
-	DECLARE_EVENT_TABLE()
+  std::vector<ContainerItemButton *> container_items;
+  wxWindow *createContainerPanel(wxWindow *parent);
+  void saveContainerPanel();
+
+  wxChoice *door_type_choice = nullptr;
+  wxSpinCtrl *door_req_level = nullptr;
+  wxSpinCtrl *door_action_id = nullptr;
+  wxSpinCtrl *door_storage_key = nullptr;
+  wxWindow *createDoorSpecialPanel(wxWindow *parent);
+  void saveDoorSpecialPanel();
+
+  wxChoice *chest_mode_choice = nullptr;
+  wxPanel *chest_quest_panel = nullptr;
+  wxSpinCtrl *chest_req_level = nullptr;
+  wxSpinCtrl *chest_action_id = nullptr;
+  wxTextCtrl *chest_reward_msg = nullptr;
+  void saveContainerSpecialPanel();
+
+  wxSpinCtrl *tele_dest_x = nullptr;
+  wxSpinCtrl *tele_dest_y = nullptr;
+  wxSpinCtrl *tele_dest_z = nullptr;
+  wxWindow *createTeleportSpecialPanel(wxWindow *parent);
+  void saveTeleportSpecialPanel();
+
+  wxGrid *attributesGrid = nullptr;
+  wxWindow *createAttributesPanel(wxWindow *parent);
+  void saveAttributesPanel();
+  void SetGridValue(wxGrid *grid, int rowIndex, std::string name,
+                    const ItemAttribute &attr);
+
+  wxTextCtrl *waypoint_name_field = nullptr;
+  wxWindow *createWaypointPanel(wxWindow *parent);
+  void saveWaypointPanel();
+  bool validateWaypointPanel();
+
+protected:
+  wxNotebook *notebook = nullptr;
+
+  wxSpinCtrl *action_id_field = nullptr;
+  wxSpinCtrl *unique_id_field = nullptr;
+  wxChoice *ore_type_choice = nullptr;
+  wxSpinCtrl *count_field = nullptr;
+  wxTextCtrl *text_field = nullptr;
+  wxChoice *depot_town_field = nullptr;
+  wxCheckBox *locked_door_checkbox = nullptr;
+
+  DECLARE_EVENT_TABLE()
 };
 
 #endif

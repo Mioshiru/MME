@@ -1,4 +1,5 @@
 #include "main.h"
+#include "style_manager.h"
 #include "gui.h"
 #include "about_window.h"
 #include "mme_updater.h"
@@ -243,6 +244,7 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 	SetAcceleratorTable(accel);
 
 	SetSizerAndFit(topsizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 	Centre(wxBOTH);
 }
 

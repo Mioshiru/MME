@@ -191,7 +191,7 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 
 	book->AddPage(CreateGeneralPage(), "General", !clientVersionSelected);
 	book->AddPage(CreateEditorPage(), "Editing");
-	book->AddPage(CreatePerformancePage(), "Graphic");
+	book->AddPage(CreatePerformancePage(), "Graphics");
 	book->AddPage(CreateUIPage(), "Interface");
 	book->AddPage(CreateHotkeysPage(), "Hotkeys");
 
@@ -200,16 +200,16 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 		event.Skip();
 	});
 
-	sizer->Add(book, 1, wxEXPAND | wxALL, 10);
+	sizer->Add(book, 1, wxEXPAND | wxALL, 6);
 
 	wxSizer* subsizer = newd wxBoxSizer(wxHORIZONTAL);
 	subsizer->Add(newd wxButton(this, wxID_OK, "OK"), wxSizerFlags(1).Center());
-	subsizer->Add(newd wxButton(this, wxID_CANCEL, "Cancel"), wxSizerFlags(1).Border(wxALL, 5).Left().Center());
+	subsizer->Add(newd wxButton(this, wxID_CANCEL, "Cancel"), wxSizerFlags(1).Border(wxALL, 4).Left().Center());
 	subsizer->Add(newd wxButton(this, wxID_APPLY, "Apply"), wxSizerFlags(1).Center());
-	sizer->Add(subsizer, 0, wxCENTER | wxLEFT | wxBOTTOM | wxRIGHT, 10);
+	sizer->Add(subsizer, 0, wxCENTER | wxLEFT | wxBOTTOM | wxRIGHT, 6);
 
-	SetMinSize(wxSize(850, 520));
-	SetSize(wxSize(880, 560));
+	SetMinSize(wxSize(720, 460));
+	SetSize(wxSize(740, 480));
 	SetSizer(sizer);
 	RME::UI::StyleManager::ApplyThemeRecursively(this, theme);
 	
@@ -300,9 +300,9 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	startup_sizer->Add(pos_row, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
 
 	startup_panel->SetSizer(startup_sizer);
-	sub_book->AddPage(startup_panel, "Startup & Auto-Save");
+	sub_book->AddPage(startup_panel, "Startup");
 
-	// --- Sub-Tab 2: Client & Assets ---
+	// --- Sub-Tab 2: Assets ---
 	wxPanel* asset_panel = newd wxPanel(sub_book, wxID_ANY);
 	wxBoxSizer* asset_sizer = newd wxBoxSizer(wxVERTICAL);
 
@@ -390,7 +390,7 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 
 	asset_sizer->Add(asset_box, 1, wxEXPAND | wxALL, 10);
 	asset_panel->SetSizer(asset_sizer);
-	sub_book->AddPage(asset_panel, "Client & Assets");
+	sub_book->AddPage(asset_panel, "Assets");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
 
@@ -401,13 +401,13 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 		show_welcome_dialog_chkbox->SetValue(true);
 		always_make_backup_chkbox->SetValue(false);
 		update_check_on_startup_chkbox->SetValue(true);
-		only_one_instance_chkbox->SetValue(true);
+		only_one_instance_chkbox->SetValue(false);
 		enable_tileset_editing_chkbox->SetValue(false);
 		autosave_enabled_chkbox->SetValue(false);
 		autosave_interval_slider->SetValue(10);
 		autosave_interval_slider->Enable(false);
 		autosave_interval_label->SetLabel(" 10 min");
-		check_sigs_chkbox->SetValue(true);
+		check_sigs_chkbox->SetValue(false);
 		position_choice->SetSelection(0);
 	});
 	def_sizer->AddStretchSpacer();
@@ -415,7 +415,6 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	main_sizer->Add(def_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 5);
 
 	general_page->SetSizer(main_sizer);
-
 	return general_page;
 }
 
@@ -427,26 +426,26 @@ wxNotebookPage* PreferencesWindow::CreateEditorPage() {
 	wxBoxSizer* main_sizer = newd wxBoxSizer(wxVERTICAL);
 	wxNotebook* sub_book = newd wxNotebook(editor_page, wxID_ANY);
 
-	// --- Sub-Tab 1: Actions & Warnings ---
+	// --- Sub-Tab 1: Actions ---
 	wxPanel* action_panel = newd wxPanel(sub_book, wxID_ANY);
 	wxBoxSizer* action_sizer = newd wxBoxSizer(wxVERTICAL);
 
-	group_actions_chkbox = newd wxCheckBox(action_panel, wxID_ANY, "Group same-type actions");
+	group_actions_chkbox = newd wxCheckBox(action_panel, wxID_ANY, "Group actions");
 	group_actions_chkbox->SetValue(g_settings.getBoolean(Config::GROUP_ACTIONS));
-	group_actions_chkbox->SetToolTip("This will group actions of the same type (drawing, selection..) when several take place in consecutive order.");
+	group_actions_chkbox->SetToolTip("When grouping is enabled, undo will affect whole strokes instead of single nodes.");
 	action_sizer->Add(group_actions_chkbox, 0, wxLEFT | wxTOP, 12);
 
-	duplicate_id_warn_chkbox = newd wxCheckBox(action_panel, wxID_ANY, "Warn for duplicate IDs");
+	duplicate_id_warn_chkbox = newd wxCheckBox(action_panel, wxID_ANY, "Warn on duplicate item id");
 	duplicate_id_warn_chkbox->SetValue(g_settings.getBoolean(Config::WARN_FOR_DUPLICATE_ID));
-	duplicate_id_warn_chkbox->SetToolTip("Warns for most kinds of duplicate IDs.");
+	duplicate_id_warn_chkbox->SetToolTip("Display a warning dialog when you add an item with an unique id that is already in use.");
 	action_sizer->Add(duplicate_id_warn_chkbox, 0, wxLEFT | wxTOP, 12);
 
-	house_remove_chkbox = newd wxCheckBox(action_panel, wxID_ANY, "House brush removes items");
+	house_remove_chkbox = newd wxCheckBox(action_panel, wxID_ANY, "Confirm house removal");
 	house_remove_chkbox->SetValue(g_settings.getBoolean(Config::HOUSE_BRUSH_REMOVE_ITEMS));
-	house_remove_chkbox->SetToolTip("When checked, the house brush will automatically remove items that respawn every time the map is loaded.");
+	house_remove_chkbox->SetToolTip("Display a confirmation dialog when you try to remove a house from the map.");
 	action_sizer->Add(house_remove_chkbox, 0, wxLEFT | wxTOP, 12);
 
-	auto_assign_doors_chkbox = newd wxCheckBox(action_panel, wxID_ANY, "Auto-assign door ids");
+	auto_assign_doors_chkbox = newd wxCheckBox(action_panel, wxID_ANY, "Auto assign doorid");
 	auto_assign_doors_chkbox->SetValue(g_settings.getBoolean(Config::AUTO_ASSIGN_DOORID));
 	auto_assign_doors_chkbox->SetToolTip("Auto-assigns unique door ids to all doors placed with the door brush or house brush.");
 	action_sizer->Add(auto_assign_doors_chkbox, 0, wxLEFT | wxTOP, 12);
@@ -457,9 +456,9 @@ wxNotebookPage* PreferencesWindow::CreateEditorPage() {
 	action_sizer->Add(allow_multiple_orderitems_chkbox, 0, wxLEFT | wxTOP, 12);
 
 	action_panel->SetSizer(action_sizer);
-	sub_book->AddPage(action_panel, "Actions & Warnings");
+	sub_book->AddPage(action_panel, "Actions");
 
-	// --- Sub-Tab 2: Brushes & Clipboard ---
+	// --- Sub-Tab 2: Brushes ---
 	wxPanel* brush_panel = newd wxPanel(sub_book, wxID_ANY);
 	wxBoxSizer* brush_sizer = newd wxBoxSizer(wxVERTICAL);
 
@@ -489,7 +488,7 @@ wxNotebookPage* PreferencesWindow::CreateEditorPage() {
 	brush_sizer->Add(merge_paste_chkbox, 0, wxLEFT | wxTOP, 12);
 
 	brush_panel->SetSizer(brush_sizer);
-	sub_book->AddPage(brush_panel, "Brushes & Clipboard");
+	sub_book->AddPage(brush_panel, "Brushes");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
 
@@ -527,10 +526,13 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	// --- Sub-Tab 1: Visuals & Rendering ---
 	wxPanel* visual_panel = newd wxPanel(sub_book, wxID_ANY);
 	wxBoxSizer* visual_sizer = newd wxBoxSizer(wxVERTICAL);
-
 	wxStaticBoxSizer* visual_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "Editor Visuals & Rendering");
+	
+	// Row 1: BG Color & WIP Effects side by side
+	wxBoxSizer* top_row = newd wxBoxSizer(wxHORIZONTAL);
+	
 	wxBoxSizer* bg_color_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	bg_color_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "BG Color:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+	bg_color_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "BG Color:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
 	
 	wxArrayString bg_choices;
 	bg_choices.Add("Black");
@@ -547,39 +549,59 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	bg_color_choice->SetSelection(cur_bg);
 	bg_color_choice->SetToolTip("Select the canvas background clear color (no restart required).");
 	bg_color_sizer->Add(bg_color_choice, 0, wxALIGN_CENTER_VERTICAL);
-	visual_group->Add(bg_color_sizer, 0, wxALL, 8);
+	top_row->Add(bg_color_sizer, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 15);
 
-	fake_hd_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "HD Asset Upscaling (xBRZ Edge Reconstruction Filter)");
+	wxStaticBoxSizer* wip_group = newd wxStaticBoxSizer(wxHORIZONTAL, visual_panel, "Enhancements");
+	fake_hd_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Graphic Upgrader (Sattere Fantasy-Farben)");
 	fake_hd_chkbox->SetValue(g_settings.getBoolean(Config::FAKE_HD_ASSETS));
-	fake_hd_chkbox->SetToolTip("Applies real-time 4x/5x xBRZ vector upscaling to smooth 32x32 sprites\nwithout blurring or losing pixel sharpness.");
-	visual_group->Add(fake_hd_chkbox, 0, wxALL, 8);
+	fake_hd_chkbox->SetToolTip("Aktiviert saubere, satte Fantasy-Farbsaettigung und Kontrast ohne Ueberbelichtung.");
+	wip_group->Add(fake_hd_chkbox, 0, wxALL | wxALIGN_CENTER_VERTICAL, 4);
+	top_row->Add(wip_group, 1, wxEXPAND);
+	visual_group->Add(top_row, 0, wxEXPAND | wxALL, 4);
 
-	ambient_effects_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Atmospheric Effects (Wind, Clouds & Ambient Glow)");
-	ambient_effects_chkbox->SetValue(g_settings.getBoolean(Config::AMBIENT_EFFECTS));
-	ambient_effects_chkbox->SetToolTip("Renders world-space cloud shadows, daylight godrays and foliage wind sway.\nDoes not alter tile geometry or borders.");
-	visual_group->Add(ambient_effects_chkbox, 0, wxALL, 8);
+	// 1. Cinematic Color Grading Moods
+	wxBoxSizer* mood_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	mood_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Biome Farbstimmung:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	wxArrayString mood_choices;
+	mood_choices.Add("Vibrant Fantasy RPG (Oberwelt - Standard & Natuerlich)");
+	mood_choices.Add("Dark & Dangerous (Drachen, Untote, Blight & Dungeons)");
+	mood_choices.Add("Gloomy Crypt & Cave (Kuehler Hoehlen-Look)");
+	mood_choices.Add("Golden Sunset & Twilight (Warme Abenddaemmerung)");
+	mood_choices.Add("Frozen Wastes & Frost (Kuehles Eis-Blau)");
+	mood_choices.Add("Neutral / Classic Vanilla (Ungefiltert)");
+	exp_color_grading_choice = newd wxChoice(visual_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, mood_choices);
+	int cur_mood = g_settings.getInteger(Config::EXP_COLOR_GRADING);
+	if (cur_mood < 0 || cur_mood >= static_cast<int>(mood_choices.size())) cur_mood = 0;
+	exp_color_grading_choice->SetSelection(cur_mood);
+	exp_color_grading_choice->SetToolTip("Waehle die atmosphaerische Farbstimmung fuer verschiedene Biome, Dungeons und Gebiete.");
+	mood_sizer->Add(exp_color_grading_choice, 0, wxALIGN_CENTER_VERTICAL);
+	visual_group->Add(mood_sizer, 0, wxALL, 4);
+
+	// 2. Cinematic Vignette
+	wxBoxSizer* vig_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	exp_vignette_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Cinematic Vignette:");
+	exp_vignette_chkbox->SetValue(g_settings.getBoolean(Config::EXP_VIGNETTE));
+	exp_vignette_chkbox->SetToolTip("Sanfte, kreisfoermige Ecken-Abdunklung fuer mehr Tiefe.");
+	vig_sizer->Add(exp_vignette_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 15);
+
+	int cur_vig_lvl = std::clamp(int(std::round(g_settings.getFloat(Config::EXP_VIGNETTE_STRENGTH) * 10.0f)), 1, 10);
+	if (cur_vig_lvl == 0) cur_vig_lvl = 4;
+	exp_vignette_slider = newd wxSlider(visual_panel, wxID_ANY, cur_vig_lvl, 1, 10, wxDefaultPosition, wxSize(160, -1), wxSL_HORIZONTAL | wxSL_AUTOTICKS);
+	vig_sizer->Add(exp_vignette_slider, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	wxStaticText* vig_pct_label = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_vig_lvl, cur_vig_lvl * 10));
+	vig_pct_label->SetForegroundColour(wxColor(255, 205, 50));
+	vig_sizer->Add(vig_pct_label, 0, wxALIGN_CENTER_VERTICAL);
+	exp_vignette_slider->Bind(wxEVT_SLIDER, [vig_pct_label, this](wxCommandEvent&) {
+		int lvl = exp_vignette_slider->GetValue();
+		vig_pct_label->SetLabel(wxString::Format("Level %d (%d%%)", lvl, lvl * 10));
+	});
+	visual_group->Add(vig_sizer, 0, wxALL, 4);
 
 	wxBoxSizer* opacity_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	opacity_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Grid Opacity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
-	grid_opacity_slider = newd wxSlider(visual_panel, wxID_ANY, g_settings.getInteger(Config::GRID_OPACITY), 0, 255);
-	opacity_sizer->Add(grid_opacity_slider, 1, wxEXPAND);
-	visual_group->Add(opacity_sizer, 0, wxEXPAND | wxALL, 8);
-
-	wxBoxSizer* light_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	light_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Global Light Intensity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
-	int cur_light = std::clamp(int(std::round(g_settings.getFloat(Config::LIGHT_INTENSITY) * 10.0f)), 1, 10);
-	if (cur_light == 0) cur_light = 7;
-	light_intensity_slider = newd wxSlider(visual_panel, wxID_ANY, cur_light, 1, 10, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_AUTOTICKS);
-	light_sizer->Add(light_intensity_slider, 1, wxEXPAND | wxRIGHT, 10);
-	wxStaticText* light_label = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_light, cur_light * 10));
-	light_label->SetForegroundColour(wxColor(255, 205, 50));
-	light_label->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	light_sizer->Add(light_label, 0, wxALIGN_CENTER_VERTICAL);
-	light_intensity_slider->Bind(wxEVT_SLIDER, [light_label, this](wxCommandEvent&) {
-		int val = light_intensity_slider->GetValue();
-		light_label->SetLabel(wxString::Format("Level %d (%d%%)", val, val * 10));
-	});
-	visual_group->Add(light_sizer, 0, wxEXPAND | wxALL, 8);
+	grid_opacity_slider = newd wxSlider(visual_panel, wxID_ANY, g_settings.getInteger(Config::GRID_OPACITY), 0, 255, wxDefaultPosition, wxSize(240, -1));
+	opacity_sizer->Add(grid_opacity_slider, 0, wxALIGN_CENTER_VERTICAL);
+	visual_group->Add(opacity_sizer, 0, wxALL, 4);
 
 	wxStaticBoxSizer* scale_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "UI & Icon Scaling (Scale 1 to 10)");
 
@@ -591,21 +613,21 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	wxBoxSizer* slider_row = newd wxBoxSizer(wxHORIZONTAL);
 	slider_row->Add(newd wxStaticText(visual_panel, wxID_ANY, "Scale Level:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 
-	ui_scale_slider = newd wxSlider(visual_panel, wxID_ANY, cur_level, 1, 10, wxDefaultPosition, wxDefaultSize, wxSL_HORIZONTAL | wxSL_AUTOTICKS);
+	ui_scale_slider = newd wxSlider(visual_panel, wxID_ANY, cur_level, 1, 10, wxDefaultPosition, wxSize(240, -1), wxSL_HORIZONTAL | wxSL_AUTOTICKS);
 	ui_scale_slider->SetToolTip("Adjust UI scale from 1 (Smallest / 100%) to 10 (Largest / 170%).");
-	slider_row->Add(ui_scale_slider, 1, wxEXPAND | wxRIGHT, 10);
+	slider_row->Add(ui_scale_slider, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
 
 	ui_scale_level_txt = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_level, 100 + (cur_level - 1) * 70 / 9));
 	ui_scale_level_txt->SetForegroundColour(wxColor(255, 205, 50));
 	ui_scale_level_txt->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	slider_row->Add(ui_scale_level_txt, 0, wxALIGN_CENTER_VERTICAL);
-	scale_group->Add(slider_row, 0, wxEXPAND | wxALL, 6);
+	scale_group->Add(slider_row, 0, wxALL, 3);
 
 	// Interactive Live Preview Panel showing sample palette tiles
 	wxBoxSizer* preview_row = newd wxBoxSizer(wxHORIZONTAL);
 	preview_row->Add(newd wxStaticText(visual_panel, wxID_ANY, "Live Preview:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
 
-	ui_scale_preview_panel = newd wxPanel(visual_panel, wxID_ANY, wxDefaultPosition, wxSize(220, 75));
+	ui_scale_preview_panel = newd wxPanel(visual_panel, wxID_ANY, wxDefaultPosition, wxSize(220, 38));
 	ui_scale_preview_panel->SetBackgroundColour(wxColor(10, 15, 25));
 	ui_scale_preview_panel->Bind(wxEVT_PAINT, [this](wxPaintEvent&) {
 		if (!ui_scale_preview_panel) return;
@@ -617,17 +639,14 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 		int scale_pct = 100 + (level - 1) * 70 / 9;
 		if (scale_pct > 170) scale_pct = 170;
 
-		int btn_w = 36 * scale_pct / 100;
-		int spr_w = 32 * scale_pct / 100;
-		int offset = (btn_w - spr_w) / 2;
+		int btn_w = 30 * scale_pct / 100;
 
 		int start_x = 10;
-		int y = (75 - btn_w) / 2;
+		int y = (38 - btn_w) / 2;
 		if (y < 2) y = 2;
 
 		// Draw 3 preview tiles (Sample Grass, Dirt, Cobblestone)
 		wxColor sample_colors[3] = { wxColor(65, 125, 45), wxColor(120, 85, 45), wxColor(85, 95, 105) };
-		const char* sample_labels[3] = { "Grass", "Dirt", "Stone" };
 
 		for (int i = 0; i < 3; ++i) {
 			int x = start_x + i * (btn_w + 6);
@@ -644,7 +663,6 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 			dc.DrawLine(x + 2, y + 2, x + 2, y + btn_w - 2);
 
 			if (i == 0) {
-				// Highlight selected tile with our new gold & black double frame
 				dc.SetPen(wxPen(wxColor(0, 0, 0), 2, wxSOLID));
 				dc.SetBrush(*wxTRANSPARENT_BRUSH);
 				dc.DrawRectangle(x, y, btn_w, btn_w);
@@ -658,16 +676,16 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 		UpdateScalePreview();
 	});
 
-	preview_row->Add(ui_scale_preview_panel, 1, wxEXPAND);
-	scale_group->Add(preview_row, 0, wxEXPAND | wxALL, 6);
+	preview_row->Add(ui_scale_preview_panel, 0, wxALIGN_CENTER_VERTICAL);
+	scale_group->Add(preview_row, 0, wxALL, 2);
 
-	visual_group->Add(scale_group, 0, wxEXPAND | wxALL, 6);
+	visual_group->Add(scale_group, 0, wxEXPAND | wxALL, 3);
 
-	visual_sizer->Add(visual_group, 1, wxEXPAND | wxALL, 10);
+	visual_sizer->Add(visual_group, 0, wxEXPAND | wxALL, 4);
 	visual_panel->SetSizer(visual_sizer);
-	sub_book->AddPage(visual_panel, "Visuals & Rendering");
+	sub_book->AddPage(visual_panel, "Visuals");
 
-	// --- Sub-Tab 2: Screenshots & Output ---
+	// --- Sub-Tab 2: Screenshots ---
 	wxPanel* screenshot_panel = newd wxPanel(sub_book, wxID_ANY);
 	wxBoxSizer* screenshot_sizer = newd wxBoxSizer(wxVERTICAL);
 
@@ -701,20 +719,20 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 
 	screenshot_sizer->Add(shot_group, 1, wxEXPAND | wxALL, 10);
 	screenshot_panel->SetSizer(screenshot_sizer);
-	sub_book->AddPage(screenshot_panel, "Screenshots & Output");
+	sub_book->AddPage(screenshot_panel, "Screenshots");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
 
 	wxBoxSizer* def_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	wxButton* def_btn = newd wxButton(performance_page, wxID_ANY, "Default");
 	def_btn->SetToolTip("Reset Graphic settings to default values.");
-	def_btn->Bind(wxEVT_BUTTON, [this, light_label](wxCommandEvent&) {
+	def_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
 		if (bg_color_choice) bg_color_choice->SetSelection(0);
 		if (fake_hd_chkbox) fake_hd_chkbox->SetValue(false);
-		if (ambient_effects_chkbox) ambient_effects_chkbox->SetValue(true);
+		if (exp_color_grading_choice) exp_color_grading_choice->SetSelection(0);
+		if (exp_vignette_chkbox) exp_vignette_chkbox->SetValue(false);
+		if (exp_vignette_slider) exp_vignette_slider->SetValue(4);
 		grid_opacity_slider->SetValue(128);
-		light_intensity_slider->SetValue(7);
-		light_label->SetLabel("Level 7 (70%)");
 		ui_scale_slider->SetValue(3);
 		UpdateScalePreview();
 		if (screenshot_format_choice) screenshot_format_choice->SetSelection(0);
@@ -778,20 +796,20 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	wxStaticBoxSizer* theme_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Visual Theme & Cursors");
 	wxString theme_choices[] = { "Dark Mode (Restart required)", "Light Mode" };
 	theme_radio = new wxRadioBox(theme_panel, wxID_ANY, "Visual Theme", wxDefaultPosition, wxDefaultSize, 2, theme_choices, 1, wxRA_SPECIFY_COLS);
-	theme_group->Add(theme_radio, 0, wxALL | wxEXPAND, 5);
+	theme_group->Add(theme_radio, 0, wxALL | wxEXPAND, 3);
 
-	wxFlexGridSizer* color_grid = new wxFlexGridSizer(2, 6, 12);
+	wxFlexGridSizer* color_grid = new wxFlexGridSizer(2, 4, 10);
 	color_grid->Add(new wxStaticText(theme_panel, wxID_ANY, "Cursor Color:"), 0, wxALIGN_CENTER_VERTICAL);
 	cursor_color_pick = new wxColourPickerCtrl(theme_panel, wxID_ANY, wxColor(g_settings.getInteger(Config::CURSOR_RED), g_settings.getInteger(Config::CURSOR_GREEN), g_settings.getInteger(Config::CURSOR_BLUE)));
 	color_grid->Add(cursor_color_pick);
 	color_grid->Add(new wxStaticText(theme_panel, wxID_ANY, "Secondary Cursor:"), 0, wxALIGN_CENTER_VERTICAL);
 	cursor_alt_color_pick = new wxColourPickerCtrl(theme_panel, wxID_ANY, wxColor(g_settings.getInteger(Config::CURSOR_ALT_RED), g_settings.getInteger(Config::CURSOR_ALT_GREEN), g_settings.getInteger(Config::CURSOR_ALT_BLUE)));
 	color_grid->Add(cursor_alt_color_pick);
-	theme_group->Add(color_grid, 0, wxALL, 5);
-	theme_sizer->Add(theme_group, 0, wxEXPAND | wxALL, 8);
+	theme_group->Add(color_grid, 0, wxALL, 3);
+	theme_sizer->Add(theme_group, 0, wxEXPAND | wxALL, 4);
 
 	wxStaticBoxSizer* icon_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Icon Sizing");
-	wxGridSizer* icon_grid = new wxGridSizer(4, 2, 4, 10);
+	wxGridSizer* icon_grid = new wxGridSizer(4, 2, 2, 8);
 
 	large_terrain_tools_chkbox = newd wxCheckBox(theme_panel, wxID_ANY, "Large terrain tool icons");
 	large_terrain_tools_chkbox->SetValue(g_settings.getBoolean(Config::USE_LARGE_TERRAIN_TOOLBAR));
@@ -825,12 +843,12 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	large_pick_item_icons_chkbox->SetValue(g_settings.getBoolean(Config::USE_LARGE_CHOOSE_ITEM_ICONS));
 	icon_grid->Add(large_pick_item_icons_chkbox);
 
-	icon_group->Add(icon_grid, 1, wxEXPAND | wxALL, 5);
-	theme_sizer->Add(icon_group, 1, wxEXPAND | wxALL, 8);
+	icon_group->Add(icon_grid, 0, wxEXPAND | wxALL, 3);
+	theme_sizer->Add(icon_group, 0, wxEXPAND | wxALL, 4);
 	theme_panel->SetSizer(theme_sizer);
-	sub_book->AddPage(theme_panel, "Theme & Icons");
+	sub_book->AddPage(theme_panel, "Theme");
 
-	// --- Sub-Tab 2: Palette Styles ---
+	// --- Sub-Tab 2: Palettes ---
 	wxPanel* palette_panel = newd wxPanel(sub_book, wxID_ANY);
 	wxBoxSizer* palette_box_sizer = newd wxBoxSizer(wxVERTICAL);
 
@@ -854,9 +872,9 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 
 	palette_box_sizer->Add(palette_sizer, 1, wxEXPAND | wxALL, 15);
 	palette_panel->SetSizer(palette_box_sizer);
-	sub_book->AddPage(palette_panel, "Palette Styles");
+	sub_book->AddPage(palette_panel, "Palettes");
 
-	// --- Sub-Tab 3: Navigation & Controls ---
+	// --- Sub-Tab 3: Controls ---
 	wxPanel* ctrl_panel = newd wxPanel(sub_book, wxID_ANY);
 	wxBoxSizer* ctrl_sizer = newd wxBoxSizer(wxVERTICAL);
 
@@ -924,7 +942,7 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	update_mini_label();
 
 	ctrl_panel->SetSizer(ctrl_sizer);
-	sub_book->AddPage(ctrl_panel, "Navigation & Controls");
+	sub_book->AddPage(ctrl_panel, "Controls");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
 
@@ -971,67 +989,108 @@ wxNotebookPage* PreferencesWindow::CreateHotkeysPage() {
 	wxBoxSizer* main_sizer = newd wxBoxSizer(wxVERTICAL);
 	wxNotebook* sub_book = newd wxNotebook(page, wxID_ANY);
 
-	// --- Sub-Tab 1: Navigation & View ---
-	wxPanel* nav_panel = newd wxPanel(sub_book, wxID_ANY);
-	wxBoxSizer* nav_sizer = newd wxBoxSizer(wxVERTICAL);
-
-	wxListCtrl* list1 = newd wxListCtrl(nav_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
-	list1->SetBackgroundColour(book->GetBackgroundColour());
-	list1->SetForegroundColour(book->GetForegroundColour());
-	list1->InsertColumn(0, "Action", wxLIST_FORMAT_LEFT, 360);
-	list1->InsertColumn(1, "Hotkey / Control", wxLIST_FORMAT_LEFT, 300);
-
 	struct HotkeyInfo {
 		wxString action;
 		wxString key;
 	};
 
-	std::vector<HotkeyInfo> nav_keys = {
-		{"Move view (canvas)", "W / A / S / D"},
-		{"Move view (drag)", "Middle Mouse Button Drag"},
-		{"Zoom Map", "Mouse Wheel / Plus / Minus"},
-		{"Open quick Tool Wheel", "Shift + Q"},
-		{"Close Tool Wheel / Dialog", "ESC"},
-		{"Change Floor (Up/Down)", "PageUp / PageDown"}
+	auto create_list = [&](wxPanel* parent, const std::vector<HotkeyInfo>& items) {
+		wxBoxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
+		wxListCtrl* list = newd wxListCtrl(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
+		list->SetBackgroundColour(book->GetBackgroundColour());
+		list->SetForegroundColour(book->GetForegroundColour());
+		list->InsertColumn(0, "Action", wxLIST_FORMAT_LEFT, 340);
+		list->InsertColumn(1, "Hotkey / Control", wxLIST_FORMAT_LEFT, 300);
+
+		for (size_t i = 0; i < items.size(); ++i) {
+			long tmp = list->InsertItem(static_cast<long>(i), items[i].action);
+			list->SetItem(tmp, 1, items[i].key);
+		}
+		sizer->Add(list, 1, wxEXPAND | wxALL, 5);
+		parent->SetSizer(sizer);
 	};
 
-	for (size_t i = 0; i < nav_keys.size(); ++i) {
-		long tmp = list1->InsertItem(static_cast<long>(i), nav_keys[i].action);
-		list1->SetItem(tmp, 1, nav_keys[i].key);
-	}
-	nav_sizer->Add(list1, 1, wxEXPAND | wxALL, 5);
-	nav_panel->SetSizer(nav_sizer);
-	sub_book->AddPage(nav_panel, "Navigation & View");
+	// --- Sub-Tab 1: Navigation & View ---
+	wxPanel* nav_panel = newd wxPanel(sub_book, wxID_ANY);
+	std::vector<HotkeyInfo> nav_keys = {
+		{"Move View (Canvas)", "W / A / S / D  or  Arrow Keys"},
+		{"Move View (Drag)", "Middle Mouse Button Drag"},
+		{"Pan Canvas", "Space + Left Mouse Drag"},
+		{"Zoom In / Out / 100%", "Mouse Wheel  or  Ctrl + + / - / 0"},
+		{"Change Floor (Up / Down)", "PageUp / PageDown"},
+		{"Toggle Minimap (HUD Window)", "M"},
+		{"Show All Floors", "Ctrl + W"},
+		{"Ghost Higher Floors", "Ctrl + L"},
+		{"Shade Lower Floors", "Q"},
+		{"Toggle Fullscreen", "F11"},
+		{"Take Screenshot", "F10"},
+		{"Go to Position", "Ctrl + G"},
+		{"Previous Position", "P"},
+		{"Show Pathing / Blocking", "O"},
+		{"Show Creature Spawns", "S"},
+		{"Show Creatures & NPCs", "F"},
+		{"Show Special Zones / Items", "E"},
+		{"Show Wall Hooks", "K"},
+		{"Show Tooltips", "Y"},
+		{"Highlight Items", "V"},
+		{"Highlight Locked Doors", "U"},
+		{"Ghost Loose Items", "G"},
+		{"Render as 2D Minimap", "Shift + E"}
+	};
+	create_list(nav_panel, nav_keys);
+	sub_book->AddPage(nav_panel, "Navigation");
 
-	// --- Sub-Tab 2: Editing & Files ---
+	// --- Sub-Tab 2: Editing ---
 	wxPanel* edit_panel = newd wxPanel(sub_book, wxID_ANY);
-	wxBoxSizer* edit_sizer = newd wxBoxSizer(wxVERTICAL);
-
-	wxListCtrl* list2 = newd wxListCtrl(edit_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
-	list2->SetBackgroundColour(book->GetBackgroundColour());
-	list2->SetForegroundColour(book->GetForegroundColour());
-	list2->InsertColumn(0, "Action", wxLIST_FORMAT_LEFT, 360);
-	list2->InsertColumn(1, "Hotkey / Control", wxLIST_FORMAT_LEFT, 300);
-
 	std::vector<HotkeyInfo> edit_keys = {
+		{"Undo Action", "Ctrl + Z"},
+		{"Redo Action", "Ctrl + Y  or  Ctrl + Shift + Z"},
+		{"Cut Selection", "Ctrl + X"},
 		{"Copy Selection", "Ctrl + C"},
 		{"Paste Selection", "Ctrl + V"},
-		{"Cut Selection", "Ctrl + X"},
-		{"Delete Selection", "Delete"},
-		{"Undo Action", "Ctrl + Z"},
-		{"Redo Action", "Ctrl + Y"},
+		{"Delete Selection / Item", "Delete"},
+		{"Select All", "Ctrl + A"},
+		{"Deselect / Cancel", "Ctrl + D  or  Escape"},
+		{"Rotate Item / Active Brush / Variation", "Z  or  R"},
+		{"Toggle Border Automagic", "A"},
+		{"Borderize Selection", "Ctrl + B"},
+		{"Brush Size (1x1 to 10x10)", "1, 2, 3, 4, 5, 6, 7, 8, 9, 0"},
+		{"Cycle Variation / Size (Wheel)", "Shift + Mouse Wheel"},
+		{"Quick Tool Wheel", "Shift + Q"},
+		{"Find Item", "Ctrl + F"},
+		{"Replace Items", "Ctrl + Shift + F"},
+		{"Remove Items by ID", "Ctrl + Shift + R"},
 		{"New Map", "Ctrl + N"},
 		{"Open Map", "Ctrl + O"},
-		{"Save Map", "Ctrl + S"}
+		{"Save Map", "Ctrl + S"},
+		{"Map Properties", "Ctrl + P"},
+		{"Map Statistics", "F8"},
+		{"Edit Towns", "Ctrl + T"}
 	};
+	create_list(edit_panel, edit_keys);
+	sub_book->AddPage(edit_panel, "Editing");
 
-	for (size_t i = 0; i < edit_keys.size(); ++i) {
-		long tmp = list2->InsertItem(static_cast<long>(i), edit_keys[i].action);
-		list2->SetItem(tmp, 1, edit_keys[i].key);
-	}
-	edit_sizer->Add(list2, 1, wxEXPAND | wxALL, 5);
-	edit_panel->SetSizer(edit_sizer);
-	sub_book->AddPage(edit_panel, "Editing & Files");
+	// --- Sub-Tab 3: Palettes ---
+	wxPanel* pal_panel = newd wxPanel(sub_book, wxID_ANY);
+	std::vector<HotkeyInfo> pal_keys = {
+		{"Terrain Palette", "T"},
+		{"Doodad Palette", "D"},
+		{"Item Palette", "I"},
+		{"Collection Palette", "N"},
+		{"House Palette", "H"},
+		{"Creature & NPC Palette", "C"},
+		{"Waypoint Palette", "W"},
+		{"RAW Palette", "R"},
+		{"Jump to Brush", "J"},
+		{"Jump to Item (RAW)", "Ctrl + J"},
+		{"Interactive Playtest Mode", "F6"},
+		{"Reload Data Files", "F5"},
+		{"Reload Lua Scripts", "Ctrl + Shift + F5"},
+		{"Extensions / Plugins", "F2"},
+		{"Toggle Single-Letter Hotkeys Mode", "Ctrl + Alt + H"}
+	};
+	create_list(pal_panel, pal_keys);
+	sub_book->AddPage(pal_panel, "Palettes");
 
 	main_sizer->Add(sub_book, 1, wxEXPAND | wxALL, 5);
 
@@ -1144,23 +1203,26 @@ void PreferencesWindow::Apply() {
 	}
 	if (grid_opacity_slider)
 		g_settings.setInteger(Config::GRID_OPACITY, grid_opacity_slider->GetValue());
-	if (light_intensity_slider)
-		g_settings.setFloat(Config::LIGHT_INTENSITY, float(light_intensity_slider->GetValue()) / 10.0f);
 	if (fake_hd_chkbox) {
 		bool old_fake_hd = g_settings.getBoolean(Config::FAKE_HD_ASSETS);
 		bool new_fake_hd = fake_hd_chkbox->GetValue();
 		if (old_fake_hd != new_fake_hd) {
 			g_settings.setInteger(Config::FAKE_HD_ASSETS, new_fake_hd ? 1 : 0);
-			must_restart = true;
+			g_gui.RefreshView();
 		}
 	}
-	if (ambient_effects_chkbox) {
-		bool old_ambient = g_settings.getBoolean(Config::AMBIENT_EFFECTS);
-		bool new_ambient = ambient_effects_chkbox->GetValue();
-		if (old_ambient != new_ambient) {
-			g_settings.setInteger(Config::AMBIENT_EFFECTS, new_ambient ? 1 : 0);
-		}
+
+	// Experimental Graphics
+	if (exp_color_grading_choice) {
+		g_settings.setInteger(Config::EXP_COLOR_GRADING, exp_color_grading_choice->GetSelection());
 	}
+	if (exp_vignette_chkbox) {
+		g_settings.setInteger(Config::EXP_VIGNETTE, exp_vignette_chkbox->GetValue() ? 1 : 0);
+	}
+	if (exp_vignette_slider) {
+		g_settings.setFloat(Config::EXP_VIGNETTE_STRENGTH, float(exp_vignette_slider->GetValue()) / 10.0f);
+	}
+	g_gui.RefreshView();
 
 	// if (g_settings.getInteger(Config::RENDER_BACKEND) != backend_radio->GetSelection()) {
 	// 	g_settings.setInteger(Config::RENDER_BACKEND, backend_radio->GetSelection());

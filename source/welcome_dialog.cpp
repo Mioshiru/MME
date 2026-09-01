@@ -17,6 +17,7 @@
 
 #include "main.h"
 #include "welcome_dialog.h"
+#include "style_manager.h"
 #include "settings.h"
 #include "preferences.h"
 #include "main_menubar.h"
@@ -721,6 +722,9 @@ JoinMultiplayerDialog::JoinMultiplayerDialog(wxWindow* parent) :
 	});
 
 	LoadFavorites();
+
+	// Corporate Design Theme
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 }
 
 wxString JoinMultiplayerDialog::GetHostIP() const {

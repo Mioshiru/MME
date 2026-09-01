@@ -12,6 +12,15 @@
 #include "live_socket.h"
 #include "live_client.h"
 #include "live_peer.h"
+#include "wall_brush.h"
+#include "carpet_brush.h"
+#include "table_brush.h"
+#include "doodad_brush.h"
+#include "brush.h"
+#include "ground_brush.h"
+#include "raw_brush.h"
+#include "spawn_brush.h"
+#include "creature_brush.h"
 #include <cmath>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -1159,6 +1168,164 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		}
 	}
 
+	// Render Pings & Map Notes on the canvas
+	{
+		ImGuiViewport* vp = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(vp->Pos);
+		ImGui::SetNextWindowSize(vp->Size);
+		ImGui::SetNextWindowViewport(vp->ID);
+		ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBringToFrontOnFocus |
+			ImGuiWindowFlags_NoMouseInputs;
+
+		if (ImGui::Begin("##MapNotesOverlay", nullptr, flags)) {
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			int scroll_x = 0, scroll_y = 0;
+			if (GetParent()) {
+				static_cast<MapWindow*>(GetParent())->GetViewStart(&scroll_x, &scroll_y);
+			}
+			int offset = (floor <= 7) ? (7 - floor) * TileSize : 0;
+			uint32_t now_ms = wxGetLocalTimeMillis().GetValue();
+
+			// 1. Render Animated Pings
+			for (auto it = active_pings.begin(); it != active_pings.end();) {
+				float dt = (now_ms - it->start_time_ms) / 1000.0f;
+				if (dt > 2.5f) {
+					it = active_pings.erase(it);
+					continue;
+				}
+
+				if (it->pos.z == floor) {
+					float px = (((it->pos.x * TileSize - scroll_x) - offset) / zoom) + (TileSize * 0.5f / zoom);
+					float py = (((it->pos.y * TileSize - scroll_y) - offset) / zoom) + (TileSize * 0.5f / zoom);
+
+					float progress = dt / 2.5f;
+					float r1 = 8.0f + 45.0f * progress;
+					float r2 = 14.0f + 70.0f * progress;
+					int alpha1 = static_cast<int>(255 * (1.0f - progress));
+					int alpha2 = static_cast<int>(180 * (1.0f - progress));
+
+					draw_list->AddCircle(ImVec2(px, py), r1, IM_COL32(0, 230, 255, alpha1), 32, 2.5f);
+					draw_list->AddCircle(ImVec2(px, py), r2, IM_COL32(255, 215, 0, alpha2), 32, 1.8f);
+					draw_list->AddCircleFilled(ImVec2(px, py), 5.0f, IM_COL32(255, 255, 255, alpha1));
+					draw_list->AddText(ImVec2(px + 8.0f, py - 8.0f), IM_COL32(0, 255, 200, alpha1), "PING");
+				}
+				++it;
+			}
+
+			// 2. Render Map Notes with '!' symbol
+			for (const auto& note : editor.map_notes) {
+				if (note.pos.z != floor) continue;
+
+				float nx = (((note.pos.x * TileSize - scroll_x) - offset) / zoom);
+				float ny = (((note.pos.y * TileSize - scroll_y) - offset) / zoom);
+
+				if (nx < -150 || ny < -50 || nx > vp->Size.x + 150 || ny > vp->Size.y + 50) continue;
+
+				std::string badge_text = "Note: " + std::string(note.text.mb_str());
+				if (badge_text.length() > 36) badge_text = badge_text.substr(0, 33) + "...";
+				ImVec2 tsize = ImGui::CalcTextSize(badge_text.c_str());
+
+				float bx1 = nx;
+				float by1 = ny - tsize.y - 8.0f;
+				float bx2 = bx1 + tsize.x + 28.0f;
+				float by2 = by1 + tsize.y + 8.0f;
+
+				// Background card
+				draw_list->AddRectFilled(ImVec2(bx1, by1), ImVec2(bx2, by2), IM_COL32(15, 23, 42, 235), 4.0f);
+				draw_list->AddRect(ImVec2(bx1, by1), ImVec2(bx2, by2), IM_COL32(245, 158, 11, 240), 4.0f, 0, 1.5f);
+
+				// Amber '!' badge circle
+				float cx = bx1 + 10.0f;
+				float cy = by1 + (by2 - by1) * 0.5f;
+				draw_list->AddCircleFilled(ImVec2(cx, cy), 6.5f, IM_COL32(245, 158, 11, 255));
+				draw_list->AddText(ImVec2(cx - 2.5f, cy - 6.5f), IM_COL32(15, 23, 42, 255), "!");
+				draw_list->AddText(ImVec2(bx1 + 22.0f, by1 + 4.0f), IM_COL32(248, 250, 252, 255), badge_text.c_str());
+			}
+
+			// 3. Render Waypoint Route Paths & Markers
+			std::vector<std::pair<Position, std::string>> current_floor_wps;
+			for (const auto& pair : editor.map.waypoints) {
+				Waypoint* wp = pair.second;
+				if (wp && wp->pos.z == floor) {
+					current_floor_wps.push_back({wp->pos, wp->name});
+				}
+			}
+
+			// Draw connecting route lines between consecutive waypoints
+			if (current_floor_wps.size() >= 2) {
+				for (size_t i = 0; i < current_floor_wps.size() - 1; ++i) {
+					Position p1 = current_floor_wps[i].first;
+					Position p2 = current_floor_wps[i + 1].first;
+
+					float x1 = (((p1.x * TileSize - scroll_x) - offset) / zoom) + (TileSize * 0.5f / zoom);
+					float y1 = (((p1.y * TileSize - scroll_y) - offset) / zoom) + (TileSize * 0.5f / zoom);
+					float x2 = (((p2.x * TileSize - scroll_x) - offset) / zoom) + (TileSize * 0.5f / zoom);
+					float y2 = (((p2.y * TileSize - scroll_y) - offset) / zoom) + (TileSize * 0.5f / zoom);
+
+					// Draw dashed glowing route line
+					draw_list->AddLine(ImVec2(x1, y1), ImVec2(x2, y2), IM_COL32(59, 130, 246, 180), 2.5f);
+				}
+			}
+
+			// Draw Waypoint nodes and labels
+			for (const auto& wp_item : current_floor_wps) {
+				float wx = (((wp_item.first.x * TileSize - scroll_x) - offset) / zoom) + (TileSize * 0.5f / zoom);
+				float wy = (((wp_item.first.y * TileSize - scroll_y) - offset) / zoom) + (TileSize * 0.5f / zoom);
+
+				if (wx < -100 || wy < -50 || wx > vp->Size.x + 100 || wy > vp->Size.y + 50) continue;
+
+				// Glowing node
+				draw_list->AddCircleFilled(ImVec2(wx, wy), 7.0f, IM_COL32(37, 99, 235, 230));
+				draw_list->AddCircle(ImVec2(wx, wy), 9.0f, IM_COL32(147, 197, 253, 255), 16, 1.8f);
+
+				// Waypoint Label
+				std::string wp_name = wp_item.second;
+				ImVec2 wsize = ImGui::CalcTextSize(wp_name.c_str());
+				float lx1 = wx - wsize.x * 0.5f - 4.0f;
+				float ly1 = wy - 22.0f;
+				float lx2 = lx1 + wsize.x + 8.0f;
+				float ly2 = ly1 + wsize.y + 2.0f;
+
+				draw_list->AddRectFilled(ImVec2(lx1, ly1), ImVec2(lx2, ly2), IM_COL32(15, 23, 42, 220), 3.0f);
+				draw_list->AddRect(ImVec2(lx1, ly1), ImVec2(lx2, ly2), IM_COL32(96, 165, 250, 200), 3.0f, 0, 1.0f);
+				draw_list->AddText(ImVec2(lx1 + 4.0f, ly1 + 1.0f), IM_COL32(239, 246, 255, 255), wp_name.c_str());
+			}
+
+			// 4. Render On-Screen HUD Notification (e.g. Auto-Border Toggle)
+			if (!hud_notification_text.empty()) {
+				float elapsed_s = (now_ms - hud_notification_time_ms) / 1000.0f;
+				if (elapsed_s < 2.5f) {
+					float alpha = 1.0f;
+					if (elapsed_s > 1.8f) {
+						alpha = 1.0f - ((elapsed_s - 1.8f) / 0.7f);
+					}
+					int alpha_int = static_cast<int>(255 * alpha);
+
+					ImVec2 txt_sz = ImGui::CalcTextSize(hud_notification_text.c_str());
+					float n_w = txt_sz.x + 32.0f;
+					float n_h = txt_sz.y + 16.0f;
+					float n_x = (vp->Size.x - n_w) * 0.5f;
+					float n_y = 48.0f;
+
+					draw_list->AddRectFilled(ImVec2(n_x, n_y), ImVec2(n_x + n_w, n_y + n_h), IM_COL32(15, 23, 42, (int)(240 * alpha)), 8.0f);
+					uint32_t base_col = (hud_notification_color != 0) ? hud_notification_color : 0xFFFBBF24;
+					ImU32 border_col = IM_COL32((base_col >> 16) & 0xFF, (base_col >> 8) & 0xFF, base_col & 0xFF, alpha_int);
+					draw_list->AddRect(ImVec2(n_x, n_y), ImVec2(n_x + n_w, n_y + n_h), border_col, 8.0f, 0, 2.0f);
+
+					draw_list->AddText(ImVec2(n_x + 16.0f, n_y + 8.0f), border_col, hud_notification_text.c_str());
+				} else {
+					hud_notification_text.clear();
+				}
+			}
+
+			ImGui::End();
+		}
+	}
+
+	RenderCanvasContextMenu();
+
 	ImGui::Render();
 	{
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -1173,6 +1340,305 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	editor.SendNodeRequests();
 	
 	g_gui.RefreshMinimapPanel();
+}
+
+void MapCanvas::RenderCanvasContextMenu() {
+	if (!canvas_context_menu_open) return;
+
+	if (canvas_context_menu_just_opened) {
+		ImGui::OpenPopup("##CorporateCanvasContextMenu");
+		canvas_context_menu_just_opened = false;
+	}
+	ImGui::SetNextWindowPos(ImVec2((float)canvas_context_menu_x, (float)canvas_context_menu_y), ImGuiCond_Appearing);
+
+	// Style colors: Dark Sapphire (#0A1423 / #101C30), Gold (#B49632)
+	ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.06f, 0.10f, 0.18f, 0.97f)); // Deep Sapphire #101C30
+	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.71f, 0.59f, 0.20f, 0.90f));  // Corporate Gold #B49632
+	ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.12f, 0.20f, 0.35f, 0.80f));
+	ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.18f, 0.30f, 0.50f, 0.95f)); // Highlight
+	ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.71f, 0.59f, 0.20f, 0.80f));  // Gold Active
+	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.97f, 1.00f, 1.00f));
+	ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.71f, 0.59f, 0.20f, 0.40f));     // Gold Separator
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 8.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 5.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 6.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 1.5f);
+
+	if (ImGui::BeginPopup("##CorporateCanvasContextMenu")) {
+		bool anything_selected = editor.selection.size() != 0;
+		Tile* sel_tile = anything_selected ? editor.selection.getSelectedTile() : nullptr;
+		if (!sel_tile) {
+			sel_tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
+		}
+
+		Item* topItem = nullptr;
+		Item* topSelectedItem = nullptr;
+		Creature* topCreature = sel_tile ? sel_tile->creature : nullptr;
+		Spawn* topSpawn = sel_tile ? sel_tile->spawn : nullptr;
+		bool hasWall = false;
+		bool hasCarpet = false;
+		bool hasTable = false;
+		bool hasCollection = false;
+		Brush* foundDoodadBrush = nullptr;
+		Brush* foundDoorBrush = nullptr;
+
+		if (sel_tile) {
+			ItemVector selected_items = sel_tile->getSelectedItems();
+			topSelectedItem = (selected_items.size() == 1 ? selected_items.back() : nullptr);
+			for (auto* item : sel_tile->items) {
+				if (item->isWall()) {
+					Brush* wb = item->getWallBrush();
+					if (wb && wb->visibleInPalette()) {
+						hasWall = true;
+						hasCollection = hasCollection || wb->hasCollection();
+					}
+				}
+				if (item->isTable()) {
+					Brush* tb = item->getTableBrush();
+					if (tb && tb->visibleInPalette()) {
+						hasTable = true;
+						hasCollection = hasCollection || tb->hasCollection();
+					}
+				}
+				if (item->isCarpet()) {
+					Brush* cb = item->getCarpetBrush();
+					if (cb && cb->visibleInPalette()) {
+						hasCarpet = true;
+						hasCollection = hasCollection || cb->hasCollection();
+					}
+				}
+				if (Brush* db = item->getDoodadBrush()) {
+					hasCollection = hasCollection || db->hasCollection();
+				}
+				if (item->isSelected()) {
+					topItem = item;
+				}
+			}
+			if (!topItem) topItem = sel_tile->ground;
+			if (topSelectedItem && topSelectedItem->getDoodadBrush()) foundDoodadBrush = topSelectedItem->getDoodadBrush();
+			else {
+				for (auto it = sel_tile->items.rbegin(); it != sel_tile->items.rend(); ++it) {
+					if ((*it)->getDoodadBrush()) { foundDoodadBrush = (*it)->getDoodadBrush(); break; }
+				}
+			}
+			if (topSelectedItem && topSelectedItem->isBrushDoor() && topSelectedItem->getDoorBrush()) foundDoorBrush = topSelectedItem->getDoorBrush();
+			else {
+				for (auto it = sel_tile->items.rbegin(); it != sel_tile->items.rend(); ++it) {
+					if ((*it)->isBrushDoor() && (*it)->getDoorBrush()) { foundDoorBrush = (*it)->getDoorBrush(); break; }
+				}
+			}
+		}
+
+		Item* rotatableItem = topSelectedItem ? topSelectedItem : topItem;
+
+		auto MenuItemStyled = [](const char* label, const char* shortcut, bool enabled = true) -> bool {
+			return ImGui::MenuItem(label, shortcut, false, enabled);
+		};
+
+		// 1. Brush Selection (Primary Quick Pickers at Very Top)
+		bool has_brushes = (hasWall || hasCarpet || hasTable || foundDoodadBrush || foundDoorBrush || topItem || topCreature || topSpawn || (sel_tile && sel_tile->hasGround()));
+		if (has_brushes) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.84f, 0.32f, 1.0f)); // Radiant Gold Accent
+
+			if (sel_tile && sel_tile->hasGround() && sel_tile->getGroundBrush() && sel_tile->getGroundBrush()->visibleInPalette()) {
+				if (MenuItemStyled("Select Groundbrush", "")) {
+					wxCommandEvent ev; OnSelectGroundBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (hasWall) {
+				if (MenuItemStyled("Select Wallbrush", "")) {
+					wxCommandEvent ev; OnSelectWallBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (foundDoodadBrush && foundDoodadBrush->visibleInPalette()) {
+				if (MenuItemStyled("Select Doodadbrush", "")) {
+					wxCommandEvent ev; OnSelectDoodadBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (foundDoorBrush) {
+				if (MenuItemStyled("Select Doorbrush", "")) {
+					wxCommandEvent ev; OnSelectDoorBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (hasCarpet) {
+				if (MenuItemStyled("Select Carpetbrush", "")) {
+					wxCommandEvent ev; OnSelectCarpetBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (hasTable) {
+				if (MenuItemStyled("Select Tablebrush", "")) {
+					wxCommandEvent ev; OnSelectTableBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (topCreature) {
+				if (MenuItemStyled("Select Creature", "")) {
+					wxCommandEvent ev; OnSelectCreatureBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (topSpawn) {
+				if (MenuItemStyled("Select Spawn", "")) {
+					wxCommandEvent ev; OnSelectSpawnBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (topItem) {
+				if (MenuItemStyled("Select RAW Brush", "")) {
+					wxCommandEvent ev; OnSelectRAWBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			if (hasCollection || (topSelectedItem && topSelectedItem->hasCollectionBrush()) || (sel_tile && sel_tile->getGroundBrush() && sel_tile->getGroundBrush()->hasCollection())) {
+				if (MenuItemStyled("Select Collection", "")) {
+					wxCommandEvent ev; OnSelectCollectionBrush(ev);
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+			}
+			ImGui::PopStyleColor();
+			ImGui::Separator();
+		}
+
+		// 2. Edit actions
+		if (anything_selected) {
+			if (MenuItemStyled("Cut", "Ctrl+X")) {
+				wxCommandEvent ev; OnCut(ev);
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+			}
+			if (MenuItemStyled("Copy", "Ctrl+C")) {
+				wxCommandEvent ev; OnCopy(ev);
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+			}
+		}
+		if (editor.copybuffer.canPaste()) {
+			if (MenuItemStyled("Paste", "Ctrl+V")) {
+				wxCommandEvent ev; OnPaste(ev);
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+			}
+		}
+		if (anything_selected) {
+			if (MenuItemStyled("Delete", "Del")) {
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnDelete(ev); });
+			}
+			ImGui::Separator();
+		}
+
+		// 3. Transform actions
+		if (sel_tile && (sel_tile->hasGround() || !sel_tile->empty())) {
+			if (MenuItemStyled("Change Connected", "Alt+C")) {
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnChangeConnected(ev); });
+			}
+		}
+		if (rotatableItem && rotatableItem->isRoteable()) {
+			if (MenuItemStyled("Rotate Item", "Z")) {
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnRotateItem(ev); });
+			}
+		}
+
+		bool can_use = false;
+		if (topSelectedItem) {
+			if (topSelectedItem->isBrushDoor() || getItemUseSwitchID(topSelectedItem) != 0 || topSelectedItem->isContainer()) can_use = true;
+		} else if (topItem) {
+			if (topItem->isBrushDoor() || getItemUseSwitchID(topItem) != 0 || topItem->isContainer()) can_use = true;
+		}
+		if (can_use) {
+			if (MenuItemStyled("Use / Toggle Door", "Space")) {
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnSwitchDoor(ev); });
+			}
+		}
+
+		// 4. Tools & Properties
+		ImGui::Separator();
+
+		int note_to_delete_id = -1;
+		Position click_note_pos(last_click_map_x, last_click_map_y, floor);
+		if (sel_tile) click_note_pos = sel_tile->getPosition();
+		for (const auto& note : editor.map_notes) {
+			if (note.pos == click_note_pos) {
+				note_to_delete_id = static_cast<int>(note.id);
+				break;
+			}
+		}
+
+		if (note_to_delete_id != -1) {
+			if (MenuItemStyled("Delete Note", "")) {
+				uint32_t nid = static_cast<uint32_t>(note_to_delete_id);
+				auto it = std::remove_if(editor.map_notes.begin(), editor.map_notes.end(), [nid](const MapEditor::MapNote& n) { return n.id == nid; });
+				editor.map_notes.erase(it, editor.map_notes.end());
+
+				if (editor.IsLiveClient()) {
+					editor.GetLiveClient()->sendRemoveAnnotation(nid);
+				} else if (editor.IsLiveServer()) {
+					MapAnnotation ann;
+					ann.id = nid;
+					editor.GetLiveServer()->broadcastAnnotation(ann, true);
+				}
+				g_gui.SetStatusText(wxString::Format("Note #%d deleted.", nid));
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				Refresh();
+			}
+		}
+
+		if (MenuItemStyled("Add Map Note", "")) {
+			canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+			wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnAddAnnotation(ev); });
+		}
+		if (MenuItemStyled("Quick Ping Location", "")) {
+			canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+			wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnQuickPing(ev); });
+		}
+
+		Town* clicked_town = nullptr;
+		if (sel_tile) {
+			Position click_pos = sel_tile->getPosition();
+			for (const auto& pair : editor.map.towns) {
+				if (pair.second->getTemplePosition() == click_pos) {
+					clicked_town = pair.second;
+					break;
+				}
+			}
+		}
+		if (clicked_town) {
+			if (MenuItemStyled("Edit Town", "")) {
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnEditTown(ev); });
+			}
+		} else {
+			if (MenuItemStyled("Create Town Here", "")) {
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnCreateTown(ev); });
+			}
+		}
+
+		if (sel_tile && (sel_tile->hasGround() || topSelectedItem || topItem || topCreature || topSpawn)) {
+			ImGui::Separator();
+			if (MenuItemStyled("⭐ Add to Favorites", "")) {
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnAddFavorite(ev); });
+			}
+			if (MenuItemStyled("Attributes", "Alt+Enter")) {
+				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnProperties(ev); });
+			}
+		}
+
+		ImGui::EndPopup();
+	} else {
+		canvas_context_menu_open = false;
+	}
+
+	ImGui::PopStyleVar(4);
+	ImGui::PopStyleColor(7);
 }
 
 int MapCanvas::GetHoveredRadialSlice() const {

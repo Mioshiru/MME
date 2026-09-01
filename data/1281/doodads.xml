@@ -17352,4 +17352,66 @@
 		<carpet align="dse"    id="23135"/>
 		<carpet align="dsw"    id="23136"/>
 	</brush>
+
+	<brush name="cw chest brown (closed)" type="doodad" server_lookid="2470">
+		<item id="2470" chance="10"/>
+	</brush>
+	<brush name="cw chest brown (open)" type="doodad" server_lookid="2471">
+		<item id="2471" chance="10"/>
+	</brush>
+	<brush name="cw chest red (closed)" type="doodad" server_lookid="2472">
+		<item id="2472" chance="10"/>
+	</brush>
+	<brush name="cw chest red (open)" type="doodad" server_lookid="2473">
+		<item id="2473" chance="10"/>
+	</brush>
+	<brush name="cw chest blue (closed)" type="doodad" server_lookid="2474">
+		<item id="2474" chance="10"/>
+	</brush>
+	<brush name="cw chest blue (open)" type="doodad" server_lookid="2475">
+		<item id="2475" chance="10"/>
+	</brush>
+	<brush name="cw chest green (closed)" type="doodad" server_lookid="2476">
+		<item id="2476" chance="10"/>
+	</brush>
+	<brush name="cw chest green (open)" type="doodad" server_lookid="2477">
+		<item id="2477" chance="10"/>
+	</brush>
+	<brush name="cw tree green (large)" type="doodad" server_lookid="2700" draggable="false" on_blocking="true">
+		<item id="2700" chance="10"/>
+	</brush>
+	<brush name="cw tree autumn (large)" type="doodad" server_lookid="2701" draggable="false" on_blocking="true">
+		<item id="2701" chance="10"/>
+	</brush>
+	<brush name="cw tree red (large)" type="doodad" server_lookid="2702" draggable="false" on_blocking="true">
+		<item id="2702" chance="10"/>
+	</brush>
+	<brush name="cw tree green (small)" type="doodad" server_lookid="2707" draggable="false" on_blocking="true">
+		<item id="2707" chance="10"/>
+	</brush>
+	<brush name="cw tree autumn (small)" type="doodad" server_lookid="2708" draggable="false" on_blocking="true">
+		<item id="2708" chance="10"/>
+	</brush>
+	<brush name="cw tree red (small)" type="doodad" server_lookid="2711" draggable="false" on_blocking="true">
+		<item id="2711" chance="10"/>
+	</brush>
+	<brush name="cw forest flowers" type="doodad" server_lookid="4152" draggable="true" thickness="25/100">
+		<item id="4152" chance="10"/>
+		<item id="4153" chance="10"/>
+		<item id="4154" chance="10"/>
+	</brush>
+	<brush name="cw forest mushrooms" type="doodad" server_lookid="2791" draggable="true" thickness="25/100">
+		<item id="2791" chance="10"/>
+		<item id="2792" chance="10"/>
+		<item id="2793" chance="10"/>
+	</brush>
+	<brush name="cw forest rocks" type="doodad" server_lookid="1285" draggable="false" on_blocking="true">
+		<item id="1285" chance="10"/>
+		<item id="1286" chance="10"/>
+	</brush>
+	<brush name="cw forest bushes" type="doodad" server_lookid="2767" draggable="false" on_blocking="true">
+		<item id="2767" chance="10"/>
+		<item id="2768" chance="10"/>
+	</brush>
+
 </materials>

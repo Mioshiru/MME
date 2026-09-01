@@ -249,6 +249,23 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	position_toolbar->AddSeparator();
 	position_toolbar->AddTool(TOOLBAR_LIGHT_TOGGLE, "Day/Night", day_night_bitmap, wxNullBitmap, wxITEM_CHECK, "Toggle Day / Night Lighting View (Shift+L)", wxEmptyString, NULL);
 
+	int cur_intensity = int(g_settings.getFloat(Config::LIGHT_INTENSITY) * 100.0f);
+	if (cur_intensity <= 0) cur_intensity = 50;
+
+	light_slider = new wxSlider(position_toolbar, TOOLBAR_LIGHT_INTENSITY, cur_intensity, 10, 100, wxDefaultPosition, FROM_DIP(parent, wxSize(80, -1)), wxSL_HORIZONTAL);
+	light_slider->SetToolTip("Night Light Intensity (10% - 100%)");
+	light_slider->SetBackgroundColour(wxColour(18, 32, 54));
+	light_slider->Bind(wxEVT_SLIDER, [this](wxCommandEvent&) {
+		float val = float(light_slider->GetValue()) / 100.0f;
+		g_settings.setFloat(Config::LIGHT_INTENSITY, val);
+		g_gui.RefreshView();
+	});
+
+	position_toolbar->AddControl(light_slider);
+	bool show_lights = g_settings.getBoolean(Config::SHOW_LIGHTS);
+	light_slider->Show(show_lights);
+	light_slider->Enable(show_lights);
+
 	position_toolbar->Realize();
 
 	wxBitmap circular_bitmap = wxArtProvider::GetBitmap(ART_CIRCULAR, wxART_TOOLBAR, icon_size);
@@ -324,9 +341,19 @@ void MainToolBar::UpdateButtons() {
 			SetFloor(g_gui.GetCurrentFloor());
 		}
 	}
+	bool show_lights = g_settings.getBoolean(Config::SHOW_LIGHTS);
 	if (position_toolbar && position_toolbar->FindTool(TOOLBAR_LIGHT_TOGGLE)) {
 		position_toolbar->EnableTool(TOOLBAR_LIGHT_TOGGLE, has_map);
-		position_toolbar->ToggleTool(TOOLBAR_LIGHT_TOGGLE, g_settings.getBoolean(Config::SHOW_LIGHTS));
+		position_toolbar->ToggleTool(TOOLBAR_LIGHT_TOGGLE, show_lights);
+	}
+	if (light_slider) {
+		light_slider->Show(has_map && show_lights);
+		light_slider->Enable(has_map && show_lights);
+		int cur_val = int(g_settings.getFloat(Config::LIGHT_INTENSITY) * 100.0f);
+		if (cur_val >= 10 && cur_val <= 100) {
+			light_slider->SetValue(cur_val);
+		}
+		position_toolbar->Realize();
 	}
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_CIRCULAR, has_map);
 	sizes_toolbar->EnableTool(TOOLBAR_SIZES_RECTANGULAR, has_map);
@@ -601,6 +628,11 @@ void MainToolBar::OnPositionButtonClick(wxCommandEvent& event) {
 		g_settings.setInteger(Config::SHOW_LIGHTS, next_val ? 1 : 0);
 		if (position_toolbar && position_toolbar->FindTool(TOOLBAR_LIGHT_TOGGLE)) {
 			position_toolbar->ToggleTool(TOOLBAR_LIGHT_TOGGLE, next_val);
+		}
+		if (light_slider) {
+			light_slider->Show(next_val);
+			light_slider->Enable(next_val);
+			position_toolbar->Realize();
 		}
 		g_gui.RefreshView();
 	}

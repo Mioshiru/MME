@@ -908,6 +908,33 @@ wxBitmap *GameSprite::getBitmap(SpriteSize size, bool count100) {
       image.Rescale(new_size, new_size);
     }
 
+    if (g_settings.getBoolean(Config::FAKE_HD_ASSETS)) {
+      // Modern Pixel Art Palette enhancement (S-curve contrast & vibrance for palette previews)
+      unsigned char* rgb = image.GetData();
+      if (rgb) {
+        int total_pixels = image.GetWidth() * image.GetHeight();
+        for (int p = 0; p < total_pixels; ++p) {
+          float r = rgb[p * 3 + 0] / 255.0f;
+          float g = rgb[p * 3 + 1] / 255.0f;
+          float b = rgb[p * 3 + 2] / 255.0f;
+          if (rgb[p * 3 + 0] == 0xFF && rgb[p * 3 + 1] == 0x00 && rgb[p * 3 + 2] == 0xFF) continue; // Mask color
+          float lum = 0.299f * r + 0.587f * g + 0.114f * b;
+          float maxC = std::max(r, std::max(g, b));
+          float minC = std::min(r, std::min(g, b));
+          float sat = maxC - minC;
+          r = lum + (r - lum) * (1.22f + (1.0f - sat) * 0.18f);
+          g = lum + (g - lum) * (1.22f + (1.0f - sat) * 0.18f);
+          b = lum + (b - lum) * (1.22f + (1.0f - sat) * 0.18f);
+          r = std::clamp((r - 0.5f) * 1.08f + 0.5f, 0.0f, 1.0f);
+          g = std::clamp((g - 0.5f) * 1.08f + 0.5f, 0.0f, 1.0f);
+          b = std::clamp((b - 0.5f) * 1.08f + 0.5f, 0.0f, 1.0f);
+          rgb[p * 3 + 0] = static_cast<unsigned char>(r * 255.0f);
+          rgb[p * 3 + 1] = static_cast<unsigned char>(g * 255.0f);
+          rgb[p * 3 + 2] = static_cast<unsigned char>(b * 255.0f);
+        }
+      }
+    }
+
     target_bm = newd wxBitmap(image);
     g_gui.gfx.addSpriteToCleanup(this);
     image.Destroy();
@@ -1024,6 +1051,207 @@ void GameSprite::unloadDC() {
   bm_100[SPRITE_SIZE_32x32] = nullptr;
 }
 
+namespace {
+
+inline float ColorDistance(uint32_t c1, uint32_t c2) {
+    if (c1 == c2) return 0.0f;
+    uint32_t r1 = c1 & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = (c1 >> 16) & 0xFF, a1 = (c1 >> 24) & 0xFF;
+    uint32_t r2 = c2 & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = (c2 >> 16) & 0xFF, a2 = (c2 >> 24) & 0xFF;
+    if (a1 < 10 && a2 < 10) return 0.0f;
+    if (a1 < 10 || a2 < 10) return 2.0f;
+    float y1 = 0.299f * r1 + 0.587f * g1 + 0.114f * b1;
+    float y2 = 0.299f * r2 + 0.587f * g2 + 0.114f * b2;
+    float u1 = (float)r1 - (float)b1, u2 = (float)r2 - (float)b2;
+    float v1 = (float)g1 - (float)b1, v2 = (float)g2 - (float)b2;
+    return (std::abs(y1 - y2) * 0.75f + (std::abs(u1 - u2) + std::abs(v1 - v2)) * 0.25f) / 255.0f + std::abs((int)a1 - (int)a2) / 255.0f * 0.5f;
+}
+
+inline uint32_t BlendColor(uint32_t c1, uint32_t c2, float alpha_mix = 0.5f) {
+    uint32_t r1 = c1 & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = (c1 >> 16) & 0xFF, a1 = (c1 >> 24) & 0xFF;
+    uint32_t r2 = c2 & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = (c2 >> 16) & 0xFF, a2 = (c2 >> 24) & 0xFF;
+    if (a1 < 10) return c2;
+    if (a2 < 10) return c1;
+    uint32_t r = static_cast<uint32_t>(r1 * (1.0f - alpha_mix) + r2 * alpha_mix);
+    uint32_t g = static_cast<uint32_t>(g1 * (1.0f - alpha_mix) + g2 * alpha_mix);
+    uint32_t b = static_cast<uint32_t>(b1 * (1.0f - alpha_mix) + b2 * alpha_mix);
+    uint32_t a = static_cast<uint32_t>(a1 * (1.0f - alpha_mix) + a2 * alpha_mix);
+    return (r & 0xFF) | ((g & 0xFF) << 8) | ((b & 0xFF) << 16) | ((a & 0xFF) << 24);
+}
+
+// Pass 1: 32x32 -> 64x64 (Multi-Slope Directional xBRZ)
+void UpscalePass_32to64(const uint32_t* src32, uint32_t* dst64) {
+    constexpr int W = 32;
+    constexpr int H = 32;
+    constexpr int W2 = 64;
+
+    auto get_pixel = [&](int x, int y) -> uint32_t {
+        x = std::clamp(x, 0, W - 1);
+        y = std::clamp(y, 0, H - 1);
+        return src32[y * W + x];
+    };
+
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            uint32_t E = get_pixel(x, y);
+            uint32_t B = get_pixel(x, y - 1);
+            uint32_t D = get_pixel(x - 1, y);
+            uint32_t F = get_pixel(x + 1, y);
+            uint32_t H_pix = get_pixel(x, y + 1);
+
+            uint32_t E0 = E;
+            uint32_t E1 = E;
+            uint32_t E2 = E;
+            uint32_t E3 = E;
+
+            if (!(B == D && D == F && F == H_pix && H_pix == E)) {
+                uint32_t A = get_pixel(x - 1, y - 1);
+                uint32_t C = get_pixel(x + 1, y - 1);
+                uint32_t G = get_pixel(x - 1, y + 1);
+                uint32_t I = get_pixel(x + 1, y + 1);
+                uint32_t B1 = get_pixel(x, y - 2);
+                uint32_t D1 = get_pixel(x - 2, y);
+                uint32_t F1 = get_pixel(x + 2, y);
+                uint32_t H1 = get_pixel(x, y + 2);
+
+                // Top-Left (E0)
+                float d_edge_0 = ColorDistance(D, B);
+                float d_diag_0 = ColorDistance(A, E);
+                if (d_edge_0 < d_diag_0 && (ColorDistance(E, D) < 0.15f || ColorDistance(E, B) < 0.15f || d_edge_0 < 0.35f)) {
+                    uint32_t edgeCol = BlendColor(D, B, 0.5f);
+                    if (ColorDistance(D1, B) < ColorDistance(D1, E)) {
+                        E0 = BlendColor(E, edgeCol, 0.70f);
+                    } else if (ColorDistance(D, B1) < ColorDistance(E, B1)) {
+                        E0 = BlendColor(E, edgeCol, 0.70f);
+                    } else {
+                        E0 = BlendColor(E, edgeCol, 0.55f);
+                    }
+                }
+
+                // Top-Right (E1)
+                float d_edge_1 = ColorDistance(B, F);
+                float d_diag_1 = ColorDistance(C, E);
+                if (d_edge_1 < d_diag_1 && (ColorDistance(E, B) < 0.15f || ColorDistance(E, F) < 0.15f || d_edge_1 < 0.35f)) {
+                    uint32_t edgeCol = BlendColor(B, F, 0.5f);
+                    if (ColorDistance(B1, F) < ColorDistance(B1, E)) {
+                        E1 = BlendColor(E, edgeCol, 0.70f);
+                    } else if (ColorDistance(B, F1) < ColorDistance(E, F1)) {
+                        E1 = BlendColor(E, edgeCol, 0.70f);
+                    } else {
+                        E1 = BlendColor(E, edgeCol, 0.55f);
+                    }
+                }
+
+                // Bottom-Left (E2)
+                float d_edge_2 = ColorDistance(D, H_pix);
+                float d_diag_2 = ColorDistance(G, E);
+                if (d_edge_2 < d_diag_2 && (ColorDistance(E, D) < 0.15f || ColorDistance(E, H_pix) < 0.15f || d_edge_2 < 0.35f)) {
+                    uint32_t edgeCol = BlendColor(D, H_pix, 0.5f);
+                    if (ColorDistance(D1, H_pix) < ColorDistance(D1, E)) {
+                        E2 = BlendColor(E, edgeCol, 0.70f);
+                    } else if (ColorDistance(D, H1) < ColorDistance(E, H1)) {
+                        E2 = BlendColor(E, edgeCol, 0.70f);
+                    } else {
+                        E2 = BlendColor(E, edgeCol, 0.55f);
+                    }
+                }
+
+                // Bottom-Right (E3)
+                float d_edge_3 = ColorDistance(H_pix, F);
+                float d_diag_3 = ColorDistance(I, E);
+                if (d_edge_3 < d_diag_3 && (ColorDistance(E, H_pix) < 0.15f || ColorDistance(E, F) < 0.15f || d_edge_3 < 0.35f)) {
+                    uint32_t edgeCol = BlendColor(H_pix, F, 0.5f);
+                    if (ColorDistance(H1, F) < ColorDistance(H1, E)) {
+                        E3 = BlendColor(E, edgeCol, 0.70f);
+                    } else if (ColorDistance(H_pix, F1) < ColorDistance(E, F1)) {
+                        E3 = BlendColor(E, edgeCol, 0.70f);
+                    } else {
+                        E3 = BlendColor(E, edgeCol, 0.55f);
+                    }
+                }
+            }
+
+            int out_y = y * 2;
+            int out_x = x * 2;
+            dst64[out_y * W2 + out_x] = E0;
+            dst64[out_y * W2 + (out_x + 1)] = E1;
+            dst64[(out_y + 1) * W2 + out_x] = E2;
+            dst64[(out_y + 1) * W2 + (out_x + 1)] = E3;
+        }
+    }
+}
+
+// Pass 2: 64x64 -> 128x128 (Curvature Continuous Sub-Pixel Reconstruction with Edge Sharpening)
+void UpscalePass_64to128(const uint32_t* src64, uint32_t* dst128) {
+    constexpr int W = 64;
+    constexpr int H = 64;
+    constexpr int W4 = 128;
+
+    auto get_pixel64 = [&](int x, int y) -> uint32_t {
+        x = std::clamp(x, 0, W - 1);
+        y = std::clamp(y, 0, H - 1);
+        return src64[y * W + x];
+    };
+
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            uint32_t E = get_pixel64(x, y);
+            uint32_t B = get_pixel64(x, y - 1);
+            uint32_t D = get_pixel64(x - 1, y);
+            uint32_t F = get_pixel64(x + 1, y);
+            uint32_t H_pix = get_pixel64(x, y + 1);
+
+            uint32_t E0 = E, E1 = E, E2 = E, E3 = E;
+
+            if (!(B == D && D == F && F == H_pix && H_pix == E)) {
+                uint32_t A = get_pixel64(x - 1, y - 1);
+                uint32_t C = get_pixel64(x + 1, y - 1);
+                uint32_t G = get_pixel64(x - 1, y + 1);
+                uint32_t I = get_pixel64(x + 1, y + 1);
+
+                // Smooth directional edge blending
+                float d_diag_0 = ColorDistance(A, E);
+                float d_edge_0 = ColorDistance(D, B);
+                if (d_edge_0 < d_diag_0) {
+                    E0 = BlendColor(E, BlendColor(D, B, 0.5f), 0.40f);
+                }
+
+                float d_diag_1 = ColorDistance(C, E);
+                float d_edge_1 = ColorDistance(B, F);
+                if (d_edge_1 < d_diag_1) {
+                    E1 = BlendColor(E, BlendColor(B, F, 0.5f), 0.40f);
+                }
+
+                float d_diag_2 = ColorDistance(G, E);
+                float d_edge_2 = ColorDistance(D, H_pix);
+                if (d_edge_2 < d_diag_2) {
+                    E2 = BlendColor(E, BlendColor(D, H_pix, 0.5f), 0.40f);
+                }
+
+                float d_diag_3 = ColorDistance(I, E);
+                float d_edge_3 = ColorDistance(H_pix, F);
+                if (d_edge_3 < d_diag_3) {
+                    E3 = BlendColor(E, BlendColor(H_pix, F, 0.5f), 0.40f);
+                }
+            }
+
+            int out_y = y * 2;
+            int out_x = x * 2;
+            dst128[out_y * W4 + out_x] = E0;
+            dst128[out_y * W4 + (out_x + 1)] = E1;
+            dst128[(out_y + 1) * W4 + out_x] = E2;
+            dst128[(out_y + 1) * W4 + (out_x + 1)] = E3;
+        }
+    }
+}
+
+void UpscaleSpriteRGBA4x_HD(const uint32_t* src32, uint32_t* dst128) {
+    std::vector<uint32_t> intermediate64(64 * 64);
+    UpscalePass_32to64(src32, intermediate64.data());
+    UpscalePass_64to128(intermediate64.data(), dst128);
+}
+
+} // namespace
+
 GameSprite::Image::Image()
     : isGLLoaded(false), isGLQueueing(false), lastaccess(0) {}
 GameSprite::Image::~Image() { unloadGLTexture(0); }
@@ -1037,13 +1265,54 @@ void GameSprite::Image::createGLTexture(GLuint whatid) {
   g_gui.gfx.loaded_textures += 1;
 
   glBindTexture(GL_TEXTURE_2D, whatid);
-  GLint filter = g_settings.getBoolean(Config::FAKE_HD_ASSETS) ? GL_LINEAR : GL_NEAREST;
+
+  // 4x Ultra HD Modern Pixel Art Reconstruction with Crystal Clear Contrast
+  std::vector<uint32_t> hd128(128 * 128);
+  UpscaleSpriteRGBA4x_HD(reinterpret_cast<const uint32_t*>(rgba), hd128.data());
+
+  // Apply rich color richness & outline depth directly to the 128x128 texture pixels
+  for (size_t i = 0; i < 128 * 128; ++i) {
+    uint32_t col = hd128[i];
+    uint8_t a = (col >> 24) & 0xFF;
+    if (a > 0) {
+      uint8_t b = (col >> 16) & 0xFF;
+      uint8_t g = (col >> 8) & 0xFF;
+      uint8_t r = col & 0xFF;
+
+      // Rich vibrant color pop (+15% saturation)
+      float fr = r / 255.0f;
+      float fg = g / 255.0f;
+      float fb = b / 255.0f;
+      float maxC = std::max({fr, fg, fb});
+      float minC = std::min({fr, fg, fb});
+      float l = (maxC + minC) * 0.5f;
+
+      if (maxC != minC) {
+        float d = maxC - minC;
+        float s = (l > 0.5f) ? (d / (2.0f - maxC - minC)) : (d / (maxC + minC));
+        s = std::min(s * 1.15f, 1.0f);
+        // Contrast enhancement
+        fr = std::clamp(l + (fr - l) * 1.15f, 0.0f, 1.0f);
+        fg = std::clamp(l + (fg - l) * 1.15f, 0.0f, 1.0f);
+        fb = std::clamp(l + (fb - l) * 1.15f, 0.0f, 1.0f);
+        r = static_cast<uint8_t>(fr * 255.0f);
+        g = static_cast<uint8_t>(fg * 255.0f);
+        b = static_cast<uint8_t>(fb * 255.0f);
+      }
+      hd128[i] = (uint32_t(a) << 24) | (uint32_t(b) << 16) | (uint32_t(g) << 8) | uint32_t(r);
+    }
+  }
+
+  GLint filter = GL_LINEAR;
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SPRITE_PIXELS, SPRITE_PIXELS, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, rgba);
+
+  // Upload pristine 128x128 4K-ready texture to GPU
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 128, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, hd128.data());
+
   delete[] rgba;
 }
 
@@ -1163,31 +1432,30 @@ uint8_t *GameSprite::NormalImage::getRGBAData() {
 }
 
 GLuint GameSprite::NormalImage::getHardwareID() {
-  if (!isGLLoaded) {
-    if (!isGLQueueing) {
-      isGLQueueing = true;
-      if (g_gui.async_loader) {
-        g_gui.async_loader->queueSpriteLoad(id, "");
-        this->isGLQueueing = false;
-        if (this->dump)
-          this->createGLTexture(this->id);
-      } else {
-        createGLTexture(id);
-        isGLQueueing = false;
-        return id;
-      }
+  if (!isGLLoaded || gl_tid == 0) {
+    if (gl_tid == 0) {
+      glGenTextures(1, &gl_tid);
     }
-    return 0;
+    createGLTexture(gl_tid);
   }
   visit();
-  return id;
+  return gl_tid;
 }
 
-void GameSprite::NormalImage::createGLTexture(GLuint ignored) {
-  Image::createGLTexture(id);
+void GameSprite::NormalImage::createGLTexture(GLuint target_tid) {
+  if (target_tid == 0) {
+    if (gl_tid == 0) {
+      glGenTextures(1, &gl_tid);
+    }
+    target_tid = gl_tid;
+  }
+  Image::createGLTexture(target_tid);
 }
-void GameSprite::NormalImage::unloadGLTexture(GLuint ignored) {
-  Image::unloadGLTexture(id);
+
+void GameSprite::NormalImage::unloadGLTexture(GLuint target_tid) {
+  GLuint tid_to_delete = (target_tid != 0) ? target_tid : gl_tid;
+  Image::unloadGLTexture(tid_to_delete);
+  gl_tid = 0;
 }
 
 GameSprite::TemplateImage::TemplateImage(GameSprite *parent, int v,

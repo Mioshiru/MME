@@ -46,11 +46,12 @@ END_EVENT_TABLE()
 static constexpr int OUTFIT_COLOR_MAX = 133;
 
 OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, const Tile* tile_parent, Item* item, wxPoint pos) :
-	ObjectPropertiesWindowBase(win_parent, "Item Properties", map, tile_parent, item, pos),
+	ObjectPropertiesWindowBase(win_parent, "Item Attributes", map, tile_parent, item, pos),
 	count_field(nullptr),
 	direction_field(nullptr),
 	action_id_field(nullptr),
 	unique_id_field(nullptr),
+	ore_type_choice(nullptr),
 	door_id_field(nullptr),
 	tier_field(nullptr),
 	depot_id_field(nullptr),
@@ -330,6 +331,57 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 		unique_id_field = newd wxSpinCtrl(this, wxID_ANY, i2ws(edit_item->getUniqueID()), wxDefaultPosition, wxSize(-1, 20), wxSP_ARROW_KEYS, 0, 0xFFFF, edit_item->getUniqueID());
 		subsizer->Add(unique_id_field, wxSizerFlags(1).Expand());
 
+		std::string itemName = edit_item->getName();
+		std::transform(itemName.begin(), itemName.end(), itemName.begin(), ::tolower);
+		bool isRockItem = (itemName.find("rock") != std::string::npos ||
+		                   itemName.find("stone") != std::string::npos ||
+		                   itemName.find("boulder") != std::string::npos ||
+		                   itemName.find("mountain") != std::string::npos ||
+		                   itemName.find("mineral") != std::string::npos ||
+		                   itemName.find("crystal") != std::string::npos ||
+		                   itemName.find("ore") != std::string::npos);
+
+		if (isRockItem) {
+			subsizer->Add(newd wxStaticText(this, wxID_ANY, "Ore / Mining Type"));
+			ore_type_choice = newd wxChoice(this, wxID_ANY);
+			ore_type_choice->Append("None / Normal Rock (0)");
+			ore_type_choice->Append("Copper Ore (Lvl 1 - AID 4501)");
+			ore_type_choice->Append("Iron Ore (Lvl 20 - AID 4502)");
+			ore_type_choice->Append("Gold Ore (Lvl 50 - AID 4503)");
+			ore_type_choice->Append("Diamond Vein (Lvl 85 - AID 4504)");
+
+			int curAid = edit_item->getActionID();
+			if (curAid >= 4501 && curAid <= 4504) {
+				ore_type_choice->SetSelection(curAid - 4500);
+			} else {
+				ore_type_choice->SetSelection(0);
+			}
+
+			ore_type_choice->Bind(wxEVT_CHOICE, [this](wxCommandEvent& evt) {
+				int sel = evt.GetSelection();
+				if (sel >= 1 && sel <= 4) {
+					if (action_id_field) action_id_field->SetValue(4500 + sel);
+				} else if (sel == 0 && action_id_field && action_id_field->GetValue() >= 4501 && action_id_field->GetValue() <= 4504) {
+					action_id_field->SetValue(0);
+				}
+			});
+
+			subsizer->Add(ore_type_choice, wxSizerFlags(1).Expand());
+		}
+
+		if (ore_type_choice && action_id_field) {
+			action_id_field->Bind(wxEVT_SPINCTRL, [this](wxCommandEvent& evt) {
+				int val = action_id_field->GetValue();
+				if (ore_type_choice) {
+					if (val >= 4501 && val <= 4504) {
+						ore_type_choice->SetSelection(val - 4500);
+					} else {
+						ore_type_choice->SetSelection(0);
+					}
+				}
+			});
+		}
+
 		// item classification (12.81+)
 		if (g_items.MajorVersion >= 3 && g_items.MinorVersion >= 60 && (edit_item->getClassification() > 0 || edit_item->isWeapon() || edit_item->isWearableEquipment())) {
 			subsizer->Add(newd wxStaticText(this, wxID_ANY, "Classification"));
@@ -509,7 +561,7 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 }
 
 OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, const Tile* tile_parent, Creature* creature, wxPoint pos) :
-	ObjectPropertiesWindowBase(win_parent, "Creature Properties", map, tile_parent, creature, pos),
+	ObjectPropertiesWindowBase(win_parent, "Creature Attributes", map, tile_parent, creature, pos),
 	count_field(nullptr),
 	direction_field(nullptr),
 	action_id_field(nullptr),
@@ -525,7 +577,7 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	ASSERT(edit_creature);
 
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
-	wxSizer* boxsizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Creature Properties");
+	wxSizer* boxsizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Creature Attributes");
 
 	wxFlexGridSizer* subsizer = newd wxFlexGridSizer(2, 10, 10);
 	subsizer->AddGrowableCol(1);
@@ -537,6 +589,11 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	count_field = newd wxSpinCtrl(this, wxID_ANY, i2ws(edit_creature->getSpawnTime()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 86400, edit_creature->getSpawnTime());
 	// count_field->SetSelection(-1, -1);
 	subsizer->Add(count_field, wxSizerFlags(1).Expand());
+
+	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Loot rate (%)"));
+	loot_rate_field = newd wxSpinCtrl(this, wxID_ANY, i2ws(edit_creature->getLootRate()), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 1000, edit_creature->getLootRate());
+	loot_rate_field->SetToolTip("Loot rate multiplier in percent (100 = 1.0x normal, 200 = 2.0x double, 0 = server default).");
+	subsizer->Add(loot_rate_field, wxSizerFlags(1).Expand());
 
 	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Direction"));
 	direction_field = newd wxChoice(this, wxID_ANY);
@@ -562,11 +619,12 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 }
 
 OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, const Tile* tile_parent, Spawn* spawn, wxPoint pos) :
-	ObjectPropertiesWindowBase(win_parent, "Spawn Properties", map, tile_parent, spawn, pos),
+	ObjectPropertiesWindowBase(win_parent, "Spawn Attributes", map, tile_parent, spawn, pos),
 	count_field(nullptr),
 	direction_field(nullptr),
 	action_id_field(nullptr),
 	unique_id_field(nullptr),
+	ore_type_choice(nullptr),
 	door_id_field(nullptr),
 	tier_field(nullptr),
 	depot_id_field(nullptr),
@@ -574,7 +632,9 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	text_field(nullptr),
 	description_field(nullptr),
 	spawn_interval_field(nullptr),
-	apply_to_all_monsters(nullptr) {
+	spawn_loot_rate_field(nullptr),
+	apply_to_all_monsters(nullptr),
+	loot_rate_field(nullptr) {
 	ASSERT(edit_spawn);
 
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
@@ -593,6 +653,11 @@ OldPropertiesWindow::OldPropertiesWindow(wxWindow* win_parent, const Map* map, c
 	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Spawn interval"));
 	spawn_interval_field = newd wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 10, 86400, 60);
 	subsizer->Add(spawn_interval_field, wxSizerFlags(1).Expand());
+
+	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Loot rate (%)"));
+	spawn_loot_rate_field = newd wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 0, 1000, 100);
+	spawn_loot_rate_field->SetToolTip("Loot rate multiplier in percent (100 = 1.0x normal, 200 = 2.0x double, 0 = server default).");
+	subsizer->Add(spawn_loot_rate_field, wxSizerFlags(1).Expand());
 
 	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Apply to all monsters"));
 	apply_to_all_monsters = newd wxCheckBox(this, wxID_ANY, "");
@@ -892,6 +957,10 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 		int new_spawntime = count_field->GetValue();
 		edit_creature->setSpawnTime(new_spawntime);
 
+		if (loot_rate_field) {
+			edit_creature->setLootRate(loot_rate_field->GetValue());
+		}
+
 		int* new_dir = reinterpret_cast<int*>(direction_field->GetClientData(
 			direction_field->GetSelection()
 		));
@@ -904,7 +973,8 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 		edit_spawn->setSize(new_spawnsize);
 
 		if (apply_to_all_monsters && apply_to_all_monsters->IsChecked()) {
-			int interval = spawn_interval_field->GetValue();
+			int interval = spawn_interval_field ? spawn_interval_field->GetValue() : 60;
+			int loot_rate = spawn_loot_rate_field ? spawn_loot_rate_field->GetValue() : 100;
 			Position spawn_pos = edit_tile->getPosition();
 			int radius = new_spawnsize;
 			
@@ -913,6 +983,7 @@ void OldPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 					Tile* tile = const_cast<Map*>(edit_map)->getTile(x, y, spawn_pos.z);
 					if (tile && tile->creature) {
 						tile->creature->setSpawnTime(interval);
+						tile->creature->setLootRate(loot_rate);
 						if (tile->getLocation() && tile->getLocation()->qtree_node) {
 							tile->getLocation()->qtree_node->markDirty(spawn_pos.z);
 						}

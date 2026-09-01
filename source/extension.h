@@ -35,7 +35,9 @@ public:
 	std::string author;
 	std::string author_url;
 	std::string description;
+	std::string filename; // The .xml file name (basename)
 	bool for_all_versions;
+	bool enabled = true;  // Runtime toggle (does not survive restart without save)
 	ClientVersionList version_list;
 
 private:

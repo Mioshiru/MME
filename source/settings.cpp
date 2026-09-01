@@ -209,8 +209,8 @@ void Settings::IO(IOMode mode) {
 	Int(SHOW_INGAME_BOX, 0);
 	Int(WEATHER_EFFECT, 0);
 	Int(SHOW_LIGHTS, 1);
-	Float(LIGHT_INTENSITY, 1.0f);
-	Float(LIGHT_AMBIENT, 0.15f);
+	Float(LIGHT_INTENSITY, 0.5f);  // Match OTClient: subtle light glow (slider 5/10)
+	Float(LIGHT_AMBIENT, 0.65f);   // Match OTClient: daytime WorldLight ~165/255
 	Int(SHOW_LIGHT_STR, 1);
 	Int(SHOW_TECHNICAL_ITEMS, 1);
 	Int(SHOW_WAYPOINTS, 1);
@@ -279,6 +279,7 @@ void Settings::IO(IOMode mode) {
 	Int(DOODAD_BRUSH_ERASE_LIKE, 0);
 	Int(WARN_FOR_DUPLICATE_ID, 1);
 	Int(AUTO_CREATE_SPAWN, 1);
+	Int(AUTO_HOUSE_MODE, 1);
 	Int(DEFAULT_SPAWNTIME, 60);
 	Int(MAX_SPAWN_RADIUS, 30);
 	Int(CURRENT_SPAWN_RADIUS, 5);
@@ -335,8 +336,15 @@ void Settings::IO(IOMode mode) {
 	Int(USE_GUI_SELECTION_SHADOW, 0);
 	Int(SHOW_FPS, 0);
 	Int(UI_SCALE, 100);
-	Int(FAKE_HD_ASSETS, 0);
+	Int(FAKE_HD_ASSETS, 1);
 	Int(AMBIENT_EFFECTS, 1);
+	Int(EXP_HDR_BLOOM, 0);
+	Float(EXP_BLOOM_INTENSITY, 0.5f);
+	Int(EXP_RELIEF_MAPPING, 0);
+	Int(EXP_COLOR_GRADING, 0);
+	Int(EXP_VIGNETTE, 0);
+	Float(EXP_VIGNETTE_STRENGTH, 0.4f);
+	Int(EXP_PIXEL_SNAPPING, 0);
 	Int(PALETTE_COL_COUNT, 8);
 	String(PALETTE_TERRAIN_STYLE, "large icons");
 	String(PALETTE_COLLECTION_STYLE, "large icons");

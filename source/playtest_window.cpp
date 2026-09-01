@@ -152,25 +152,83 @@ bool PlaytestDialog::MovePlayer(int dx, int dy) {
 	int ty = player_pos.y + dy;
 	int tz = player_pos.z;
 
+	auto is_floor_transit = [](const ItemType& it, const std::string& name_lower) -> bool {
+		return it.floorChangeNorth || it.floorChangeSouth || it.floorChangeEast ||
+		       it.floorChangeWest || it.floorChangeDown ||
+		       name_lower.find("ramp") != std::string::npos ||
+		       name_lower.find("stair") != std::string::npos ||
+		       name_lower.find("ladder") != std::string::npos ||
+		       name_lower.find("hole") != std::string::npos ||
+		       name_lower.find("trapdoor") != std::string::npos;
+	};
+
 	Tile* target_tile = editor.map.getTile(tx, ty, tz);
+	if (!target_tile || !target_tile->ground) {
+		// Check if stepping down to lower floor (e.g. descending mountain/ramp)
+		if (tz < 15) {
+			Tile* lower_tile = editor.map.getTile(tx, ty, tz + 1);
+			if (lower_tile && lower_tile->ground) {
+				tz = tz + 1;
+				target_tile = lower_tile;
+			}
+		}
+	}
+
 	if (!target_tile || !target_tile->ground) {
 		SetStatusMessage(wxString::Format("Blocked: No ground at (%d, %d, %d).", tx, ty, tz));
 		return false;
 	}
 
+	// Check if target tile has any floor transit elements
+	bool has_transit = false;
+	std::string ground_lname = g_items[target_tile->ground->getID()].name;
+	std::transform(ground_lname.begin(), ground_lname.end(), ground_lname.begin(), ::tolower);
+	if (is_floor_transit(g_items[target_tile->ground->getID()], ground_lname)) {
+		has_transit = true;
+	}
+	for (auto* itm : target_tile->items) {
+		if (itm) {
+			std::string itm_lname = g_items[itm->getID()].name;
+			std::transform(itm_lname.begin(), itm_lname.end(), itm_lname.begin(), ::tolower);
+			if (is_floor_transit(g_items[itm->getID()], itm_lname)) {
+				has_transit = true;
+				break;
+			}
+		}
+	}
+
 	ItemType& ground_type = g_items[target_tile->ground->getID()];
-	if (ground_type.unpassable && !ground_type.floorChangeNorth && !ground_type.floorChangeSouth &&
-	    !ground_type.floorChangeEast && !ground_type.floorChangeWest && !ground_type.floorChangeDown) {
+	std::string gname = ground_type.name;
+	std::transform(gname.begin(), gname.end(), gname.begin(), ::tolower);
+	bool is_walkable_terrain = !ground_type.unpassable || has_transit ||
+	                           ground_type.floorChangeNorth || ground_type.floorChangeSouth ||
+	                           ground_type.floorChangeEast || ground_type.floorChangeWest || ground_type.floorChangeDown ||
+	                           gname.find("mountain") != std::string::npos ||
+	                           gname.find("rock") != std::string::npos ||
+	                           gname.find("stone") != std::string::npos ||
+	                           gname.find("cave") != std::string::npos;
+
+	if (!is_walkable_terrain) {
 		SetStatusMessage(wxString::Format("Blocked by ground (%s).", ground_type.name));
 		return false;
 	}
 
-	// Check items on target tile for solid blocks
+	// Check items on target tile for solid blocks (borders never block movement!)
 	for (auto* itm : target_tile->items) {
 		if (itm) {
 			ItemType& it = g_items[itm->getID()];
-			if (it.unpassable && !it.isOpen && !it.floorChangeNorth && !it.floorChangeSouth &&
-			    !it.floorChangeEast && !it.floorChangeWest && !it.floorChangeDown) {
+			std::string itm_lname = it.name;
+			std::transform(itm_lname.begin(), itm_lname.end(), itm_lname.begin(), ::tolower);
+
+			bool is_border = it.isBorder ||
+			                 itm_lname.find("border") != std::string::npos ||
+			                 itm_lname.find("edge") != std::string::npos ||
+			                 itm_lname.find("cliff") != std::string::npos;
+			if (is_border && !it.isWall) {
+				continue; // Visual border transitions never block movement
+			}
+
+			if (it.unpassable && !it.isOpen && !is_floor_transit(it, itm_lname)) {
 				SetStatusMessage(wxString::Format("Blocked by %s.", it.name));
 				return false;
 			}
@@ -180,6 +238,7 @@ bool PlaytestDialog::MovePlayer(int dx, int dy) {
 	// Move accepted!
 	player_pos.x = tx;
 	player_pos.y = ty;
+	player_pos.z = tz;
 
 	// Check floor change triggers (Stairs, Ramps, Ladders, Holes)
 	Tile* new_tile = editor.map.getTile(player_pos.x, player_pos.y, player_pos.z);
@@ -194,38 +253,33 @@ bool PlaytestDialog::MovePlayer(int dx, int dy) {
 			std::string lname = it.name;
 			std::transform(lname.begin(), lname.end(), lname.begin(), ::tolower);
 
-			if (it.floorChangeNorth || lname.find("ramp north") != std::string::npos || lname.find("stairs north") != std::string::npos) {
-				player_pos.z = std::max(0, player_pos.z - 1);
-				player_pos.y = player_pos.y - 1;
-				SetStatusMessage(wxString::Format("Climbed north to Floor %d!", player_pos.z));
-				changed_floor = true;
-				break;
-			} else if (it.floorChangeSouth || lname.find("ramp south") != std::string::npos || lname.find("stairs south") != std::string::npos) {
-				player_pos.z = std::max(0, player_pos.z - 1);
-				player_pos.y = player_pos.y + 1;
-				SetStatusMessage(wxString::Format("Climbed south to Floor %d!", player_pos.z));
-				changed_floor = true;
-				break;
-			} else if (it.floorChangeEast || lname.find("ramp east") != std::string::npos || lname.find("stairs east") != std::string::npos) {
-				player_pos.z = std::max(0, player_pos.z - 1);
-				player_pos.x = player_pos.x + 1;
-				SetStatusMessage(wxString::Format("Climbed east to Floor %d!", player_pos.z));
-				changed_floor = true;
-				break;
-			} else if (it.floorChangeWest || lname.find("ramp west") != std::string::npos || lname.find("stairs west") != std::string::npos) {
-				player_pos.z = std::max(0, player_pos.z - 1);
-				player_pos.x = player_pos.x - 1;
-				SetStatusMessage(wxString::Format("Climbed west to Floor %d!", player_pos.z));
-				changed_floor = true;
-				break;
-			} else if (it.floorChangeDown || lname.find("hole") != std::string::npos || lname.find("pit") != std::string::npos || lname.find("trapdoor") != std::string::npos) {
+			bool is_ramp_or_stair = it.isFloorChange() || it.hasElevation ||
+			                        lname.find("ramp") != std::string::npos ||
+			                        lname.find("stair") != std::string::npos ||
+			                        lname.find("ladder") != std::string::npos;
+
+			if (it.floorChangeDown || lname.find("hole") != std::string::npos || lname.find("pit") != std::string::npos || lname.find("trapdoor") != std::string::npos) {
 				player_pos.z = std::min(15, player_pos.z + 1);
 				SetStatusMessage(wxString::Format("Fell through hole to Floor %d!", player_pos.z));
 				changed_floor = true;
 				break;
-			} else if (lname.find("stair") != std::string::npos || lname.find("ramp") != std::string::npos || lname.find("ladder") != std::string::npos) {
+			} else if (is_ramp_or_stair) {
 				player_pos.z = std::max(0, player_pos.z - 1);
-				SetStatusMessage(wxString::Format("Climbed stairs up to Floor %d!", player_pos.z));
+				if (dx > 0) {
+					player_pos.x += 1;
+					SetStatusMessage(wxString::Format("Climbed east up to Floor %d!", player_pos.z));
+				} else if (dx < 0) {
+					player_pos.x -= 1;
+					SetStatusMessage(wxString::Format("Climbed west up to Floor %d!", player_pos.z));
+				} else if (dy < 0) {
+					player_pos.y -= 1;
+					SetStatusMessage(wxString::Format("Climbed north up to Floor %d!", player_pos.z));
+				} else if (dy > 0) {
+					player_pos.y += 1;
+					SetStatusMessage(wxString::Format("Climbed south up to Floor %d!", player_pos.z));
+				} else {
+					SetStatusMessage(wxString::Format("Climbed up to Floor %d!", player_pos.z));
+				}
 				changed_floor = true;
 				break;
 			}
@@ -324,7 +378,25 @@ void PlaytestDialog::InteractWithFacing() {
 			break;
 		}
 
-		// 5. Readable / Sign / Book
+		// 5. Mining Ore Deposit / Mineral Vein
+		int aid = itm->getActionID();
+		int iid = itm->getID();
+		int ore_type = 0;
+		if (aid >= 4501 && aid <= 4505) ore_type = aid - 4500;
+		else if (iid == 1354) ore_type = 1;
+		else if (iid == 1353 || iid == 3884 || iid == 8635) ore_type = 2;
+		else if (iid == 1285 || iid == 3885 || iid == 8636) ore_type = 3;
+		else if (iid == 8633) ore_type = 4;
+		else if (iid == 8634) ore_type = 5;
+
+		if (ore_type > 0) {
+			const char* names[] = { "Copper Ore", "Iron Ore", "Gold Nugget", "Diamond", "Atlantis Gem" };
+			SetStatusMessage(wxString::Format("Mining: You struck the rock with your pickaxe and mined %s!", names[ore_type - 1]));
+			interacted = true;
+			break;
+		}
+
+		// 6. Readable / Sign / Book
 		if (it.canReadText || lname.find("sign") != std::string::npos || lname.find("book") != std::string::npos) {
 			SetStatusMessage(wxString::Format("You read %s: \"%s\"", it.name, itm->getText().empty() ? "The page is blank." : itm->getText()));
 			interacted = true;
@@ -575,6 +647,74 @@ void PlaytestCanvas::Render() {
 					if (!itm) continue;
 					ItemType& it = g_items[itm->getID()];
 					DrawPlaytestSprite(it.sprite, screen_x, screen_y, sim_time);
+
+					// Dynamic Ore Vein Glow & Mineral Preview
+					int aid = itm->getActionID();
+					int iid = itm->getID();
+					int ore_type = 0; // 1=Copper, 2=Iron, 3=Gold, 4=Diamond, 5=MysticGem
+					if (aid >= 4501 && aid <= 4505) {
+						ore_type = aid - 4500;
+					} else if (iid == 1354) {
+						ore_type = 1;
+					} else if (iid == 1353 || iid == 3884 || iid == 8635) {
+						ore_type = 2;
+					} else if (iid == 1285 || iid == 3885 || iid == 8636) {
+						ore_type = 3;
+					} else if (iid == 8633) {
+						ore_type = 4;
+					} else if (iid == 8634) {
+						ore_type = 5;
+					}
+
+					if (ore_type > 0) {
+						glDisable(GL_TEXTURE_2D);
+						float pulse = 0.5f + 0.5f * sin(sim_time * 3.5f + (float)tx * 0.7f + (float)ty * 0.7f);
+						uint8_t alpha = static_cast<uint8_t>(70 + pulse * 120);
+						wxColour oreCol(245, 158, 11);
+						if (ore_type == 2) oreCol = wxColour(148, 163, 184);
+						else if (ore_type == 3) oreCol = wxColour(234, 179, 8);
+						else if (ore_type == 4) oreCol = wxColour(6, 182, 212);
+						else if (ore_type == 5) oreCol = wxColour(37, 99, 235);
+
+						// Radial mineral glow aura
+						glColor4ub(oreCol.Red(), oreCol.Green(), oreCol.Blue(), alpha);
+						glBegin(GL_LINE_LOOP);
+						for (int a = 0; a < 16; ++a) {
+							float ang = (float)a * (3.14159f * 2.0f / 16.0f);
+							glVertex2f((float)(screen_x + 16) + cos(ang) * (14.0f + pulse * 5.0f),
+							           (float)(screen_y + 16) + sin(ang) * (14.0f + pulse * 5.0f));
+						}
+						glEnd();
+
+						// Mineral Crystal Sparkle in Center
+						glColor4ub(255, 255, 255, static_cast<uint8_t>(180 + pulse * 75));
+						glBegin(GL_QUADS);
+						glVertex2i(screen_x + 14, screen_y + 14);
+						glVertex2i(screen_x + 18, screen_y + 14);
+						glVertex2i(screen_x + 18, screen_y + 18);
+						glVertex2i(screen_x + 14, screen_y + 18);
+						glEnd();
+
+						// Floating Mineral Badge Frame
+						glColor4ub(15, 23, 42, 220);
+						glBegin(GL_QUADS);
+						glVertex2i(screen_x + 4, screen_y - 12);
+						glVertex2i(screen_x + 28, screen_y - 12);
+						glVertex2i(screen_x + 28, screen_y - 2);
+						glVertex2i(screen_x + 4, screen_y - 2);
+						glEnd();
+
+						// Badge Gem Indicator Dot
+						glColor4ub(oreCol.Red(), oreCol.Green(), oreCol.Blue(), 255);
+						glBegin(GL_QUADS);
+						glVertex2i(screen_x + 12, screen_y - 10);
+						glVertex2i(screen_x + 20, screen_y - 10);
+						glVertex2i(screen_x + 20, screen_y - 4);
+						glVertex2i(screen_x + 12, screen_y - 4);
+						glEnd();
+
+						glEnable(GL_TEXTURE_2D);
+					}
 				}
 			}
 		}

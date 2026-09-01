@@ -258,8 +258,9 @@ rc /nologo /fo "!BUILD_DIR!\launcher.res" "!PROJECT_ROOT!\source\rme.rc" >nul 2>
 cl /nologo /O2 /MD /std:c++20 "!PROJECT_ROOT!\tools\launcher\launcher.cpp" "!BUILD_DIR!\launcher.res" /Fe"!RELEASE_DIR!\MME.exe" /Fo"!BUILD_DIR!\launcher.obj" /link /SUBSYSTEM:WINDOWS user32.lib >nul 2>&1
 if exist "launcher.obj" del /f /q "launcher.obj" >nul 2>&1
 
-REM 4. Copy Asset Folders to both BUILD_DIR and RELEASE_DIR
-for %%D in (data brushes scripts extensions icons Saves tools) do (
+REM 4. Copy Runtime Asset Folders to both BUILD_DIR and RELEASE_DIR
+if exist "!RELEASE_DIR!\tools" rd /s /q "!RELEASE_DIR!\tools" >nul 2>&1
+for %%D in (data brushes scripts extensions icons Saves) do (
     if exist "!PROJECT_ROOT!\%%D" (
         robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
         robocopy "!PROJECT_ROOT!\%%D" "!RELEASE_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1

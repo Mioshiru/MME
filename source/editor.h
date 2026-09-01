@@ -42,6 +42,13 @@ public:
 	CopyBuffer& copybuffer;
 	GroundBrush* replace_brush;
 	Map map; // The map that is being edited
+	struct MapNote {
+		uint32_t id = 0;
+		Position pos;
+		wxString text;
+		wxString author;
+	};
+	std::vector<MapNote> map_notes;
 
 public: // Functions
 	// Live Server handling

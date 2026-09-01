@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
+#include "style_manager.h"
 #include "house_wizard_dialog.h"
 #include "house.h"
 #include "map.h"
@@ -203,6 +204,7 @@ HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t defaul
 	main_sizer->Add(nav_sizer, 0, wxALIGN_RIGHT | wxALL, 8);
 
 	SetSizerAndFit(main_sizer);
+	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
 	showStep(1);
 	bindHoverEvents(this);
 	Centre(wxBOTH);

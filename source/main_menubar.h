@@ -153,6 +153,7 @@ namespace MenuBar {
 		TOOLS_MONSTER_EDITOR,
 		TOOLS_ITEM_EDITOR,
 		TOOLS_RADIO_PLAYER,
+		TOOLS_TILESET_MANAGER,
 		SHOW_MINIMAP_HUD, // New item for toggling canvas-based minimap
 		SHOW_HOTKEYS,
 
@@ -297,6 +298,7 @@ public:
 	void OnPrefabLibrary(wxCommandEvent& event);
 	void OnMapDiagnostic(wxCommandEvent& event);
 	void OnMapDiff(wxCommandEvent& event);
+	void OnTilesetManager(wxCommandEvent& event);
 	void OnWizardNPC(wxCommandEvent& event);
 	void OnWizardSpecialObjects(wxCommandEvent& event);
 	void OnTFSQuestGenerator(wxCommandEvent& event);
