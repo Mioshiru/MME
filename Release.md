@@ -4,6 +4,32 @@
 
 ---
 
+## 🚀 Release v1.9.3 (Tibia Creature Wiki, Official Bestiary Stats, Sorting & Favorites)
+
+### 🌟 Major Highlights & New Features in v1.9.3
+
+* **📖 Tibia Creature Wiki & Bestiary Knowledge Base (`F7` / `View -> Creature Wiki...`):**
+  * **560+ Creatures with Official TibiaWiki Stats:** Direct data ingestion from the official [TibiaWiki](https://tibia.fandom.com/wiki/List_of_Creatures) API (`{{Infobox Creature}}`) covering 563 creatures with verified **Hit Points (HP)**, **Experience (EXP)**, **Armor**, **Speed**, and **Bestiary Categories**.
+  * **Accurate CipSoft Difficulty Tiers:** Automated calculation categorizing all monsters into official CipSoft tiers (*Harmless, Trivial, Easy, Medium, Hard, Challenging*) based on HP and EXP metrics.
+  * **Cleaned Difficulty Filtering:** Simplified difficulty dropdown with clean tier names (*Harmless, Trivial, Easy, Medium, Hard, Challenging, Favorites Only*).
+  * **Clickable Column Sorting (Ascending / Descending):** Full header-click sorting across all list columns:
+    * `Fav`: Sorts bookmarked favorites to top or bottom.
+    * `Creature Name`: Alphabetical A–Z and Z–A sorting.
+    * `Bestiary Class`: Grouping by monster class.
+    * `Health (HP)` & `EXP`: Numerical sorting by hit points and experience yield.
+    * `Rec. Diff.`: Hierarchical sorting by official difficulty tier rank.
+  * **Heart Favorites System (`♥` / `♡`):**
+    * 1-Click heart button beside creature name in the detail inspector to toggle favorite status.
+    * Visible red heart indicator in the list table.
+    * Persistent storage across sessions in `creature_favorites.cfg`.
+    * Instant filtering with the "Favorites Only" tier selection.
+  * **Direct Web Wiki Integration:**
+    * Clickable cyan hyperlink in the stat grid to open the creature's official wiki article.
+    * Dedicated **"Online Wiki"** button beside "Place on Map" and "In Palette" to launch the page in the default system browser.
+  * **1-Click Mapping Actions:** Direct **"Place on Map"** (auto-selects brush and closes dialog) and **"In Palette"** (focuses creature in sidebar palette).
+
+---
+
 ## 🚀 Release v1.9.2 (Collaborative Multiplayer Suite, Data Packaging & Hardened Netcode)
 
 ### 🌟 Major Highlights & New Features in v1.9.2

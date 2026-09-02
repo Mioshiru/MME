@@ -1,6 +1,6 @@
 # Mio's Map Editor (MME)
 
-[![Version](https://img.shields.io/badge/version-v1.9.2-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
+[![Version](https://img.shields.io/badge/version-v1.9.3-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
 [![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://github.com/Mioshiru/MME)
@@ -10,7 +10,15 @@
 
 ---
 
-## 🌟 Key Highlights & Mapper Features (v1.9.2)
+## 🌟 Key Highlights & Mapper Features (v1.9.3)
+
+### 📖 Tibia Creature Wiki & Bestiary Knowledge Base (`F7` / `View -> Creature Wiki...`)
+* **560+ Creatures with Official TibiaWiki Stats:** Instant access to accurate Hit Points (HP), Experience (EXP), Armor, Speed, Bestiary Classes, and placement lore extracted directly from [TibiaWiki](https://tibia.fandom.com/wiki/List_of_Creatures).
+* **Official CipSoft Bestiary Difficulty Tiers:** Automated difficulty categorisation across 6 official tiers (*Harmless, Trivial, Easy, Medium, Hard, Challenging*) calculated from HP and EXP yield.
+* **Clickable Column Sorting (Ascending / Descending):** Full multi-column sorting across Name, Category, HP, EXP, Difficulty Tier, and Favorite status.
+* **Heart Favorites System (`♥` / `♡`):** 1-Click heart toggle to bookmark favorite creatures with persistent storage in `creature_favorites.cfg` and instant "Favorites Only" filtering.
+* **Direct Web Wiki Integration:** Clickable URLs and dedicated "Online Wiki" button to instantly view in-depth creature articles on TibiaWiki in the default browser.
+* **1-Click Map & Palette Placement:** Direct **"Place on Map"** and **"In Palette"** actions to jump right into mapping with selected creatures.
 
 ### 👥 Real-Time Collaboration & 99% Crash-Proof Netcode
 * **Asio Lifecycle Safety & Exception Shields:** Fully protected Asio I/O handlers with atomic `aliveFlag` verification and comprehensive `try-catch` shields preventing crashes on disconnects or malformed packets.
