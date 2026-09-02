@@ -153,6 +153,7 @@ namespace MenuBar {
 		WIZARD_SPECIAL_OBJECTS,
 		TOOLS_REALOTS_CONVERTER,
 		TOOLS_MONSTER_EDITOR,
+		TOOLS_CREATURE_WIKI,
 		TOOLS_ITEM_EDITOR,
 		TOOLS_RADIO_PLAYER,
 		TOOLS_TILESET_MANAGER,
@@ -309,6 +310,7 @@ public:
 	void OnTFSExporter(wxCommandEvent& event);
 	void OnRealOTSConverter(wxCommandEvent& event);
 	void OnMonsterEditor(wxCommandEvent& event);
+	void OnCreatureWiki(wxCommandEvent& event);
 	void OnItemEditor(wxCommandEvent& event);
 
 

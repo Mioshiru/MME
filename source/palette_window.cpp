@@ -42,6 +42,7 @@
 #include <wx/menu.h>
 #include <wx/msgdlg.h>
 #include <wx/listbox.h>
+#include <wx/splitter.h>
 #include <algorithm>
 
 class MinimapPanel : public wxPanel {
@@ -50,7 +51,7 @@ public:
 
 	MinimapPanel(wxWindow* parent) :
 		wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize) {
-		SetMinSize(wxSize(140, 220));
+		SetMinSize(wxSize(100, 80));
 		SetBackgroundColour(wxColor(10, 20, 35));
 		
 		// Dropdown for jumping to towns
@@ -58,20 +59,6 @@ public:
 		town_choice->SetBackgroundColour(wxColour(10, 20, 35));
 		town_choice->SetForegroundColour(wxColour(180, 150, 50));
 		town_choice->Bind(wxEVT_CHOICE, &MinimapPanel::OnTownSelected, this);
-
-		// Button to dock back to canvas
-		dock_btn = new wxButton(this, wxID_ANY, "Canvas", wxDefaultPosition, wxDefaultSize);
-		dock_btn->SetToolTip("Dock minimap back onto the map canvas");
-		dock_btn->SetBackgroundColour(wxColour(10, 20, 35));
-		dock_btn->SetForegroundColour(wxColour(180, 150, 50));
-		dock_btn->Bind(wxEVT_BUTTON, &MinimapPanel::OnDockToCanvas, this);
-
-		// Button to hide minimap from this palette
-		hide_btn = new wxButton(this, wxID_ANY, "Hide Minimap", wxDefaultPosition, wxDefaultSize);
-		hide_btn->SetToolTip("Hide minimap in this palette window");
-		hide_btn->SetBackgroundColour(wxColour(10, 20, 35));
-		hide_btn->SetForegroundColour(wxColour(180, 150, 50));
-		hide_btn->Bind(wxEVT_BUTTON, &MinimapPanel::OnHideFromPalette, this);
 
 		Bind(wxEVT_PAINT, &MinimapPanel::OnPaint, this);
 		Bind(wxEVT_LEFT_DOWN, &MinimapPanel::OnLeftDown, this);
@@ -81,26 +68,17 @@ public:
 		Bind(wxEVT_MOUSEWHEEL, &MinimapPanel::OnMouseWheel, this);
 	}
 
-	void OnHideFromPalette(wxCommandEvent& WXUNUSED(event)) {
-		wxWindow* parent = GetParent();
-		if (auto* pw = dynamic_cast<PaletteWindow*>(parent)) {
-			pw->SetAllowMinimap(false);
-		}
-	}
-
 	void OnRightDown(wxMouseEvent& event) {
 		wxMenu menu;
 		menu.Append(101, "Hide Minimap in this Palette");
-		menu.Append(102, "Dock to Canvas");
 		Bind(wxEVT_MENU, [this](wxCommandEvent& ev) {
 			if (ev.GetId() == 101) {
 				wxWindow* parent = GetParent();
 				if (auto* pw = dynamic_cast<PaletteWindow*>(parent)) {
 					pw->SetAllowMinimap(false);
+				} else if (auto* pw2 = dynamic_cast<PaletteWindow*>(parent ? parent->GetParent() : nullptr)) {
+					pw2->SetAllowMinimap(false);
 				}
-			} else if (ev.GetId() == 102) {
-				g_settings.setInteger(Config::MINIMAP_DOCK_STYLE, 0);
-				g_gui.RefreshPalettes();
 			}
 		});
 		PopupMenu(&menu);
@@ -166,14 +144,6 @@ public:
 		town_choice->SetSelection(0); // Reset selection
 	}
 
-	void OnDockToCanvas(wxCommandEvent& event) {
-		g_settings.setInteger(Config::MINIMAP_DOCK_STYLE, 0);
-		g_gui.RefreshPalettes();
-		if (g_gui.GetCurrentMapTab() && g_gui.GetCurrentMapTab()->GetCanvas()) {
-			g_gui.GetCurrentMapTab()->GetCanvas()->Refresh();
-		}
-	}
-
 	void OnPaint(wxPaintEvent& event) {
 		wxPaintDC dc(this);
 		dc.SetBackground(wxBrush(wxColor(10, 15, 25)));
@@ -185,7 +155,13 @@ public:
 		if (!canvas) return;
 
 		int total_w = GetClientSize().x;
-		int map_size = std::max(120, total_w - 4);
+		int total_h = GetClientSize().y;
+		int avail_h = total_h - 28;
+		if (avail_h < 40) avail_h = 40;
+
+		int map_size = std::max(40, std::min(total_w - 4, avail_h - 4));
+		int offset_x = (total_w - map_size) / 2;
+		int offset_y = (avail_h - map_size) / 2;
 
 		// Rebuild town list dynamically if town count differs
 		const Towns& towns = canvas->editor.map.towns;
@@ -196,13 +172,8 @@ public:
 		// Make sure texture data is updated
 		canvas->UpdateMinimapTexture();
 
-		// Position controls dynamically below the responsive minimap image
-		int btn_w = std::max(50, (total_w - 14) / 2);
-		town_choice->SetSize(2, map_size + 4, total_w - 4, 22);
-		dock_btn->SetSize(2, map_size + 29, btn_w, 22);
-		hide_btn->SetSize(total_w - btn_w - 2, map_size + 29, btn_w, 22);
-
-		SetMinSize(wxSize(120, map_size + 56));
+		// Position town_choice dropdown below the minimap image
+		town_choice->SetSize(2, total_h - 24, total_w - 4, 22);
 
 		// Draw the minimap image
 		wxImage img(180, 180, canvas->minimap_pixels, true);
@@ -210,12 +181,12 @@ public:
 			img.Rescale(map_size, map_size, wxIMAGE_QUALITY_NORMAL);
 		}
 		wxBitmap bmp(img);
-		dc.DrawBitmap(bmp, 2, 0, false);
+		dc.DrawBitmap(bmp, offset_x, offset_y, false);
 
 		// Draw gold border around the minimap image
 		dc.SetBrush(*wxTRANSPARENT_BRUSH);
 		dc.SetPen(wxPen(wxColor(180, 140, 50), 1));
-		dc.DrawRectangle(2, 0, map_size, map_size);
+		dc.DrawRectangle(offset_x, offset_y, map_size, map_size);
 
 		if (g_settings.getInteger(Config::MINIMAP_VIEW_BOX)) {
 			int screensize_x, screensize_y;
@@ -245,7 +216,7 @@ public:
 			if (p_start_x < p_end_x && p_start_y < p_end_y) {
 				dc.SetBrush(*wxTRANSPARENT_BRUSH);
 				dc.SetPen(wxPen(*wxWHITE, 1));
-				dc.DrawRectangle(2 + p_start_x, p_start_y, p_end_x - p_start_x, p_end_y - p_start_y);
+				dc.DrawRectangle(offset_x + p_start_x, offset_y + p_start_y, p_end_x - p_start_x, p_end_y - p_start_y);
 			}
 		}
 	}
@@ -257,10 +228,16 @@ public:
 		if (!canvas) return;
 
 		int total_w = GetClientSize().x;
-		int map_size = std::max(120, total_w - 4);
+		int total_h = GetClientSize().y;
+		int avail_h = total_h - 28;
+		if (avail_h < 40) avail_h = 40;
 
-		int mx = event.GetX() - 2;
-		int my = event.GetY();
+		int map_size = std::max(40, std::min(total_w - 4, avail_h - 4));
+		int offset_x = (total_w - map_size) / 2;
+		int offset_y = (avail_h - map_size) / 2;
+
+		int mx = event.GetX() - offset_x;
+		int my = event.GetY() - offset_y;
 		mx = std::clamp(mx, 0, map_size - 1);
 		my = std::clamp(my, 0, map_size - 1);
 
@@ -278,10 +255,16 @@ public:
 
 	void OnLeftDown(wxMouseEvent& event) {
 		int total_w = GetClientSize().x;
-		int map_size = std::max(120, total_w - 4);
+		int total_h = GetClientSize().y;
+		int avail_h = total_h - 28;
+		if (avail_h < 40) avail_h = 40;
 
-		int mx = event.GetX() - 2;
-		int my = event.GetY();
+		int map_size = std::max(40, std::min(total_w - 4, avail_h - 4));
+		int offset_x = (total_w - map_size) / 2;
+		int offset_y = (avail_h - map_size) / 2;
+
+		int mx = event.GetX() - offset_x;
+		int my = event.GetY() - offset_y;
 		if (mx < 0 || mx >= map_size || my < 0 || my >= map_size) return;
 
 		dragging = true;
@@ -327,8 +310,6 @@ public:
 
 private:
 	wxChoice* town_choice;
-	wxButton* dock_btn;
-	wxButton* hide_btn;
 };
 
 // ============================================================================
@@ -391,7 +372,7 @@ void PaletteModuleCard::SetContent(wxWindow* content) {
 	}
 	content_window = content;
 	if (content_window) {
-		main_sizer->Add(content_window, 1, wxEXPAND | wxALL, 2);
+		main_sizer->Add(content_window, 1, wxEXPAND);
 	}
 	Layout();
 }
@@ -453,7 +434,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	search_box(nullptr),
 	card_assets(nullptr),
 	card_minimap(nullptr) {
-	SetMinSize(wxSize(180, 255));
+	SetMinSize(wxSize(120, 150));
 	SetBackgroundColour(wxColor(10, 20, 35));
 
 	// Context menu binding to restore modules
@@ -461,8 +442,14 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 		ShowContextMenu(event.GetPosition());
 	});
 
+	// Splitter Window to allow interactive height adjustment between Asset Palette and Minimap
+	splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_LIVE_UPDATE | wxSP_3D);
+	splitter->SetBackgroundColour(wxColor(10, 20, 35));
+	splitter->SetMinimumPaneSize(50);
+	splitter->SetSashGravity(1.0); // Top pane takes vertical resize growth, keeping user's chosen minimap height
+
 	// Module 1: Asset Browser Card
-	card_assets = new PaletteModuleCard(this, "Asset Palette", false);
+	card_assets = new PaletteModuleCard(splitter, "Asset Palette", false);
 	wxPanel* asset_container = new wxPanel(card_assets, wxID_ANY);
 	asset_container->SetBackgroundColour(wxColor(10, 20, 35));
 	wxBoxSizer* asset_sizer = new wxBoxSizer(wxVERTICAL);
@@ -485,7 +472,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 		event.Skip();
 	});
 
-	choicebook = newd wxChoicebook(asset_container, PALETTE_CHOICEBOOK, wxDefaultPosition, wxSize(180, 250));
+	choicebook = newd wxChoicebook(asset_container, PALETTE_CHOICEBOOK, wxDefaultPosition, wxDefaultSize);
 	choicebook->SetBackgroundColour(wxColor(10, 20, 35));
 	if (auto* choice_ctrl = choicebook->GetChoiceCtrl()) {
 		choice_ctrl->Hide();
@@ -547,17 +534,32 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	card_assets->SetContent(asset_container);
 
 	// Module 2: Minimap Navigation Card
-	card_minimap = new PaletteModuleCard(this, "Minimap", true);
+	card_minimap = new PaletteModuleCard(splitter, "Minimap", true);
 	minimap_panel = new MinimapPanel(card_minimap);
 	card_minimap->SetContent(minimap_panel);
 	card_minimap->OnClosed = [this]() {
+		allow_minimap = false;
+		UpdateMinimapVisibility();
 		g_gui.SetStatusText("Minimap hidden. Right-click palette to restore.");
 	};
+	card_minimap->OnCollapseChanged = [this](bool collapsed) {
+		if (collapsed) {
+			if (splitter && splitter->IsSplit()) {
+				last_sash_pos = splitter->GetSashPosition();
+				splitter->Unsplit(card_minimap);
+			}
+		} else {
+			if (splitter && !splitter->IsSplit()) {
+				splitter->SplitHorizontally(card_assets, card_minimap, last_sash_pos > 0 ? last_sash_pos : -180);
+			}
+		}
+	};
 
-	// Setup main window sizer
-	wxSizer* sizer = newd wxBoxSizer(wxVERTICAL);
-	sizer->Add(card_assets, 1, wxEXPAND | wxALL, 3);
-	sizer->Add(card_minimap, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 3);
+	splitter->SplitHorizontally(card_assets, card_minimap, -180);
+
+	// Main window sizer hosts the splitter
+	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+	sizer->Add(splitter, 1, wxEXPAND | wxALL, 2);
 	SetSizer(sizer);
 
 	RefreshFavoritesBox();
@@ -567,8 +569,6 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	SelectPage(TILESET_TERRAIN);
 
 	UpdateMinimapVisibility();
-
-	Fit();
 }
 
 PaletteWindow::~PaletteWindow() {
@@ -1192,8 +1192,9 @@ void PaletteWindow::OnUpdateBrushSize(BrushShape shape, int size) {
 		return;
 	}
 	PalettePanel* page = dynamic_cast<PalettePanel*>(choicebook->GetCurrentPage());
-	ASSERT(page);
-	page->OnUpdateBrushSize(shape, size);
+	if (page) {
+		page->OnUpdateBrushSize(shape, size);
+	}
 }
 
 void PaletteWindow::OnUpdate(Map* map) {
@@ -1214,13 +1215,17 @@ void PaletteWindow::OnUpdate(Map* map) {
 }
 
 void PaletteWindow::UpdateMinimapVisibility() {
-	bool show_minimap = allow_minimap && g_settings.getBoolean(Config::MINIMAP_VISIBLE) &&
-		(g_settings.getInteger(Config::MINIMAP_DOCK_STYLE) == 1);
-	if (minimap_panel) {
-		if (minimap_panel->Show(show_minimap)) {
-			GetSizer()->Layout();
+	bool show_minimap = allow_minimap && g_settings.getBoolean(Config::MINIMAP_VISIBLE);
+	if (splitter && card_assets && card_minimap) {
+		if (!show_minimap && splitter->IsSplit()) {
+			last_sash_pos = splitter->GetSashPosition();
+			splitter->Unsplit(card_minimap);
+		} else if (show_minimap && !splitter->IsSplit()) {
+			splitter->SplitHorizontally(card_assets, card_minimap, last_sash_pos > 0 ? last_sash_pos : -180);
 		}
 	}
+	Layout();
+	Refresh();
 }
 
 void PaletteWindow::InvalidatePrefabPalette() {
@@ -1238,7 +1243,52 @@ void PaletteWindow::OnKey(wxKeyEvent& event) {
 void PaletteWindow::OnSize(wxSizeEvent& event) {
 	Layout();
 	Refresh();
+	SnapDockWidth();
 	event.Skip();
+}
+
+void PaletteWindow::SnapDockWidth() {
+	if (!g_gui.aui_manager) return;
+	wxAuiPaneInfo& pane = g_gui.aui_manager->GetPane(this);
+	if (!pane.IsOk()) return;
+
+	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
+	if (scale_percent < 100) scale_percent = 100;
+	if (scale_percent > 200) scale_percent = 200;
+
+	int btn_w = FromDIP(36 * scale_percent / 100);
+	int vscroll = wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
+	if (vscroll <= 0) vscroll = FromDIP(18);
+	int chrome = vscroll + FromDIP(4);
+
+	int min_w = 3 * btn_w + chrome;
+	if (pane.min_size.x != min_w) {
+		pane.MinSize(wxSize(min_w, 100));
+	}
+
+	if (!pane.IsDocked()) return;
+	if (pane.dock_direction != wxAUI_DOCK_LEFT && pane.dock_direction != wxAUI_DOCK_RIGHT) return;
+
+	int current_w = GetSize().x;
+	if (current_w <= 0) return;
+
+	int cols = (current_w - chrome + btn_w / 2) / btn_w;
+	if (cols < 3) cols = 3;
+	int snapped_w = cols * btn_w + chrome;
+
+	if (std::abs(current_w - snapped_w) > 3 && !snapping_active) {
+		snapping_active = true;
+		CallAfter([this, snapped_w]() {
+			if (g_gui.aui_manager) {
+				wxAuiPaneInfo& p = g_gui.aui_manager->GetPane(this);
+				if (p.IsOk() && p.IsDocked()) {
+					p.best_size.x = snapped_w;
+					g_gui.aui_manager->Update();
+				}
+			}
+			snapping_active = false;
+		});
+	}
 }
 
 void PaletteWindow::CheckAndUpdateOrientation() {
@@ -1247,37 +1297,19 @@ void PaletteWindow::CheckAndUpdateOrientation() {
 
 void PaletteWindow::SetHorizontalLayout(bool horizontal) {
 	is_horizontal = horizontal;
-
-	wxSizer* old_sizer = GetSizer();
-	if (old_sizer) {
-		old_sizer->Clear(false); // don't delete child windows
-		delete old_sizer;
+	if (splitter && card_assets && card_minimap) {
+		if (horizontal) {
+			if (splitter->GetSplitMode() != wxSPLIT_VERTICAL && splitter->IsSplit()) {
+				last_sash_pos = splitter->GetSashPosition();
+				splitter->SetSplitMode(wxSPLIT_VERTICAL);
+			}
+		} else {
+			if (splitter->GetSplitMode() != wxSPLIT_HORIZONTAL && splitter->IsSplit()) {
+				last_sash_pos = splitter->GetSashPosition();
+				splitter->SetSplitMode(wxSPLIT_HORIZONTAL);
+			}
+		}
 	}
-
-	if (horizontal) {
-		// Horizontal layout (for top / bottom docking):
-		wxBoxSizer* main_sizer = new wxBoxSizer(wxHORIZONTAL);
-		if (card_assets) {
-			choicebook->SetMinSize(wxSize(200, 100));
-			main_sizer->Add(card_assets, 1, wxEXPAND | wxALL, 2);
-		}
-		if (card_minimap) {
-			main_sizer->Add(card_minimap, 0, wxALIGN_CENTER_VERTICAL | wxALL, 4);
-		}
-		SetSizer(main_sizer);
-	} else {
-		// Vertical layout (for left / right docking & floating):
-		wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
-		if (card_assets) {
-			choicebook->SetMinSize(wxSize(180, 200));
-			main_sizer->Add(card_assets, 1, wxEXPAND | wxALL, 3);
-		}
-		if (card_minimap) {
-			main_sizer->Add(card_minimap, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 3);
-		}
-		SetSizer(main_sizer);
-	}
-
 	UpdateMinimapVisibility();
 	Layout();
 	Refresh();
@@ -1291,7 +1323,7 @@ void PaletteWindow::ShowContextMenu(const wxPoint& pos) {
 	}
 	if (card_minimap) {
 		wxMenuItem* item = menu.AppendCheckItem(12002, "Show Minimap");
-		item->Check(card_minimap->IsShown());
+		item->Check(allow_minimap && (!splitter || splitter->IsSplit()));
 	}
 	menu.AppendSeparator();
 	menu.Append(12003, "Reset Palette Modules");
@@ -1304,13 +1336,15 @@ void PaletteWindow::ShowContextMenu(const wxPoint& pos) {
 			Layout();
 			Refresh();
 		} else if (id == 12002 && card_minimap) {
-			card_minimap->Show(!card_minimap->IsShown());
-			if (card_minimap->IsShown() && card_minimap->IsCollapsed()) card_minimap->SetCollapsed(false);
-			Layout();
-			Refresh();
+			allow_minimap = !allow_minimap;
+			UpdateMinimapVisibility();
 		} else if (id == 12003) {
+			allow_minimap = true;
 			if (card_assets) { card_assets->Show(true); card_assets->SetCollapsed(false); }
 			if (card_minimap) { card_minimap->Show(true); card_minimap->SetCollapsed(false); }
+			if (splitter && !splitter->IsSplit()) {
+				splitter->SplitHorizontally(card_assets, card_minimap, -180);
+			}
 			Layout();
 			Refresh();
 		}

@@ -48,17 +48,14 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 	choicebook(nullptr),
 	size_panel(nullptr),
 	tileset_choice(nullptr) {
-	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
-	// Create the tileset panel
-	wxStaticBox* ts_box = new wxStaticBox(this, wxID_ANY, "Tileset");
-	wxSizer* ts_sizer = newd wxStaticBoxSizer(ts_box, wxVERTICAL);
+	// Direct tileset dropdown selection with clean padding
 	tileset_choice = newd wxChoice(this, PALETTE_TILESET_CHOICE);
-	ts_sizer->Add(tileset_choice, 0, wxEXPAND | wxBOTTOM, 5);
+	topsizer->Add(tileset_choice, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 3);
 
-	wxChoicebook* tmp_choicebook = newd wxChoicebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-	ts_sizer->Add(tmp_choicebook, 1, wxEXPAND);
-	topsizer->Add(ts_sizer, 1, wxEXPAND | wxALL, 5);
+	choicebook = newd wxChoicebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+	topsizer->Add(choicebook, 1, wxEXPAND | wxALL, 0);
 
 	if (g_settings.getBoolean(Config::SHOW_TILESET_EDITOR)) {
 		wxSizer* tmpsizer = newd wxBoxSizer(wxHORIZONTAL);
@@ -88,11 +85,37 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 
 			for (const auto& sc : subcats) {
 				const TilesetCategory* tcg = favs->getCategory(sc.type);
-				if (tcg) {
-					BrushPanel* panel = newd BrushPanel(tmp_choicebook);
+				if (tcg && tcg->size() > 0) {
+					BrushPanel* panel = newd BrushPanel(choicebook);
 					panel->AssignTileset(tcg);
-					tmp_choicebook->AddPage(panel, sc.name);
+					choicebook->AddPage(panel, sc.name);
 					tileset_choice->Append(sc.name);
+				}
+			}
+		}
+
+		// Remote Multiplayer Host-Favorites
+		Tileset* hostFavs = g_materials.tilesets["Host-Favorites"];
+		if (hostFavs) {
+			struct HostFavCat {
+				TilesetCategoryType type;
+				wxString name;
+			} hostSubcats[] = {
+				{ TILESET_FAVORITE, "Host-Favorites (All)" },
+				{ TILESET_TERRAIN, "Host-Favorites (Terrain)" },
+				{ TILESET_DOODAD, "Host-Favorites (Doodads)" },
+				{ TILESET_ITEM, "Host-Favorites (Items)" },
+				{ TILESET_CREATURE, "Host-Favorites (Monster)" },
+				{ TILESET_NPC, "Host-Favorites (NPCs)" }
+			};
+
+			for (const auto& hsc : hostSubcats) {
+				const TilesetCategory* htcg = hostFavs->getCategory(hsc.type);
+				if (htcg && htcg->size() > 0) {
+					BrushPanel* panel = newd BrushPanel(choicebook);
+					panel->AssignTileset(htcg);
+					choicebook->AddPage(panel, hsc.name);
+					tileset_choice->Append(hsc.name);
 				}
 			}
 		}
@@ -101,9 +124,9 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 			if (iter->second->name == "Favorites") continue;
 			const TilesetCategory* tcg = iter->second->getCategory(category);
 			if (tcg && tcg->size() > 0) {
-				BrushPanel* panel = newd BrushPanel(tmp_choicebook);
+				BrushPanel* panel = newd BrushPanel(choicebook);
 				panel->AssignTileset(tcg);
-				tmp_choicebook->AddPage(panel, wxstr(iter->second->name));
+				choicebook->AddPage(panel, wxstr(iter->second->name));
 				tileset_choice->Append(wxstr(iter->second->name));
 			}
 		}
@@ -113,17 +136,17 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 		int caveIdx = tileset_choice->FindString("Cave");
 		if (caveIdx != wxNOT_FOUND) {
 			tileset_choice->SetSelection(caveIdx);
-			tmp_choicebook->SetSelection(caveIdx);
+			choicebook->SetSelection(caveIdx);
 		} else {
 			tileset_choice->SetSelection(0);
-			tmp_choicebook->SetSelection(0);
+			choicebook->SetSelection(0);
 		}
 	}
-	tmp_choicebook->GetChoiceCtrl()->Hide();
+	if (choicebook->GetChoiceCtrl()) {
+		choicebook->GetChoiceCtrl()->Hide();
+	}
 
 	SetSizer(topsizer);
-
-	choicebook = tmp_choicebook;
 }
 
 BrushPalettePanel::~BrushPalettePanel() {
@@ -131,26 +154,36 @@ BrushPalettePanel::~BrushPalettePanel() {
 }
 
 void BrushPalettePanel::InvalidateContents() {
-	for (size_t iz = 0; iz < choicebook->GetPageCount(); ++iz) {
-		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
-		panel->InvalidateContents();
+	if (choicebook) {
+		for (size_t iz = 0; iz < choicebook->GetPageCount(); ++iz) {
+			BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
+			if (panel) {
+				panel->InvalidateContents();
+			}
+		}
 	}
 	PalettePanel::InvalidateContents();
 }
 
 void BrushPalettePanel::LoadCurrentContents() {
-	wxWindow* page = choicebook->GetCurrentPage();
-	BrushPanel* panel = dynamic_cast<BrushPanel*>(page);
-	if (panel) {
-		panel->OnSwitchIn();
+	if (choicebook) {
+		wxWindow* page = choicebook->GetCurrentPage();
+		BrushPanel* panel = dynamic_cast<BrushPanel*>(page);
+		if (panel) {
+			panel->OnSwitchIn();
+		}
 	}
 	PalettePanel::LoadCurrentContents();
 }
 
 void BrushPalettePanel::LoadAllContents() {
-	for (size_t iz = 0; iz < choicebook->GetPageCount(); ++iz) {
-		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
-		panel->LoadContents();
+	if (choicebook) {
+		for (size_t iz = 0; iz < choicebook->GetPageCount(); ++iz) {
+			BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
+			if (panel) {
+				panel->LoadContents();
+			}
+		}
 	}
 	PalettePanel::LoadAllContents();
 }
@@ -165,7 +198,9 @@ void BrushPalettePanel::SetListType(BrushListType ltype) {
 	}
 	for (size_t iz = 0; iz < choicebook->GetPageCount(); ++iz) {
 		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
-		panel->SetListType(ltype);
+		if (panel) {
+			panel->SetListType(ltype);
+		}
 	}
 }
 
@@ -175,7 +210,9 @@ void BrushPalettePanel::SetListType(wxString ltype) {
 	}
 	for (size_t iz = 0; iz < choicebook->GetPageCount(); ++iz) {
 		BrushPanel* panel = dynamic_cast<BrushPanel*>(choicebook->GetPage(iz));
-		panel->SetListType(ltype);
+		if (panel) {
+			panel->SetListType(ltype);
+		}
 	}
 }
 
@@ -204,7 +241,9 @@ void BrushPalettePanel::SelectFirstBrush() {
 	}
 	wxWindow* page = choicebook->GetCurrentPage();
 	BrushPanel* panel = dynamic_cast<BrushPanel*>(page);
-	panel->SelectFirstBrush();
+	if (panel) {
+		panel->SelectFirstBrush();
+	}
 }
 
 bool BrushPalettePanel::SelectBrush(const Brush* whatbrush) {
@@ -435,7 +474,7 @@ BrushPanel::BrushPanel(wxWindow* parent) :
 	list_type(BRUSHLIST_LISTBOX) {
 	sizer = newd wxBoxSizer(wxVERTICAL);
 	SetSizer(sizer);
-	SetMinSize(wxSize(180, 200));
+	SetMinSize(wxSize(120, 100));
 }
 
 BrushPanel::~BrushPanel() {
@@ -611,6 +650,7 @@ BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes,
 	BrushBoxInterface(brushes),
 	icon_size(rsz) {
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
+	ShowScrollbars(wxSHOW_SB_NEVER, wxSHOW_SB_ALWAYS);
 	SetScrollRate(0, 20);
 	UpdateLayout();
 }
@@ -701,58 +741,49 @@ void BrushIconBox::OnSize(wxSizeEvent& event) {
 void BrushIconBox::UpdateLayout() {
 	item_layout.clear();
 	int client_width = GetClientSize().x;
-	wxWindow* p = GetParent();
-	while (p) {
-		int pw = p->GetClientSize().x;
-		if (pw > client_width) {
-			client_width = pw;
+	if (client_width <= 0) {
+		wxWindow* p = this;
+		while (p) {
+			if (p->GetClientSize().x > 50) {
+				client_width = p->GetClientSize().x;
+				break;
+			}
+			p = p->GetParent();
 		}
-		p = p->GetParent();
 	}
-	if (client_width < GetSize().x) {
+	if (client_width <= 0) {
 		client_width = GetSize().x;
 	}
-	if (client_width > 40) {
-		client_width -= 16; // Account for scrollbar and margin
-	}
 
-	int btn_width = 36;
 	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
 	if (scale_percent < 100) scale_percent = 100;
 	if (scale_percent > 200) scale_percent = 200;
 
-	if (icon_size == RENDER_SIZE_16x16) {
-		btn_width = 20;
-	} else if (icon_size == RENDER_SIZE_32x32) {
-		btn_width = 36;
-	}
-	btn_width = btn_width * scale_percent / 100;
+	int base_btn_w = (icon_size == RENDER_SIZE_16x16 ? 20 : 36);
+	int btn_width = FromDIP(base_btn_w * scale_percent / 100);
 
 	if (client_width <= 0) {
-		int config_cols = g_settings.getInteger(Config::PALETTE_COL_COUNT);
-		if (config_cols > 0) {
-			client_width = config_cols * btn_width;
-		} else {
-			client_width = 300;
-		}
+		client_width = 300;
 	}
 	last_layout_width = client_width;
 
+	// Determine how many full columns fit in client_width (minimum 3 columns)
 	int columns = client_width / btn_width;
-	int config_cols = g_settings.getInteger(Config::PALETTE_COL_COUNT);
-	if (config_cols > 0 && columns < config_cols) {
-		columns = config_cols;
+	if (columns < 3) columns = 3;
+
+	int total_tiles_w = columns * btn_width;
+
+	// Symmetrically center the entire grid between the left border and the right scrollbar:
+	// left_margin and right_margin (distance to scrollbar) will be identical
+	int extra_space = client_width - total_tiles_w;
+	int left_margin = 1;
+	if (extra_space > 0) {
+		left_margin = extra_space / 2;
 	}
-	if (columns < 1) columns = 1;
 
-	int total_items_width = columns * btn_width;
-	int left_padding = (client_width - total_items_width) / 2;
-	if (left_padding < 0) left_padding = 0;
-
-	int cur_x = left_padding;
-	int cur_y = 4;
+	int cur_y = FromDIP(4);
 	int col_in_row = 0;
-	int sep_height = 22 * scale_percent / 100;
+	int sep_height = FromDIP(22 * scale_percent / 100);
 	bool current_collapsed = false;
 
 	for (Brush* brush : visible_brushes) {
@@ -762,22 +793,21 @@ void BrushIconBox::UpdateLayout() {
 			current_collapsed = sep ? sep->isCollapsed() : false;
 
 			if (col_in_row > 0) {
-				cur_y += btn_width + 4;
-				cur_x = left_padding;
+				cur_y += btn_width + FromDIP(4);
 				col_in_row = 0;
 			}
 			BrushItemPos pos;
 			pos.brush = brush;
-			pos.x = 4;
+			pos.x = left_margin;
 			pos.y = cur_y;
-			pos.width = std::max(10, client_width - 8);
+			pos.width = std::max(10, total_tiles_w);
 			pos.height = sep_height;
 			pos.is_separator = true;
 			pos.is_collapsed = current_collapsed;
 			pos.label = brush->getName();
 			item_layout.push_back(pos);
 
-			cur_y += sep_height + 4;
+			cur_y += sep_height + FromDIP(4);
 		} else {
 			if (current_collapsed) {
 				continue; // Skip items in collapsed section!
@@ -785,7 +815,7 @@ void BrushIconBox::UpdateLayout() {
 
 			BrushItemPos pos;
 			pos.brush = brush;
-			pos.x = cur_x;
+			pos.x = left_margin + col_in_row * btn_width;
 			pos.y = cur_y;
 			pos.width = btn_width;
 			pos.height = btn_width;
@@ -795,10 +825,7 @@ void BrushIconBox::UpdateLayout() {
 			col_in_row++;
 			if (col_in_row >= columns) {
 				col_in_row = 0;
-				cur_x = left_padding;
 				cur_y += btn_width;
-			} else {
-				cur_x += btn_width;
 			}
 		}
 	}
@@ -806,7 +833,7 @@ void BrushIconBox::UpdateLayout() {
 	if (col_in_row > 0) {
 		cur_y += btn_width;
 	}
-	int total_height = std::max(150, cur_y + 10);
+	int total_height = std::max(FromDIP(150), cur_y + FromDIP(10));
 	SetVirtualSize(client_width, total_height);
 }
 
@@ -830,8 +857,8 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 	if (scale_percent < 100) scale_percent = 100;
 	if (scale_percent > 200) scale_percent = 200;
 
-	int spr_w = (icon_size == RENDER_SIZE_16x16 ? 16 : 32) * scale_percent / 100;
-	int offset = 2 * scale_percent / 100;
+	int spr_w = FromDIP((icon_size == RENDER_SIZE_16x16 ? 16 : 32) * scale_percent / 100);
+	int offset = FromDIP(2 * scale_percent / 100);
 
 	static std::unique_ptr<wxPen> highlight_pen;
 	static std::unique_ptr<wxPen> dark_highlight_pen;
@@ -889,7 +916,7 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 			}
 			dc.SetPen(wxPen(wxColor(50, 75, 105), 1, wxSOLID));
 			int line_start_x = item.x + (text_w > 0 ? text_w + 26 : 18);
-			int line_end_x = item.x + item.width - 4;
+			int line_end_x = item.x + item.width - 2;
 			if (line_end_x > line_start_x) {
 				dc.DrawLine(line_start_x, line_y, line_end_x, line_y);
 			}

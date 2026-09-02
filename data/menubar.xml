@@ -190,6 +190,7 @@
 		<item name="Radio" action="TOOLS_RADIO_PLAYER" help="Fantasy web radio player with Rainwave &amp; RPG streams."/>
 		<separator/>
 		<item name="Monster Editor..." action="TOOLS_MONSTER_EDITOR" help="Create &amp; edit monsters with outfit designer, attacks, immunities, and loot tables."/>
+		<item name="Creature Bestiary &amp; Wiki..." action="TOOLS_CREATURE_WIKI" help="Browse Tibia creature stats, HP, EXP, EXP/HP ratios, and level recommendations."/>
 		<item name="NPC Editor..." action="WIZARD_NPC" help="Create NPCs, outfits, dialogues, and shop offers."/>
 		<item name="Item Editor..." action="TOOLS_ITEM_EDITOR" help="Inspect &amp; edit items, attributes, OTB flags, and import PNG sprites."/>
 		<item name="Tileset &amp; Brush Studio..." hotkey="F4" action="TOOLS_TILESET_MANAGER" help="Tag RAW items, organize tilesets, and create custom autoborder brushes."/>

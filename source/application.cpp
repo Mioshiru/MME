@@ -145,10 +145,16 @@ Application::~Application() {
 #include <wx/datetime.h>
 
 #ifdef _WIN32
-#include <psapi.h>
 #include <windows.h>
+#include <psapi.h>
+#include <dbghelp.h>
+#pragma comment(lib, "dbghelp.lib")
 
 std::string GetModuleInfoFromAddress(void *address) {
+  HANDLE process = GetCurrentProcess();
+  char buffer[512];
+  std::string result;
+
   HMODULE hModule = NULL;
   if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
                              GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
@@ -161,28 +167,94 @@ std::string GetModuleInfoFromAddress(void *address) {
                                  ? fullPath.substr(lastSlash + 1)
                                  : fullPath;
       ULONG_PTR offset = (ULONG_PTR)address - (ULONG_PTR)hModule;
-      char buffer[256];
       sprintf_s(buffer, "%s + 0x%IX", baseName.c_str(), offset);
-      return buffer;
+      result = buffer;
     }
+  } else {
+    result = "Unknown Module";
   }
-  return "Unknown Module";
+
+  // Try to resolve symbol name
+  char symbolBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+  PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)symbolBuffer;
+  pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+  pSymbol->MaxNameLen = MAX_SYM_NAME;
+  DWORD64 displacement = 0;
+
+  if (SymFromAddr(process, (DWORD64)address, &displacement, pSymbol)) {
+    result += " (";
+    result += pSymbol->Name;
+    
+    // Try to resolve source file & line
+    IMAGEHLP_LINE64 lineInfo;
+    memset(&lineInfo, 0, sizeof(lineInfo));
+    lineInfo.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+    DWORD lineDisplacement = 0;
+    if (SymGetLineFromAddr64(process, (DWORD64)address, &lineDisplacement, &lineInfo)) {
+      char lineBuf[128];
+      sprintf_s(lineBuf, " at %s:%lu", lineInfo.FileName, lineInfo.LineNumber);
+      result += lineBuf;
+    }
+    result += ")";
+  }
+
+  return result;
+}
+
+static void LogCrashDetails(struct _EXCEPTION_POINTERS *exceptionInfo) {
+  if (!exceptionInfo || !exceptionInfo->ExceptionRecord) return;
+  void* addr = exceptionInfo->ExceptionRecord->ExceptionAddress;
+  DWORD code = exceptionInfo->ExceptionRecord->ExceptionCode;
+  std::string modInfo = GetModuleInfoFromAddress(addr);
+
+  char detailBuf[512];
+  sprintf_s(detailBuf, "FATAL CRASH (0x%08X) at address 0x%p in %s", code, addr, modInfo.c_str());
+  LogErrorToFile(detailBuf);
+
+  // Print stack backtrace
+  HANDLE process = GetCurrentProcess();
+  HANDLE thread = GetCurrentThread();
+  SymInitialize(process, NULL, TRUE);
+
+  CONTEXT context = *exceptionInfo->ContextRecord;
+  STACKFRAME64 stackFrame;
+  memset(&stackFrame, 0, sizeof(stackFrame));
+#if defined(_M_X64)
+  DWORD machineType = IMAGE_FILE_MACHINE_AMD64;
+  stackFrame.AddrPC.Offset = context.Rip;
+  stackFrame.AddrPC.Mode = AddrModeFlat;
+  stackFrame.AddrFrame.Offset = context.Rbp;
+  stackFrame.AddrFrame.Mode = AddrModeFlat;
+  stackFrame.AddrStack.Offset = context.Rsp;
+  stackFrame.AddrStack.Mode = AddrModeFlat;
+#elif defined(_M_IX86)
+  DWORD machineType = IMAGE_FILE_MACHINE_I386;
+  stackFrame.AddrPC.Offset = context.Eip;
+  stackFrame.AddrPC.Mode = AddrModeFlat;
+  stackFrame.AddrFrame.Offset = context.Ebp;
+  stackFrame.AddrFrame.Mode = AddrModeFlat;
+  stackFrame.AddrStack.Offset = context.Esp;
+  stackFrame.AddrStack.Mode = AddrModeFlat;
+#endif
+
+  std::string stackStr = "Stack Trace:\n";
+  for (int frame = 0; frame < 20; ++frame) {
+    if (!StackWalk64(machineType, process, thread, &stackFrame, &context, NULL,
+                     SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
+      break;
+    }
+    if (stackFrame.AddrPC.Offset == 0) break;
+    void* frameAddr = (void*)stackFrame.AddrPC.Offset;
+    char frameBuf[256];
+    sprintf_s(frameBuf, "  [%d] 0x%p: %s\n", frame, frameAddr, GetModuleInfoFromAddress(frameAddr).c_str());
+    stackStr += frameBuf;
+  }
+  LogErrorToFile(stackStr);
+  SymCleanup(process);
 }
 
 LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS *exceptionInfo) {
-  std::ofstream err_file("error.log", std::ios::app);
-  if (err_file.is_open()) {
-    std::string modInfo = GetModuleInfoFromAddress(
-        exceptionInfo->ExceptionRecord->ExceptionAddress);
-    err_file << "[" << wxDateTime::Now().FormatISOCombined(' ').ToStdString()
-             << "] FATAL UNHANDLED EXCEPTION: Code 0x" << std::hex
-             << exceptionInfo->ExceptionRecord->ExceptionCode << " in "
-             << modInfo << " (address 0x"
-             << exceptionInfo->ExceptionRecord->ExceptionAddress << ")"
-             << std::endl;
-    err_file.flush();
-    err_file.close();
-  }
+  LogCrashDetails(exceptionInfo);
   return EXCEPTION_EXECUTE_HANDLER;
 }
 #endif
@@ -564,8 +636,50 @@ int Application::OnExit() {
 
 
 void Application::OnFatalException() {
-  LogErrorToFile("FATAL ERROR: Structured Exception (e.g. Access "
-                 "Violation/Crash) occurred in the application!");
+  LogErrorToFile("FATAL ERROR: Structured Exception occurred in the application!");
+#ifdef _WIN32
+  HANDLE process = GetCurrentProcess();
+  HANDLE thread = GetCurrentThread();
+  SymInitialize(process, NULL, TRUE);
+
+  CONTEXT context;
+  RtlCaptureContext(&context);
+
+  STACKFRAME64 stackFrame;
+  memset(&stackFrame, 0, sizeof(stackFrame));
+#if defined(_M_X64)
+  DWORD machineType = IMAGE_FILE_MACHINE_AMD64;
+  stackFrame.AddrPC.Offset = context.Rip;
+  stackFrame.AddrPC.Mode = AddrModeFlat;
+  stackFrame.AddrFrame.Offset = context.Rbp;
+  stackFrame.AddrFrame.Mode = AddrModeFlat;
+  stackFrame.AddrStack.Offset = context.Rsp;
+  stackFrame.AddrStack.Mode = AddrModeFlat;
+#elif defined(_M_IX86)
+  DWORD machineType = IMAGE_FILE_MACHINE_I386;
+  stackFrame.AddrPC.Offset = context.Eip;
+  stackFrame.AddrPC.Mode = AddrModeFlat;
+  stackFrame.AddrFrame.Offset = context.Ebp;
+  stackFrame.AddrFrame.Mode = AddrModeFlat;
+  stackFrame.AddrStack.Offset = context.Esp;
+  stackFrame.AddrStack.Mode = AddrModeFlat;
+#endif
+
+  std::string stackStr = "Fatal Exception Stack Trace:\n";
+  for (int frame = 0; frame < 25; ++frame) {
+    if (!StackWalk64(machineType, process, thread, &stackFrame, &context, NULL,
+                     SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
+      break;
+    }
+    if (stackFrame.AddrPC.Offset == 0) break;
+    void* frameAddr = (void*)stackFrame.AddrPC.Offset;
+    char frameBuf[256];
+    sprintf_s(frameBuf, "  [%d] 0x%p: %s\n", frame, frameAddr, GetModuleInfoFromAddress(frameAddr).c_str());
+    stackStr += frameBuf;
+  }
+  LogErrorToFile(stackStr);
+  SymCleanup(process);
+#endif
 }
 
 void Application::OnUnhandledException() {

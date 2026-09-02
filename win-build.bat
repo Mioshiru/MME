@@ -249,9 +249,11 @@ if exist "!BUILD_DIR!\bin" (
     copy /y "!BUILD_DIR!\bin\*.dll" "!BIN_DIR!\" >nul 2>&1
 )
 
-REM 2. Copy Core Executable to Binaries\Win64\MME-Win64.exe
+REM 2. Copy Core Executable and PDB to Binaries\Win64\MME-Win64.exe
 if exist "!BUILD_DIR!\Release\MME.exe" copy /y "!BUILD_DIR!\Release\MME.exe" "!BIN_DIR!\MME-Win64.exe" >nul 2>&1
 if exist "!BUILD_DIR!\MME.exe" copy /y "!BUILD_DIR!\MME.exe" "!BIN_DIR!\MME-Win64.exe" >nul 2>&1
+if exist "!BUILD_DIR!\Release\MME.pdb" copy /y "!BUILD_DIR!\Release\MME.pdb" "!BIN_DIR!\MME-Win64.pdb" >nul 2>&1
+if exist "!BUILD_DIR!\MME.pdb" copy /y "!BUILD_DIR!\MME.pdb" "!BIN_DIR!\MME-Win64.pdb" >nul 2>&1
 
 REM 3. Compile lightweight root launcher MME.exe with icon
 rc /nologo /fo "!BUILD_DIR!\launcher.res" "!PROJECT_ROOT!\source\rme.rc" >nul 2>&1

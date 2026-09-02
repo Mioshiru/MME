@@ -178,7 +178,15 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	UpdateKineticScroll();
 	UpdateSmoothZoom();
 
-	SetCurrent(*g_gui.GetGLContext(this));
+	if (!IsShownOnScreen()) {
+		return;
+	}
+
+	wxGLContext* gl_ctx = g_gui.GetGLContext(this);
+	if (!gl_ctx) {
+		return;
+	}
+	SetCurrent(*gl_ctx);
 #ifdef __WINDOWS__
 	SetVSync(g_settings.getBoolean(Config::V_SYNC));
 #endif

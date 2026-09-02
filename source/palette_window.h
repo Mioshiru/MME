@@ -177,6 +177,8 @@ public:
 	wxPanel* minimap_panel = nullptr;
 	PaletteModuleCard* card_assets = nullptr;
 	PaletteModuleCard* card_minimap = nullptr;
+	class wxSplitterWindow* splitter = nullptr;
+	int last_sash_pos = -180;
 	void UpdateMinimapVisibility();
 	void SetAllowMinimap(bool allow) { allow_minimap = allow; UpdateMinimapVisibility(); }
 	bool AllowsMinimap() const { return allow_minimap; }
@@ -184,10 +186,12 @@ public:
 	bool IsHorizontalLayout() const { return is_horizontal; }
 	void CheckAndUpdateOrientation();
 	void ShowContextMenu(const wxPoint& pos);
+	void SnapDockWidth();
 
 private:
 	bool allow_minimap = true;
 	bool is_horizontal = false;
+	bool snapping_active = false;
 
 	DECLARE_EVENT_TABLE()
 };

@@ -1,0 +1,4916 @@
+﻿{
+    "corym skirmisher":  {
+                             "hp":  450,
+                             "exp":  260,
+                             "bclass":  "Humanoid",
+                             "blevel":  "Medium",
+                             "armor":  25,
+                             "title":  "Corym Skirmisher",
+                             "speed":  100
+                         },
+    "chicken":  {
+                    "hp":  15,
+                    "exp":  0,
+                    "bclass":  "Bird",
+                    "blevel":  "Trivial",
+                    "armor":  1,
+                    "title":  "Chicken",
+                    "speed":  64
+                },
+    "cult enforcer":  {
+                          "hp":  1150,
+                          "exp":  1000,
+                          "bclass":  "Human",
+                          "blevel":  "Medium",
+                          "armor":  30,
+                          "title":  "Cult Enforcer",
+                          "speed":  130
+                      },
+    "vampire bride":  {
+                          "hp":  1200,
+                          "exp":  1050,
+                          "bclass":  "Undead",
+                          "blevel":  "Medium",
+                          "armor":  55,
+                          "title":  "Vampire Bride",
+                          "speed":  100
+                      },
+    "wilting leaf golem":  {
+                               "hp":  380,
+                               "exp":  225,
+                               "bclass":  "Plant",
+                               "blevel":  "Medium",
+                               "armor":  21,
+                               "title":  "Wilting Leaf Golem",
+                               "speed":  74
+                           },
+    "undead dragon":  {
+                          "hp":  8350,
+                          "exp":  7500,
+                          "bclass":  "Undead",
+                          "blevel":  "Hard",
+                          "armor":  66,
+                          "title":  "Undead Dragon",
+                          "speed":  165
+                      },
+    "werelioness":  {
+                        "hp":  3000,
+                        "exp":  2300,
+                        "bclass":  "Lycanthrope",
+                        "blevel":  "Hard",
+                        "armor":  38,
+                        "title":  "Werelioness",
+                        "speed":  110
+                    },
+    "dragon lord hatchling":  {
+                                  "hp":  750,
+                                  "exp":  645,
+                                  "bclass":  "Dragon",
+                                  "blevel":  "Medium",
+                                  "armor":  29,
+                                  "title":  "Dragon Lord Hatchling",
+                                  "speed":  84
+                              },
+    "elf scout":  {
+                      "hp":  160,
+                      "exp":  75,
+                      "bclass":  "Humanoid",
+                      "blevel":  "Easy",
+                      "armor":  7,
+                      "title":  "Elf Scout",
+                      "speed":  110
+                  },
+    "dark torturer":  {
+                          "hp":  7350,
+                          "exp":  4650,
+                          "bclass":  "Demon",
+                          "blevel":  "Hard",
+                          "armor":  45,
+                          "title":  "Dark Torturer",
+                          "speed":  185
+                      },
+    "orc cult fanatic":  {
+                             "hp":  1300,
+                             "exp":  1100,
+                             "bclass":  "Humanoid",
+                             "blevel":  "Medium",
+                             "armor":  22,
+                             "title":  "Orc Cult Fanatic",
+                             "speed":  115
+                         },
+    "quara hydromancer scout":  {
+                                    "hp":  1100,
+                                    "exp":  800,
+                                    "bclass":  "Aquatic",
+                                    "blevel":  "Medium",
+                                    "armor":  30,
+                                    "title":  "Quara Hydromancer Scout",
+                                    "speed":  95
+                                },
+    "nightmare":  {
+                      "hp":  2700,
+                      "exp":  1800,
+                      "bclass":  "Magical",
+                      "blevel":  "Medium",
+                      "armor":  25,
+                      "title":  "Nightmare",
+                      "speed":  232
+                  },
+    "rat":  {
+                "hp":  20,
+                "exp":  5,
+                "bclass":  "Mammal",
+                "blevel":  "Trivial",
+                "armor":  1,
+                "title":  "Rat",
+                "speed":  67
+            },
+    "quara predator scout":  {
+                                 "hp":  890,
+                                 "exp":  400,
+                                 "bclass":  "Aquatic",
+                                 "blevel":  "Medium",
+                                 "armor":  30,
+                                 "title":  "Quara Predator Scout",
+                                 "speed":  85
+                             },
+    "troll legionnaire":  {
+                              "hp":  210,
+                              "exp":  140,
+                              "bclass":  "Humanoid",
+                              "blevel":  "Medium",
+                              "armor":  12,
+                              "title":  "Troll Legionnaire",
+                              "speed":  100
+                          },
+    "werewolf":  {
+                     "hp":  1955,
+                     "exp":  1900,
+                     "bclass":  "Lycanthrope",
+                     "blevel":  "Medium",
+                     "armor":  36,
+                     "title":  "Werewolf",
+                     "speed":  140
+                 },
+    "condensed sin":  {
+                          "hp":  0,
+                          "exp":  0,
+                          "bclass":  "",
+                          "blevel":  "",
+                          "armor":  0,
+                          "title":  "Condensed Sin",
+                          "speed":  0
+                      },
+    "white shade":  {
+                        "hp":  260,
+                        "exp":  120,
+                        "bclass":  "Undead",
+                        "blevel":  "Easy",
+                        "armor":  10,
+                        "title":  "White Shade",
+                        "speed":  80
+                    },
+    "dark paladin":  {
+                         "hp":  0,
+                         "exp":  0,
+                         "bclass":  "Humans",
+                         "blevel":  "",
+                         "armor":  0,
+                         "title":  "Dark Paladin",
+                         "speed":  0
+                     },
+    "troll":  {
+                  "hp":  50,
+                  "exp":  20,
+                  "bclass":  "Humanoid",
+                  "blevel":  "Trivial",
+                  "armor":  6,
+                  "title":  "Troll",
+                  "speed":  63
+              },
+    "cyclops smith":  {
+                          "hp":  435,
+                          "exp":  255,
+                          "bclass":  "Giant",
+                          "blevel":  "Medium",
+                          "armor":  28,
+                          "title":  "Cyclops Smith",
+                          "speed":  102
+                      },
+    "island troll":  {
+                         "hp":  50,
+                         "exp":  20,
+                         "bclass":  "Humanoid",
+                         "blevel":  "Trivial",
+                         "armor":  6,
+                         "title":  "Island Troll",
+                         "speed":  63
+                     },
+    "terrorsleep":  {
+                        "hp":  7200,
+                        "exp":  7240,
+                        "bclass":  "Magical",
+                        "blevel":  "Hard",
+                        "armor":  80,
+                        "title":  "Terrorsleep",
+                        "speed":  180
+                    },
+    "crypt defiler":  {
+                          "hp":  185,
+                          "exp":  70,
+                          "bclass":  "Human",
+                          "blevel":  "Easy",
+                          "armor":  6,
+                          "title":  "Crypt Defiler",
+                          "speed":  95
+                      },
+    "emerald damselfly":  {
+                              "hp":  90,
+                              "exp":  35,
+                              "bclass":  "Vermin",
+                              "blevel":  "Easy",
+                              "armor":  6,
+                              "title":  "Emerald Damselfly",
+                              "speed":  100
+                          },
+    "execowtioner":  {
+                         "hp":  3500,
+                         "exp":  2400,
+                         "bclass":  "Humanoid",
+                         "blevel":  "Medium",
+                         "armor":  41,
+                         "title":  "Execowtioner",
+                         "speed":  135
+                     },
+    "deepling warrior":  {
+                             "hp":  1600,
+                             "exp":  1500,
+                             "bclass":  "Aquatic",
+                             "blevel":  "Medium",
+                             "armor":  40,
+                             "title":  "Deepling Warrior",
+                             "speed":  145
+                         },
+    "mutated tiger":  {
+                          "hp":  1100,
+                          "exp":  750,
+                          "bclass":  "Mammal",
+                          "blevel":  "Medium",
+                          "armor":  25,
+                          "title":  "Mutated Tiger",
+                          "speed":  100
+                      },
+    "orchid frog":  {
+                        "hp":  60,
+                        "exp":  20,
+                        "bclass":  "Amphibic",
+                        "blevel":  "Easy",
+                        "armor":  8,
+                        "title":  "Orchid Frog",
+                        "speed":  160
+                    },
+    "lizard sentinel":  {
+                            "hp":  265,
+                            "exp":  160,
+                            "bclass":  "Reptile",
+                            "blevel":  "Easy",
+                            "armor":  17,
+                            "title":  "Lizard Sentinel",
+                            "speed":  90
+                        },
+    "spectre":  {
+                    "hp":  1350,
+                    "exp":  2100,
+                    "bclass":  "Undead",
+                    "blevel":  "Medium",
+                    "armor":  40,
+                    "title":  "Spectre",
+                    "speed":  140
+                },
+    "chakoya toolshaper":  {
+                               "hp":  80,
+                               "exp":  40,
+                               "bclass":  "Humanoid",
+                               "blevel":  "Easy",
+                               "armor":  7,
+                               "title":  "Chakoya Toolshaper",
+                               "speed":  68
+                           },
+    "massive energy elemental":  {
+                                     "hp":  1100,
+                                     "exp":  950,
+                                     "bclass":  "Elemental",
+                                     "blevel":  "Medium",
+                                     "armor":  35,
+                                     "title":  "Massive Energy Elemental",
+                                     "speed":  215
+                                 },
+    "orc":  {
+                "hp":  70,
+                "exp":  25,
+                "bclass":  "Humanoid",
+                "blevel":  "Easy",
+                "armor":  4,
+                "title":  "Orc",
+                "speed":  75
+            },
+    "gravedigger":  {
+                        "hp":  1500,
+                        "exp":  950,
+                        "bclass":  "Undead",
+                        "blevel":  "Medium",
+                        "armor":  58,
+                        "title":  "Gravedigger",
+                        "speed":  120
+                    },
+    "barbarian skullhunter":  {
+                                  "hp":  135,
+                                  "exp":  85,
+                                  "bclass":  "Human",
+                                  "blevel":  "Easy",
+                                  "armor":  8,
+                                  "title":  "Barbarian Skullhunter",
+                                  "speed":  84
+                              },
+    "tarnished spirit":  {
+                             "hp":  150,
+                             "exp":  120,
+                             "bclass":  "Undead",
+                             "blevel":  "Easy",
+                             "armor":  10,
+                             "title":  "Tarnished Spirit",
+                             "speed":  80
+                         },
+    "arachnophobica":  {
+                           "hp":  5000,
+                           "exp":  4700,
+                           "bclass":  "Magical",
+                           "blevel":  "Hard",
+                           "armor":  70,
+                           "title":  "Arachnophobica",
+                           "speed":  200
+                       },
+    "demon skeleton":  {
+                           "hp":  400,
+                           "exp":  240,
+                           "bclass":  "Undead",
+                           "blevel":  "Medium",
+                           "armor":  25,
+                           "title":  "Demon Skeleton",
+                           "speed":  90
+                       },
+    "wyvern":  {
+                   "hp":  795,
+                   "exp":  515,
+                   "bclass":  "Reptile",
+                   "blevel":  "Medium",
+                   "armor":  19,
+                   "title":  "Wyvern",
+                   "speed":  93
+               },
+    "lizard chosen":  {
+                          "hp":  3050,
+                          "exp":  2530,
+                          "bclass":  "Reptile",
+                          "blevel":  "Medium",
+                          "armor":  28,
+                          "title":  "Lizard Chosen",
+                          "speed":  136
+                      },
+    "wisp":  {
+                 "hp":  115,
+                 "exp":  0,
+                 "bclass":  "Fey",
+                 "blevel":  "Trivial",
+                 "armor":  7,
+                 "title":  "Wisp",
+                 "speed":  81
+             },
+    "terramite":  {
+                      "hp":  365,
+                      "exp":  160,
+                      "bclass":  "Vermin",
+                      "blevel":  "Easy",
+                      "armor":  15,
+                      "title":  "Terramite",
+                      "speed":  111
+                  },
+    "minotaur archer":  {
+                            "hp":  100,
+                            "exp":  65,
+                            "bclass":  "Humanoid",
+                            "blevel":  "Easy",
+                            "armor":  6,
+                            "title":  "Minotaur Archer",
+                            "speed":  80
+                        },
+    "chakoya windcaller":  {
+                               "hp":  84,
+                               "exp":  48,
+                               "bclass":  "Humanoid",
+                               "blevel":  "Easy",
+                               "armor":  7,
+                               "title":  "Chakoya Windcaller",
+                               "speed":  71
+                           },
+    "custodian":  {
+                      "hp":  47000,
+                      "exp":  27500,
+                      "bclass":  "Humans",
+                      "blevel":  "",
+                      "armor":  0,
+                      "title":  "Custodian",
+                      "speed":  0
+                  },
+    "armadile":  {
+                     "hp":  3800,
+                     "exp":  3200,
+                     "bclass":  "Magical",
+                     "blevel":  "Hard",
+                     "armor":  66,
+                     "title":  "Armadile",
+                     "speed":  220
+                 },
+    "witch":  {
+                  "hp":  300,
+                  "exp":  120,
+                  "bclass":  "Human",
+                  "blevel":  "Easy",
+                  "armor":  8,
+                  "title":  "Witch",
+                  "speed":  102
+              },
+    "demon outcast":  {
+                          "hp":  6900,
+                          "exp":  6200,
+                          "bclass":  "Demon",
+                          "blevel":  "Hard",
+                          "armor":  49,
+                          "title":  "Demon Outcast",
+                          "speed":  148
+                      },
+    "quara mantassin scout":  {
+                                  "hp":  220,
+                                  "exp":  100,
+                                  "bclass":  "Aquatic",
+                                  "blevel":  "Easy",
+                                  "armor":  7,
+                                  "title":  "Quara Mantassin Scout",
+                                  "speed":  70
+                              },
+    "deepling guard":  {
+                           "hp":  1900,
+                           "exp":  2100,
+                           "bclass":  "Aquatic",
+                           "blevel":  "Medium",
+                           "armor":  53,
+                           "title":  "Deepling Guard",
+                           "speed":  135
+                       },
+    "orc warlord":  {
+                        "hp":  950,
+                        "exp":  670,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Medium",
+                        "armor":  28,
+                        "title":  "Orc Warlord",
+                        "speed":  117
+                    },
+    "shock head":  {
+                       "hp":  4200,
+                       "exp":  2300,
+                       "bclass":  "Magical",
+                       "blevel":  "Hard",
+                       "armor":  78,
+                       "title":  "Shock Head",
+                       "speed":  136
+                   },
+    "goblin":  {
+                   "hp":  50,
+                   "exp":  25,
+                   "bclass":  "Humanoid",
+                   "blevel":  "Trivial",
+                   "armor":  6,
+                   "title":  "Goblin",
+                   "speed":  60
+               },
+    "energetic book":  {
+                           "hp":  18500,
+                           "exp":  12034,
+                           "bclass":  "Inkborn",
+                           "blevel":  "Hard",
+                           "armor":  82,
+                           "title":  "Energetic Book",
+                           "speed":  220
+                       },
+    "orclops doomhauler":  {
+                               "hp":  1700,
+                               "exp":  1450,
+                               "bclass":  "Giant",
+                               "blevel":  "Medium",
+                               "armor":  35,
+                               "title":  "Orclops Doomhauler",
+                               "speed":  120
+                           },
+    "necromancer":  {
+                        "hp":  580,
+                        "exp":  580,
+                        "bclass":  "Human",
+                        "blevel":  "Medium",
+                        "armor":  50,
+                        "title":  "Necromancer",
+                        "speed":  94
+                    },
+    "jellyfish":  {
+                      "hp":  55,
+                      "exp":  0,
+                      "bclass":  "Aquatic",
+                      "blevel":  "Easy",
+                      "armor":  11,
+                      "title":  "Jellyfish",
+                      "speed":  84
+                  },
+    "werehyaena shaman":  {
+                              "hp":  2500,
+                              "exp":  2200,
+                              "bclass":  "Lycanthrope",
+                              "blevel":  "Medium",
+                              "armor":  38,
+                              "title":  "Werehyaena Shaman",
+                              "speed":  110
+                          },
+    "gladiator":  {
+                      "hp":  185,
+                      "exp":  90,
+                      "bclass":  "Human",
+                      "blevel":  "Easy",
+                      "armor":  14,
+                      "title":  "Gladiator",
+                      "speed":  98
+                  },
+    "manticore":  {
+                      "hp":  6700,
+                      "exp":  4750,
+                      "bclass":  "Magical",
+                      "blevel":  "Hard",
+                      "armor":  78,
+                      "title":  "Manticore",
+                      "speed":  150
+                  },
+    "quara pincher":  {
+                          "hp":  1800,
+                          "exp":  1500,
+                          "bclass":  "Aquatic",
+                          "blevel":  "Medium",
+                          "armor":  85,
+                          "title":  "Quara Pincher",
+                          "speed":  198
+                      },
+    "spidris elite":  {
+                          "hp":  5000,
+                          "exp":  4000,
+                          "bclass":  "Vermin",
+                          "blevel":  "Medium",
+                          "armor":  55,
+                          "title":  "Spidris Elite",
+                          "speed":  197
+                      },
+    "sight of surrender":  {
+                               "hp":  28000,
+                               "exp":  17000,
+                               "bclass":  "Magical",
+                               "blevel":  "Hard",
+                               "armor":  92,
+                               "title":  "Sight of Surrender",
+                               "speed":  170
+                           },
+    "rage squid":  {
+                       "hp":  17000,
+                       "exp":  16300,
+                       "bclass":  "Inkborn",
+                       "blevel":  "Hard",
+                       "armor":  78,
+                       "title":  "Rage Squid",
+                       "speed":  215
+                   },
+    "ghost":  {
+                  "hp":  150,
+                  "exp":  120,
+                  "bclass":  "Undead",
+                  "blevel":  "Easy",
+                  "armor":  10,
+                  "title":  "Ghost",
+                  "speed":  80
+              },
+    "starving wolf":  {
+                          "hp":  85,
+                          "exp":  65,
+                          "bclass":  "Mammal",
+                          "blevel":  "Easy",
+                          "armor":  2,
+                          "title":  "Starving Wolf",
+                          "speed":  94
+                      },
+    "sibang":  {
+                   "hp":  225,
+                   "exp":  105,
+                   "bclass":  "Mammal",
+                   "blevel":  "Easy",
+                   "armor":  15,
+                   "title":  "Sibang",
+                   "speed":  107
+               },
+    "evil sheep lord":  {
+                            "hp":  400,
+                            "exp":  340,
+                            "bclass":  "Mammal",
+                            "blevel":  "Medium",
+                            "armor":  24,
+                            "title":  "Evil Sheep Lord",
+                            "speed":  89
+                        },
+    "orc cult minion":  {
+                            "hp":  1000,
+                            "exp":  850,
+                            "bclass":  "Humanoid",
+                            "blevel":  "Medium",
+                            "armor":  30,
+                            "title":  "Orc Cult Minion",
+                            "speed":  105
+                        },
+    "ogre rowdy":  {
+                       "hp":  4500,
+                       "exp":  4200,
+                       "bclass":  "Giant",
+                       "blevel":  "Hard",
+                       "armor":  98,
+                       "title":  "Ogre Rowdy",
+                       "speed":  210
+                   },
+    "eternal guardian":  {
+                             "hp":  2500,
+                             "exp":  1800,
+                             "bclass":  "Construct",
+                             "blevel":  "Medium",
+                             "armor":  62,
+                             "title":  "Eternal Guardian",
+                             "speed":  102
+                         },
+    "risen soldier":  {
+                          "hp":  6000,
+                          "exp":  0,
+                          "bclass":  "The Undead",
+                          "blevel":  "",
+                          "armor":  0,
+                          "title":  "Risen Soldier",
+                          "speed":  0
+                      },
+    "winter wolf":  {
+                        "hp":  30,
+                        "exp":  20,
+                        "bclass":  "Mammal",
+                        "blevel":  "Trivial",
+                        "armor":  2,
+                        "title":  "Winter Wolf",
+                        "speed":  85
+                    },
+    "dwarf geomancer":  {
+                            "hp":  380,
+                            "exp":  265,
+                            "bclass":  "Humanoid",
+                            "blevel":  "Medium",
+                            "armor":  15,
+                            "title":  "Dwarf Geomancer",
+                            "speed":  100
+                        },
+    "hot dog":  {
+                    "hp":  505,
+                    "exp":  190,
+                    "bclass":  "Mammal",
+                    "blevel":  "Medium",
+                    "armor":  24,
+                    "title":  "Hot Dog",
+                    "speed":  75
+                },
+    "deepling elite":  {
+                           "hp":  3200,
+                           "exp":  3000,
+                           "bclass":  "Aquatic",
+                           "blevel":  "Medium",
+                           "armor":  45,
+                           "title":  "Deepling Elite",
+                           "speed":  165
+                       },
+    "tomb servant":  {
+                         "hp":  475,
+                         "exp":  215,
+                         "bclass":  "Undead",
+                         "blevel":  "Medium",
+                         "armor":  22,
+                         "title":  "Tomb Servant",
+                         "speed":  78
+                     },
+    "midnight spawn":  {
+                           "hp":  2000,
+                           "exp":  900,
+                           "bclass":  "Slime",
+                           "blevel":  "Medium",
+                           "armor":  40,
+                           "title":  "Midnight Spawn",
+                           "speed":  170
+                       },
+    "infected weeper":  {
+                            "hp":  3000,
+                            "exp":  1200,
+                            "bclass":  "Construct",
+                            "blevel":  "Hard",
+                            "armor":  76,
+                            "title":  "Infected Weeper",
+                            "speed":  170
+                        },
+    "amazon":  {
+                   "hp":  110,
+                   "exp":  60,
+                   "bclass":  "Human",
+                   "blevel":  "Easy",
+                   "armor":  10,
+                   "title":  "Amazon",
+                   "speed":  86
+               },
+    "frost giant":  {
+                        "hp":  270,
+                        "exp":  150,
+                        "bclass":  "Giant",
+                        "blevel":  "Easy",
+                        "armor":  22,
+                        "title":  "Frost Giant",
+                        "speed":  95
+                    },
+    "menacing carnivor":  {
+                              "hp":  3500,
+                              "exp":  2112,
+                              "bclass":  "Magical",
+                              "blevel":  "Hard",
+                              "armor":  68,
+                              "title":  "Menacing Carnivor",
+                              "speed":  170
+                          },
+    "dark magician":  {
+                          "hp":  325,
+                          "exp":  185,
+                          "bclass":  "Human",
+                          "blevel":  "Easy",
+                          "armor":  15,
+                          "title":  "Dark Magician",
+                          "speed":  90
+                      },
+    "the count":  {
+                      "hp":  1250,
+                      "exp":  450,
+                      "bclass":  "The Undead",
+                      "blevel":  "",
+                      "armor":  0,
+                      "title":  "The Count",
+                      "speed":  0
+                  },
+    "cobra vizier":  {
+                         "hp":  8500,
+                         "exp":  7650,
+                         "bclass":  "Human",
+                         "blevel":  "Hard",
+                         "armor":  82,
+                         "title":  "Cobra Vizier",
+                         "speed":  160
+                     },
+    "minotaur mage":  {
+                          "hp":  155,
+                          "exp":  150,
+                          "bclass":  "Humanoid",
+                          "blevel":  "Easy",
+                          "armor":  18,
+                          "title":  "Minotaur Mage",
+                          "speed":  85
+                      },
+    "gargoyle":  {
+                     "hp":  250,
+                     "exp":  150,
+                     "bclass":  "Magical",
+                     "blevel":  "Easy",
+                     "armor":  26,
+                     "title":  "Gargoyle",
+                     "speed":  100
+                 },
+    "draken abomination":  {
+                               "hp":  6250,
+                               "exp":  4500,
+                               "bclass":  "Dragon",
+                               "blevel":  "Hard",
+                               "armor":  45,
+                               "title":  "Draken Abomination",
+                               "speed":  135
+                           },
+    "lizard snakecharmer":  {
+                                "hp":  325,
+                                "exp":  210,
+                                "bclass":  "Reptile",
+                                "blevel":  "Medium",
+                                "armor":  22,
+                                "title":  "Lizard Snakecharmer",
+                                "speed":  172
+                            },
+    "crystal wolf":  {
+                         "hp":  750,
+                         "exp":  275,
+                         "bclass":  "Magical",
+                         "blevel":  "Medium",
+                         "armor":  19,
+                         "title":  "Crystal Wolf",
+                         "speed":  160
+                     },
+    "damaged crystal golem":  {
+                                  "hp":  500,
+                                  "exp":  0,
+                                  "bclass":  "Construct",
+                                  "blevel":  "Easy",
+                                  "armor":  30,
+                                  "title":  "Damaged Crystal Golem",
+                                  "speed":  134
+                              },
+    "quara hydromancer":  {
+                              "hp":  1100,
+                              "exp":  950,
+                              "bclass":  "Aquatic",
+                              "blevel":  "Medium",
+                              "armor":  30,
+                              "title":  "Quara Hydromancer",
+                              "speed":  245
+                          },
+    "knowledge elemental":  {
+                                "hp":  10500,
+                                "exp":  10603,
+                                "bclass":  "Elemental",
+                                "blevel":  "Hard",
+                                "armor":  76,
+                                "title":  "Knowledge Elemental",
+                                "speed":  230
+                            },
+    "wild horse":  {
+                       "hp":  75,
+                       "exp":  0,
+                       "bclass":  "Mammal",
+                       "blevel":  "Trivial",
+                       "armor":  2,
+                       "title":  "Wild Horse",
+                       "speed":  124
+                   },
+    "squid warden":  {
+                         "hp":  16500,
+                         "exp":  15300,
+                         "bclass":  "Inkborn",
+                         "blevel":  "Hard",
+                         "armor":  78,
+                         "title":  "Squid Warden",
+                         "speed":  215
+                     },
+    "deer":  {
+                 "hp":  25,
+                 "exp":  0,
+                 "bclass":  "Mammal",
+                 "blevel":  "Trivial",
+                 "armor":  2,
+                 "title":  "Deer",
+                 "speed":  98
+             },
+    "nightmare scion":  {
+                            "hp":  1400,
+                            "exp":  1350,
+                            "bclass":  "Magical",
+                            "blevel":  "Medium",
+                            "armor":  25,
+                            "title":  "Nightmare Scion",
+                            "speed":  220
+                        },
+    "thornfire wolf":  {
+                           "hp":  600,
+                           "exp":  200,
+                           "bclass":  "Magical",
+                           "blevel":  "Medium",
+                           "armor":  18,
+                           "title":  "Thornfire Wolf",
+                           "speed":  160
+                       },
+    "falcon paladin":  {
+                           "hp":  8500,
+                           "exp":  6900,
+                           "bclass":  "Undead",
+                           "blevel":  "Hard",
+                           "armor":  82,
+                           "title":  "Falcon Paladin",
+                           "speed":  110
+                       },
+    "moohtant":  {
+                     "hp":  3200,
+                     "exp":  2600,
+                     "bclass":  "Humanoid",
+                     "blevel":  "Medium",
+                     "armor":  42,
+                     "title":  "Moohtant",
+                     "speed":  130
+                 },
+    "stone rhino":  {
+                        "hp":  3000,
+                        "exp":  1800,
+                        "bclass":  "Mammal",
+                        "blevel":  "Medium",
+                        "armor":  72,
+                        "title":  "Stone Rhino",
+                        "speed":  145
+                    },
+    "wild warrior":  {
+                         "hp":  135,
+                         "exp":  60,
+                         "bclass":  "Human",
+                         "blevel":  "Easy",
+                         "armor":  8,
+                         "title":  "Wild Warrior",
+                         "speed":  95
+                     },
+    "dwarf":  {
+                  "hp":  90,
+                  "exp":  45,
+                  "bclass":  "Humanoid",
+                  "blevel":  "Easy",
+                  "armor":  8,
+                  "title":  "Dwarf",
+                  "speed":  85
+              },
+    "vampire pig":  {
+                        "hp":  305,
+                        "exp":  165,
+                        "bclass":  "Undead",
+                        "blevel":  "Medium",
+                        "armor":  20,
+                        "title":  "Vampire Pig",
+                        "speed":  55
+                    },
+    "vile grandmaster":  {
+                             "hp":  1700,
+                             "exp":  1500,
+                             "bclass":  "Human",
+                             "blevel":  "Medium",
+                             "armor":  40,
+                             "title":  "Vile Grandmaster",
+                             "speed":  140
+                         },
+    "tarantula":  {
+                      "hp":  225,
+                      "exp":  120,
+                      "bclass":  "Vermin",
+                      "blevel":  "Easy",
+                      "armor":  20,
+                      "title":  "Tarantula",
+                      "speed":  107
+                  },
+    "mooh\u0027tah warrior":  {
+                                  "hp":  1200,
+                                  "exp":  900,
+                                  "bclass":  "Humanoid",
+                                  "blevel":  "Medium",
+                                  "armor":  37,
+                                  "title":  "Mooh\u0027Tah Warrior",
+                                  "speed":  110
+                              },
+    "stone golem":  {
+                        "hp":  270,
+                        "exp":  160,
+                        "bclass":  "Construct",
+                        "blevel":  "Easy",
+                        "armor":  30,
+                        "title":  "Stone Golem",
+                        "speed":  90
+                    },
+    "elephant":  {
+                     "hp":  320,
+                     "exp":  160,
+                     "bclass":  "Mammal",
+                     "blevel":  "Easy",
+                     "armor":  20,
+                     "title":  "Elephant",
+                     "speed":  95
+                 },
+    "adventurer":  {
+                       "hp":  65,
+                       "exp":  0,
+                       "bclass":  "Human",
+                       "blevel":  "Easy",
+                       "armor":  8,
+                       "title":  "Adventurer",
+                       "speed":  53
+                   },
+    "pirate ghost":  {
+                         "hp":  275,
+                         "exp":  250,
+                         "bclass":  "Undead",
+                         "blevel":  "Easy",
+                         "armor":  30,
+                         "title":  "Pirate Ghost",
+                         "speed":  105
+                     },
+    "dworc voodoomaster":  {
+                               "hp":  80,
+                               "exp":  55,
+                               "bclass":  "Humanoid",
+                               "blevel":  "Easy",
+                               "armor":  3,
+                               "title":  "Dworc Voodoomaster",
+                               "speed":  75
+                           },
+    "death priest":  {
+                         "hp":  800,
+                         "exp":  750,
+                         "bclass":  "Undead",
+                         "blevel":  "Medium",
+                         "armor":  38,
+                         "title":  "Death Priest",
+                         "speed":  102
+                     },
+    "manta ray":  {
+                      "hp":  680,
+                      "exp":  125,
+                      "bclass":  "Aquatic",
+                      "blevel":  "Medium",
+                      "armor":  42,
+                      "title":  "Manta Ray",
+                      "speed":  84
+                  },
+    "spit nettle":  {
+                        "hp":  150,
+                        "exp":  20,
+                        "bclass":  "Plant",
+                        "blevel":  "Easy",
+                        "armor":  12,
+                        "title":  "Spit Nettle",
+                        "speed":  39
+                    },
+    "lost soul":  {
+                      "hp":  5800,
+                      "exp":  4000,
+                      "bclass":  "Undead",
+                      "blevel":  "Medium",
+                      "armor":  28,
+                      "title":  "Lost Soul",
+                      "speed":  190
+                  },
+    "bad dream":  {
+                      "hp":  0,
+                      "exp":  0,
+                      "bclass":  "Demons",
+                      "blevel":  "",
+                      "armor":  0,
+                      "title":  "Bad Dream",
+                      "speed":  0
+                  },
+    "goblin scavenger":  {
+                             "hp":  60,
+                             "exp":  37,
+                             "bclass":  "Humanoid",
+                             "blevel":  "Easy",
+                             "armor":  7,
+                             "title":  "Goblin Scavenger",
+                             "speed":  66
+                         },
+    "hero":  {
+                 "hp":  1400,
+                 "exp":  1200,
+                 "bclass":  "Human",
+                 "blevel":  "Medium",
+                 "armor":  35,
+                 "title":  "Hero",
+                 "speed":  140
+             },
+    "frost troll":  {
+                        "hp":  55,
+                        "exp":  23,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Trivial",
+                        "armor":  6,
+                        "title":  "Frost Troll",
+                        "speed":  70
+                    },
+    "mutated rat":  {
+                        "hp":  550,
+                        "exp":  450,
+                        "bclass":  "Mammal",
+                        "blevel":  "Medium",
+                        "armor":  32,
+                        "title":  "Mutated Rat",
+                        "speed":  115
+                    },
+    "badger":  {
+                   "hp":  23,
+                   "exp":  5,
+                   "bclass":  "Mammal",
+                   "blevel":  "Trivial",
+                   "armor":  1,
+                   "title":  "Badger",
+                   "speed":  70
+               },
+    "enslaved dwarf":  {
+                           "hp":  3800,
+                           "exp":  2700,
+                           "bclass":  "Humanoid",
+                           "blevel":  "Medium",
+                           "armor":  60,
+                           "title":  "Enslaved Dwarf",
+                           "speed":  135
+                       },
+    "merlkin":  {
+                    "hp":  235,
+                    "exp":  145,
+                    "bclass":  "Mammal",
+                    "blevel":  "Easy",
+                    "armor":  16,
+                    "title":  "Merlkin",
+                    "speed":  97
+                },
+    "corym charlatan":  {
+                            "hp":  250,
+                            "exp":  150,
+                            "bclass":  "Humanoid",
+                            "blevel":  "Easy",
+                            "armor":  17,
+                            "title":  "Corym Charlatan",
+                            "speed":  95
+                        },
+    "stalker":  {
+                    "hp":  120,
+                    "exp":  90,
+                    "bclass":  "Human",
+                    "blevel":  "Easy",
+                    "armor":  14,
+                    "title":  "Stalker",
+                    "speed":  130
+                },
+    "cult believer":  {
+                          "hp":  975,
+                          "exp":  850,
+                          "bclass":  "Human",
+                          "blevel":  "Medium",
+                          "armor":  30,
+                          "title":  "Cult Believer",
+                          "speed":  130
+                      },
+    "pigeon":  {
+                   "hp":  30,
+                   "exp":  0,
+                   "bclass":  "Bird",
+                   "blevel":  "Harmless",
+                   "armor":  1,
+                   "title":  "Pigeon",
+                   "speed":  65
+               },
+    "firestarter":  {
+                        "hp":  180,
+                        "exp":  80,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Easy",
+                        "armor":  15,
+                        "title":  "Firestarter",
+                        "speed":  100
+                    },
+    "ancient scarab":  {
+                           "hp":  1000,
+                           "exp":  720,
+                           "bclass":  "Vermin",
+                           "blevel":  "Medium",
+                           "armor":  36,
+                           "title":  "Ancient Scarab",
+                           "speed":  109
+                       },
+    "quara pincher scout":  {
+                                "hp":  775,
+                                "exp":  600,
+                                "bclass":  "Aquatic",
+                                "blevel":  "Medium",
+                                "armor":  70,
+                                "title":  "Quara Pincher Scout",
+                                "speed":  78
+                            },
+    "golden servant":  {
+                           "hp":  550,
+                           "exp":  450,
+                           "bclass":  "Construct",
+                           "blevel":  "Medium",
+                           "armor":  29,
+                           "title":  "Golden Servant",
+                           "speed":  105
+                       },
+    "anomaly":  {
+                    "hp":  290000,
+                    "exp":  50000,
+                    "bclass":  "Invertebrates",
+                    "blevel":  "",
+                    "armor":  0,
+                    "title":  "Anomaly",
+                    "speed":  0
+                },
+    "fire devil":  {
+                       "hp":  200,
+                       "exp":  145,
+                       "bclass":  "Demon",
+                       "blevel":  "Easy",
+                       "armor":  13,
+                       "title":  "Fire Devil",
+                       "speed":  90
+                   },
+    "scarlett etzel":  {
+                           "hp":  30000,
+                           "exp":  20000,
+                           "bclass":  "Humans",
+                           "blevel":  "",
+                           "armor":  0,
+                           "title":  "Scarlett Etzel",
+                           "speed":  0
+                       },
+    "biting book":  {
+                        "hp":  6500,
+                        "exp":  9350,
+                        "bclass":  "Inkborn",
+                        "blevel":  "Hard",
+                        "armor":  76,
+                        "title":  "Biting Book",
+                        "speed":  240
+                    },
+    "behemoth":  {
+                     "hp":  4000,
+                     "exp":  2500,
+                     "bclass":  "Giant",
+                     "blevel":  "Medium",
+                     "armor":  50,
+                     "title":  "Behemoth",
+                     "speed":  170
+                 },
+    "elder mummy":  {
+                        "hp":  850,
+                        "exp":  560,
+                        "bclass":  "Undead",
+                        "blevel":  "Medium",
+                        "armor":  35,
+                        "title":  "Elder Mummy",
+                        "speed":  85
+                    },
+    "dragonling":  {
+                       "hp":  2600,
+                       "exp":  2200,
+                       "bclass":  "Magical",
+                       "blevel":  "Medium",
+                       "armor":  58,
+                       "title":  "Dragonling",
+                       "speed":  230
+                   },
+    "undead cavebear":  {
+                            "hp":  450,
+                            "exp":  600,
+                            "bclass":  "Undead",
+                            "blevel":  "Medium",
+                            "armor":  28,
+                            "title":  "Undead Cavebear",
+                            "speed":  109
+                        },
+    "diremaw":  {
+                    "hp":  3600,
+                    "exp":  2770,
+                    "bclass":  "Vermin",
+                    "blevel":  "Hard",
+                    "armor":  71,
+                    "title":  "Diremaw",
+                    "speed":  150
+                },
+    "elf overseer":  {
+                         "hp":  500,
+                         "exp":  290,
+                         "bclass":  "Humanoid",
+                         "blevel":  "Medium",
+                         "armor":  15,
+                         "title":  "Elf Overseer",
+                         "speed":  88
+                     },
+    "arctic faun":  {
+                        "hp":  300,
+                        "exp":  300,
+                        "bclass":  "Fey",
+                        "blevel":  "Medium",
+                        "armor":  30,
+                        "title":  "Arctic Faun",
+                        "speed":  105
+                    },
+    "undead gladiator":  {
+                             "hp":  1000,
+                             "exp":  800,
+                             "bclass":  "Undead",
+                             "blevel":  "Medium",
+                             "armor":  35,
+                             "title":  "Undead Gladiator",
+                             "speed":  110
+                         },
+    "poacher":  {
+                    "hp":  90,
+                    "exp":  70,
+                    "bclass":  "Human",
+                    "blevel":  "Easy",
+                    "armor":  10,
+                    "title":  "Poacher",
+                    "speed":  99
+                },
+    "water elemental":  {
+                            "hp":  550,
+                            "exp":  650,
+                            "bclass":  "Elemental",
+                            "blevel":  "Medium",
+                            "armor":  37,
+                            "title":  "Water Elemental",
+                            "speed":  115
+                        },
+    "earth elemental":  {
+                            "hp":  650,
+                            "exp":  550,
+                            "bclass":  "Elemental",
+                            "blevel":  "Medium",
+                            "armor":  45,
+                            "title":  "Earth Elemental",
+                            "speed":  115
+                        },
+    "clay guardian":  {
+                          "hp":  625,
+                          "exp":  400,
+                          "bclass":  "Construct",
+                          "blevel":  "Medium",
+                          "armor":  42,
+                          "title":  "Clay Guardian",
+                          "speed":  115
+                      },
+    "killer caiman":  {
+                          "hp":  1500,
+                          "exp":  900,
+                          "bclass":  "Reptile",
+                          "blevel":  "Medium",
+                          "armor":  40,
+                          "title":  "Killer Caiman",
+                          "speed":  93
+                      },
+    "gozzler":  {
+                    "hp":  240,
+                    "exp":  180,
+                    "bclass":  "Demon",
+                    "blevel":  "Easy",
+                    "armor":  25,
+                    "title":  "Gozzler",
+                    "speed":  120
+                },
+    "smuggler":  {
+                     "hp":  130,
+                     "exp":  48,
+                     "bclass":  "Human",
+                     "blevel":  "Easy",
+                     "armor":  8,
+                     "title":  "Smuggler",
+                     "speed":  88
+                 },
+    "midnight asura":  {
+                           "hp":  3100,
+                           "exp":  3700,
+                           "bclass":  "Demon",
+                           "blevel":  "Medium",
+                           "armor":  55,
+                           "title":  "Midnight Asura",
+                           "speed":  120
+                       },
+    "bat":  {
+                "hp":  30,
+                "exp":  10,
+                "bclass":  "Mammal",
+                "blevel":  "Trivial",
+                "armor":  1,
+                "title":  "Bat",
+                "speed":  100
+            },
+    "renegade knight":  {
+                            "hp":  1450,
+                            "exp":  1200,
+                            "bclass":  "Human",
+                            "blevel":  "Medium",
+                            "armor":  38,
+                            "title":  "Renegade Knight",
+                            "speed":  135
+                        },
+    "spiky carnivor":  {
+                           "hp":  2800,
+                           "exp":  1650,
+                           "bclass":  "Magical",
+                           "blevel":  "Hard",
+                           "armor":  71,
+                           "title":  "Spiky Carnivor",
+                           "speed":  160
+                       },
+    "mad scientist":  {
+                          "hp":  325,
+                          "exp":  205,
+                          "bclass":  "Human",
+                          "blevel":  "Easy",
+                          "armor":  15,
+                          "title":  "Mad Scientist",
+                          "speed":  90
+                      },
+    "bog raider":  {
+                       "hp":  1300,
+                       "exp":  800,
+                       "bclass":  "Magical",
+                       "blevel":  "Medium",
+                       "armor":  20,
+                       "title":  "Bog Raider",
+                       "speed":  125
+                   },
+    "undead mine worker":  {
+                               "hp":  65,
+                               "exp":  45,
+                               "bclass":  "Undead",
+                               "blevel":  "Easy",
+                               "armor":  5,
+                               "title":  "Undead Mine Worker",
+                               "speed":  77
+                           },
+    "quara constrictor scout":  {
+                                    "hp":  450,
+                                    "exp":  200,
+                                    "bclass":  "Aquatic",
+                                    "blevel":  "Medium",
+                                    "armor":  14,
+                                    "title":  "Quara Constrictor Scout",
+                                    "speed":  75
+                                },
+    "cliff strider":  {
+                          "hp":  9400,
+                          "exp":  7100,
+                          "bclass":  "Elemental",
+                          "blevel":  "Hard",
+                          "armor":  89,
+                          "title":  "Cliff Strider",
+                          "speed":  123
+                      },
+    "war wolf":  {
+                     "hp":  140,
+                     "exp":  55,
+                     "bclass":  "Mammal",
+                     "blevel":  "Easy",
+                     "armor":  8,
+                     "title":  "War Wolf",
+                     "speed":  132
+                 },
+    "berserker chicken":  {
+                              "hp":  465,
+                              "exp":  220,
+                              "bclass":  "Bird",
+                              "blevel":  "Medium",
+                              "armor":  12,
+                              "title":  "Berserker Chicken",
+                              "speed":  83
+                          },
+    "hideous fungus":  {
+                           "hp":  4600,
+                           "exp":  3700,
+                           "bclass":  "Plant",
+                           "blevel":  "Hard",
+                           "armor":  60,
+                           "title":  "Hideous Fungus",
+                           "speed":  170
+                       },
+    "defiler":  {
+                    "hp":  3650,
+                    "exp":  3700,
+                    "bclass":  "Slime",
+                    "blevel":  "Hard",
+                    "armor":  60,
+                    "title":  "Defiler",
+                    "speed":  80
+                },
+    "enraged crystal golem":  {
+                                  "hp":  700,
+                                  "exp":  550,
+                                  "bclass":  "Construct",
+                                  "blevel":  "Medium",
+                                  "armor":  38,
+                                  "title":  "Enraged Crystal Golem",
+                                  "speed":  120
+                              },
+    "filth toad":  {
+                       "hp":  185,
+                       "exp":  90,
+                       "bclass":  "Amphibic",
+                       "blevel":  "Easy",
+                       "armor":  6,
+                       "title":  "Filth Toad",
+                       "speed":  105
+                   },
+    "channeling earl osam":  {
+                                 "hp":  0,
+                                 "exp":  0,
+                                 "bclass":  "The Undead",
+                                 "blevel":  "",
+                                 "armor":  0,
+                                 "title":  "Channeling Earl Osam",
+                                 "speed":  0
+                             },
+    "yeti":  {
+                 "hp":  950,
+                 "exp":  460,
+                 "bclass":  "Mammal",
+                 "blevel":  "Medium",
+                 "armor":  28,
+                 "title":  "Yeti",
+                 "speed":  125
+             },
+    "flying book":  {
+                        "hp":  500,
+                        "exp":  200,
+                        "bclass":  "Inkborn",
+                        "blevel":  "Medium",
+                        "armor":  45,
+                        "title":  "Flying Book",
+                        "speed":  120
+                    },
+    "kollos":  {
+                   "hp":  3800,
+                   "exp":  2400,
+                   "bclass":  "Vermin",
+                   "blevel":  "Medium",
+                   "armor":  52,
+                   "title":  "Kollos",
+                   "speed":  115
+               },
+    "kongra":  {
+                   "hp":  340,
+                   "exp":  115,
+                   "bclass":  "Mammal",
+                   "blevel":  "Easy",
+                   "armor":  18,
+                   "title":  "Kongra",
+                   "speed":  92
+               },
+    "sheep":  {
+                  "hp":  20,
+                  "exp":  0,
+                  "bclass":  "Mammal",
+                  "blevel":  "Trivial",
+                  "armor":  1,
+                  "title":  "Sheep",
+                  "speed":  58
+              },
+    "dwarf henchman":  {
+                           "hp":  350,
+                           "exp":  15,
+                           "bclass":  "Humanoid",
+                           "blevel":  "Medium",
+                           "armor":  16,
+                           "title":  "Dwarf Henchman",
+                           "speed":  105
+                       },
+    "sir baeloc":  {
+                       "hp":  150000,
+                       "exp":  55000,
+                       "bclass":  "The Undead",
+                       "blevel":  "",
+                       "armor":  0,
+                       "title":  "Sir Baeloc",
+                       "speed":  0
+                   },
+    "hellfire fighter":  {
+                             "hp":  3800,
+                             "exp":  3800,
+                             "bclass":  "Demon",
+                             "blevel":  "Hard",
+                             "armor":  62,
+                             "title":  "Hellfire Fighter",
+                             "speed":  165
+                         },
+    "lord azaram":  {
+                        "hp":  300000,
+                        "exp":  55000,
+                        "bclass":  "The Undead",
+                        "blevel":  "",
+                        "armor":  0,
+                        "title":  "Lord Azaram",
+                        "speed":  0
+                    },
+    "ladybug":  {
+                    "hp":  255,
+                    "exp":  70,
+                    "bclass":  "Vermin",
+                    "blevel":  "Easy",
+                    "armor":  8,
+                    "title":  "Ladybug",
+                    "speed":  52
+                },
+    "calamary":  {
+                     "hp":  75,
+                     "exp":  0,
+                     "bclass":  "Aquatic",
+                     "blevel":  "Easy",
+                     "armor":  13,
+                     "title":  "Calamary",
+                     "speed":  100
+                 },
+    "giant spider":  {
+                         "hp":  1300,
+                         "exp":  900,
+                         "bclass":  "Vermin",
+                         "blevel":  "Medium",
+                         "armor":  30,
+                         "title":  "Giant Spider",
+                         "speed":  120
+                     },
+    "blightwalker":  {
+                         "hp":  8100,
+                         "exp":  6400,
+                         "bclass":  "Undead",
+                         "blevel":  "Hard",
+                         "armor":  63,
+                         "title":  "Blightwalker",
+                         "speed":  175
+                     },
+    "crypt warden":  {
+                         "hp":  8300,
+                         "exp":  8400,
+                         "bclass":  "Magical",
+                         "blevel":  "Hard",
+                         "armor":  84,
+                         "title":  "Crypt Warden",
+                         "speed":  145
+                     },
+    "pirate corsair":  {
+                           "hp":  675,
+                           "exp":  350,
+                           "bclass":  "Human",
+                           "blevel":  "Medium",
+                           "armor":  20,
+                           "title":  "Pirate Corsair",
+                           "speed":  119
+                       },
+    "ripper spectre":  {
+                           "hp":  3800,
+                           "exp":  3500,
+                           "bclass":  "Undead",
+                           "blevel":  "Hard",
+                           "armor":  69,
+                           "title":  "Ripper Spectre",
+                           "speed":  190
+                       },
+    "glooth anemone":  {
+                           "hp":  2400,
+                           "exp":  1755,
+                           "bclass":  "Plant",
+                           "blevel":  "Medium",
+                           "armor":  42,
+                           "title":  "Glooth Anemone",
+                           "speed":  90
+                       },
+    "bandit":  {
+                   "hp":  245,
+                   "exp":  65,
+                   "bclass":  "Human",
+                   "blevel":  "Easy",
+                   "armor":  11,
+                   "title":  "Bandit",
+                   "speed":  90
+               },
+    "massive water elemental":  {
+                                    "hp":  1250,
+                                    "exp":  1100,
+                                    "bclass":  "Elemental",
+                                    "blevel":  "Medium",
+                                    "armor":  45,
+                                    "title":  "Massive Water Elemental",
+                                    "speed":  215
+                                },
+    "crimson frog":  {
+                         "hp":  60,
+                         "exp":  20,
+                         "bclass":  "Amphibic",
+                         "blevel":  "Easy",
+                         "armor":  8,
+                         "title":  "Crimson Frog",
+                         "speed":  160
+                     },
+    "cave rat":  {
+                     "hp":  30,
+                     "exp":  10,
+                     "bclass":  "Mammal",
+                     "blevel":  "Trivial",
+                     "armor":  1,
+                     "title":  "Cave Rat",
+                     "speed":  75
+                 },
+    "swarmer":  {
+                    "hp":  460,
+                    "exp":  350,
+                    "bclass":  "Vermin",
+                    "blevel":  "Medium",
+                    "armor":  29,
+                    "title":  "Swarmer",
+                    "speed":  128
+                },
+    "orc cult inquisitor":  {
+                                "hp":  1500,
+                                "exp":  1150,
+                                "bclass":  "Humanoid",
+                                "blevel":  "Medium",
+                                "armor":  40,
+                                "title":  "Orc Cult Inquisitor",
+                                "speed":  125
+                            },
+    "spidris":  {
+                    "hp":  3700,
+                    "exp":  2600,
+                    "bclass":  "Vermin",
+                    "blevel":  "Medium",
+                    "armor":  53,
+                    "title":  "Spidris",
+                    "speed":  195
+                },
+    "quara constrictor":  {
+                              "hp":  450,
+                              "exp":  380,
+                              "bclass":  "Aquatic",
+                              "blevel":  "Medium",
+                              "armor":  14,
+                              "title":  "Quara Constrictor",
+                              "speed":  190
+                          },
+    "bonebeast":  {
+                      "hp":  515,
+                      "exp":  580,
+                      "bclass":  "Undead",
+                      "blevel":  "Medium",
+                      "armor":  40,
+                      "title":  "Bonebeast",
+                      "speed":  109
+                  },
+    "massive fire elemental":  {
+                                   "hp":  1800,
+                                   "exp":  1400,
+                                   "bclass":  "Elemental",
+                                   "blevel":  "Medium",
+                                   "armor":  57,
+                                   "title":  "Massive Fire Elemental",
+                                   "speed":  119
+                               },
+    "ogre savage":  {
+                        "hp":  1400,
+                        "exp":  950,
+                        "bclass":  "Giant",
+                        "blevel":  "Medium",
+                        "armor":  32,
+                        "title":  "Ogre Savage",
+                        "speed":  110
+                    },
+    "vampire":  {
+                    "hp":  475,
+                    "exp":  305,
+                    "bclass":  "Undead",
+                    "blevel":  "Medium",
+                    "armor":  28,
+                    "title":  "Vampire",
+                    "speed":  119
+                },
+    "minotaur guard":  {
+                           "hp":  185,
+                           "exp":  160,
+                           "bclass":  "Humanoid",
+                           "blevel":  "Easy",
+                           "armor":  15,
+                           "title":  "Minotaur Guard",
+                           "speed":  95
+                       },
+    "troll champion":  {
+                           "hp":  75,
+                           "exp":  40,
+                           "bclass":  "Humanoid",
+                           "blevel":  "Easy",
+                           "armor":  10,
+                           "title":  "Troll Champion",
+                           "speed":  69
+                       },
+    "crazed beggar":  {
+                          "hp":  100,
+                          "exp":  35,
+                          "bclass":  "Human",
+                          "blevel":  "Easy",
+                          "armor":  4,
+                          "title":  "Crazed Beggar",
+                          "speed":  77
+                      },
+    "stampor":  {
+                    "hp":  1200,
+                    "exp":  780,
+                    "bclass":  "Reptile",
+                    "blevel":  "Medium",
+                    "armor":  60,
+                    "title":  "Stampor",
+                    "speed":  220
+                },
+    "fire elemental":  {
+                           "hp":  280,
+                           "exp":  220,
+                           "bclass":  "Elemental",
+                           "blevel":  "Medium",
+                           "armor":  18,
+                           "title":  "Fire Elemental",
+                           "speed":  95
+                       },
+    "feverish citizen":  {
+                             "hp":  125,
+                             "exp":  30,
+                             "bclass":  "Human",
+                             "blevel":  "Easy",
+                             "armor":  14,
+                             "title":  "Feverish Citizen",
+                             "speed":  73
+                         },
+    "orc warrior":  {
+                        "hp":  125,
+                        "exp":  50,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Easy",
+                        "armor":  8,
+                        "title":  "Orc Warrior",
+                        "speed":  95
+                    },
+    "orc marauder":  {
+                         "hp":  235,
+                         "exp":  205,
+                         "bclass":  "Humanoid",
+                         "blevel":  "Medium",
+                         "armor":  16,
+                         "title":  "Orc Marauder",
+                         "speed":  195
+                     },
+    "haunted treeling":  {
+                             "hp":  450,
+                             "exp":  310,
+                             "bclass":  "Plant",
+                             "blevel":  "Medium",
+                             "armor":  20,
+                             "title":  "Haunted Treeling",
+                             "speed":  115
+                         },
+    "diamond servant":  {
+                            "hp":  1000,
+                            "exp":  700,
+                            "bclass":  "Construct",
+                            "blevel":  "Medium",
+                            "armor":  25,
+                            "title":  "Diamond Servant",
+                            "speed":  86
+                        },
+    "young goanna":  {
+                         "hp":  6950,
+                         "exp":  5250,
+                         "bclass":  "Reptile",
+                         "blevel":  "Hard",
+                         "armor":  78,
+                         "title":  "Young Goanna",
+                         "speed":  190
+                     },
+    "little corym charlatan":  {
+                                   "hp":  90,
+                                   "exp":  40,
+                                   "bclass":  "Humanoid",
+                                   "blevel":  "Easy",
+                                   "armor":  3,
+                                   "title":  "Little Corym Charlatan",
+                                   "speed":  85
+                               },
+    "twisted shaper":  {
+                           "hp":  2500,
+                           "exp":  2050,
+                           "bclass":  "Humanoid",
+                           "blevel":  "Medium",
+                           "armor":  35,
+                           "title":  "Twisted Shaper",
+                           "speed":  140
+                       },
+    "lich":  {
+                 "hp":  880,
+                 "exp":  900,
+                 "bclass":  "Undead",
+                 "blevel":  "Medium",
+                 "armor":  50,
+                 "title":  "Lich",
+                 "speed":  105
+             },
+    "energy elemental":  {
+                             "hp":  500,
+                             "exp":  550,
+                             "bclass":  "Elemental",
+                             "blevel":  "Medium",
+                             "armor":  25,
+                             "title":  "Energy Elemental",
+                             "speed":  115
+                         },
+    "duke krule":  {
+                       "hp":  290000,
+                       "exp":  55000,
+                       "bclass":  "The Undead",
+                       "blevel":  "",
+                       "armor":  0,
+                       "title":  "Duke Krule",
+                       "speed":  0
+                   },
+    "adept of the cult":  {
+                              "hp":  430,
+                              "exp":  400,
+                              "bclass":  "Human",
+                              "blevel":  "Medium",
+                              "armor":  33,
+                              "title":  "Adept of the Cult",
+                              "speed":  95
+                          },
+    "dworc fleshhunter":  {
+                              "hp":  85,
+                              "exp":  40,
+                              "bclass":  "Humanoid",
+                              "blevel":  "Easy",
+                              "armor":  3,
+                              "title":  "Dworc Fleshhunter",
+                              "speed":  74
+                          },
+    "centipede":  {
+                      "hp":  70,
+                      "exp":  34,
+                      "bclass":  "Vermin",
+                      "blevel":  "Easy",
+                      "armor":  8,
+                      "title":  "Centipede",
+                      "speed":  83
+                  },
+    "hydra":  {
+                  "hp":  2350,
+                  "exp":  2100,
+                  "bclass":  "Dragon",
+                  "blevel":  "Medium",
+                  "armor":  27,
+                  "title":  "Hydra",
+                  "speed":  180
+              },
+    "carniphila":  {
+                       "hp":  255,
+                       "exp":  150,
+                       "bclass":  "Plant",
+                       "blevel":  "Medium",
+                       "armor":  22,
+                       "title":  "Carniphila",
+                       "speed":  55
+                   },
+    "neutral deepling warrior":  {
+                                     "hp":  1600,
+                                     "exp":  1500,
+                                     "bclass":  "Amphibians",
+                                     "blevel":  "",
+                                     "armor":  0,
+                                     "title":  "Neutral Deepling Warrior",
+                                     "speed":  145
+                                 },
+    "ogre brute":  {
+                       "hp":  1000,
+                       "exp":  800,
+                       "bclass":  "Giant",
+                       "blevel":  "Medium",
+                       "armor":  41,
+                       "title":  "Ogre Brute",
+                       "speed":  102
+                   },
+    "ironblight":  {
+                       "hp":  6600,
+                       "exp":  5400,
+                       "bclass":  "Elemental",
+                       "blevel":  "Hard",
+                       "armor":  84,
+                       "title":  "Ironblight",
+                       "speed":  143
+                   },
+    "serpent spawn":  {
+                          "hp":  3000,
+                          "exp":  3050,
+                          "bclass":  "Reptile",
+                          "blevel":  "Medium",
+                          "armor":  35,
+                          "title":  "Serpent Spawn",
+                          "speed":  117
+                      },
+    "blood hand":  {
+                       "hp":  700,
+                       "exp":  750,
+                       "bclass":  "Human",
+                       "blevel":  "Medium",
+                       "armor":  48,
+                       "title":  "Blood Hand",
+                       "speed":  96
+                   },
+    "elder forest fury":  {
+                              "hp":  670,
+                              "exp":  480,
+                              "bclass":  "Magical",
+                              "blevel":  "Medium",
+                              "armor":  25,
+                              "title":  "Elder Forest Fury",
+                              "speed":  120
+                          },
+    "azure frog":  {
+                       "hp":  60,
+                       "exp":  20,
+                       "bclass":  "Amphibic",
+                       "blevel":  "Easy",
+                       "armor":  8,
+                       "title":  "Azure Frog",
+                       "speed":  160
+                   },
+    "cyclops drone":  {
+                          "hp":  325,
+                          "exp":  200,
+                          "bclass":  "Giant",
+                          "blevel":  "Medium",
+                          "armor":  25,
+                          "title":  "Cyclops Drone",
+                          "speed":  99
+                      },
+    "black sphinx acolyte":  {
+                                 "hp":  8100,
+                                 "exp":  7200,
+                                 "bclass":  "Human",
+                                 "blevel":  "Hard",
+                                 "armor":  82,
+                                 "title":  "Black Sphinx Acolyte",
+                                 "speed":  155
+                             },
+    "pirate skeleton":  {
+                            "hp":  190,
+                            "exp":  85,
+                            "bclass":  "Undead",
+                            "blevel":  "Easy",
+                            "armor":  12,
+                            "title":  "Pirate Skeleton",
+                            "speed":  88
+                        },
+    "floating savant":  {
+                            "hp":  8000,
+                            "exp":  8000,
+                            "bclass":  "Demon",
+                            "blevel":  "Hard",
+                            "armor":  74,
+                            "title":  "Floating Savant",
+                            "speed":  165
+                        },
+    "lizard noble":  {
+                         "hp":  7000,
+                         "exp":  2000,
+                         "bclass":  "Reptile",
+                         "blevel":  "Hard",
+                         "armor":  27,
+                         "title":  "Lizard Noble",
+                         "speed":  128
+                     },
+    "falcon knight":  {
+                          "hp":  9000,
+                          "exp":  6300,
+                          "bclass":  "Undead",
+                          "blevel":  "Hard",
+                          "armor":  86,
+                          "title":  "Falcon Knight",
+                          "speed":  110
+                      },
+    "forest fury":  {
+                        "hp":  480,
+                        "exp":  330,
+                        "bclass":  "Magical",
+                        "blevel":  "Medium",
+                        "armor":  19,
+                        "title":  "Forest Fury",
+                        "speed":  110
+                    },
+    "crystalcrusher":  {
+                           "hp":  570,
+                           "exp":  500,
+                           "bclass":  "Magical",
+                           "blevel":  "Medium",
+                           "armor":  48,
+                           "title":  "Crystalcrusher",
+                           "speed":  195
+                       },
+    "wasp":  {
+                 "hp":  35,
+                 "exp":  24,
+                 "bclass":  "Vermin",
+                 "blevel":  "Trivial",
+                 "armor":  4,
+                 "title":  "Wasp",
+                 "speed":  160
+             },
+    "mutated human":  {
+                          "hp":  240,
+                          "exp":  150,
+                          "bclass":  "Human",
+                          "blevel":  "Medium",
+                          "armor":  14,
+                          "title":  "Mutated Human",
+                          "speed":  77
+                      },
+    "deepling master librarian":  {
+                                      "hp":  1700,
+                                      "exp":  1900,
+                                      "bclass":  "Aquatic",
+                                      "blevel":  "Medium",
+                                      "armor":  45,
+                                      "title":  "Deepling Master Librarian",
+                                      "speed":  115
+                                  },
+    "honour guard":  {
+                         "hp":  85,
+                         "exp":  55,
+                         "bclass":  "Undead",
+                         "blevel":  "Easy",
+                         "armor":  4,
+                         "title":  "Honour Guard",
+                         "speed":  77
+                     },
+    "scarab":  {
+                   "hp":  320,
+                   "exp":  120,
+                   "bclass":  "Vermin",
+                   "blevel":  "Easy",
+                   "armor":  21,
+                   "title":  "Scarab",
+                   "speed":  80
+               },
+    "hunter":  {
+                   "hp":  150,
+                   "exp":  150,
+                   "bclass":  "Human",
+                   "blevel":  "Easy",
+                   "armor":  8,
+                   "title":  "Hunter",
+                   "speed":  105
+               },
+    "elf arcanist":  {
+                         "hp":  220,
+                         "exp":  175,
+                         "bclass":  "Humanoid",
+                         "blevel":  "Easy",
+                         "armor":  15,
+                         "title":  "Elf Arcanist",
+                         "speed":  110
+                     },
+    "dragon":  {
+                   "hp":  1000,
+                   "exp":  700,
+                   "bclass":  "Dragon",
+                   "blevel":  "Medium",
+                   "armor":  25,
+                   "title":  "Dragon",
+                   "speed":  86
+               },
+    "rotworm queen":  {
+                          "hp":  105,
+                          "exp":  75,
+                          "bclass":  "Invertebrates",
+                          "blevel":  "",
+                          "armor":  0,
+                          "title":  "Rotworm Queen",
+                          "speed":  0
+                      },
+    "ravenous lava lurker":  {
+                                 "hp":  5000,
+                                 "exp":  4000,
+                                 "bclass":  "Elemental",
+                                 "blevel":  "Medium",
+                                 "armor":  45,
+                                 "title":  "Ravenous Lava Lurker",
+                                 "speed":  58
+                             },
+    "banshee":  {
+                    "hp":  1000,
+                    "exp":  900,
+                    "bclass":  "Undead",
+                    "blevel":  "Medium",
+                    "armor":  25,
+                    "title":  "Banshee",
+                    "speed":  110
+                },
+    "orc shaman":  {
+                       "hp":  115,
+                       "exp":  110,
+                       "bclass":  "Humanoid",
+                       "blevel":  "Easy",
+                       "armor":  8,
+                       "title":  "Orc Shaman",
+                       "speed":  70
+                   },
+    "dark monk":  {
+                      "hp":  190,
+                      "exp":  145,
+                      "bclass":  "Human",
+                      "blevel":  "Easy",
+                      "armor":  22,
+                      "title":  "Dark Monk",
+                      "speed":  115
+                  },
+    "mozradek":  {
+                     "hp":  28000,
+                     "exp":  21000,
+                     "bclass":  "Mammals",
+                     "blevel":  "",
+                     "armor":  0,
+                     "title":  "Mozradek",
+                     "speed":  0
+                 },
+    "gaffir":  {
+                   "hp":  48500,
+                   "exp":  25000,
+                   "bclass":  "Humans",
+                   "blevel":  "",
+                   "armor":  0,
+                   "title":  "Gaffir",
+                   "speed":  0
+               },
+    "dragon lord":  {
+                        "hp":  1900,
+                        "exp":  2100,
+                        "bclass":  "Dragon",
+                        "blevel":  "Medium",
+                        "armor":  34,
+                        "title":  "Dragon Lord",
+                        "speed":  100
+                    },
+    "vampiric blood":  {
+                           "hp":  3500,
+                           "exp":  0,
+                           "bclass":  "Elementals",
+                           "blevel":  "",
+                           "armor":  0,
+                           "title":  "Vampiric Blood",
+                           "speed":  0
+                       },
+    "evil sheep":  {
+                       "hp":  350,
+                       "exp":  240,
+                       "bclass":  "Mammal",
+                       "blevel":  "Medium",
+                       "armor":  18,
+                       "title":  "Evil Sheep",
+                       "speed":  78
+                   },
+    "furious troll":  {
+                          "hp":  245,
+                          "exp":  185,
+                          "bclass":  "Humanoid",
+                          "blevel":  "Easy",
+                          "armor":  15,
+                          "title":  "Furious Troll",
+                          "speed":  90
+                      },
+    "dworc venomsniper":  {
+                              "hp":  80,
+                              "exp":  35,
+                              "bclass":  "Humanoid",
+                              "blevel":  "Easy",
+                              "armor":  3,
+                              "title":  "Dworc Venomsniper",
+                              "speed":  76
+                          },
+    "deepling worker":  {
+                            "hp":  190,
+                            "exp":  130,
+                            "bclass":  "Aquatic",
+                            "blevel":  "Easy",
+                            "armor":  7,
+                            "title":  "Deepling Worker",
+                            "speed":  65
+                        },
+    "mummy":  {
+                  "hp":  240,
+                  "exp":  150,
+                  "bclass":  "Undead",
+                  "blevel":  "Easy",
+                  "armor":  14,
+                  "title":  "Mummy",
+                  "speed":  75
+              },
+    "crustacea gigantica":  {
+                                "hp":  1600,
+                                "exp":  1800,
+                                "bclass":  "Aquatic",
+                                "blevel":  "Medium",
+                                "armor":  40,
+                                "title":  "Crustacea Gigantica",
+                                "speed":  240
+                            },
+    "hellspawn":  {
+                      "hp":  3500,
+                      "exp":  2550,
+                      "bclass":  "Demon",
+                      "blevel":  "Medium",
+                      "armor":  44,
+                      "title":  "Hellspawn",
+                      "speed":  172
+                  },
+    "modified gnarlhound":  {
+                                "hp":  1500,
+                                "exp":  0,
+                                "bclass":  "Mammal",
+                                "blevel":  "Harmless",
+                                "armor":  200,
+                                "title":  "Modified Gnarlhound",
+                                "speed":  225
+                            },
+    "burning gladiator":  {
+                              "hp":  10000,
+                              "exp":  7350,
+                              "bclass":  "Human",
+                              "blevel":  "Hard",
+                              "armor":  89,
+                              "title":  "Burning Gladiator",
+                              "speed":  145
+                          },
+    "wolf":  {
+                 "hp":  25,
+                 "exp":  18,
+                 "bclass":  "Mammal",
+                 "blevel":  "Trivial",
+                 "armor":  1,
+                 "title":  "Wolf",
+                 "speed":  82
+             },
+    "hyaena":  {
+                   "hp":  60,
+                   "exp":  20,
+                   "bclass":  "Mammal",
+                   "blevel":  "Easy",
+                   "armor":  1,
+                   "title":  "Hyaena",
+                   "speed":  98
+               },
+    "quara predator":  {
+                           "hp":  2200,
+                           "exp":  1850,
+                           "bclass":  "Aquatic",
+                           "blevel":  "Medium",
+                           "armor":  40,
+                           "title":  "Quara Predator",
+                           "speed":  225
+                       },
+    "seagull":  {
+                    "hp":  25,
+                    "exp":  0,
+                    "bclass":  "Bird",
+                    "blevel":  "Trivial",
+                    "armor":  2,
+                    "title":  "Seagull",
+                    "speed":  160
+                },
+    "elder wyrm":  {
+                       "hp":  2700,
+                       "exp":  2500,
+                       "bclass":  "Dragon",
+                       "blevel":  "Hard",
+                       "armor":  48,
+                       "title":  "Elder Wyrm",
+                       "speed":  140
+                   },
+    "terrified elephant":  {
+                               "hp":  320,
+                               "exp":  160,
+                               "bclass":  "Mammal",
+                               "blevel":  "Easy",
+                               "armor":  20,
+                               "title":  "Terrified Elephant",
+                               "speed":  105
+                           },
+    "penguin":  {
+                    "hp":  33,
+                    "exp":  1,
+                    "bclass":  "Bird",
+                    "blevel":  "Trivial",
+                    "armor":  2,
+                    "title":  "Penguin",
+                    "speed":  58
+                },
+    "herald of gloom":  {
+                            "hp":  340,
+                            "exp":  450,
+                            "bclass":  "Demon",
+                            "blevel":  "Medium",
+                            "armor":  25,
+                            "title":  "Herald of Gloom",
+                            "speed":  85
+                        },
+    "deepling tyrant":  {
+                            "hp":  4500,
+                            "exp":  4200,
+                            "bclass":  "Aquatic",
+                            "blevel":  "Hard",
+                            "armor":  54,
+                            "title":  "Deepling Tyrant",
+                            "speed":  155
+                        },
+    "rot elemental":  {
+                          "hp":  850,
+                          "exp":  750,
+                          "bclass":  "Undead",
+                          "blevel":  "Medium",
+                          "armor":  41,
+                          "title":  "Rot Elemental",
+                          "speed":  115
+                      },
+    "earworm":  {
+                    "hp":  4000,
+                    "exp":  2000,
+                    "bclass":  "Invertebrates",
+                    "blevel":  "",
+                    "armor":  0,
+                    "title":  "Earworm",
+                    "speed":  0
+                },
+    "valkyrie":  {
+                     "hp":  190,
+                     "exp":  85,
+                     "bclass":  "Human",
+                     "blevel":  "Easy",
+                     "armor":  12,
+                     "title":  "Valkyrie",
+                     "speed":  88
+                 },
+    "askarak demon":  {
+                          "hp":  1500,
+                          "exp":  900,
+                          "bclass":  "Demon",
+                          "blevel":  "Medium",
+                          "armor":  35,
+                          "title":  "Askarak Demon",
+                          "speed":  115
+                      },
+    "swampling":  {
+                      "hp":  80,
+                      "exp":  45,
+                      "bclass":  "Plant",
+                      "blevel":  "Easy",
+                      "armor":  4,
+                      "title":  "Swampling",
+                      "speed":  95
+                  },
+    "pirate cutthroat":  {
+                             "hp":  325,
+                             "exp":  175,
+                             "bclass":  "Human",
+                             "blevel":  "Medium",
+                             "armor":  15,
+                             "title":  "Pirate Cutthroat",
+                             "speed":  107
+                         },
+    "orc cultist":  {
+                        "hp":  1350,
+                        "exp":  950,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Medium",
+                        "armor":  30,
+                        "title":  "Orc Cultist",
+                        "speed":  95
+                    },
+    "true frost flower asura":  {
+                                    "hp":  4000,
+                                    "exp":  7069,
+                                    "bclass":  "Demon",
+                                    "blevel":  "Hard",
+                                    "armor":  72,
+                                    "title":  "True Frost Flower Asura",
+                                    "speed":  150
+                                },
+    "raxias":  {
+                   "hp":  1100,
+                   "exp":  900,
+                   "bclass":  "Humanoids",
+                   "blevel":  "",
+                   "armor":  0,
+                   "title":  "Raxias",
+                   "speed":  0
+               },
+    "squirrel":  {
+                     "hp":  20,
+                     "exp":  0,
+                     "bclass":  "Mammal",
+                     "blevel":  "Trivial",
+                     "armor":  1,
+                     "title":  "Squirrel",
+                     "speed":  240
+                 },
+    "medusa":  {
+                   "hp":  4500,
+                   "exp":  4050,
+                   "bclass":  "Magical",
+                   "blevel":  "Hard",
+                   "armor":  45,
+                   "title":  "Medusa",
+                   "speed":  125
+               },
+    "frost giantess":  {
+                           "hp":  275,
+                           "exp":  150,
+                           "bclass":  "Giant",
+                           "blevel":  "Easy",
+                           "armor":  20,
+                           "title":  "Frost Giantess",
+                           "speed":  97
+                       },
+    "rustheap golem":  {
+                           "hp":  2800,
+                           "exp":  2350,
+                           "bclass":  "Construct",
+                           "blevel":  "Medium",
+                           "armor":  46,
+                           "title":  "Rustheap Golem",
+                           "speed":  125
+                       },
+    "fetter":  {
+                   "hp":  5500,
+                   "exp":  0,
+                   "bclass":  "The Undead",
+                   "blevel":  "",
+                   "armor":  0,
+                   "title":  "Fetter",
+                   "speed":  0
+               },
+    "barbarian bloodwalker":  {
+                                  "hp":  305,
+                                  "exp":  195,
+                                  "bclass":  "Human",
+                                  "blevel":  "Medium",
+                                  "armor":  9,
+                                  "title":  "Barbarian Bloodwalker",
+                                  "speed":  118
+                              },
+    "orc berserker":  {
+                          "hp":  210,
+                          "exp":  195,
+                          "bclass":  "Humanoid",
+                          "blevel":  "Medium",
+                          "armor":  12,
+                          "title":  "Orc Berserker",
+                          "speed":  125
+                      },
+    "draken elite":  {
+                         "hp":  5550,
+                         "exp":  4750,
+                         "bclass":  "Dragon",
+                         "blevel":  "Hard",
+                         "armor":  60,
+                         "title":  "Draken Elite",
+                         "speed":  166
+                     },
+    "frost flower asura":  {
+                               "hp":  3500,
+                               "exp":  4200,
+                               "bclass":  "Demon",
+                               "blevel":  "Medium",
+                               "armor":  56,
+                               "title":  "Frost Flower Asura",
+                               "speed":  110
+                           },
+    "vicious manbat":  {
+                           "hp":  1700,
+                           "exp":  1200,
+                           "bclass":  "Undead",
+                           "blevel":  "Medium",
+                           "armor":  44,
+                           "title":  "Vicious Manbat",
+                           "speed":  105
+                       },
+    "gazer":  {
+                  "hp":  120,
+                  "exp":  90,
+                  "bclass":  "Magical",
+                  "blevel":  "Easy",
+                  "armor":  4,
+                  "title":  "Gazer",
+                  "speed":  70
+              },
+    "stone devourer":  {
+                           "hp":  4200,
+                           "exp":  3650,
+                           "bclass":  "Construct",
+                           "blevel":  "Hard",
+                           "armor":  75,
+                           "title":  "Stone Devourer",
+                           "speed":  150
+                       },
+    "braindeath":  {
+                       "hp":  1225,
+                       "exp":  985,
+                       "bclass":  "Undead",
+                       "blevel":  "Medium",
+                       "armor":  12,
+                       "title":  "Braindeath",
+                       "speed":  109
+                   },
+    "minotaur hunter":  {
+                            "hp":  1400,
+                            "exp":  1700,
+                            "bclass":  "Humanoid",
+                            "blevel":  "Medium",
+                            "armor":  36,
+                            "title":  "Minotaur Hunter",
+                            "speed":  115
+                        },
+    "insect swarm":  {
+                         "hp":  50,
+                         "exp":  40,
+                         "bclass":  "Vermin",
+                         "blevel":  "Easy",
+                         "armor":  4,
+                         "title":  "Insect Swarm",
+                         "speed":  118
+                     },
+    "assassin":  {
+                     "hp":  175,
+                     "exp":  105,
+                     "bclass":  "Human",
+                     "blevel":  "Easy",
+                     "armor":  17,
+                     "title":  "Assassin",
+                     "speed":  112
+                 },
+    "quara mantassin":  {
+                            "hp":  800,
+                            "exp":  600,
+                            "bclass":  "Aquatic",
+                            "blevel":  "Medium",
+                            "armor":  16,
+                            "title":  "Quara Mantassin",
+                            "speed":  295
+                        },
+    "acid blob":  {
+                      "hp":  250,
+                      "exp":  250,
+                      "bclass":  "Slime",
+                      "blevel":  "Medium",
+                      "armor":  3,
+                      "title":  "Acid Blob",
+                      "speed":  60
+                  },
+    "barbarian headsplitter":  {
+                                   "hp":  100,
+                                   "exp":  85,
+                                   "bclass":  "Human",
+                                   "blevel":  "Easy",
+                                   "armor":  7,
+                                   "title":  "Barbarian Headsplitter",
+                                   "speed":  84
+                               },
+    "draptor":  {
+                    "hp":  3000,
+                    "exp":  2400,
+                    "bclass":  "Reptile",
+                    "blevel":  "Medium",
+                    "armor":  40,
+                    "title":  "Draptor",
+                    "speed":  340
+                },
+    "skeleton elite warrior":  {
+                                   "hp":  7800,
+                                   "exp":  5370,
+                                   "bclass":  "Undead",
+                                   "blevel":  "Hard",
+                                   "armor":  75,
+                                   "title":  "Skeleton Elite Warrior",
+                                   "speed":  155
+                               },
+    "bonelord":  {
+                     "hp":  260,
+                     "exp":  170,
+                     "bclass":  "Magical",
+                     "blevel":  "Easy",
+                     "armor":  5,
+                     "title":  "Bonelord",
+                     "speed":  75
+                 },
+    "walker":  {
+                   "hp":  3000,
+                   "exp":  2200,
+                   "bclass":  "Construct",
+                   "blevel":  "Medium",
+                   "armor":  47,
+                   "title":  "Walker",
+                   "speed":  150
+               },
+    "dark sorcerer":  {
+                          "hp":  0,
+                          "exp":  0,
+                          "bclass":  "Humans",
+                          "blevel":  "",
+                          "armor":  0,
+                          "title":  "Dark Sorcerer",
+                          "speed":  0
+                      },
+    "soulless minion":  {
+                            "hp":  0,
+                            "exp":  0,
+                            "bclass":  "The Undead",
+                            "blevel":  "",
+                            "armor":  0,
+                            "title":  "Soulless Minion",
+                            "speed":  0
+                        },
+    "toad":  {
+                 "hp":  135,
+                 "exp":  60,
+                 "bclass":  "Amphibic",
+                 "blevel":  "Easy",
+                 "armor":  6,
+                 "title":  "Toad",
+                 "speed":  105
+             },
+    "ferumbras":  {
+                      "hp":  90000,
+                      "exp":  35000,
+                      "bclass":  "Humans",
+                      "blevel":  "",
+                      "armor":  0,
+                      "title":  "Ferumbras",
+                      "speed":  0
+                  },
+    "deepworm":  {
+                     "hp":  3500,
+                     "exp":  2520,
+                     "bclass":  "Vermin",
+                     "blevel":  "Hard",
+                     "armor":  73,
+                     "title":  "Deepworm",
+                     "speed":  102
+                 },
+    "carrion worm":  {
+                         "hp":  145,
+                         "exp":  70,
+                         "bclass":  "Vermin",
+                         "blevel":  "Easy",
+                         "armor":  8,
+                         "title":  "Carrion Worm",
+                         "speed":  65
+                     },
+    "goblin leader":  {
+                          "hp":  50,
+                          "exp":  75,
+                          "bclass":  "Humanoid",
+                          "blevel":  "Easy",
+                          "armor":  7,
+                          "title":  "Goblin Leader",
+                          "speed":  60
+                      },
+    "draken warmaster":  {
+                             "hp":  4150,
+                             "exp":  2400,
+                             "bclass":  "Dragon",
+                             "blevel":  "Medium",
+                             "armor":  55,
+                             "title":  "Draken Warmaster",
+                             "speed":  162
+                         },
+    "undead jester":  {
+                          "hp":  355,
+                          "exp":  5,
+                          "bclass":  "Undead",
+                          "blevel":  "Trivial",
+                          "armor":  3,
+                          "title":  "Undead Jester",
+                          "speed":  112
+                      },
+    "hellflayer":  {
+                       "hp":  14000,
+                       "exp":  11720,
+                       "bclass":  "Demon",
+                       "blevel":  "Hard",
+                       "armor":  55,
+                       "title":  "Hellflayer",
+                       "speed":  165
+                   },
+    "roaring lion":  {
+                         "hp":  1000,
+                         "exp":  800,
+                         "bclass":  "Mammal",
+                         "blevel":  "Medium",
+                         "armor":  28,
+                         "title":  "Roaring Lion",
+                         "speed":  105
+                     },
+    "king zelos":  {
+                       "hp":  480000,
+                       "exp":  75000,
+                       "bclass":  "The Undead",
+                       "blevel":  "",
+                       "armor":  0,
+                       "title":  "King Zelos",
+                       "speed":  0
+                   },
+    "burning book":  {
+                         "hp":  18000,
+                         "exp":  13200,
+                         "bclass":  "Inkborn",
+                         "blevel":  "Hard",
+                         "armor":  82,
+                         "title":  "Burning Book",
+                         "speed":  220
+                     },
+    "blood priest":  {
+                         "hp":  820,
+                         "exp":  900,
+                         "bclass":  "Human",
+                         "blevel":  "Medium",
+                         "armor":  55,
+                         "title":  "Blood Priest",
+                         "speed":  99
+                     },
+    "worm priestess":  {
+                           "hp":  1100,
+                           "exp":  1500,
+                           "bclass":  "Humanoid",
+                           "blevel":  "Medium",
+                           "armor":  36,
+                           "title":  "Worm Priestess",
+                           "speed":  99
+                       },
+    "crystal spider":  {
+                           "hp":  1250,
+                           "exp":  900,
+                           "bclass":  "Magical",
+                           "blevel":  "Medium",
+                           "armor":  43,
+                           "title":  "Crystal Spider",
+                           "speed":  115
+                       },
+    "crab":  {
+                 "hp":  55,
+                 "exp":  30,
+                 "bclass":  "Aquatic",
+                 "blevel":  "Easy",
+                 "armor":  28,
+                 "title":  "Crab",
+                 "speed":  100
+             },
+    "lamassu":  {
+                    "hp":  8700,
+                    "exp":  9000,
+                    "bclass":  "Magical",
+                    "blevel":  "Hard",
+                    "armor":  82,
+                    "title":  "Lamassu",
+                    "speed":  160
+                },
+    "novice of the cult":  {
+                               "hp":  285,
+                               "exp":  100,
+                               "bclass":  "Human",
+                               "blevel":  "Easy",
+                               "armor":  15,
+                               "title":  "Novice of the Cult",
+                               "speed":  100
+                           },
+    "dwarf soldier":  {
+                          "hp":  135,
+                          "exp":  70,
+                          "bclass":  "Humanoid",
+                          "blevel":  "Easy",
+                          "armor":  9,
+                          "title":  "Dwarf Soldier",
+                          "speed":  88
+                      },
+    "grim reaper":  {
+                        "hp":  3900,
+                        "exp":  5500,
+                        "bclass":  "Undead",
+                        "blevel":  "Hard",
+                        "armor":  30,
+                        "title":  "Grim Reaper",
+                        "speed":  160
+                    },
+    "ghoul":  {
+                  "hp":  100,
+                  "exp":  85,
+                  "bclass":  "Undead",
+                  "blevel":  "Easy",
+                  "armor":  8,
+                  "title":  "Ghoul",
+                  "speed":  72
+              },
+    "efreet":  {
+                   "hp":  550,
+                   "exp":  410,
+                   "bclass":  "Magical",
+                   "blevel":  "Medium",
+                   "armor":  24,
+                   "title":  "Efreet",
+                   "speed":  117
+               },
+    "werelion":  {
+                     "hp":  2800,
+                     "exp":  2200,
+                     "bclass":  "Lycanthrope",
+                     "blevel":  "Hard",
+                     "armor":  38,
+                     "title":  "Werelion",
+                     "speed":  110
+                 },
+    "feversleep":  {
+                       "hp":  5900,
+                       "exp":  5060,
+                       "bclass":  "Magical",
+                       "blevel":  "Medium",
+                       "armor":  73,
+                       "title":  "Feversleep",
+                       "speed":  180
+                   },
+    "corym vanguard":  {
+                           "hp":  700,
+                           "exp":  490,
+                           "bclass":  "Humanoid",
+                           "blevel":  "Medium",
+                           "armor":  29,
+                           "title":  "Corym Vanguard",
+                           "speed":  100
+                       },
+    "terror bird":  {
+                        "hp":  300,
+                        "exp":  150,
+                        "bclass":  "Bird",
+                        "blevel":  "Easy",
+                        "armor":  13,
+                        "title":  "Terror Bird",
+                        "speed":  106
+                    },
+    "magma crawler":  {
+                          "hp":  4800,
+                          "exp":  4250,
+                          "bclass":  "Construct",
+                          "blevel":  "Hard",
+                          "armor":  84,
+                          "title":  "Magma Crawler",
+                          "speed":  230
+                      },
+    "gloom wolf":  {
+                       "hp":  200,
+                       "exp":  70,
+                       "bclass":  "Mammal",
+                       "blevel":  "Easy",
+                       "armor":  10,
+                       "title":  "Gloom Wolf",
+                       "speed":  125
+                   },
+    "dawnfire asura":  {
+                           "hp":  2900,
+                           "exp":  3610,
+                           "bclass":  "Demon",
+                           "blevel":  "Hard",
+                           "armor":  48,
+                           "title":  "Dawnfire Asura",
+                           "speed":  140
+                       },
+    "marsh stalker":  {
+                          "hp":  100,
+                          "exp":  50,
+                          "bclass":  "Bird",
+                          "blevel":  "Easy",
+                          "armor":  3,
+                          "title":  "Marsh Stalker",
+                          "speed":  75
+                      },
+    "dwarf guard":  {
+                        "hp":  245,
+                        "exp":  165,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Easy",
+                        "armor":  15,
+                        "title":  "Dwarf Guard",
+                        "speed":  103
+                    },
+    "war golem":  {
+                      "hp":  4300,
+                      "exp":  2680,
+                      "bclass":  "Construct",
+                      "blevel":  "Medium",
+                      "armor":  35,
+                      "title":  "War Golem",
+                      "speed":  160
+                  },
+    "grave guard":  {
+                        "hp":  720,
+                        "exp":  485,
+                        "bclass":  "Undead",
+                        "blevel":  "Medium",
+                        "armor":  35,
+                        "title":  "Grave Guard",
+                        "speed":  100
+                    },
+    "dark druid":  {
+                       "hp":  0,
+                       "exp":  0,
+                       "bclass":  "Humans",
+                       "blevel":  "",
+                       "armor":  0,
+                       "title":  "Dark Druid",
+                       "speed":  0
+                   },
+    "betrayed wraith":  {
+                            "hp":  4200,
+                            "exp":  3500,
+                            "bclass":  "Undead",
+                            "blevel":  "Medium",
+                            "armor":  42,
+                            "title":  "Betrayed Wraith",
+                            "speed":  173
+                        },
+    "cursed book":  {
+                        "hp":  20000,
+                        "exp":  13345,
+                        "bclass":  "Inkborn",
+                        "blevel":  "Hard",
+                        "armor":  82,
+                        "title":  "Cursed Book",
+                        "speed":  220
+                    },
+    "lost basher":  {
+                        "hp":  2600,
+                        "exp":  2300,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Medium",
+                        "armor":  57,
+                        "title":  "Lost Basher",
+                        "speed":  130
+                    },
+    "barbarian brutetamer":  {
+                                 "hp":  145,
+                                 "exp":  90,
+                                 "bclass":  "Human",
+                                 "blevel":  "Easy",
+                                 "armor":  8,
+                                 "title":  "Barbarian Brutetamer",
+                                 "speed":  89
+                             },
+    "dryad":  {
+                  "hp":  310,
+                  "exp":  190,
+                  "bclass":  "Fey",
+                  "blevel":  "Medium",
+                  "armor":  15,
+                  "title":  "Dryad",
+                  "speed":  115
+              },
+    "enlightened of the cult":  {
+                                    "hp":  700,
+                                    "exp":  500,
+                                    "bclass":  "Human",
+                                    "blevel":  "Medium",
+                                    "armor":  40,
+                                    "title":  "Enlightened of the Cult",
+                                    "speed":  100
+                                },
+    "undead prospector":  {
+                              "hp":  100,
+                              "exp":  85,
+                              "bclass":  "Undead",
+                              "blevel":  "Easy",
+                              "armor":  8,
+                              "title":  "Undead Prospector",
+                              "speed":  72
+                          },
+    "grave robber":  {
+                         "hp":  165,
+                         "exp":  65,
+                         "bclass":  "Human",
+                         "blevel":  "Easy",
+                         "armor":  7,
+                         "title":  "Grave Robber",
+                         "speed":  95
+                     },
+    "salamander":  {
+                       "hp":  70,
+                       "exp":  25,
+                       "bclass":  "Amphibic",
+                       "blevel":  "Easy",
+                       "armor":  3,
+                       "title":  "Salamander",
+                       "speed":  60
+                   },
+    "marid":  {
+                  "hp":  550,
+                  "exp":  410,
+                  "bclass":  "Magical",
+                  "blevel":  "Medium",
+                  "armor":  24,
+                  "title":  "Marid",
+                  "speed":  117
+              },
+    "water buffalo":  {
+                          "hp":  390,
+                          "exp":  20,
+                          "bclass":  "Mammal",
+                          "blevel":  "Easy",
+                          "armor":  35,
+                          "title":  "Water Buffalo",
+                          "speed":  75
+                      },
+    "orc cult priest":  {
+                            "hp":  1300,
+                            "exp":  1000,
+                            "bclass":  "Humanoid",
+                            "blevel":  "Medium",
+                            "armor":  27,
+                            "title":  "Orc Cult Priest",
+                            "speed":  70
+                        },
+    "askarak prince":  {
+                           "hp":  2600,
+                           "exp":  1700,
+                           "bclass":  "Demon",
+                           "blevel":  "Medium",
+                           "armor":  45,
+                           "title":  "Askarak Prince",
+                           "speed":  125
+                       },
+    "werehyaena":  {
+                       "hp":  2700,
+                       "exp":  2200,
+                       "bclass":  "Lycanthrope",
+                       "blevel":  "Medium",
+                       "armor":  36,
+                       "title":  "Werehyaena",
+                       "speed":  120
+                   },
+    "minotaur":  {
+                     "hp":  100,
+                     "exp":  50,
+                     "bclass":  "Humanoid",
+                     "blevel":  "Easy",
+                     "armor":  11,
+                     "title":  "Minotaur",
+                     "speed":  84
+                 },
+    "humongous fungus":  {
+                             "hp":  3400,
+                             "exp":  2900,
+                             "bclass":  "Plant",
+                             "blevel":  "Hard",
+                             "armor":  70,
+                             "title":  "Humongous Fungus",
+                             "speed":  130
+                         },
+    "rorc":  {
+                 "hp":  260,
+                 "exp":  105,
+                 "bclass":  "Magical",
+                 "blevel":  "Easy",
+                 "armor":  13,
+                 "title":  "Rorc",
+                 "speed":  88
+             },
+    "fury":  {
+                 "hp":  4100,
+                 "exp":  4000,
+                 "bclass":  "Demon",
+                 "blevel":  "Hard",
+                 "armor":  35,
+                 "title":  "Fury",
+                 "speed":  200
+             },
+    "grimeleech":  {
+                       "hp":  9500,
+                       "exp":  7216,
+                       "bclass":  "Demon",
+                       "blevel":  "Hard",
+                       "armor":  65,
+                       "title":  "Grimeleech",
+                       "speed":  170
+                   },
+    "lizard high guard":  {
+                              "hp":  1800,
+                              "exp":  1450,
+                              "bclass":  "Reptile",
+                              "blevel":  "Medium",
+                              "armor":  40,
+                              "title":  "Lizard High Guard",
+                              "speed":  119
+                          },
+    "cult scholar":  {
+                         "hp":  1650,
+                         "exp":  1100,
+                         "bclass":  "Human",
+                         "blevel":  "Medium",
+                         "armor":  30,
+                         "title":  "Cult Scholar",
+                         "speed":  130
+                     },
+    "deepling spellsinger":  {
+                                 "hp":  850,
+                                 "exp":  1000,
+                                 "bclass":  "Aquatic",
+                                 "blevel":  "Medium",
+                                 "armor":  42,
+                                 "title":  "Deepling Spellsinger",
+                                 "speed":  95
+                             },
+    "ink blob":  {
+                     "hp":  9500,
+                     "exp":  14450,
+                     "bclass":  "Inkborn",
+                     "blevel":  "Hard",
+                     "armor":  70,
+                     "title":  "Ink Blob",
+                     "speed":  190
+                 },
+    "dromedary":  {
+                      "hp":  45,
+                      "exp":  0,
+                      "bclass":  "Mammal",
+                      "blevel":  "Trivial",
+                      "armor":  4,
+                      "title":  "Dromedary",
+                      "speed":  57
+                  },
+    "pirate marauder":  {
+                            "hp":  210,
+                            "exp":  125,
+                            "bclass":  "Human",
+                            "blevel":  "Easy",
+                            "armor":  8,
+                            "title":  "Pirate Marauder",
+                            "speed":  105
+                        },
+    "bug":  {
+                "hp":  29,
+                "exp":  18,
+                "bclass":  "Vermin",
+                "blevel":  "Trivial",
+                "armor":  2,
+                "title":  "Bug",
+                "speed":  80
+            },
+    "frost dragon hatchling":  {
+                                   "hp":  800,
+                                   "exp":  745,
+                                   "bclass":  "Dragon",
+                                   "blevel":  "Medium",
+                                   "armor":  32,
+                                   "title":  "Frost Dragon Hatchling",
+                                   "speed":  86
+                               },
+    "nightfiend":  {
+                       "hp":  2700,
+                       "exp":  2100,
+                       "bclass":  "Demon",
+                       "blevel":  "Medium",
+                       "armor":  46,
+                       "title":  "Nightfiend",
+                       "speed":  112
+                   },
+    "orewalker":  {
+                      "hp":  7200,
+                      "exp":  5900,
+                      "bclass":  "Construct",
+                      "blevel":  "Hard",
+                      "armor":  79,
+                      "title":  "Orewalker",
+                      "speed":  190
+                  },
+    "glooth bandit":  {
+                          "hp":  2600,
+                          "exp":  2000,
+                          "bclass":  "Human",
+                          "blevel":  "Medium",
+                          "armor":  46,
+                          "title":  "Glooth Bandit",
+                          "speed":  150
+                      },
+    "noble lion":  {
+                       "hp":  1000,
+                       "exp":  400,
+                       "bclass":  "Mammal",
+                       "blevel":  "Medium",
+                       "armor":  27,
+                       "title":  "Noble Lion",
+                       "speed":  115
+                   },
+    "glooth blob":  {
+                        "hp":  750,
+                        "exp":  700,
+                        "bclass":  "Slime",
+                        "blevel":  "Medium",
+                        "armor":  30,
+                        "title":  "Glooth Blob",
+                        "speed":  80
+                    },
+    "parrot":  {
+                   "hp":  25,
+                   "exp":  0,
+                   "bclass":  "Bird",
+                   "blevel":  "Trivial",
+                   "armor":  2,
+                   "title":  "Parrot",
+                   "speed":  160
+               },
+    "weeper":  {
+                   "hp":  6800,
+                   "exp":  5800,
+                   "bclass":  "Construct",
+                   "blevel":  "Hard",
+                   "armor":  76,
+                   "title":  "Weeper",
+                   "speed":  170
+               },
+    "chakoya tribewarden":  {
+                                "hp":  68,
+                                "exp":  40,
+                                "bclass":  "Humanoid",
+                                "blevel":  "Easy",
+                                "armor":  9,
+                                "title":  "Chakoya Tribewarden",
+                                "speed":  62
+                            },
+    "orc spearman":  {
+                         "hp":  105,
+                         "exp":  38,
+                         "bclass":  "Humanoid",
+                         "blevel":  "Easy",
+                         "armor":  6,
+                         "title":  "Orc Spearman",
+                         "speed":  88
+                     },
+    "deathling scout":  {
+                            "hp":  7200,
+                            "exp":  6300,
+                            "bclass":  "Aquatic",
+                            "blevel":  "Hard",
+                            "armor":  72,
+                            "title":  "Deathling Scout",
+                            "speed":  155
+                        },
+    "sandstone scorpion":  {
+                               "hp":  900,
+                               "exp":  680,
+                               "bclass":  "Construct",
+                               "blevel":  "Medium",
+                               "armor":  42,
+                               "title":  "Sandstone Scorpion",
+                               "speed":  110
+                           },
+    "flamingo":  {
+                     "hp":  25,
+                     "exp":  0,
+                     "bclass":  "Bird",
+                     "blevel":  "Trivial",
+                     "armor":  1,
+                     "title":  "Flamingo",
+                     "speed":  84
+                 },
+    "askarak lord":  {
+                         "hp":  2100,
+                         "exp":  1200,
+                         "bclass":  "Demon",
+                         "blevel":  "Medium",
+                         "armor":  40,
+                         "title":  "Askarak Lord",
+                         "speed":  120
+                     },
+    "guzzlemaw":  {
+                      "hp":  6400,
+                      "exp":  6050,
+                      "bclass":  "Magical",
+                      "blevel":  "Hard",
+                      "armor":  74,
+                      "title":  "Guzzlemaw",
+                      "speed":  200
+                  },
+    "white lion":  {
+                       "hp":  2700,
+                       "exp":  2300,
+                       "bclass":  "Mammal",
+                       "blevel":  "Hard",
+                       "armor":  38,
+                       "title":  "White Lion",
+                       "speed":  110
+                   },
+    "shaburak lord":  {
+                          "hp":  2100,
+                          "exp":  1800,
+                          "bclass":  "Demon",
+                          "blevel":  "Medium",
+                          "armor":  40,
+                          "title":  "Shaburak Lord",
+                          "speed":  120
+                      },
+    "hellhound":  {
+                      "hp":  7500,
+                      "exp":  5440,
+                      "bclass":  "Demon",
+                      "blevel":  "Hard",
+                      "armor":  60,
+                      "title":  "Hellhound",
+                      "speed":  180
+                  },
+    "crawler":  {
+                    "hp":  1450,
+                    "exp":  1000,
+                    "bclass":  "Vermin",
+                    "blevel":  "Medium",
+                    "armor":  38,
+                    "title":  "Crawler",
+                    "speed":  125
+                },
+    "lumbering carnivor":  {
+                               "hp":  2600,
+                               "exp":  1452,
+                               "bclass":  "Magical",
+                               "blevel":  "Medium",
+                               "armor":  65,
+                               "title":  "Lumbering Carnivor",
+                               "speed":  200
+                           },
+    "wyrm":  {
+                 "hp":  1825,
+                 "exp":  1550,
+                 "bclass":  "Dragon",
+                 "blevel":  "Medium",
+                 "armor":  34,
+                 "title":  "Wyrm",
+                 "speed":  140
+             },
+    "hive overseer":  {
+                          "hp":  7500,
+                          "exp":  5500,
+                          "bclass":  "Vermin",
+                          "blevel":  "Hard",
+                          "armor":  57,
+                          "title":  "Hive Overseer",
+                          "speed":  115
+                      },
+    "silencer":  {
+                     "hp":  5400,
+                     "exp":  5100,
+                     "bclass":  "Magical",
+                     "blevel":  "Medium",
+                     "armor":  71,
+                     "title":  "Silencer",
+                     "speed":  235
+                 },
+    "frazzlemaw":  {
+                       "hp":  4100,
+                       "exp":  3740,
+                       "bclass":  "Magical",
+                       "blevel":  "Hard",
+                       "armor":  74,
+                       "title":  "Frazzlemaw",
+                       "speed":  200
+                   },
+    "diabolic imp":  {
+                         "hp":  1950,
+                         "exp":  2900,
+                         "bclass":  "Demon",
+                         "blevel":  "Medium",
+                         "armor":  29,
+                         "title":  "Diabolic Imp",
+                         "speed":  105
+                     },
+    "ogre shaman":  {
+                        "hp":  800,
+                        "exp":  625,
+                        "bclass":  "Giant",
+                        "blevel":  "Medium",
+                        "armor":  30,
+                        "title":  "Ogre Shaman",
+                        "speed":  105
+                    },
+    "dire penguin":  {
+                         "hp":  173,
+                         "exp":  119,
+                         "bclass":  "Bird",
+                         "blevel":  "Easy",
+                         "armor":  16,
+                         "title":  "Dire Penguin",
+                         "speed":  87
+                     },
+    "lizard magistratus":  {
+                               "hp":  6250,
+                               "exp":  2000,
+                               "bclass":  "Reptile",
+                               "blevel":  "Medium",
+                               "armor":  25,
+                               "title":  "Lizard Magistratus",
+                               "speed":  128
+                           },
+    "silver rabbit":  {
+                          "hp":  15,
+                          "exp":  0,
+                          "bclass":  "Mammal",
+                          "blevel":  "Trivial",
+                          "armor":  1,
+                          "title":  "Silver Rabbit",
+                          "speed":  92
+                      },
+    "sir nictros":  {
+                        "hp":  0,
+                        "exp":  55000,
+                        "bclass":  "The Undead",
+                        "blevel":  "",
+                        "armor":  0,
+                        "title":  "Sir Nictros",
+                        "speed":  0
+                    },
+    "sacred spider":  {
+                          "hp":  550,
+                          "exp":  330,
+                          "bclass":  "Vermin",
+                          "blevel":  "Medium",
+                          "armor":  27,
+                          "title":  "Sacred Spider",
+                          "speed":  122
+                      },
+    "glooth golem":  {
+                         "hp":  2700,
+                         "exp":  1930,
+                         "bclass":  "Construct",
+                         "blevel":  "Medium",
+                         "armor":  43,
+                         "title":  "Glooth Golem",
+                         "speed":  130
+                     },
+    "elder bonelord":  {
+                           "hp":  500,
+                           "exp":  280,
+                           "bclass":  "Magical",
+                           "blevel":  "Medium",
+                           "armor":  13,
+                           "title":  "Elder Bonelord",
+                           "speed":  85
+                       },
+    "adult goanna":  {
+                         "hp":  8300,
+                         "exp":  6180,
+                         "bclass":  "Reptile",
+                         "blevel":  "Hard",
+                         "armor":  84,
+                         "title":  "Adult Goanna",
+                         "speed":  210
+                     },
+    "poison spider":  {
+                          "hp":  26,
+                          "exp":  22,
+                          "bclass":  "Vermin",
+                          "blevel":  "Trivial",
+                          "armor":  2,
+                          "title":  "Poison Spider",
+                          "speed":  80
+                      },
+    "massive earth elemental":  {
+                                    "hp":  1330,
+                                    "exp":  1100,
+                                    "bclass":  "Elemental",
+                                    "blevel":  "Medium",
+                                    "armor":  60,
+                                    "title":  "Massive Earth Elemental",
+                                    "speed":  185
+                                },
+    "mutated bat":  {
+                        "hp":  900,
+                        "exp":  750,
+                        "bclass":  "Mammal",
+                        "blevel":  "Medium",
+                        "armor":  19,
+                        "title":  "Mutated Bat",
+                        "speed":  93
+                    },
+    "sparkion":  {
+                     "hp":  2700,
+                     "exp":  1520,
+                     "bclass":  "Extra Dimensional",
+                     "blevel":  "Hard",
+                     "armor":  40,
+                     "title":  "Sparkion",
+                     "speed":  151
+                 },
+    "retching horror":  {
+                            "hp":  5300,
+                            "exp":  4100,
+                            "bclass":  "Magical",
+                            "blevel":  "Hard",
+                            "armor":  74,
+                            "title":  "Retching Horror",
+                            "speed":  180
+                        },
+    "true dawnfire asura":  {
+                                "hp":  8500,
+                                "exp":  7475,
+                                "bclass":  "Demon",
+                                "blevel":  "Hard",
+                                "armor":  77,
+                                "title":  "True Dawnfire Asura",
+                                "speed":  180
+                            },
+    "zombie":  {
+                   "hp":  500,
+                   "exp":  280,
+                   "bclass":  "Undead",
+                   "blevel":  "Medium",
+                   "armor":  20,
+                   "title":  "Zombie",
+                   "speed":  90
+               },
+    "vulcongra":  {
+                      "hp":  1600,
+                      "exp":  1100,
+                      "bclass":  "Mammal",
+                      "blevel":  "Hard",
+                      "armor":  50,
+                      "title":  "Vulcongra",
+                      "speed":  160
+                  },
+    "pig":  {
+                "hp":  25,
+                "exp":  0,
+                "bclass":  "Mammal",
+                "blevel":  "Trivial",
+                "armor":  2,
+                "title":  "Pig",
+                "speed":  57
+            },
+    "juggernaut":  {
+                       "hp":  18000,
+                       "exp":  11200,
+                       "bclass":  "Demon",
+                       "blevel":  "Hard",
+                       "armor":  70,
+                       "title":  "Juggernaut",
+                       "speed":  170
+                   },
+    "polar bear":  {
+                       "hp":  85,
+                       "exp":  28,
+                       "bclass":  "Mammal",
+                       "blevel":  "Easy",
+                       "armor":  7,
+                       "title":  "Polar Bear",
+                       "speed":  78
+                   },
+    "vexclaw":  {
+                    "hp":  8500,
+                    "exp":  6248,
+                    "bclass":  "Demon",
+                    "blevel":  "Hard",
+                    "armor":  55,
+                    "title":  "Vexclaw",
+                    "speed":  135
+                },
+    "draken spellweaver":  {
+                               "hp":  5000,
+                               "exp":  3100,
+                               "bclass":  "Dragon",
+                               "blevel":  "Hard",
+                               "armor":  25,
+                               "title":  "Draken Spellweaver",
+                               "speed":  168
+                           },
+    "ice witch":  {
+                      "hp":  650,
+                      "exp":  580,
+                      "bclass":  "Human",
+                      "blevel":  "Medium",
+                      "armor":  70,
+                      "title":  "Ice Witch",
+                      "speed":  114
+                  },
+    "stonerefiner":  {
+                         "hp":  800,
+                         "exp":  500,
+                         "bclass":  "Reptile",
+                         "blevel":  "Medium",
+                         "armor":  20,
+                         "title":  "Stonerefiner",
+                         "speed":  110
+                     },
+    "insectoid scout":  {
+                            "hp":  230,
+                            "exp":  150,
+                            "bclass":  "Vermin",
+                            "blevel":  "Easy",
+                            "armor":  27,
+                            "title":  "Insectoid Scout",
+                            "speed":  101
+                        },
+    "wailing widow":  {
+                          "hp":  850,
+                          "exp":  450,
+                          "bclass":  "Vermin",
+                          "blevel":  "Medium",
+                          "armor":  31,
+                          "title":  "Wailing Widow",
+                          "speed":  127
+                      },
+    "lancer beetle":  {
+                          "hp":  400,
+                          "exp":  275,
+                          "bclass":  "Vermin",
+                          "blevel":  "Medium",
+                          "armor":  35,
+                          "title":  "Lancer Beetle",
+                          "speed":  133
+                      },
+    "ghastly dragon":  {
+                           "hp":  7800,
+                           "exp":  4600,
+                           "bclass":  "Dragon",
+                           "blevel":  "Hard",
+                           "armor":  30,
+                           "title":  "Ghastly Dragon",
+                           "speed":  160
+                       },
+    "minotaur amazon":  {
+                            "hp":  2600,
+                            "exp":  2200,
+                            "bclass":  "Humanoid",
+                            "blevel":  "Hard",
+                            "armor":  37,
+                            "title":  "Minotaur Amazon",
+                            "speed":  125
+                        },
+    "choking fear":  {
+                         "hp":  5800,
+                         "exp":  4700,
+                         "bclass":  "Magical",
+                         "blevel":  "Hard",
+                         "armor":  65,
+                         "title":  "Choking Fear",
+                         "speed":  190
+                     },
+    "gazer spectre":  {
+                          "hp":  4500,
+                          "exp":  4200,
+                          "bclass":  "Undead",
+                          "blevel":  "Hard",
+                          "armor":  68,
+                          "title":  "Gazer Spectre",
+                          "speed":  195
+                      },
+    "deathling spellsinger":  {
+                                  "hp":  7200,
+                                  "exp":  6400,
+                                  "bclass":  "Aquatic",
+                                  "blevel":  "Hard",
+                                  "armor":  72,
+                                  "title":  "Deathling Spellsinger",
+                                  "speed":  155
+                              },
+    "skunk":  {
+                  "hp":  20,
+                  "exp":  3,
+                  "bclass":  "Mammal",
+                  "blevel":  "Trivial",
+                  "armor":  1,
+                  "title":  "Skunk",
+                  "speed":  68
+              },
+    "slime":  {
+                  "hp":  150,
+                  "exp":  160,
+                  "bclass":  "Slime",
+                  "blevel":  "Easy",
+                  "armor":  3,
+                  "title":  "Slime",
+                  "speed":  60
+              },
+    "demon parrot":  {
+                         "hp":  360,
+                         "exp":  225,
+                         "bclass":  "Bird",
+                         "blevel":  "Medium",
+                         "armor":  18,
+                         "title":  "Demon Parrot",
+                         "speed":  160
+                     },
+    "bear":  {
+                 "hp":  80,
+                 "exp":  23,
+                 "bclass":  "Mammal",
+                 "blevel":  "Easy",
+                 "armor":  6,
+                 "title":  "Bear",
+                 "speed":  78
+             },
+    "ogre ruffian":  {
+                         "hp":  5500,
+                         "exp":  5000,
+                         "bclass":  "Giant",
+                         "blevel":  "Hard",
+                         "armor":  102,
+                         "title":  "Ogre Ruffian",
+                         "speed":  215
+                     },
+    "gnarlhound":  {
+                       "hp":  198,
+                       "exp":  60,
+                       "bclass":  "Mammal",
+                       "blevel":  "Easy",
+                       "armor":  10,
+                       "title":  "Gnarlhound",
+                       "speed":  205
+                   },
+    "cyclops":  {
+                    "hp":  260,
+                    "exp":  150,
+                    "bclass":  "Giant",
+                    "blevel":  "Easy",
+                    "armor":  17,
+                    "title":  "Cyclops",
+                    "speed":  95
+                },
+    "demon":  {
+                  "hp":  8200,
+                  "exp":  6000,
+                  "bclass":  "Demon",
+                  "blevel":  "Hard",
+                  "armor":  44,
+                  "title":  "Demon",
+                  "speed":  128
+              },
+    "skeleton warrior":  {
+                             "hp":  65,
+                             "exp":  45,
+                             "bclass":  "Undead",
+                             "blevel":  "Easy",
+                             "armor":  5,
+                             "title":  "Skeleton Warrior",
+                             "speed":  77
+                         },
+    "rotworm":  {
+                    "hp":  65,
+                    "exp":  40,
+                    "bclass":  "Vermin",
+                    "blevel":  "Easy",
+                    "armor":  8,
+                    "title":  "Rotworm",
+                    "speed":  58
+                },
+    "shaper matriarch":  {
+                             "hp":  2000,
+                             "exp":  1650,
+                             "bclass":  "Humanoid",
+                             "blevel":  "Medium",
+                             "armor":  40,
+                             "title":  "Shaper Matriarch",
+                             "speed":  130
+                         },
+    "elf":  {
+                "hp":  100,
+                "exp":  42,
+                "bclass":  "Humanoid",
+                "blevel":  "Easy",
+                "armor":  6,
+                "title":  "Elf",
+                "speed":  95
+            },
+    "shaburak prince":  {
+                            "hp":  2600,
+                            "exp":  2300,
+                            "bclass":  "Demon",
+                            "blevel":  "Medium",
+                            "armor":  45,
+                            "title":  "Shaburak Prince",
+                            "speed":  125
+                        },
+    "icecold book":  {
+                         "hp":  21000,
+                         "exp":  12750,
+                         "bclass":  "Inkborn",
+                         "blevel":  "Hard",
+                         "armor":  82,
+                         "title":  "Icecold Book",
+                         "speed":  220
+                     },
+    "priestess":  {
+                      "hp":  390,
+                      "exp":  420,
+                      "bclass":  "Human",
+                      "blevel":  "Medium",
+                      "armor":  30,
+                      "title":  "Priestess",
+                      "speed":  85
+                  },
+    "bane bringer":  {
+                         "hp":  2500,
+                         "exp":  400,
+                         "bclass":  "Plant",
+                         "blevel":  "Medium",
+                         "armor":  17,
+                         "title":  "Bane Bringer",
+                         "speed":  115
+                     },
+    "tiger":  {
+                  "hp":  75,
+                  "exp":  40,
+                  "bclass":  "Mammal",
+                  "blevel":  "Easy",
+                  "armor":  5,
+                  "title":  "Tiger",
+                  "speed":  100
+              },
+    "dog":  {
+                "hp":  20,
+                "exp":  0,
+                "bclass":  "Mammal",
+                "blevel":  "Harmless",
+                "armor":  1,
+                "title":  "Dog",
+                "speed":  62
+            },
+    "goblin assassin":  {
+                            "hp":  75,
+                            "exp":  52,
+                            "bclass":  "Humanoid",
+                            "blevel":  "Easy",
+                            "armor":  6,
+                            "title":  "Goblin Assassin",
+                            "speed":  70
+                        },
+    "undead elite gladiator":  {
+                                   "hp":  8000,
+                                   "exp":  5700,
+                                   "bclass":  "Undead",
+                                   "blevel":  "Hard",
+                                   "armor":  85,
+                                   "title":  "Undead Elite Gladiator",
+                                   "speed":  150
+                               },
+    "sea serpent":  {
+                        "hp":  1950,
+                        "exp":  2300,
+                        "bclass":  "Reptile",
+                        "blevel":  "Medium",
+                        "armor":  25,
+                        "title":  "Sea Serpent",
+                        "speed":  240
+                    },
+    "lost thrower":  {
+                         "hp":  1700,
+                         "exp":  1500,
+                         "bclass":  "Humanoid",
+                         "blevel":  "Medium",
+                         "armor":  50,
+                         "title":  "Lost Thrower",
+                         "speed":  120
+                     },
+    "iron servant":  {
+                         "hp":  350,
+                         "exp":  210,
+                         "bclass":  "Construct",
+                         "blevel":  "Easy",
+                         "armor":  17,
+                         "title":  "Iron Servant",
+                         "speed":  95
+                     },
+    "ugly monster":  {
+                         "hp":  10000,
+                         "exp":  1000,
+                         "bclass":  "The Undead",
+                         "blevel":  "",
+                         "armor":  0,
+                         "title":  "Ugly Monster",
+                         "speed":  0
+                     },
+    "lizard zaogun":  {
+                          "hp":  2955,
+                          "exp":  1700,
+                          "bclass":  "Reptile",
+                          "blevel":  "Medium",
+                          "armor":  42,
+                          "title":  "Lizard Zaogun",
+                          "speed":  138
+                      },
+    "warlock":  {
+                    "hp":  3500,
+                    "exp":  4000,
+                    "bclass":  "Human",
+                    "blevel":  "Medium",
+                    "armor":  33,
+                    "title":  "Warlock",
+                    "speed":  115
+                },
+    "cobra scout":  {
+                        "hp":  8500,
+                        "exp":  7310,
+                        "bclass":  "Human",
+                        "blevel":  "Hard",
+                        "armor":  81,
+                        "title":  "Cobra Scout",
+                        "speed":  150
+                    },
+    "plaguesmith":  {
+                        "hp":  8250,
+                        "exp":  3800,
+                        "bclass":  "Demon",
+                        "blevel":  "Medium",
+                        "armor":  30,
+                        "title":  "Plaguesmith",
+                        "speed":  160
+                    },
+    "panda":  {
+                  "hp":  80,
+                  "exp":  23,
+                  "bclass":  "Mammal",
+                  "blevel":  "Easy",
+                  "armor":  8,
+                  "title":  "Panda",
+                  "speed":  78
+              },
+    "coral frog":  {
+                       "hp":  60,
+                       "exp":  20,
+                       "bclass":  "Amphibic",
+                       "blevel":  "Easy",
+                       "armor":  8,
+                       "title":  "Coral Frog",
+                       "speed":  160
+                   },
+    "shadow hound":  {
+                         "hp":  555,
+                         "exp":  600,
+                         "bclass":  "Demon",
+                         "blevel":  "Medium",
+                         "armor":  38,
+                         "title":  "Shadow Hound",
+                         "speed":  115
+                     },
+    "brain squid":  {
+                        "hp":  18000,
+                        "exp":  17672,
+                        "bclass":  "Inkborn",
+                        "blevel":  "Hard",
+                        "armor":  78,
+                        "title":  "Brain Squid",
+                        "speed":  215
+                    },
+    "infernal frog":  {
+                          "hp":  655,
+                          "exp":  190,
+                          "bclass":  "Amphibic",
+                          "blevel":  "Medium",
+                          "armor":  18,
+                          "title":  "Infernal Frog",
+                          "speed":  100
+                      },
+    "green frog":  {
+                       "hp":  25,
+                       "exp":  0,
+                       "bclass":  "Amphibic",
+                       "blevel":  "Trivial",
+                       "armor":  2,
+                       "title":  "Green Frog",
+                       "speed":  160
+                   },
+    "blood beast":  {
+                        "hp":  1600,
+                        "exp":  1000,
+                        "bclass":  "Undead",
+                        "blevel":  "Medium",
+                        "armor":  32,
+                        "title":  "Blood Beast",
+                        "speed":  110
+                    },
+    "dark apprentice":  {
+                            "hp":  225,
+                            "exp":  100,
+                            "bclass":  "Human",
+                            "blevel":  "Easy",
+                            "armor":  16,
+                            "title":  "Dark Apprentice",
+                            "speed":  86
+                        },
+    "waspoid":  {
+                    "hp":  1100,
+                    "exp":  830,
+                    "bclass":  "Vermin",
+                    "blevel":  "Medium",
+                    "armor":  36,
+                    "title":  "Waspoid",
+                    "speed":  155
+                },
+    "spider":  {
+                   "hp":  20,
+                   "exp":  12,
+                   "bclass":  "Vermin",
+                   "blevel":  "Trivial",
+                   "armor":  2,
+                   "title":  "Spider",
+                   "speed":  76
+               },
+    "dark knight":  {
+                        "hp":  0,
+                        "exp":  0,
+                        "bclass":  "Humans",
+                        "blevel":  "",
+                        "armor":  0,
+                        "title":  "Dark Knight",
+                        "speed":  0
+                    },
+    "animated feather":  {
+                             "hp":  13000,
+                             "exp":  9860,
+                             "bclass":  "Inkborn",
+                             "blevel":  "Hard",
+                             "armor":  79,
+                             "title":  "Animated Feather",
+                             "speed":  210
+                         },
+    "guard captain quaid":  {
+                                "hp":  55000,
+                                "exp":  28000,
+                                "bclass":  "Humans",
+                                "blevel":  "",
+                                "armor":  0,
+                                "title":  "Guard Captain Quaid",
+                                "speed":  0
+                            },
+    "scorpion":  {
+                     "hp":  45,
+                     "exp":  45,
+                     "bclass":  "Vermin",
+                     "blevel":  "Easy",
+                     "armor":  14,
+                     "title":  "Scorpion",
+                     "speed":  75
+                 },
+    "white deer":  {
+                       "hp":  195,
+                       "exp":  0,
+                       "bclass":  "Mammal",
+                       "blevel":  "Trivial",
+                       "armor":  2,
+                       "title":  "White Deer",
+                       "speed":  104
+                   },
+    "ogre sage":  {
+                      "hp":  4800,
+                      "exp":  5500,
+                      "bclass":  "Giant",
+                      "blevel":  "Hard",
+                      "armor":  93,
+                      "title":  "Ogre Sage",
+                      "speed":  230
+                  },
+    "lava golem":  {
+                       "hp":  9000,
+                       "exp":  7900,
+                       "bclass":  "Construct",
+                       "blevel":  "Hard",
+                       "armor":  84,
+                       "title":  "Lava Golem",
+                       "speed":  210
+                   },
+    "killer rabbit":  {
+                          "hp":  205,
+                          "exp":  160,
+                          "bclass":  "Mammal",
+                          "blevel":  "Easy",
+                          "armor":  17,
+                          "title":  "Killer Rabbit",
+                          "speed":  170
+                      },
+    "leaf golem":  {
+                       "hp":  90,
+                       "exp":  45,
+                       "bclass":  "Plant",
+                       "blevel":  "Easy",
+                       "armor":  11,
+                       "title":  "Leaf Golem",
+                       "speed":  68
+                   },
+    "destroyer":  {
+                      "hp":  3700,
+                      "exp":  2500,
+                      "bclass":  "Demon",
+                      "blevel":  "Medium",
+                      "armor":  35,
+                      "title":  "Destroyer",
+                      "speed":  150
+                  },
+    "doom deer":  {
+                      "hp":  405,
+                      "exp":  200,
+                      "bclass":  "Mammal",
+                      "blevel":  "Medium",
+                      "armor":  19,
+                      "title":  "Doom Deer",
+                      "speed":  91
+                  },
+    "damaged worker golem":  {
+                                 "hp":  260,
+                                 "exp":  95,
+                                 "bclass":  "Construct",
+                                 "blevel":  "Easy",
+                                 "armor":  16,
+                                 "title":  "Damaged Worker Golem",
+                                 "speed":  75
+                             },
+    "pirate buccaneer":  {
+                             "hp":  425,
+                             "exp":  250,
+                             "bclass":  "Human",
+                             "blevel":  "Medium",
+                             "armor":  16,
+                             "title":  "Pirate Buccaneer",
+                             "speed":  109
+                         },
+    "husky":  {
+                  "hp":  140,
+                  "exp":  0,
+                  "bclass":  "Mammal",
+                  "blevel":  "Harmless",
+                  "armor":  1,
+                  "title":  "Husky",
+                  "speed":  132
+              },
+    "rabbit":  {
+                   "hp":  15,
+                   "exp":  0,
+                   "bclass":  "Mammal",
+                   "blevel":  "Trivial",
+                   "armor":  1,
+                   "title":  "Rabbit",
+                   "speed":  90
+               },
+    "gryphon":  {
+                    "hp":  3200,
+                    "exp":  1000,
+                    "bclass":  "Magical",
+                    "blevel":  "Medium",
+                    "armor":  76,
+                    "title":  "Gryphon",
+                    "speed":  160
+                },
+    "lava lurker attendant":  {
+                                  "hp":  0,
+                                  "exp":  0,
+                                  "bclass":  "Elementals",
+                                  "blevel":  "",
+                                  "armor":  0,
+                                  "title":  "Lava Lurker Attendant",
+                                  "speed":  0
+                              },
+    "infernalist":  {
+                        "hp":  3650,
+                        "exp":  4000,
+                        "bclass":  "Human",
+                        "blevel":  "Hard",
+                        "armor":  33,
+                        "title":  "Infernalist",
+                        "speed":  115
+                    },
+    "shadow pupil":  {
+                         "hp":  450,
+                         "exp":  410,
+                         "bclass":  "Human",
+                         "blevel":  "Medium",
+                         "armor":  32,
+                         "title":  "Shadow Pupil",
+                         "speed":  85
+                     },
+    "drillworm":  {
+                      "hp":  1500,
+                      "exp":  1200,
+                      "bclass":  "Vermin",
+                      "blevel":  "Medium",
+                      "armor":  41,
+                      "title":  "Drillworm",
+                      "speed":  110
+                  },
+    "death blob":  {
+                       "hp":  320,
+                       "exp":  300,
+                       "bclass":  "Slime",
+                       "blevel":  "Medium",
+                       "armor":  15,
+                       "title":  "Death Blob",
+                       "speed":  80
+                   },
+    "spitter":  {
+                    "hp":  1500,
+                    "exp":  1100,
+                    "bclass":  "Vermin",
+                    "blevel":  "Medium",
+                    "armor":  48,
+                    "title":  "Spitter",
+                    "speed":  135
+                },
+    "troll guard":  {
+                        "hp":  60,
+                        "exp":  25,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Easy",
+                        "armor":  4,
+                        "title":  "Troll Guard",
+                        "speed":  63
+                    },
+    "ice golem":  {
+                      "hp":  385,
+                      "exp":  295,
+                      "bclass":  "Construct",
+                      "blevel":  "Medium",
+                      "armor":  47,
+                      "title":  "Ice Golem",
+                      "speed":  95
+                  },
+    "cobra assassin":  {
+                           "hp":  8200,
+                           "exp":  6980,
+                           "bclass":  "Human",
+                           "blevel":  "Hard",
+                           "armor":  81,
+                           "title":  "Cobra Assassin",
+                           "speed":  140
+                       },
+    "feral sphinx":  {
+                         "hp":  9800,
+                         "exp":  8450,
+                         "bclass":  "Magical",
+                         "blevel":  "Hard",
+                         "armor":  90,
+                         "title":  "Feral Sphinx",
+                         "speed":  160
+                     },
+    "ghoulish hyaena":  {
+                            "hp":  400,
+                            "exp":  195,
+                            "bclass":  "Undead",
+                            "blevel":  "Medium",
+                            "armor":  21,
+                            "title":  "Ghoulish Hyaena",
+                            "speed":  102
+                        },
+    "grynch clan goblin":  {
+                               "hp":  80,
+                               "exp":  4,
+                               "bclass":  "Humanoid",
+                               "blevel":  "Trivial",
+                               "armor":  5,
+                               "title":  "Grynch Clan Goblin",
+                               "speed":  100
+                           },
+    "xogixath":  {
+                     "hp":  35000,
+                     "exp":  22000,
+                     "bclass":  "Demons",
+                     "blevel":  "",
+                     "armor":  0,
+                     "title":  "Xogixath",
+                     "speed":  0
+                 },
+    "crypt shambler":  {
+                           "hp":  330,
+                           "exp":  195,
+                           "bclass":  "Undead",
+                           "blevel":  "Easy",
+                           "armor":  30,
+                           "title":  "Crypt Shambler",
+                           "speed":  70
+                       },
+    "glooth brigand":  {
+                           "hp":  2400,
+                           "exp":  1900,
+                           "bclass":  "Human",
+                           "blevel":  "Medium",
+                           "armor":  51,
+                           "title":  "Glooth Brigand",
+                           "speed":  160
+                       },
+    "gang member":  {
+                        "hp":  295,
+                        "exp":  70,
+                        "bclass":  "Human",
+                        "blevel":  "Easy",
+                        "armor":  8,
+                        "title":  "Gang Member",
+                        "speed":  95
+                    },
+    "boar":  {
+                 "hp":  198,
+                 "exp":  60,
+                 "bclass":  "Mammal",
+                 "blevel":  "Easy",
+                 "armor":  10,
+                 "title":  "Boar",
+                 "speed":  205
+             },
+    "metal gargoyle":  {
+                           "hp":  2100,
+                           "exp":  1470,
+                           "bclass":  "Construct",
+                           "blevel":  "Medium",
+                           "armor":  60,
+                           "title":  "Metal Gargoyle",
+                           "speed":  95
+                       },
+    "black sheep":  {
+                        "hp":  20,
+                        "exp":  0,
+                        "bclass":  "Mammal",
+                        "blevel":  "Trivial",
+                        "armor":  1,
+                        "title":  "Black Sheep",
+                        "speed":  58
+                    },
+    "young sea serpent":  {
+                              "hp":  1050,
+                              "exp":  1000,
+                              "bclass":  "Reptile",
+                              "blevel":  "Medium",
+                              "armor":  20,
+                              "title":  "Young Sea Serpent",
+                              "speed":  240
+                          },
+    "souleater":  {
+                      "hp":  1100,
+                      "exp":  1300,
+                      "bclass":  "Undead",
+                      "blevel":  "Medium",
+                      "armor":  30,
+                      "title":  "Souleater",
+                      "speed":  105
+                  },
+    "deepsea blood crab":  {
+                               "hp":  320,
+                               "exp":  180,
+                               "bclass":  "Aquatic",
+                               "blevel":  "Easy",
+                               "armor":  28,
+                               "title":  "Deepsea Blood Crab",
+                               "speed":  190
+                           },
+    "blue djinn":  {
+                       "hp":  330,
+                       "exp":  215,
+                       "bclass":  "Magical",
+                       "blevel":  "Medium",
+                       "armor":  20,
+                       "title":  "Blue Djinn",
+                       "speed":  110
+                   },
+    "son of verminor":  {
+                            "hp":  8500,
+                            "exp":  5900,
+                            "bclass":  "Slime",
+                            "blevel":  "Hard",
+                            "armor":  48,
+                            "title":  "Son of Verminor",
+                            "speed":  120
+                        },
+    "deepling brawler":  {
+                             "hp":  380,
+                             "exp":  260,
+                             "bclass":  "Aquatic",
+                             "blevel":  "Medium",
+                             "armor":  18,
+                             "title":  "Deepling Brawler",
+                             "speed":  85
+                         },
+    "crocodile":  {
+                      "hp":  105,
+                      "exp":  40,
+                      "bclass":  "Reptile",
+                      "blevel":  "Easy",
+                      "armor":  13,
+                      "title":  "Crocodile",
+                      "speed":  78
+                  },
+    "yielothax":  {
+                      "hp":  1500,
+                      "exp":  1250,
+                      "bclass":  "Extra Dimensional",
+                      "blevel":  "Medium",
+                      "armor":  32,
+                      "title":  "Yielothax",
+                      "speed":  150
+                  },
+    "mammoth":  {
+                    "hp":  320,
+                    "exp":  160,
+                    "bclass":  "Mammal",
+                    "blevel":  "Easy",
+                    "armor":  20,
+                    "title":  "Mammoth",
+                    "speed":  95
+                },
+    "acolyte of the cult":  {
+                                "hp":  390,
+                                "exp":  300,
+                                "bclass":  "Human",
+                                "blevel":  "Medium",
+                                "armor":  30,
+                                "title":  "Acolyte of the Cult",
+                                "speed":  100
+                            },
+    "cat":  {
+                "hp":  20,
+                "exp":  0,
+                "bclass":  "Mammal",
+                "blevel":  "Harmless",
+                "armor":  1,
+                "title":  "Cat",
+                "speed":  62
+            },
+    "worker golem":  {
+                         "hp":  1470,
+                         "exp":  1250,
+                         "bclass":  "Construct",
+                         "blevel":  "Medium",
+                         "armor":  35,
+                         "title":  "Worker Golem",
+                         "speed":  80
+                     },
+    "tortoise":  {
+                     "hp":  185,
+                     "exp":  90,
+                     "bclass":  "Reptile",
+                     "blevel":  "Easy",
+                     "armor":  22,
+                     "title":  "Tortoise",
+                     "speed":  65
+                 },
+    "ghost wolf":  {
+                       "hp":  160,
+                       "exp":  65,
+                       "bclass":  "Undead",
+                       "blevel":  "Easy",
+                       "armor":  12,
+                       "title":  "Ghost Wolf",
+                       "speed":  135
+                   },
+    "lizard dragon priest":  {
+                                 "hp":  1450,
+                                 "exp":  1320,
+                                 "bclass":  "Reptile",
+                                 "blevel":  "Medium",
+                                 "armor":  22,
+                                 "title":  "Lizard Dragon Priest",
+                                 "speed":  128
+                             },
+    "nightstalker":  {
+                         "hp":  700,
+                         "exp":  500,
+                         "bclass":  "Magical",
+                         "blevel":  "Medium",
+                         "armor":  40,
+                         "title":  "Nightstalker",
+                         "speed":  130
+                     },
+    "shaburak demon":  {
+                           "hp":  1500,
+                           "exp":  1150,
+                           "bclass":  "Demon",
+                           "blevel":  "Medium",
+                           "armor":  35,
+                           "title":  "Shaburak Demon",
+                           "speed":  115
+                       },
+    "thornback tortoise":  {
+                               "hp":  300,
+                               "exp":  150,
+                               "bclass":  "Reptile",
+                               "blevel":  "Easy",
+                               "armor":  24,
+                               "title":  "Thornback Tortoise",
+                               "speed":  75
+                           },
+    "swamp troll":  {
+                        "hp":  55,
+                        "exp":  25,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Easy",
+                        "armor":  6,
+                        "title":  "Swamp Troll",
+                        "speed":  64
+                    },
+    "lizard legionnaire":  {
+                               "hp":  1400,
+                               "exp":  1100,
+                               "bclass":  "Reptile",
+                               "blevel":  "Medium",
+                               "armor":  30,
+                               "title":  "Lizard Legionnaire",
+                               "speed":  133
+                           },
+    "insectoid worker":  {
+                             "hp":  950,
+                             "exp":  650,
+                             "bclass":  "Vermin",
+                             "blevel":  "Medium",
+                             "armor":  30,
+                             "title":  "Insectoid Worker",
+                             "speed":  120
+                         },
+    "lion":  {
+                 "hp":  80,
+                 "exp":  30,
+                 "bclass":  "Mammal",
+                 "blevel":  "Easy",
+                 "armor":  6,
+                 "title":  "Lion",
+                 "speed":  95
+             },
+    "frost dragon":  {
+                         "hp":  1800,
+                         "exp":  2100,
+                         "bclass":  "Dragon",
+                         "blevel":  "Medium",
+                         "armor":  38,
+                         "title":  "Frost Dragon",
+                         "speed":  106
+                     },
+    "sun-marked goanna":  {
+                              "hp":  7800,
+                              "exp":  7600,
+                              "bclass":  "Reptiles",
+                              "blevel":  "",
+                              "armor":  0,
+                              "title":  "Sun-Marked Goanna",
+                              "speed":  0
+                          },
+    "lost husher":  {
+                        "hp":  1600,
+                        "exp":  1800,
+                        "bclass":  "Humanoid",
+                        "blevel":  "Medium",
+                        "armor":  55,
+                        "title":  "Lost Husher",
+                        "speed":  125
+                    },
+    "shark":  {
+                  "hp":  1200,
+                  "exp":  700,
+                  "bclass":  "Aquatic",
+                  "blevel":  "Medium",
+                  "armor":  32,
+                  "title":  "Shark",
+                  "speed":  145
+              },
+    "phantasm":  {
+                     "hp":  3950,
+                     "exp":  4400,
+                     "bclass":  "Magical",
+                     "blevel":  "Hard",
+                     "armor":  80,
+                     "title":  "Phantasm",
+                     "speed":  170
+                 },
+    "sphinx":  {
+                   "hp":  8500,
+                   "exp":  6980,
+                   "bclass":  "Magical",
+                   "blevel":  "Hard",
+                   "armor":  82,
+                   "title":  "Sphinx",
+                   "speed":  145
+               },
+    "vicious squire":  {
+                           "hp":  1000,
+                           "exp":  900,
+                           "bclass":  "Human",
+                           "blevel":  "Medium",
+                           "armor":  30,
+                           "title":  "Vicious Squire",
+                           "speed":  130
+                       },
+    "broken shaper":  {
+                          "hp":  2200,
+                          "exp":  1800,
+                          "bclass":  "Humanoid",
+                          "blevel":  "Medium",
+                          "armor":  37,
+                          "title":  "Broken Shaper",
+                          "speed":  155
+                      },
+    "orc leader":  {
+                       "hp":  450,
+                       "exp":  270,
+                       "bclass":  "Humanoid",
+                       "blevel":  "Medium",
+                       "armor":  20,
+                       "title":  "Orc Leader",
+                       "speed":  115
+                   },
+    "hand of cursed fate":  {
+                                "hp":  6600,
+                                "exp":  5000,
+                                "bclass":  "Undead",
+                                "blevel":  "Hard",
+                                "armor":  53,
+                                "title":  "Hand of Cursed Fate",
+                                "speed":  130
+                            },
+    "deepling scout":  {
+                           "hp":  240,
+                           "exp":  160,
+                           "bclass":  "Aquatic",
+                           "blevel":  "Medium",
+                           "armor":  7,
+                           "title":  "Deepling Scout",
+                           "speed":  65
+                       },
+    "mushroom sniffer":  {
+                             "hp":  250,
+                             "exp":  0,
+                             "bclass":  "Mammal",
+                             "blevel":  "Harmless",
+                             "armor":  20,
+                             "title":  "Mushroom Sniffer",
+                             "speed":  55
+                         },
+    "squidgy slime":  {
+                          "hp":  150,
+                          "exp":  55,
+                          "bclass":  "Slime",
+                          "blevel":  "Easy",
+                          "armor":  3,
+                          "title":  "Squidgy Slime",
+                          "speed":  60
+                      },
+    "bog frog":  {
+                     "hp":  25,
+                     "exp":  0,
+                     "bclass":  "Amphibic",
+                     "blevel":  "Trivial",
+                     "armor":  2,
+                     "title":  "Bog Frog",
+                     "speed":  160
+                 },
+    "lizard templar":  {
+                           "hp":  410,
+                           "exp":  265,
+                           "bclass":  "Reptile",
+                           "blevel":  "Easy",
+                           "armor":  26,
+                           "title":  "Lizard Templar",
+                           "speed":  87
+                       },
+    "wiggler":  {
+                    "hp":  1200,
+                    "exp":  900,
+                    "bclass":  "Vermin",
+                    "blevel":  "Medium",
+                    "armor":  52,
+                    "title":  "Wiggler",
+                    "speed":  180
+                },
+    "green djinn":  {
+                        "hp":  330,
+                        "exp":  215,
+                        "bclass":  "Magical",
+                        "blevel":  "Medium",
+                        "armor":  20,
+                        "title":  "Green Djinn",
+                        "speed":  110
+                    },
+    "midnight panther":  {
+                             "hp":  1200,
+                             "exp":  900,
+                             "bclass":  "Magical",
+                             "blevel":  "Medium",
+                             "armor":  30,
+                             "title":  "Midnight Panther",
+                             "speed":  290
+                         },
+    "brimstone bug":  {
+                          "hp":  1300,
+                          "exp":  900,
+                          "bclass":  "Vermin",
+                          "blevel":  "Medium",
+                          "armor":  38,
+                          "title":  "Brimstone Bug",
+                          "speed":  120
+                      },
+    "vampire viscount":  {
+                             "hp":  1200,
+                             "exp":  800,
+                             "bclass":  "Undead",
+                             "blevel":  "Medium",
+                             "armor":  42,
+                             "title":  "Vampire Viscount",
+                             "speed":  110
+                         },
+    "lost berserker":  {
+                           "hp":  5900,
+                           "exp":  4800,
+                           "bclass":  "Humanoid",
+                           "blevel":  "Hard",
+                           "armor":  80,
+                           "title":  "Lost Berserker",
+                           "speed":  150
+                       },
+    "larva":  {
+                  "hp":  70,
+                  "exp":  44,
+                  "bclass":  "Vermin",
+                  "blevel":  "Easy",
+                  "armor":  5,
+                  "title":  "Larva",
+                  "speed":  62
+              },
+    "slug":  {
+                 "hp":  255,
+                 "exp":  70,
+                 "bclass":  "Vermin",
+                 "blevel":  "Easy",
+                 "armor":  8,
+                 "title":  "Slug",
+                 "speed":  52
+             },
+    "mercury blob":  {
+                         "hp":  150,
+                         "exp":  180,
+                         "bclass":  "Slime",
+                         "blevel":  "Easy",
+                         "armor":  3,
+                         "title":  "Mercury Blob",
+                         "speed":  75
+                     },
+    "cobra":  {
+                  "hp":  65,
+                  "exp":  30,
+                  "bclass":  "Reptile",
+                  "blevel":  "Easy",
+                  "armor":  1,
+                  "title":  "Cobra",
+                  "speed":  60
+              },
+    "orc rider":  {
+                      "hp":  180,
+                      "exp":  110,
+                      "bclass":  "Humanoid",
+                      "blevel":  "Easy",
+                      "armor":  9,
+                      "title":  "Orc Rider",
+                      "speed":  130
+                  },
+    "snake":  {
+                  "hp":  15,
+                  "exp":  10,
+                  "bclass":  "Reptile",
+                  "blevel":  "Trivial",
+                  "armor":  0,
+                  "title":  "Snake",
+                  "speed":  60
+              },
+    "sandcrawler":  {
+                        "hp":  30,
+                        "exp":  20,
+                        "bclass":  "Vermin",
+                        "blevel":  "Trivial",
+                        "armor":  2,
+                        "title":  "Sandcrawler",
+                        "speed":  80
+                    },
+    "dragon hatchling":  {
+                             "hp":  380,
+                             "exp":  185,
+                             "bclass":  "Dragon",
+                             "blevel":  "Medium",
+                             "armor":  15,
+                             "title":  "Dragon Hatchling",
+                             "speed":  73
+                         },
+    "blood crab":  {
+                       "hp":  290,
+                       "exp":  160,
+                       "bclass":  "Aquatic",
+                       "blevel":  "Easy",
+                       "armor":  28,
+                       "title":  "Blood Crab",
+                       "speed":  80
+                   },
+    "true midnight asura":  {
+                                "hp":  9000,
+                                "exp":  7313,
+                                "bclass":  "Demon",
+                                "blevel":  "Hard",
+                                "armor":  75,
+                                "title":  "True Midnight Asura",
+                                "speed":  170
+                            },
+    "skeleton":  {
+                     "hp":  50,
+                     "exp":  35,
+                     "bclass":  "Undead",
+                     "blevel":  "Easy",
+                     "armor":  2,
+                     "title":  "Skeleton",
+                     "speed":  77
+                 }
+}

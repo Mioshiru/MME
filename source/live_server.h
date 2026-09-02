@@ -72,6 +72,7 @@ public:
 	void broadcastLockState(const Position& pos, uint32_t ownerId, const wxString& ownerName, const wxColor& ownerColor, bool isLocked);
 	void broadcastPing(const LivePing& ping);
 	void broadcastAnnotation(const MapAnnotation& annotation, bool remove = false);
+	void broadcastHostFavorites();
 
 	void startOperation(const wxString& operationMessage);
 	void updateOperation(int32_t percent);

@@ -25,6 +25,7 @@
 #include "spawn_brush.h"
 #include "materials.h"
 #include "application.h"
+#include "creature_wiki_dialog.h"
 #include <wx/srchctrl.h>
 
 // ============================================================================
@@ -48,8 +49,24 @@ CreaturePalettePanel::CreaturePalettePanel(wxWindow* parent, wxWindowID id) :
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxSizer* sidesizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Creatures");
+	wxBoxSizer* catRow = new wxBoxSizer(wxHORIZONTAL);
 	tileset_choice = newd wxChoice(this, PALETTE_CREATURE_TILESET_CHOICE, wxDefaultPosition, wxDefaultSize, (int)0, (const wxString*)nullptr);
-	sidesizer->Add(tileset_choice, 0, wxEXPAND);
+	catRow->Add(tileset_choice, 1, wxEXPAND | wxRIGHT, 4);
+
+	wxButton* btnWiki = new wxButton(this, wxID_ANY, "Wiki", wxDefaultPosition, wxSize(44, 22));
+	btnWiki->SetToolTip("Open Creature Wiki & Bestiary (HP, EXP, EXP/HP Ratio, Level Recommendation)");
+	btnWiki->SetBackgroundColour(wxColor(30, 58, 95));
+	btnWiki->SetForegroundColour(wxColor(220, 235, 255));
+	btnWiki->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		CreatureWikiDialog dlg(this);
+		int sel = creature_list->GetSelection();
+		if (sel != wxNOT_FOUND && sel < (int)creature_list->GetCount()) {
+			dlg.SelectCreature(creature_list->GetString(sel).ToStdString());
+		}
+		dlg.ShowModal();
+	});
+	catRow->Add(btnWiki, 0, wxALIGN_CENTER_VERTICAL);
+	sidesizer->Add(catRow, 0, wxEXPAND | wxBOTTOM, 4);
 
 	creature_list = newd SortableListBox(this, PALETTE_CREATURE_LISTBOX);
 	creature_list->Bind(wxEVT_CONTEXT_MENU, [this](wxContextMenuEvent& event) {
@@ -217,17 +234,24 @@ void CreaturePalettePanel::OnUpdate() {
 	g_materials.createOtherTileset();
 
 	for (TilesetContainer::const_iterator iter = g_materials.tilesets.begin(); iter != g_materials.tilesets.end(); ++iter) {
-		if (iter->second->name == "Favorites") continue;
+		if (!iter->second || iter->second->name == "Favorites") continue;
 		const TilesetCategory* tsc = iter->second->getCategory(TILESET_CREATURE);
 		if (tsc && tsc->size() > 0) {
 			tileset_choice->Append(wxstr(iter->second->name), const_cast<TilesetCategory*>(tsc));
 		} else if (iter->second->name == "NPCs" || iter->second->name == "Creatures") {
 			Tileset* ts = const_cast<Tileset*>(iter->second);
 			TilesetCategory* rtsc = ts->getCategory(TILESET_CREATURE);
-			tileset_choice->Append(wxstr(ts->name), rtsc);
+			if (rtsc) {
+				tileset_choice->Append(wxstr(ts->name), rtsc);
+			}
 		}
 	}
-	SelectTileset(0);
+	if (tileset_choice->GetCount() > 0) {
+		SelectTileset(0);
+	} else {
+		creature_list->Clear();
+		creature_brush_button->Enable(false);
+	}
 }
 
 void CreaturePalettePanel::OnUpdateBrushSize(BrushShape shape, int size) {
@@ -240,7 +264,11 @@ void CreaturePalettePanel::OnSwitchIn() {
 }
 
 void CreaturePalettePanel::SelectTileset(size_t index) {
-	ASSERT(tileset_choice->GetCount() >= index);
+	if (index >= tileset_choice->GetCount()) {
+		creature_list->Clear();
+		creature_brush_button->Enable(false);
+		return;
+	}
 
 	creature_list->Clear();
 	if (tileset_choice->GetCount() == 0) {
@@ -248,13 +276,17 @@ void CreaturePalettePanel::SelectTileset(size_t index) {
 		creature_brush_button->Enable(false);
 	} else {
 		const TilesetCategory* tsc = reinterpret_cast<const TilesetCategory*>(tileset_choice->GetClientData(index));
-		for (BrushVector::const_iterator iter = tsc->brushlist.begin();
-			 iter != tsc->brushlist.end();
-			 ++iter) {
-			creature_list->Append(wxstr((*iter)->getName()), *iter);
+		if (tsc) {
+			for (BrushVector::const_iterator iter = tsc->brushlist.begin();
+				 iter != tsc->brushlist.end();
+				 ++iter) {
+				if (*iter) {
+					creature_list->Append(wxstr((*iter)->getName()), *iter);
+				}
+			}
+			creature_list->Sort();
+			SelectCreature(0);
 		}
-		creature_list->Sort();
-		SelectCreature(0);
 
 		tileset_choice->SetSelection(index);
 	}

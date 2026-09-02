@@ -125,7 +125,9 @@ void WaypointPalettePanel::OnUpdate() {
 		Waypoints& waypoints = map->waypoints;
 
 		for (WaypointMap::const_iterator iter = waypoints.begin(); iter != waypoints.end(); ++iter) {
-			waypoint_list->InsertItem(0, wxstr(iter->second->name));
+			if (iter->second) {
+				waypoint_list->InsertItem(0, wxstr(iter->second->name));
+			}
 		}
 	}
 }

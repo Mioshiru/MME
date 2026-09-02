@@ -28,9 +28,11 @@
 #include "brush.h"
 #include "client_version.h"
 #include "creature_brush.h"
+#include "creature_bestiary.h"
 #include "gui.h"
 #include "materials.h"
 #include "raw_brush.h"
+#include "live_server.h"
 
 Materials g_materials;
 
@@ -338,26 +340,40 @@ void Materials::createOtherTileset() {
     }
   }
 
+  // Clear or create bestiary creature sub-tilesets
+  for (int c = 0; c < (int)BESTIARY_CLASS_COUNT; ++c) {
+    CreatureBestiaryClass bclass = static_cast<CreatureBestiaryClass>(c);
+    std::string catTilesetName = "Creatures - " + CreatureBestiary::GetClassName(bclass);
+    if (tilesets[catTilesetName] != nullptr) {
+      tilesets[catTilesetName]->clear();
+    } else {
+      tilesets[catTilesetName] = newd Tileset(g_brushes, catTilesetName);
+    }
+  }
+
   for (CreatureMap::iterator iter = g_creatures.begin();
        iter != g_creatures.end(); ++iter) {
     CreatureType *type = iter->second;
-    if (type->in_other_tileset) {
-      if (type->isNpc) {
-        npc_tileset->getCategory(TILESET_CREATURE)
-            ->brushlist.push_back(type->brush);
-      } else {
-        others->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
-      }
-    } else if (type->brush == nullptr) {
+    if (!type) continue;
+
+    if (type->brush == nullptr) {
       type->brush = newd CreatureBrush(type);
       g_brushes.addBrush(type->brush);
       type->brush->flagAsVisible();
       type->in_other_tileset = true;
-      if (type->isNpc) {
-        npc_tileset->getCategory(TILESET_CREATURE)
-            ->brushlist.push_back(type->brush);
-      } else {
-        others->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
+    }
+
+    if (type->isNpc) {
+      npc_tileset->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
+    } else {
+      others->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
+
+      // Bestiary Category Specific Sub-Tileset
+      CreatureBestiaryClass bclass = CreatureBestiary::GetClassForCreature(type->name, false);
+      std::string catTilesetName = "Creatures - " + CreatureBestiary::GetClassName(bclass);
+      Tileset* catTs = tilesets[catTilesetName];
+      if (catTs) {
+        catTs->getCategory(TILESET_CREATURE)->brushlist.push_back(type->brush);
       }
     }
   }
@@ -566,6 +582,17 @@ void Materials::saveFavorites() {
           wxFileName::Mkdir(verFn.GetPath(), 511, wxPATH_MKDIR_FULL);
         }
         doc.save_file(verFn.GetFullPath().mb_str());
+      }
+    }
+  }
+
+  // Live Multiplayer: Broadcast updated Host-Favorites to all connected clients
+  if (g_gui.IsEditorOpen()) {
+    Editor* ed = g_gui.GetCurrentEditor();
+    if (ed && ed->IsLiveServer()) {
+      LiveServer* server = ed->GetLiveServer();
+      if (server) {
+        server->broadcastHostFavorites();
       }
     }
   }

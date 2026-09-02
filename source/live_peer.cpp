@@ -491,27 +491,33 @@ void LivePeer::parseReady(NetworkMessage &message) {
   }
   send(townListMsg);
 
-  // Step 2.6: Synchronize World Palette (Corporate Design) to Remote Client
-  auto wp_it = g_materials.tilesets.find("World Palette");
-  if (wp_it != g_materials.tilesets.end() && wp_it->second) {
-    Tileset* ts = wp_it->second;
+  // Step 2.6: Synchronize Host-Favorites (Live Host Favorites) to Remote Client
+  auto fav_it = g_materials.tilesets.find("Favorites");
+  if (fav_it != g_materials.tilesets.end() && fav_it->second) {
+    Tileset* ts = fav_it->second;
     std::vector<Brush*> allBrushes;
     for (TilesetCategory* cat : ts->categories) {
       if (cat) {
         for (Brush* b : cat->brushlist) {
-          if (b) allBrushes.push_back(b);
+          if (b && !b->isSeparator() && !b->getName().empty()) {
+            if (std::find(allBrushes.begin(), allBrushes.end(), b) == allBrushes.end()) {
+              allBrushes.push_back(b);
+            }
+          }
         }
       }
     }
-    NetworkMessage wpMsg;
-    wpMsg.write<uint8_t>(PACKET_WORLD_PALETTE);
-    wpMsg.write<std::string>("World Palette");
-    wpMsg.write<uint32_t>((uint32_t)allBrushes.size());
-    for (Brush* b : allBrushes) {
-      wpMsg.write<std::string>(b->getName());
-      wpMsg.write<uint32_t>(b->getID());
+    if (!allBrushes.empty()) {
+      NetworkMessage wpMsg;
+      wpMsg.write<uint8_t>(PACKET_WORLD_PALETTE);
+      wpMsg.write<std::string>("Host-Favorites");
+      wpMsg.write<uint32_t>((uint32_t)allBrushes.size());
+      for (Brush* b : allBrushes) {
+        wpMsg.write<std::string>(b->getName());
+        wpMsg.write<uint32_t>(b->getID());
+      }
+      send(wpMsg);
     }
-    send(wpMsg);
   }
 
   // Step 3: Initial Map Sync — send ALL non-empty nodes to this client

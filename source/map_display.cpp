@@ -1475,9 +1475,6 @@ MapCanvas::MapCanvas(wxWindow *parent, MapEditor &editor_ref, int *attriblist)
   popup_menu = newd MapPopupMenu(editor);
   animation_timer = newd AnimationTimer(this);
 
-  if (IsShownOnScreen()) {
-    SetCurrent(*g_gui.GetGLContext(this));
-  }
   drawer = std::make_unique<MapDrawer>(this); // Use unique_ptr
   keyCode = WXK_NONE;
 
@@ -2430,6 +2427,10 @@ AnimationTimer::~AnimationTimer() {
 };
 
 void AnimationTimer::Notify() {
+    if (!map_canvas || !map_canvas->IsShownOnScreen()) {
+        return;
+    }
+
     if (map_canvas->GetParent()) {
         static_cast<MapWindow*>(map_canvas->GetParent())->UpdateSmoothScroll();
     }
@@ -2470,6 +2471,10 @@ void MapCanvas::UpdateMinimapTexture() {
     return;
   }
   last_minimap_update_time = current_time;
+
+  if (IsShownOnScreen()) {
+    SetCurrent(*g_gui.GetGLContext(this));
+  }
 
   if (minimap_tex_id == 0) {
     glGenTextures(1, &minimap_tex_id); // Generate texture ID only once
@@ -2545,6 +2550,10 @@ void MapCanvas::UpdateMinimapTexture() {
 }
 
 void MapCanvas::OnIdle(wxIdleEvent& event) {
+  if (!IsShownOnScreen()) {
+    return;
+  }
+
   static auto last_frame_time = std::chrono::steady_clock::now();
   auto now = std::chrono::steady_clock::now();
   double dt = std::chrono::duration<double>(now - last_frame_time).count();

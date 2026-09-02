@@ -181,7 +181,8 @@ if(MSVC)
         CXX_STANDARD_REQUIRED ON
         LINKER_LANGUAGE CXX
     )
-    target_compile_options(rme PRIVATE /permissive- /Zc:__cplusplus /Zc:inline)
+    target_compile_options(rme PRIVATE /permissive- /Zc:__cplusplus /Zc:inline /Zi)
+    target_link_options(rme PRIVATE /DEBUG:FASTLINK /OPT:REF /OPT:ICF)
 else()
     set_target_properties(rme PROPERTIES 
         CXX_STANDARD 20

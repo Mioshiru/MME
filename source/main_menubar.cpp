@@ -69,6 +69,7 @@
 #include "iomap_sec.h"
 #include "realots_converter_dialog.h"
 #include "monster_editor_dialog.h"
+#include "creature_wiki_dialog.h"
 #include "item_editor_dialog.h"
 
 
@@ -286,6 +287,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(TOOLS_TILESET_MANAGER, wxITEM_NORMAL, OnTilesetManager);
 	MAKE_ACTION(TOOLS_RADIO_PLAYER, wxITEM_NORMAL, OnRadioPlayer);
 	MAKE_ACTION(TOOLS_MONSTER_EDITOR, wxITEM_NORMAL, OnMonsterEditor);
+	MAKE_ACTION(TOOLS_CREATURE_WIKI, wxITEM_NORMAL, OnCreatureWiki);
 	MAKE_ACTION(TOOLS_ITEM_EDITOR, wxITEM_NORMAL, OnItemEditor);
 	MAKE_ACTION(WIZARD_NPC, wxITEM_NORMAL, OnWizardNPC);
 	MAKE_ACTION(WIZARD_SPECIAL_OBJECTS, wxITEM_NORMAL, OnWizardSpecialObjects);
@@ -382,6 +384,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TFS_EXPORTER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnTFSExporter), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_REALOTS_CONVERTER, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnRealOTSConverter), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_MONSTER_EDITOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnMonsterEditor), nullptr, this);
+	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_CREATURE_WIKI, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnCreatureWiki), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::TOOLS_ITEM_EDITOR, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnItemEditor), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::IMPORT_SEC_MAP, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnImportSECMap), nullptr, this);
 	frame->Connect(MAIN_FRAME_MENU + MenuBar::EXPORT_SEC_MAP, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(MainMenuBar::OnExportSECMap), nullptr, this);
@@ -1900,6 +1903,11 @@ void MainMenuBar::OnRealOTSConverter(wxCommandEvent& WXUNUSED(event)) {
 
 void MainMenuBar::OnMonsterEditor(wxCommandEvent& WXUNUSED(event)) {
 	MonsterEditorDialog dialog(frame);
+	dialog.ShowModal();
+}
+
+void MainMenuBar::OnCreatureWiki(wxCommandEvent& WXUNUSED(event)) {
+	CreatureWikiDialog dialog(frame);
 	dialog.ShowModal();
 }
 
