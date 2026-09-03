@@ -26,6 +26,11 @@ struct PaletteCommand {
 	Position target_pos;
 };
 
+enum PaletteFilterMode {
+	FILTER_NO_RAW = 0,
+	FILTER_RAW = 1
+};
+
 class CommandPaletteDialog : public wxDialog {
 public:
 	CommandPaletteDialog(wxWindow* parent);
@@ -36,17 +41,22 @@ public:
 
 private:
 	void OnSearchText(wxCommandEvent& evt);
+	void OnFilterButton(wxCommandEvent& evt);
+	void OnMenuFilterSelect(wxCommandEvent& evt);
 	void OnKeyDown(wxKeyEvent& evt);
 	void OnListDClick(wxCommandEvent& evt);
 	void OnClickOK(wxCommandEvent& evt);
 	void PopulateCommands();
 	void FilterCommands();
+	void UpdateFilterDisplay();
 
 	wxTextCtrl* search_field;
+	wxButton* filter_btn;
 	wxListBox* results_list;
 	std::vector<PaletteCommand> all_commands;
 	std::vector<PaletteCommand> filtered_commands;
 	PaletteCommand selected_result;
+	PaletteFilterMode current_filter = FILTER_NO_RAW;
 
 	DECLARE_EVENT_TABLE()
 };

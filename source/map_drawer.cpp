@@ -459,6 +459,21 @@ void MapDrawer::DrawBrush() {
   }
 
   Brush *brush = g_gui.GetCurrentBrush();
+  if (brush && brush->isCreature()) {
+    if (mouse_map_x != -1 && mouse_map_y != -1) {
+      glEnable(GL_TEXTURE_2D);
+      int cy = mouse_map_y * TileSize - view_scroll_y - getFloorAdjustment(floor);
+      int cx = mouse_map_x * TileSize - view_scroll_x - getFloorAdjustment(floor);
+      CreatureBrush *creature_brush = brush->asCreature();
+      if (creature_brush->canDraw(&editor.map, Position(mouse_map_x, mouse_map_y, floor))) {
+        BlitCreature(cx, cy, creature_brush->getType()->outfit, (Direction)2, 255, 255, 255, 160);
+      } else {
+        BlitCreature(cx, cy, creature_brush->getType()->outfit, (Direction)2, 255, 64, 64, 160);
+      }
+    }
+    return;
+  }
+
   int lookid = brush->getLookID();
   bool has_preview = (lookid > 0 && g_items.typeExists(lookid));
 
@@ -723,22 +738,7 @@ void MapDrawer::DrawBrush() {
       glVertex2f(cx, cy);
       glEnd();
       glEnable(GL_TEXTURE_2D);
-    } else if (brush->isCreature()) {
-      glEnable(GL_TEXTURE_2D);
-      int cy =
-          mouse_map_y * TileSize - view_scroll_y - getFloorAdjustment(floor);
-      int cx =
-          mouse_map_x * TileSize - view_scroll_x - getFloorAdjustment(floor);
-      CreatureBrush *creature_brush = brush->asCreature();
-      if (creature_brush->canDraw(&editor.map,
-                                  Position(mouse_map_x, mouse_map_y, floor))) {
-        BlitCreature(cx, cy, creature_brush->getType()->outfit, (Direction)2,
-                     255, 255, 255, 160);
-      } else {
-        BlitCreature(cx, cy, creature_brush->getType()->outfit, (Direction)2,
-                     255, 64, 64, 160);
-      }
-    } else if (!brush->isDoodad()) {
+    } else if (!brush->isDoodad() && !brush->isCreature()) {
       for (int y = -g_gui.GetBrushSize() - 1; y <= g_gui.GetBrushSize() + 1;
            y++) {
         int cy = (mouse_map_y + y) * TileSize - view_scroll_y -

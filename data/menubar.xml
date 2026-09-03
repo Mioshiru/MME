@@ -98,9 +98,7 @@
 		<item name="Towns" hotkey="Ctrl+T" action="EDIT_TOWNS" help="Edit towns."/>
 		<separator/>
 		<menu name="Find &amp; Search">
-			<item name="Universal Spotlight Search..." hotkey="Ctrl+K" action="COMMAND_PALETTE" help="Spotlight universal search for items, brushes, monsters, houses, towns, and commands."/>
-			<separator/>
-			<item name="Find Item..." hotkey="Ctrl+F" action="FIND_ITEM" help="Find all instances of an item type on the map."/>
+			<item name="Schnellsuche (Universal Search)..." hotkey="Ctrl+F" action="COMMAND_PALETTE" help="Universelle Schnellsuche für Items, Brushes, Monster, Häuser, Towns und Befehle."/>
 			<separator/>
 			<item name="Jump to Brush..." hotkey="J" action="JUMP_TO_BRUSH" help="Jump to a brush."/>
 			<item name="Jump to Item..." hotkey="Ctrl+J" action="JUMP_TO_ITEM_BRUSH" help="Jump to an item brush (RAW palette)."/>

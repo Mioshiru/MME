@@ -12,11 +12,10 @@
 
 ## 🌟 Key Highlights & Mapper Features (v1.9.4)
 
-### 🔍 Universal Spotlight Search & Command Palette (`Ctrl + K` / `Ctrl + P`)
-* **Live Universal Indexing:** Lightning-fast, instant search across every item, brush, monster, NPC, house, town, preset, and editor tool in one clean search field.
-* **Direct Item-ID Selection:** Enter any server item ID (e.g. `2160`, `1387`) to immediately select the RAW item brush upon pressing `Enter`.
-* **Monster & NPC Fast Placement:** Search for creatures (e.g. *"Demon"*, *"Dragon"*, *"Captain"*) to equip matching creature brushes with full outfit presets.
-* **1-Click Town & House Teleportation:** Teleport the camera to any town temple or house exit with automatic floor switching.
+### 🔍 Universal Spotlight Search & Command Palette (`Ctrl + F`)
+* **Schlankes Single-Row Design mit Dropdown-Button:** Kompakte Suchzeile mit integriertem Dropdown-Button (`Terrain ▾`, `Doodad ▾`, `Item ▾`, `Creature ▾`, `NPC ▾`, `RAW ▾`), umschaltbar per Klick oder **`Tab`** / **`Shift + Tab`**.
+* **Kein Durcheinander mehr:** In `Terrain` erscheinen nur echte Terrain-, Wand- und Teppich-Pinsel; in `Doodad` nur Doodads; in `RAW` reine Server-Item-IDs.
+* **1-Click Town & House Teleportation:** Teleportiert die Kamera zu jedem Tempel oder Haus mit automatischer Stockwerk-Anpassung.
 
 ### 🔭 Ultra-Zoom 10.0x (10% Wide-Angle Overview) & 3D Multi-Floor Selection
 * **10x Wide-Angle Zoom:** Smooth zoom-out down to `10.0` (10% scale) across 27 refined steps to inspect and manipulate entire continent layouts.

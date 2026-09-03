@@ -8,13 +8,14 @@
 
 ### 🌟 Major Highlights & New Features in v1.9.4
 
-* **🔍 Universal Spotlight Search & Command Palette (`Ctrl + K` / `Ctrl + P` / `Modify -> Find & Search`):**
-  * **Unified Instant Search Engine:** Fast, keystroke-by-keystroke indexing across every system in the editor without searching through menus or sidebar palettes.
-  * **Numeric Item ID Direct Selection:** Typing any server item ID (e.g. `2160`, `1387`, `3031`) brings the exact RAW item directly to the top of the list and selects it as the active brush upon pressing `Enter`.
-  * **Item Names & Descriptions:** Search thousands of items by name (e.g. *"chest"*, *"stone wall"*, *"wooden chair"*, *"carpet"*).
-  * **Brushes & Tilesets:** Find and select any Terrain, Wall, Carpet, Table, or Doodad brush instantly.
-  * **Monsters & NPCs:** Direct search across all creature definitions in `g_creatures` (e.g. *"Demon"*, *"Dragon"*, *"Captain"*). Selecting an entry equips the creature brush with matching outfits.
-  * **Live Town & House Teleportation:** Dynamic search through all towns and player houses on the active map. Pressing `Enter` smoothly centers the camera on the temple or house exit and automatically navigates to the target floor.
+* **🔍 Universal Spotlight Search & Command Palette (`Ctrl + F` / `Modify -> Find & Search`):**
+  * **Frameless Modern Overlay (Corporate Design):** Abgerundetes, rahmenloses Suchfenster mit zentriertem Texteingabefeld und integriertem Dropdown-Button (`No RAW ▾` / `RAW ▾`).
+  * **Zwei präzise Suchmodi:**
+    * **`No RAW` (Standard):** Durchsucht blitzschnell alle Standard-Paletten (Terrain, Doodad, Item, Creature, NPC) sowie Tools, Presets und Aktionen, ohne die Ergebnisse mit RAW-Items zu überladen.
+    * **`RAW`:** Durchsucht gezielt die RAW-Palette nach Item-IDs oder RAW-Namen.
+  * **Sofortige Livefilterung:** Findet Treffer direkt bei jedem getippten Buchstaben.
+  * **Schnellwechsel:** Dropdown-Menü per Klick oder flüssig über die Tastatur mit **`Tab`**.
+  * **Live Town & House Teleportation:** Teleportiert die Kamera zu Tempeln und Häusern mit automatischer Stockwerk-Anpassung.
   * **Menu Commands, Tools & Presets:** Instant execution of tools like Map Diagnostic Scanner, Procedural Generator, TFS Generators, Cleanups, or View Presets.
 
 * **🔭 Ultra-Zoom 10.0x (10% Wide-Angle Overview) & Smart Performance Throttling:**

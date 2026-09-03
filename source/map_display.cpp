@@ -326,7 +326,7 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
       Refresh();
       return;
     }
-    if (event.GetKeyCode() == 'K' || event.GetKeyCode() == 'k' || event.GetKeyCode() == 'P' || event.GetKeyCode() == 'p') {
+    if (event.GetKeyCode() == 'F' || event.GetKeyCode() == 'f' || event.GetKeyCode() == 'K' || event.GetKeyCode() == 'k' || event.GetKeyCode() == 'P' || event.GetKeyCode() == 'p') {
       wxCommandEvent cmd_evt;
       if (g_gui.root && g_gui.root->menu_bar) {
         g_gui.root->menu_bar->OnCommandPalette(cmd_evt);
@@ -2085,7 +2085,7 @@ void MapCanvas::getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,
   } else {
     Brush *brush = g_gui.GetCurrentBrush();
     bool is_wall = brush && brush->isWall();
-    int brush_size = g_gui.GetBrushSize();
+    int brush_size = (brush && brush->isCreature()) ? 0 : g_gui.GetBrushSize();
 
     for (int y = -brush_size; y <= brush_size; y++) {
       for (int x = -brush_size; x <= brush_size; x++) {
