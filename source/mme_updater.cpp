@@ -1,4 +1,9 @@
 #include "mme_updater.h"
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+#endif
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 #include <wx/msgdlg.h>
@@ -289,22 +294,46 @@ bool MMEUpdater::DownloadAndInstall(wxWindow* parent, const std::string& zip_url
 		return true;
 	}
 
-	// Create updater batch script in app directory
+	// Create updater batch script in safe temporary directory (never fails due to write permissions in Program Files)
 	wxString appDir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
-	wxString scriptPath = appDir + "\\update_mme.bat";
+	wxString scriptPath = tempDir + "\\update_mme_" + tag + ".bat";
+	wxString exePath = wxStandardPaths::Get().GetExecutablePath();
+	wxString exeName = wxFileName(exePath).GetFullName();
 
 	std::ofstream script(scriptPath.ToStdString());
 	if (script.is_open()) {
 		script << "@echo off\n";
+		script << "setlocal EnableDelayedExpansion\n";
 		script << "title Mios Map Editor - Applying Update...\n";
-		script << "timeout /t 2 /nobreak > nul\n";
-		script << "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Expand-Archive -Path '" << zipPath.ToStdString() << "' -DestinationPath '" << appDir.ToStdString() << "' -Force\"\n";
-		script << "del \"" << zipPath.ToStdString() << "\" > nul 2>&1\n";
-		script << "start \"\" \"" << wxStandardPaths::Get().GetExecutablePath().ToStdString() << "\"\n";
-		script << "del \"%~f0\"\n";
+		script << "echo Waiting for Mios Map Editor to close...\n";
+		script << ":WAIT_LOOP\n";
+		script << "tasklist /FI \"IMAGENAME eq " << exeName.ToStdString() << "\" 2>NUL | find /I /N \"" << exeName.ToStdString() << "\">NUL\n";
+		script << "if \"%ERRORLEVEL%\"==\"0\" (\n";
+		script << "    timeout /t 1 /nobreak >nul\n";
+		script << "    goto WAIT_LOOP\n";
+		script << ")\n";
+		script << "timeout /t 1 /nobreak >nul\n";
+		script << "echo Extracting update package...\n";
+		script << "tar -xf \"" << zipPath.ToStdString() << "\" -C \"" << appDir.ToStdString() << "\" >nul 2>&1\n";
+		script << "if %ERRORLEVEL% NEQ 0 (\n";
+		script << "    powershell -NoProfile -ExecutionPolicy Bypass -Command \"Expand-Archive -Path '" << zipPath.ToStdString() << "' -DestinationPath '" << appDir.ToStdString() << "' -Force\"\n";
+		script << ")\n";
+		script << "del \"" << zipPath.ToStdString() << "\" >nul 2>&1\n";
+		script << "echo Starting updated Mios Map Editor...\n";
+		script << "start \"\" \"" << exePath.ToStdString() << "\"\n";
+		script << "(goto) 2>nul & del \"%~f0\"\n";
 		script.close();
 
+#ifdef _WIN32
+		// Launch updater script with normal or elevated privileges if needed
+		HINSTANCE res_exec = ShellExecuteA(NULL, "open", scriptPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+		if ((INT_PTR)res_exec <= 32) {
+			// If open failed (e.g. permission issue), try with UAC elevation
+			ShellExecuteA(NULL, "runas", scriptPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+		}
+#else
 		wxExecute("cmd.exe /c \"" + scriptPath + "\"", wxEXEC_ASYNC);
+#endif
 		if (wxTheApp && wxTheApp->GetTopWindow()) {
 			wxTheApp->GetTopWindow()->Close(true);
 		}

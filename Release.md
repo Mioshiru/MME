@@ -4,6 +4,41 @@
 
 ---
 
+## 🚀 Release v1.9.4 (Universal Spotlight Search, Ultra-Zoom 10x, 3D Multi-Floor Selection & View Presets)
+
+### 🌟 Major Highlights & New Features in v1.9.4
+
+* **🔍 Universal Spotlight Search & Command Palette (`Ctrl + K` / `Ctrl + P` / `Modify -> Find & Search`):**
+  * **Unified Instant Search Engine:** Fast, keystroke-by-keystroke indexing across every system in the editor without searching through menus or sidebar palettes.
+  * **Numeric Item ID Direct Selection:** Typing any server item ID (e.g. `2160`, `1387`, `3031`) brings the exact RAW item directly to the top of the list and selects it as the active brush upon pressing `Enter`.
+  * **Item Names & Descriptions:** Search thousands of items by name (e.g. *"chest"*, *"stone wall"*, *"wooden chair"*, *"carpet"*).
+  * **Brushes & Tilesets:** Find and select any Terrain, Wall, Carpet, Table, or Doodad brush instantly.
+  * **Monsters & NPCs:** Direct search across all creature definitions in `g_creatures` (e.g. *"Demon"*, *"Dragon"*, *"Captain"*). Selecting an entry equips the creature brush with matching outfits.
+  * **Live Town & House Teleportation:** Dynamic search through all towns and player houses on the active map. Pressing `Enter` smoothly centers the camera on the temple or house exit and automatically navigates to the target floor.
+  * **Menu Commands, Tools & Presets:** Instant execution of tools like Map Diagnostic Scanner, Procedural Generator, TFS Generators, Cleanups, or View Presets.
+
+* **🔭 Ultra-Zoom 10.0x (10% Wide-Angle Overview) & Smart Performance Throttling:**
+  * **10x Wide-Angle Zoom:** Zoom range expanded up to `10.0` (10% scale view), enabling mappers to inspect, select, copy, cut, or create assets from massive continent-scale territories in a single view.
+  * **27 Smooth Zoom Steps:** Refined step curve from `0.50` (200% Zoom In) down to `10.00` (10% Zoom Out) with accurate percentage indicators in the status bar.
+  * **Smart High-Zoom Culling:** Automatic performance throttling at wide zoom levels (`zoom > 1.5`), skipping expensive lighting calculations and doodad detail rendering to guarantee fluid framerates on mega maps.
+
+* **📦 3D Multi-Floor Selection & Multi-Layer Copy/Paste:**
+  * **Atomic 16-Floor Area Selection:** Drag-selection (Rubber-Band) now fully respects `SELECTION_TYPE`. When set to *All Floors* or *Lower Floors*, the bounding box automatically captures all 16 vertical layers (`z: 0..15`) at once.
+  * **Seamless Multi-Floor Copy / Cut / Paste:** Selected multi-floor buildings and terrain areas can be cut, copied, rotated, or pasted across different map regions with full vertical layer integrity.
+
+* **🎯 1-Click View & Mapping Presets (`View -> Presets`):**
+  * **Mapper Focus:** Instantly enables all mapper feedback overlays (Grid, Spawns, Creatures, Waypoints, Special Tiles, Ghost Higher Floors, Tooltips, and Text Bubbles).
+  * **Ingame Pure:** Switches to pure, clean game optics with zero editor overlays, intact shade, and Ingame-Box boundaries.
+  * **Performance Mode:** Optimized high-speed rendering for gigantic maps (disables transparency, enables light culling and live FPS display).
+
+* **🛡️ Hardened Auto-Updater & Codebase Cleanups:**
+  * **UAC-Safe Temp Execution:** Update batch script is now written to `%TEMP%\update_mme_<tag>.bat`, eliminating write permission errors in `C:\Program Files`.
+  * **Process Exit Synchronization:** Automated `tasklist` process monitoring ensures the main editor binary is fully unloaded before replacing binaries and assets.
+  * **Native Archive Unpacking:** Fast extraction via native `tar -xf` with PowerShell fallback and UAC `runas` elevation.
+  * **Codebase Refactoring:** Removed obsolete legacy updater files (`updater.h`) and unreferenced includes.
+
+---
+
 ## 🚀 Release v1.9.3 (Tibia Creature Wiki, Official Bestiary Stats, Sorting & Favorites)
 
 ### 🌟 Major Highlights & New Features in v1.9.3

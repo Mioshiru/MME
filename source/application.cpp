@@ -28,7 +28,6 @@
 #include "preferences.h"
 #include "result_window.h"
 #include "sprites.h"
-#include "updater.h"
 
 
 #include "complexitem.h"

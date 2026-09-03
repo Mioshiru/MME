@@ -1,6 +1,6 @@
 # Mio's Map Editor (MME)
 
-[![Version](https://img.shields.io/badge/version-v1.9.3-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
+[![Version](https://img.shields.io/badge/version-v1.9.4-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
 [![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://github.com/Mioshiru/MME)
@@ -10,7 +10,23 @@
 
 ---
 
-## 🌟 Key Highlights & Mapper Features (v1.9.3)
+## 🌟 Key Highlights & Mapper Features (v1.9.4)
+
+### 🔍 Universal Spotlight Search & Command Palette (`Ctrl + K` / `Ctrl + P`)
+* **Live Universal Indexing:** Lightning-fast, instant search across every item, brush, monster, NPC, house, town, preset, and editor tool in one clean search field.
+* **Direct Item-ID Selection:** Enter any server item ID (e.g. `2160`, `1387`) to immediately select the RAW item brush upon pressing `Enter`.
+* **Monster & NPC Fast Placement:** Search for creatures (e.g. *"Demon"*, *"Dragon"*, *"Captain"*) to equip matching creature brushes with full outfit presets.
+* **1-Click Town & House Teleportation:** Teleport the camera to any town temple or house exit with automatic floor switching.
+
+### 🔭 Ultra-Zoom 10.0x (10% Wide-Angle Overview) & 3D Multi-Floor Selection
+* **10x Wide-Angle Zoom:** Smooth zoom-out down to `10.0` (10% scale) across 27 refined steps to inspect and manipulate entire continent layouts.
+* **Smart Zoom Throttling:** Automatic lighting and doodad culling beyond `1.5x` zoom ensures smooth 60+ FPS even on mega-sized maps.
+* **Atomic 16-Floor Drag-Select:** Bounding box selection seamlessly captures all 16 vertical layers (`z: 0..15`) at once for instant multi-floor copy, cut, and paste.
+
+### 🎯 1-Click View & Mapping Presets (`View -> Presets`)
+* **Mapper Focus:** 1-Click setup enabling all mapper guidelines, grids, spawns, waypoints, ghosting, and tooltips.
+* **Ingame Pure:** Clean, authentic in-game visual rendering with zero editor overlays.
+* **Performance Mode:** Optimized rendering profile for gigantic maps.
 
 ### 📖 Tibia Creature Wiki & Bestiary Knowledge Base (`F7` / `View -> Creature Wiki...`)
 * **560+ Creatures with Official TibiaWiki Stats:** Instant access to accurate Hit Points (HP), Experience (EXP), Armor, Speed, Bestiary Classes, and placement lore extracted directly from [TibiaWiki](https://tibia.fandom.com/wiki/List_of_Creatures).

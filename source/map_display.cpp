@@ -52,6 +52,7 @@
 #include "svg_icons.h"
 #include "tile.h"
 #include "tileset_window.h"
+#include "main_menubar.h"
 
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -323,6 +324,13 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
         }
       }
       Refresh();
+      return;
+    }
+    if (event.GetKeyCode() == 'K' || event.GetKeyCode() == 'k' || event.GetKeyCode() == 'P' || event.GetKeyCode() == 'p') {
+      wxCommandEvent cmd_evt;
+      if (g_gui.root && g_gui.root->menu_bar) {
+        g_gui.root->menu_bar->OnCommandPalette(cmd_evt);
+      }
       return;
     }
     if (event.GetKeyCode() == 'Y' || event.GetKeyCode() == 'y') {
@@ -876,22 +884,44 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 			int y1 = std::min(start_map_y, end_map_y);
 			int y2 = std::max(start_map_y, end_map_y);
 
-			editor.selection.start(Selection::INTERNAL);
-			for (int y = y1; y <= y2; ++y) {
-				for (int x = x1; x <= x2; ++x) {
-					Tile* tile = editor.map.getOrCreateTile(Position(x, y, floor));
-					if (tile) {
-						bool is_selected = editor.selection.getTiles().count(tile) > 0;
+			int min_z = floor;
+			int max_z = floor;
 
-						if (event.ControlDown()) {
-							if (is_selected) {
-								editor.selection.remove(tile);
+			int sel_type = g_settings.getInteger(Config::SELECTION_TYPE);
+			if (sel_type == SELECT_ALL_FLOORS) {
+				min_z = 0;
+				max_z = MAP_LAYERS - 1;
+			} else if (sel_type == SELECT_VISIBLE_FLOORS) {
+				if (floor <= GROUND_LAYER) {
+					min_z = floor;
+					max_z = GROUND_LAYER;
+				} else {
+					min_z = 8;
+					max_z = std::min(MAP_MAX_LAYER, floor + 2);
+				}
+			}
+
+			editor.selection.start(Selection::INTERNAL);
+			for (int z = min_z; z <= max_z; ++z) {
+				for (int y = y1; y <= y2; ++y) {
+					for (int x = x1; x <= x2; ++x) {
+						Tile* tile = editor.map.getTile(x, y, z);
+						if (!tile && z == floor) {
+							tile = editor.map.getOrCreateTile(Position(x, y, z));
+						}
+						if (tile) {
+							bool is_selected = editor.selection.getTiles().count(tile) > 0;
+
+							if (event.ControlDown()) {
+								if (is_selected) {
+									editor.selection.remove(tile);
+								} else {
+									editor.selection.add(tile);
+								}
 							} else {
-								editor.selection.add(tile);
-							}
-						} else {
-							if (!is_selected) {
-								editor.selection.add(tile);
+								if (!is_selected) {
+									editor.selection.add(tile);
+								}
 							}
 						}
 					}
@@ -1356,34 +1386,34 @@ void MapCanvas::OnWheel(wxMouseEvent& event) {
     target_zoom = zoom;
   }
 
-  // Discrete 5% zoom steps from 100% down to 1% (ideal max out-zoom 2.4444444 from screenshot)
-  static const int kZoomSteps[] = {
-    1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
+  // Discrete zoom steps from 0.5 (200% zoom-in) to 1.0 (100% normal) up to 10.0 (10% wide ultra-zoom)
+  static const double kZoomSteps[] = {
+    0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95,
+    1.00, 1.10, 1.25, 1.40, 1.60, 1.85, 2.15, 2.50, 3.00, 3.60,
+    4.30, 5.10, 6.00, 7.00, 8.00, 9.00, 10.00
   };
   static const int kNumSteps = sizeof(kZoomSteps) / sizeof(kZoomSteps[0]);
 
-  int current_pct = static_cast<int>(std::round(100.0 - (target_zoom - 0.5) / 1.9444444 * 99.0));
-
   if (event.GetWheelRotation() > 0) {
-    // Zoom IN (increase percentage towards 100)
-    int target_pct = 100;
-    for (int i = 0; i < kNumSteps; ++i) {
-      if (kZoomSteps[i] > current_pct) {
-        target_pct = kZoomSteps[i];
-        break;
-      }
-    }
-    target_zoom = 0.5 + (100 - target_pct) / 99.0 * 1.9444444;
-  } else if (event.GetWheelRotation() < 0) {
-    // Zoom OUT (decrease percentage towards 1)
-    int target_pct = 1;
+    // Zoom IN (smaller zoom factor value)
+    double next_target = kZoomSteps[0];
     for (int i = kNumSteps - 1; i >= 0; --i) {
-      if (kZoomSteps[i] < current_pct) {
-        target_pct = kZoomSteps[i];
+      if (kZoomSteps[i] < target_zoom - 0.01) {
+        next_target = kZoomSteps[i];
         break;
       }
     }
-    target_zoom = 0.5 + (100 - target_pct) / 99.0 * 1.9444444;
+    target_zoom = next_target;
+  } else if (event.GetWheelRotation() < 0) {
+    // Zoom OUT (larger zoom factor value)
+    double next_target = kZoomSteps[kNumSteps - 1];
+    for (int i = 0; i < kNumSteps; ++i) {
+      if (kZoomSteps[i] > target_zoom + 0.01) {
+        next_target = kZoomSteps[i];
+        break;
+      }
+    }
+    target_zoom = next_target;
   }
 
   zoom_focus_x = event.GetX();
@@ -1569,14 +1599,9 @@ void MapCanvas::SetZoom(double value, int focus_x, int focus_y) {
     value = 0.5;
   }
 
-  if (value > 2.4444444) {
-    value = 2.4444444;
+  if (value > 10.0) {
+    value = 10.0;
   }
-
-
-
-
-
 
   if (zoom != value) {
     if (GetParent()) {
@@ -1780,11 +1805,9 @@ void MapCanvas::UpdatePositionStatus(int /*x*/, int /*y*/) {
 }
 
 void MapCanvas::UpdateZoomStatus() {
-  int percentage = static_cast<int>(std::round(100.0 - (zoom - 0.5) / 1.9444444 * 99.0));
+  int percentage = static_cast<int>(std::round(100.0 / zoom));
   if (percentage < 1)
     percentage = 1;
-  if (percentage > 100)
-    percentage = 100;
   wxString ss;
   ss << "zoom: " << percentage << "%";
   g_gui.root->SetStatusText(ss, 3);

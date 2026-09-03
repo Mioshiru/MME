@@ -159,6 +159,10 @@ namespace MenuBar {
 		TOOLS_TILESET_MANAGER,
 		SHOW_MINIMAP_HUD, // New item for toggling canvas-based minimap
 		SHOW_HOTKEYS,
+		COMMAND_PALETTE,
+		PRESET_VIEW_MAPPER_FOCUS,
+		PRESET_VIEW_INGAME_PURE,
+		PRESET_VIEW_PERFORMANCE_MODE,
 
 		SELECT_RAW,
 		FLOOR_0,
@@ -322,6 +326,10 @@ public:
 	void OnZoomOut(wxCommandEvent& event);
 	void OnZoomNormal(wxCommandEvent& event);
 	void OnChangeViewSettings(wxCommandEvent& event);
+	void OnCommandPalette(wxCommandEvent& event);
+	void OnPresetMapperFocus(wxCommandEvent& event);
+	void OnPresetIngamePure(wxCommandEvent& event);
+	void OnPresetPerformanceMode(wxCommandEvent& event);
 
 	// Network menu
 	void OnJoinLive(wxCommandEvent& event);

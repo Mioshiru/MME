@@ -7,11 +7,23 @@
 #include <wx/sizer.h>
 #include <vector>
 #include <string>
+#include "position.h"
+
+class Brush;
+
+enum PaletteItemType {
+	PALETTE_ITEM_ACTION,
+	PALETTE_ITEM_BRUSH,
+	PALETTE_ITEM_TELEPORT_POS
+};
 
 struct PaletteCommand {
 	std::string name;
 	std::string category;
-	int action_id;
+	PaletteItemType type = PALETTE_ITEM_ACTION;
+	int action_id = -1;
+	Brush* brush = nullptr;
+	Position target_pos;
 };
 
 class CommandPaletteDialog : public wxDialog {
@@ -19,7 +31,8 @@ public:
 	CommandPaletteDialog(wxWindow* parent);
 	virtual ~CommandPaletteDialog();
 
-	int GetSelectedActionID() const { return selected_action_id; }
+	const PaletteCommand* GetSelectedResult() const { return (selected_result.action_id != -1 || selected_result.brush != nullptr || selected_result.target_pos.isValid()) ? &selected_result : nullptr; }
+	int GetSelectedActionID() const { return selected_result.action_id; }
 
 private:
 	void OnSearchText(wxCommandEvent& evt);
@@ -33,7 +46,7 @@ private:
 	wxListBox* results_list;
 	std::vector<PaletteCommand> all_commands;
 	std::vector<PaletteCommand> filtered_commands;
-	int selected_action_id;
+	PaletteCommand selected_result;
 
 	DECLARE_EVENT_TABLE()
 };

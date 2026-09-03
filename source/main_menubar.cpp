@@ -71,6 +71,8 @@
 #include "monster_editor_dialog.h"
 #include "creature_wiki_dialog.h"
 #include "item_editor_dialog.h"
+#include "command_palette_dialog.h"
+#include "map_tab.h"
 
 
 namespace {
@@ -296,6 +298,10 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(TFS_NPC_EDITOR, wxITEM_NORMAL, OnTFSNPCEditor);
 	MAKE_ACTION(TFS_EXPORTER, wxITEM_NORMAL, OnTFSExporter);
 	MAKE_ACTION(SHOW_HOTKEYS, wxITEM_NORMAL, OnShowHotkeys);
+	MAKE_ACTION(COMMAND_PALETTE, wxITEM_NORMAL, OnCommandPalette);
+	MAKE_ACTION(PRESET_VIEW_MAPPER_FOCUS, wxITEM_NORMAL, OnPresetMapperFocus);
+	MAKE_ACTION(PRESET_VIEW_INGAME_PURE, wxITEM_NORMAL, OnPresetIngamePure);
+	MAKE_ACTION(PRESET_VIEW_PERFORMANCE_MODE, wxITEM_NORMAL, OnPresetPerformanceMode);
 
 
 	MAKE_ACTION(SELECT_TERRAIN, wxITEM_NORMAL, OnSelectTerrainPalette);
@@ -1348,6 +1354,77 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event) {
 	if (g_gui.root) {
 		g_gui.root->UpdateMenubar();
 	}
+}
+
+void MainMenuBar::OnCommandPalette(wxCommandEvent& WXUNUSED(event)) {
+	CommandPaletteDialog dlg(frame);
+	if (dlg.ShowModal() == wxID_OK) {
+		const PaletteCommand* cmd = dlg.GetSelectedResult();
+		if (cmd) {
+			if (cmd->type == PALETTE_ITEM_ACTION && cmd->action_id != -1) {
+				wxCommandEvent trigger_evt(wxEVT_COMMAND_MENU_SELECTED, MAIN_FRAME_MENU + cmd->action_id);
+				frame->GetEventHandler()->ProcessEvent(trigger_evt);
+			} else if (cmd->type == PALETTE_ITEM_BRUSH && cmd->brush != nullptr) {
+				g_gui.SelectBrush(cmd->brush);
+				g_gui.SetStatusText("Selected brush: " + cmd->name);
+			} else if (cmd->type == PALETTE_ITEM_TELEPORT_POS && cmd->target_pos.isValid()) {
+				if (MapTab* tab = g_gui.GetCurrentMapTab()) {
+					tab->SetScreenCenterPosition(cmd->target_pos, true);
+					g_gui.ChangeFloor(cmd->target_pos.z);
+					g_gui.SetStatusText("Teleported to: " + cmd->name);
+					g_gui.RefreshView();
+				}
+			}
+		}
+	}
+}
+
+void MainMenuBar::OnPresetMapperFocus(wxCommandEvent& WXUNUSED(event)) {
+	g_settings.setInteger(Config::SHOW_GRID, 1);
+	g_settings.setInteger(Config::SHOW_CREATURES, 1);
+	g_settings.setInteger(Config::SHOW_SPAWNS, 1);
+	g_settings.setInteger(Config::SHOW_WAYPOINTS, 1);
+	g_settings.setInteger(Config::SHOW_SPECIAL_TILES, 1);
+	g_settings.setInteger(Config::SHOW_HOUSES, 1);
+	g_settings.setInteger(Config::SHOW_SHADE, 1);
+	g_settings.setInteger(Config::SHOW_INGAME_BOX, 0);
+	g_settings.setInteger(Config::TRANSPARENT_FLOORS, 1);
+	g_settings.setInteger(Config::SHOW_TOOLTIPS, 1);
+	g_settings.setInteger(Config::SHOW_TEXT_BUBBLES, 1);
+	g_gui.RefreshView();
+	Update();
+	g_gui.SetStatusText("Preset applied: Mapper Focus (Full guides, grid, spawns & helpers active)");
+}
+
+void MainMenuBar::OnPresetIngamePure(wxCommandEvent& WXUNUSED(event)) {
+	g_settings.setInteger(Config::SHOW_GRID, 0);
+	g_settings.setInteger(Config::SHOW_CREATURES, 1);
+	g_settings.setInteger(Config::SHOW_SPAWNS, 0);
+	g_settings.setInteger(Config::SHOW_WAYPOINTS, 0);
+	g_settings.setInteger(Config::SHOW_SPECIAL_TILES, 0);
+	g_settings.setInteger(Config::SHOW_HOUSES, 0);
+	g_settings.setInteger(Config::SHOW_SHADE, 1);
+	g_settings.setInteger(Config::SHOW_INGAME_BOX, 1);
+	g_settings.setInteger(Config::TRANSPARENT_FLOORS, 0);
+	g_settings.setInteger(Config::SHOW_TOOLTIPS, 0);
+	g_settings.setInteger(Config::SHOW_TEXT_BUBBLES, 0);
+	g_gui.RefreshView();
+	Update();
+	g_gui.SetStatusText("Preset applied: Ingame Pure (Clean native game view, no overlays)");
+}
+
+void MainMenuBar::OnPresetPerformanceMode(wxCommandEvent& WXUNUSED(event)) {
+	g_settings.setInteger(Config::SHOW_GRID, 0);
+	g_settings.setInteger(Config::SHOW_LIGHTS, 0);
+	g_settings.setInteger(Config::SHOW_LIGHT_STR, 0);
+	g_settings.setInteger(Config::TRANSPARENT_FLOORS, 0);
+	g_settings.setInteger(Config::TRANSPARENT_ITEMS, 0);
+	g_settings.setInteger(Config::SHOW_TOOLTIPS, 0);
+	g_settings.setInteger(Config::SHOW_TEXT_BUBBLES, 0);
+	g_settings.setInteger(Config::SHOW_FPS, 1);
+	g_gui.RefreshView();
+	Update();
+	g_gui.SetStatusText("Preset applied: Performance Mode (Optimized rendering for mega maps)");
 }
 
 void MainMenuBar::OnChangeFloor(wxCommandEvent& event) {

@@ -98,6 +98,8 @@
 		<item name="Towns" hotkey="Ctrl+T" action="EDIT_TOWNS" help="Edit towns."/>
 		<separator/>
 		<menu name="Find &amp; Search">
+			<item name="Universal Spotlight Search..." hotkey="Ctrl+K" action="COMMAND_PALETTE" help="Spotlight universal search for items, brushes, monsters, houses, towns, and commands."/>
+			<separator/>
 			<item name="Find Item..." hotkey="Ctrl+F" action="FIND_ITEM" help="Find all instances of an item type on the map."/>
 			<separator/>
 			<item name="Jump to Brush..." hotkey="J" action="JUMP_TO_BRUSH" help="Jump to a brush."/>
@@ -114,6 +116,12 @@
 	</menu>
 
 	<menu name="View">
+		<menu name="Presets">
+			<item name="Mapper Focus (Grid, Spawns &amp; Full Helpers)" action="PRESET_VIEW_MAPPER_FOCUS" help="Activate full mapper helper overlays, grid, spawns, and ghosting."/>
+			<item name="Ingame Pure (Clean Native Game Look)" action="PRESET_VIEW_INGAME_PURE" help="Switch to clean native game rendering without map editor overlays."/>
+			<item name="Performance Mode (Max FPS for Mega Maps)" action="PRESET_VIEW_PERFORMANCE_MODE" help="Maximize rendering performance for gigantic maps."/>
+		</menu>
+		<separator/>
 		<item name="Minimap" hotkey="M" action="SHOW_MINIMAP_HUD" help="Displays the minimap HUD window on the map canvas."/>
 		<item name="New Canvas" hotkey="Ctrl+Shift+N" action="NEW_VIEW" help="Creates a new view/canvas of the current map."/>
 		<item name="Enter Fullscreen" hotkey="F11" action="TOGGLE_FULLSCREEN" help="Changes between fullscreen mode and windowed mode."/>
