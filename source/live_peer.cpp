@@ -28,6 +28,7 @@
 #include "materials.h"
 #include "tileset.h"
 #include "brush.h"
+#include "checklist_manager.h"
 #include "live_approval_window.h"
 
 LivePeer::LivePeer(LiveServer *server, boost::asio::ip::tcp::socket socket, uint32_t id)
@@ -277,6 +278,18 @@ void LivePeer::parseEditorPacket(NetworkMessage message) {
     case PACKET_UPDATE_STATUS:
       parseUpdateStatus(message);
       break;
+    case PACKET_CHECKLIST_ADD:
+      parseChecklistAdd(message);
+      break;
+    case PACKET_CHECKLIST_TOGGLE:
+      parseChecklistToggle(message);
+      break;
+    case PACKET_CHECKLIST_DELETE:
+      parseChecklistDelete(message);
+      break;
+    case PACKET_CHECKLIST_CLEAR_COMPLETED:
+      parseChecklistClearCompleted(message);
+      break;
     case PACKET_APPROVAL_REQUEST: {
       uint32_t reqId = message.read<uint32_t>();
       uint8_t reqType = message.read<uint8_t>();
@@ -520,6 +533,19 @@ void LivePeer::parseReady(NetworkMessage &message) {
     }
   }
 
+  // Step 2.7: Synchronize Checklist / Notepad to Remote Client
+  auto allChecklistItems = ChecklistManager::getInstance().getAllItems();
+  NetworkMessage checklistSyncMsg;
+  checklistSyncMsg.write<uint8_t>(PACKET_CHECKLIST_SYNC);
+  checklistSyncMsg.write<uint32_t>((uint32_t)allChecklistItems.size());
+  for (const auto& item : allChecklistItems) {
+    checklistSyncMsg.write<uint32_t>(item.id);
+    checklistSyncMsg.write<std::string>(item.text);
+    checklistSyncMsg.write<std::string>(item.author);
+    checklistSyncMsg.write<uint8_t>(item.completed ? 1 : 0);
+  }
+  send(checklistSyncMsg);
+
   // Step 3: Initial Map Sync — send ALL non-empty nodes to this client
   // Send start operation so the client displays a smooth loading bar and avoids redraw lag
   NetworkMessage startOpMsg;
@@ -733,3 +759,39 @@ void LivePeer::parseUpdateStatus(NetworkMessage &message) {
     server->broadcastCursor(it->second);
   }
 }
+
+void LivePeer::parseChecklistAdd(NetworkMessage &message) {
+  uint32_t id = message.read<uint32_t>();
+  std::string text = message.read<std::string>();
+  std::string author = message.read<std::string>();
+  bool completed = message.read<uint8_t>() != 0;
+
+  if (author.empty()) author = nstr(name);
+  uint32_t assignedId = ChecklistManager::getInstance().addItem(text, author, completed, id);
+  server->broadcastChecklistAdd(assignedId, text, author, completed);
+  g_gui.RefreshView();
+}
+
+void LivePeer::parseChecklistToggle(NetworkMessage &message) {
+  uint32_t id = message.read<uint32_t>();
+  bool completed = message.read<uint8_t>() != 0;
+
+  ChecklistManager::getInstance().toggleItem(id, completed);
+  server->broadcastChecklistToggle(id, completed);
+  g_gui.RefreshView();
+}
+
+void LivePeer::parseChecklistDelete(NetworkMessage &message) {
+  uint32_t id = message.read<uint32_t>();
+
+  ChecklistManager::getInstance().deleteItem(id);
+  server->broadcastChecklistDelete(id);
+  g_gui.RefreshView();
+}
+
+void LivePeer::parseChecklistClearCompleted(NetworkMessage &message) {
+  ChecklistManager::getInstance().clearCompleted();
+  server->broadcastChecklistClearCompleted();
+  g_gui.RefreshView();
+}
+

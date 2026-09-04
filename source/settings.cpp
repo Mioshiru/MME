@@ -347,6 +347,7 @@ void Settings::IO(IOMode mode) {
 	Float(EXP_VIGNETTE_STRENGTH, 0.4f);
 	Int(EXP_PIXEL_SNAPPING, 0);
 	Int(SHOW_CHAT, 1);
+	Int(SHOW_NOTEPAD, 1);
 	Int(PALETTE_COL_COUNT, 0);
 	String(PALETTE_TERRAIN_STYLE, "large icons");
 	String(PALETTE_COLLECTION_STYLE, "large icons");

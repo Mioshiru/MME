@@ -56,10 +56,22 @@ RadioManager::RadioManager() {
 		"https://rainwave.cc/chill/"
 	});
 	stations.push_back({
-		"RPG",
-		"RPGamers Radio - Epic roleplaying soundscapes & anthems.",
-		"https://listen.rpgamers.net/rpgn",
-		"https://www.rpgamers.net/radio/"
+		"Rivendell",
+		"Radio Rivendell - Fantasy music 24/7 (Orchestral, Neofolk & Ambient).",
+		"https://play.radiorivendell.com/radio/8000/radio.mp3",
+		"https://radiorivendell.com/"
+	});
+	stations.push_back({
+		"The Green Dragon",
+		"Radio Rivendell - The Green Dragon (Tavern & Folk ambience).",
+		"https://play.radiorivendell.com/radio/8010/radio.mp3",
+		"https://radiorivendell.com/"
+	});
+	stations.push_back({
+		"Lorien",
+		"Radio Rivendell - Lorien (Atmospheric & Elven soundscapes).",
+		"https://play.radiorivendell.com/radio/8020/radio.mp3",
+		"https://radiorivendell.com/"
 	});
 
 	InitAudioBackend();
@@ -368,7 +380,7 @@ RadioPlayerPanel::RadioPlayerPanel(wxWindow* parent)
 	for (const auto& s : stations) {
 		stationChoices.Add(s.name);
 	}
-	stationChoice = new wxChoice(this, RADIO_ID_STATION_CHOICE, wxDefaultPosition, wxSize(100, -1), stationChoices);
+	stationChoice = new wxChoice(this, RADIO_ID_STATION_CHOICE, wxDefaultPosition, wxSize(130, -1), stationChoices);
 	stationChoice->SetSelection(RadioManager::Get().GetCurrentStationIndex());
 	stationChoice->SetToolTip("Select Radio Station");
 	stationChoice->SetBackgroundColour(wxColour(15, 32, 56));

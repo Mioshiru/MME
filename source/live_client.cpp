@@ -28,6 +28,7 @@
 #include "brush.h"
 #include "creature_brush.h"
 #include "creatures.h"
+#include "checklist_manager.h"
 #include "map.h"
 
 #include <chrono>
@@ -619,6 +620,26 @@ void LiveClient::parsePacket(NetworkMessage message) {
 				parseApprovalResponse(message);
 				needsRefresh = true;
 				break;
+			case PACKET_CHECKLIST_SYNC:
+				parseChecklistSync(message);
+				needsRefresh = true;
+				break;
+			case PACKET_CHECKLIST_ADD:
+				parseChecklistAdd(message);
+				needsRefresh = true;
+				break;
+			case PACKET_CHECKLIST_TOGGLE:
+				parseChecklistToggle(message);
+				needsRefresh = true;
+				break;
+			case PACKET_CHECKLIST_DELETE:
+				parseChecklistDelete(message);
+				needsRefresh = true;
+				break;
+			case PACKET_CHECKLIST_CLEAR_COMPLETED:
+				parseChecklistClearCompleted(message);
+				needsRefresh = true;
+				break;
 			case PACKET_PONG: {
 				uint64_t timestamp = message.read<uint64_t>();
 				latency = (uint32_t)(wxGetLocalTimeMillis().GetValue() - timestamp);
@@ -738,9 +759,11 @@ void LiveClient::parseHello(NetworkMessage& message) {
 			if (g_gui.root) {
 				g_gui.root->UpdateMenubar();
 			}
-			g_gui.RefreshView();
-			g_gui.RefreshPalettes();
-			g_gui.RefreshMinimapPanel();
+			if (g_gui.IsEditorOpen()) {
+				g_gui.RefreshView();
+				g_gui.RefreshPalettes();
+				g_gui.RefreshMinimapPanel();
+			}
 		};
 
 		if (alreadyAnswered) {
@@ -748,20 +771,24 @@ void LiveClient::parseHello(NetworkMessage& message) {
 				applyHostSettings();
 			}
 		} else {
-			wxMessageDialog dlg(g_gui.root,
-				"The Host is sharing their active View & Workspace Settings (Overlays, Layers, Minimap, Docked Radio Player, Grid, etc.).\n\nWould you like to adopt the Host's View Settings, or keep your own?",
-				"Adopt Host View Settings?",
-				wxYES_NO | wxICON_QUESTION);
-			dlg.SetYesNoLabels("Adopt Host Settings", "Keep My Settings");
-			int res = dlg.ShowModal();
-			int decision = (res == wxID_YES) ? 1 : 0;
-			if (decision == 1) {
-				applyHostSettings();
-			}
-			std::string newEntry = srvKey + ":" + std::to_string(decision);
-			if (!adoptedList.empty()) adoptedList += ";";
-			adoptedList += newEntry;
-			g_settings.setString(Config::MULTIPLAYER_ADOPTED_SERVERS, adoptedList);
+			// Defer dialog until after the editor tab is created to prevent blocking the socket packet loop
+			wxTheApp->CallAfter([srvKey, hostViewFlags, applyHostSettings]() {
+				wxMessageDialog dlg(g_gui.root,
+					"The Host is sharing their active View & Workspace Settings (Overlays, Layers, Minimap, Docked Radio Player, Grid, etc.).\n\nWould you like to adopt the Host's View Settings, or keep your own?",
+					"Adopt Host View Settings?",
+					wxYES_NO | wxICON_QUESTION);
+				dlg.SetYesNoLabels("Adopt Host Settings", "Keep My Settings");
+				int res = dlg.ShowModal();
+				int decision = (res == wxID_YES) ? 1 : 0;
+				if (decision == 1) {
+					applyHostSettings();
+				}
+				std::string adoptedList = g_settings.getString(Config::MULTIPLAYER_ADOPTED_SERVERS);
+				std::string newEntry = srvKey + ":" + std::to_string(decision);
+				if (!adoptedList.empty()) adoptedList += ";";
+				adoptedList += newEntry;
+				g_settings.setString(Config::MULTIPLAYER_ADOPTED_SERVERS, adoptedList);
+			});
 		}
 	}
 
@@ -997,7 +1024,9 @@ void LiveClient::parseWorldPalette(NetworkMessage& message) {
 		}
 	}
 
-	g_gui.RebuildPalettes();
+	if (g_gui.IsEditorOpen()) {
+		g_gui.RebuildPalettes();
+	}
 }
 
 void LiveClient::requestLock(const Position& pos) {
@@ -1161,3 +1190,81 @@ void LiveClient::parseApprovalResponse(NetworkMessage& message) {
 		wxMessageBox(wxString::Format("Host rejected the creation/ID request:\n%s", wxstr(reason)), "Approval Rejected", wxOK | wxICON_INFORMATION);
 	}
 }
+
+void LiveClient::sendChecklistAdd(uint32_t id, const std::string& text, const std::string& author, bool completed) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_ADD);
+	message.write<uint32_t>(id);
+	message.write<std::string>(text);
+	message.write<std::string>(author);
+	message.write<uint8_t>(completed ? 1 : 0);
+	send(message);
+}
+
+void LiveClient::sendChecklistToggle(uint32_t id, bool completed) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_TOGGLE);
+	message.write<uint32_t>(id);
+	message.write<uint8_t>(completed ? 1 : 0);
+	send(message);
+}
+
+void LiveClient::sendChecklistDelete(uint32_t id) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_DELETE);
+	message.write<uint32_t>(id);
+	send(message);
+}
+
+void LiveClient::sendChecklistClearCompleted() {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_CLEAR_COMPLETED);
+	send(message);
+}
+
+void LiveClient::parseChecklistSync(NetworkMessage& message) {
+	uint32_t count = message.read<uint32_t>();
+	std::vector<ChecklistItem> items;
+	items.reserve(count);
+	for (uint32_t i = 0; i < count; ++i) {
+		ChecklistItem item;
+		item.id = message.read<uint32_t>();
+		item.text = message.read<std::string>();
+		item.author = message.read<std::string>();
+		item.completed = message.read<uint8_t>() != 0;
+		items.push_back(item);
+	}
+	ChecklistManager::getInstance().setAllItems(items);
+	g_gui.RefreshView();
+}
+
+void LiveClient::parseChecklistAdd(NetworkMessage& message) {
+	uint32_t id = message.read<uint32_t>();
+	std::string text = message.read<std::string>();
+	std::string author = message.read<std::string>();
+	bool completed = message.read<uint8_t>() != 0;
+
+	ChecklistManager::getInstance().addItem(text, author, completed, id);
+	g_gui.RefreshView();
+}
+
+void LiveClient::parseChecklistToggle(NetworkMessage& message) {
+	uint32_t id = message.read<uint32_t>();
+	bool completed = message.read<uint8_t>() != 0;
+
+	ChecklistManager::getInstance().toggleItem(id, completed);
+	g_gui.RefreshView();
+}
+
+void LiveClient::parseChecklistDelete(NetworkMessage& message) {
+	uint32_t id = message.read<uint32_t>();
+
+	ChecklistManager::getInstance().deleteItem(id);
+	g_gui.RefreshView();
+}
+
+void LiveClient::parseChecklistClearCompleted(NetworkMessage& message) {
+	ChecklistManager::getInstance().clearCompleted();
+	g_gui.RefreshView();
+}
+

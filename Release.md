@@ -8,6 +8,16 @@
 
 ### 🌟 Major Highlights & New Features in v1.9.4
 
+* **📜 Medieval Collaborative Checklist & Quest Notepad (`Ctrl+Shift+T` / `View -> Collaborative Notepad`):**
+  * **Authentic Medieval Parchment Aesthetic:** Stylized parchment paper backdrop with worn antique stains, dark aged oak framing, and polished gold ornaments (`#D4AF37`).
+  * **Dual-Tab Workflow:**
+    * **`📜 Active Tasks (X)`:** Interactive checklist items with author tags. Checking an item smoothly marks it completed and transfers it into the Completed tab.
+    * **`✅ Completed (Y)`:** Archive of completed tasks with instant restore/uncheck capability, author completion stamps, and a 1-click *Clear All Completed* button.
+  * **Real-Time Multiplayer Synchronization:** Fully synced across Host and connected Clients (instant bidirectional task add, toggle, delete, and bulk sync on join).
+  * **Standard Window Controls:** Title-bar now features `_` (Minimize) left of `X` (Close), consistent with all other editor windows — no more content-area minimize button.
+  * **Palette Module Integration:** Quest Checklist can now be docked directly into the **Side Palette** as a native panel (alongside Asset Palette and Minimap). Enable via right-click → *Show Quest Checklist*. All windows are freely placeable on the Canvas or dockable into Palettes.
+  * **Magnetic Edge Snapping:** Canvas windows snap smoothly to edges using a magnet system — no fixed dock points, free positioning anywhere along each border.
+
 * **🔍 Universal Spotlight Search & Command Palette (`Ctrl + F` / `Modify -> Find & Search`):**
   * **Frameless Modern Overlay (Corporate Design):** Abgerundetes, rahmenloses Suchfenster mit zentriertem Texteingabefeld und integriertem Dropdown-Button (`No RAW ▾` / `RAW ▾`).
   * **Zwei präzise Suchmodi:**
@@ -31,6 +41,14 @@
   * **Mapper Focus:** Instantly enables all mapper feedback overlays (Grid, Spawns, Creatures, Waypoints, Special Tiles, Ghost Higher Floors, Tooltips, and Text Bubbles).
   * **Ingame Pure:** Switches to pure, clean game optics with zero editor overlays, intact shade, and Ingame-Box boundaries.
   * **Performance Mode:** Optimized high-speed rendering for gigantic maps (disables transparency, enables light culling and live FPS display).
+
+* **📻 Radio Rivendell Channels & Fantasy Music Suite (`Tools -> Radio`):**
+  * **3 Official Radio Rivendell Streams:** Added direct 24/7 high-bitrate streaming channels from the renowned fantasy music platform:
+    * **`Rivendell` (`https://play.radiorivendell.com/radio/8000/radio.mp3`):** Fantasy music 24/7 (Orchestral, Neofolk & Ambient).
+    * **`The Green Dragon` (`https://play.radiorivendell.com/radio/8010/radio.mp3`):** Cozy tavern, tavern-folk, and storytelling melodies.
+    * **`Lorien` (`https://play.radiorivendell.com/radio/8020/radio.mp3`):** Atmospheric, tranquil, and elven soundscapes.
+  * **Station Dropdown UI Polish:** Widened selector to comfortably display full station names without truncation.
+  * **Web Integration:** Direct 1-click browser navigation to the station and live community via *Web Radio*.
 
 * **🛡️ Hardened Auto-Updater & Codebase Cleanups:**
   * **UAC-Safe Temp Execution:** Update batch script is now written to `%TEMP%\update_mme_<tag>.bat`, eliminating write permission errors in `C:\Program Files`.

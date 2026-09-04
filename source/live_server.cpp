@@ -25,6 +25,7 @@
 #include "editor.h"
 #include "materials.h"
 #include "brush.h"
+#include "checklist_manager.h"
 #include <cpr/cpr.h>
 
 LiveServer::LiveServer(Editor& editor) :
@@ -568,6 +569,96 @@ void LiveServer::broadcastHostFavorites() {
 	}
 	for (LivePeer* peer : peerList) {
 		peer->send(wpMsg);
+	}
+}
+
+void LiveServer::broadcastChecklistAdd(uint32_t id, const std::string& text, const std::string& author, bool completed) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_ADD);
+	message.write<uint32_t>(id);
+	message.write<std::string>(text);
+	message.write<std::string>(author);
+	message.write<uint8_t>(completed ? 1 : 0);
+
+	std::vector<LivePeer*> peerList;
+	for (auto& clientEntry : clients) {
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
+	}
+}
+
+void LiveServer::broadcastChecklistToggle(uint32_t id, bool completed) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_TOGGLE);
+	message.write<uint32_t>(id);
+	message.write<uint8_t>(completed ? 1 : 0);
+
+	std::vector<LivePeer*> peerList;
+	for (auto& clientEntry : clients) {
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
+	}
+}
+
+void LiveServer::broadcastChecklistDelete(uint32_t id) {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_DELETE);
+	message.write<uint32_t>(id);
+
+	std::vector<LivePeer*> peerList;
+	for (auto& clientEntry : clients) {
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
+	}
+}
+
+void LiveServer::broadcastChecklistClearCompleted() {
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_CLEAR_COMPLETED);
+
+	std::vector<LivePeer*> peerList;
+	for (auto& clientEntry : clients) {
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
+	}
+}
+
+void LiveServer::broadcastChecklistSyncAll() {
+	auto allItems = ChecklistManager::getInstance().getAllItems();
+	NetworkMessage message;
+	message.write<uint8_t>(PACKET_CHECKLIST_SYNC);
+	message.write<uint32_t>((uint32_t)allItems.size());
+	for (const auto& item : allItems) {
+		message.write<uint32_t>(item.id);
+		message.write<std::string>(item.text);
+		message.write<std::string>(item.author);
+		message.write<uint8_t>(item.completed ? 1 : 0);
+	}
+
+	std::vector<LivePeer*> peerList;
+	for (auto& clientEntry : clients) {
+		if (clientEntry.second) {
+			peerList.push_back(clientEntry.second);
+		}
+	}
+	for (LivePeer* peer : peerList) {
+		peer->send(message);
 	}
 }
 

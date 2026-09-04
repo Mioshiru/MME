@@ -84,6 +84,10 @@ public:
 	void sendRemoveAnnotation(uint32_t id);
 	void sendStatusUpdate(UserStatus status);
 	void sendApprovalRequest(uint8_t reqType, const Position& pos, uint32_t reqValue, const wxString& details);
+	void sendChecklistAdd(uint32_t id, const std::string& text, const std::string& author, bool completed);
+	void sendChecklistToggle(uint32_t id, bool completed);
+	void sendChecklistDelete(uint32_t id);
+	void sendChecklistClearCompleted();
 
 	// Camera Follow & Status
 	uint32_t getFollowClientId() const { return followClientId; }
@@ -118,6 +122,11 @@ protected:
 	void parseTownList(NetworkMessage& message);
 	void parseWorldPalette(NetworkMessage& message);
 	void parseApprovalResponse(NetworkMessage& message);
+	void parseChecklistSync(NetworkMessage& message);
+	void parseChecklistAdd(NetworkMessage& message);
+	void parseChecklistToggle(NetworkMessage& message);
+	void parseChecklistDelete(NetworkMessage& message);
+	void parseChecklistClearCompleted(NetworkMessage& message);
 	bool scheduleReconnect(const wxString& reason);
 	void attemptReconnect();
 	void resetConnectionMetrics();

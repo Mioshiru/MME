@@ -97,6 +97,10 @@ protected:
 	void parseAddAnnotation(NetworkMessage& message);
 	void parseRemoveAnnotation(NetworkMessage& message);
 	void parseUpdateStatus(NetworkMessage& message);
+	void parseChecklistAdd(NetworkMessage& message);
+	void parseChecklistToggle(NetworkMessage& message);
+	void parseChecklistDelete(NetworkMessage& message);
+	void parseChecklistClearCompleted(NetworkMessage& message);
 
 	//
 	NetworkMessage readMessage;

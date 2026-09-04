@@ -1260,6 +1260,11 @@ void MapEditor::destroySelection() {
 			}
 			if (had_ground && newtile->ground == nullptr) {
 				ground_deleted = true;
+				newtile->setMapFlags(TILESTATE_NONE);
+				newtile->setHouseID(0);
+			} else if (tile->isSelected()) {
+				newtile->setMapFlags(TILESTATE_NONE);
+				newtile->setHouseID(0);
 			}
 
 			if (newtile->creature && newtile->creature->isSelected()) {

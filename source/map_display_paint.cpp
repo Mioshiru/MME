@@ -21,6 +21,7 @@
 #include "raw_brush.h"
 #include "spawn_brush.h"
 #include "creature_brush.h"
+#include "checklist_manager.h"
 #include <cmath>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -200,7 +201,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		IMGUI_CHECKVERSION();
 		imgui_context = ImGui::CreateContext();
 		ImGui::SetCurrentContext(imgui_context);
-		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		// Note: Canvas overlays use free floating windows with magnetic edge snapping instead of intrusive dock nodes
 		ImGui::StyleColorsDark();
 		
 		// Custom styling for a premium look
@@ -546,6 +547,362 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 			if (!open) {
 				g_settings.setInteger(Config::SHOW_CHAT, 0);
+				if (g_gui.root) {
+					g_gui.root->UpdateMenubar();
+				}
+			}
+		}
+	}
+
+	// Medieval Collaborative Checklist / Questpad Window
+	if (g_settings.getBoolean(Config::SHOW_NOTEPAD)) {
+		static bool notepad_minimized = false;
+		static char new_task_input[256] = "";
+
+		size_t activeCount = ChecklistManager::getInstance().getActiveCount();
+		size_t completedCount = ChecklistManager::getInstance().getCompletedCount();
+
+		if (notepad_minimized) {
+			// Floating parchment minimized pill in the bottom-left area
+			ImGui::SetNextWindowPos(ImVec2(10.0f, io.DisplaySize.y - 70.0f), ImGuiCond_Always);
+			ImGui::SetNextWindowBgAlpha(0.92f);
+			ImGuiWindowFlags pill_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.08f, 0.04f, 0.95f)); // Dark parchment wood
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));   // Medieval Gold
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.5f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
+
+			if (ImGui::Begin("##NotepadMinimizedPill", nullptr, pill_flags)) {
+				std::string label = "Notes (" + std::to_string(activeCount) + " open)";
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.24f, 0.16f, 0.09f, 0.90f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.38f, 0.25f, 0.13f, 1.00f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.38f, 0.18f, 1.00f));
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.90f, 0.76f, 1.0f));
+
+				if (ImGui::Button(label.c_str())) {
+					notepad_minimized = false;
+				}
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Click to expand Collaborative Medieval Notepad");
+				}
+				ImGui::PopStyleColor(4);
+				ImGui::End();
+			}
+			ImGui::PopStyleVar(2);
+			ImGui::PopStyleColor(2);
+		} else {
+			// Rich Medieval Parchment Dialog
+			ImGui::SetNextWindowPos(ImVec2(18.0f, 60.0f), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(ImVec2(360.0f, 440.0f), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSizeConstraints(ImVec2(280.0f, 240.0f), ImVec2(700.0f, 900.0f));
+
+			// Medieval Palette Styles (21 PushStyleColor calls)
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.11f, 0.08f, 0.04f, 0.94f));       // Aged Oak / Dark Leather
+			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.18f, 0.12f, 0.06f, 1.00f));        // Deep wood title
+			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.25f, 0.16f, 0.08f, 1.00f));  // Active Title
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));         // Radiant Antique Gold
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.91f, 0.78f, 1.00f));           // Parchment Ivory Text
+			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.22f, 0.15f, 0.08f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.35f, 0.24f, 0.12f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.83f, 0.69f, 0.22f, 0.80f));
+			ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.16f, 0.11f, 0.06f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.32f, 0.22f, 0.11f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_TabActive, ImVec4(0.26f, 0.18f, 0.09f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_TabUnfocused, ImVec4(0.14f, 0.09f, 0.05f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_TabUnfocusedActive, ImVec4(0.20f, 0.13f, 0.07f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.15f, 0.08f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.24f, 0.12f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.08f, 0.05f, 0.03f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.09f, 0.05f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.20f, 0.13f, 0.07f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(0.85f, 0.70f, 0.25f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.83f, 0.69f, 0.22f, 0.40f));
+
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.8f);
+
+			static GLuint parchment_tex_id = 0;
+			static bool parchment_loaded = false;
+			if (!parchment_loaded) {
+				parchment_loaded = true;
+				wxBitmap parchment_bmp = LoadBitmapFromCandidatesRadial(wxDefaultSize, {
+					"icons/parchment_bg.png", "../icons/parchment_bg.png", "Map Editor/icons/parchment_bg.png",
+					wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "parchment_bg.png",
+					wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "parchment_bg.png"
+				});
+				if (parchment_bmp.IsOk()) {
+					parchment_tex_id = ConvertBitmapToTexture(parchment_bmp);
+				}
+			}
+
+			bool notepad_open = true;
+			if (ImGui::Begin("Quest Notepad & Checklist", &notepad_open, ImGuiWindowFlags_NoDocking)) {
+				// Magnetic Edge Snapping: If window edge is within snapThreshold of viewport boundary, snap to edge
+				ImVec2 w_pos = ImGui::GetWindowPos();
+				ImVec2 w_size = ImGui::GetWindowSize();
+				ImGuiViewport* vp = ImGui::GetMainViewport();
+				if (vp) {
+					const float snapMargin = 16.0f;     // Distance from boundary to rest at
+					const float snapThreshold = 30.0f;  // Snapping magnetic pull distance
+					ImVec2 targetPos = w_pos;
+					bool snapped = false;
+
+					// Left Edge Magnet
+					if (w_pos.x - vp->Pos.x < snapThreshold && w_pos.x - vp->Pos.x > -snapThreshold) {
+						targetPos.x = vp->Pos.x + snapMargin;
+						snapped = true;
+					}
+					// Right Edge Magnet
+					else if ((vp->Pos.x + vp->Size.x) - (w_pos.x + w_size.x) < snapThreshold && (vp->Pos.x + vp->Size.x) - (w_pos.x + w_size.x) > -snapThreshold) {
+						targetPos.x = vp->Pos.x + vp->Size.x - w_size.x - snapMargin;
+						snapped = true;
+					}
+
+					// Top Edge Magnet
+					if (w_pos.y - vp->Pos.y < snapThreshold && w_pos.y - vp->Pos.y > -snapThreshold) {
+						targetPos.y = vp->Pos.y + snapMargin;
+						snapped = true;
+					}
+					// Bottom Edge Magnet
+					else if ((vp->Pos.y + vp->Size.y) - (w_pos.y + w_size.y) < snapThreshold && (vp->Pos.y + vp->Size.y) - (w_pos.y + w_size.y) > -snapThreshold) {
+						targetPos.y = vp->Pos.y + vp->Size.y - w_size.y - snapMargin;
+						snapped = true;
+					}
+
+					if (snapped && !ImGui::IsMouseDown(0)) {
+						ImGui::SetWindowPos(targetPos, ImGuiCond_Always);
+						w_pos = targetPos;
+					}
+				}
+
+				// Draw parchment background texture inside window
+				if (parchment_tex_id != 0) {
+					ImDrawList* dl = ImGui::GetWindowDrawList();
+					dl->AddImage((ImTextureID)(intptr_t)parchment_tex_id,
+						ImVec2(w_pos.x + 2.0f, w_pos.y + 24.0f),
+						ImVec2(w_pos.x + w_size.x - 2.0f, w_pos.y + w_size.y - 2.0f),
+						ImVec2(0, 0), ImVec2(1, 1),
+						IM_COL32(255, 255, 255, 45)); // Soft 18% opacity parchment texture overlay
+				}
+
+				// Custom Title Bar Minimize Button rendered right next to the 'X' close button
+				{
+					ImDrawList* dl = ImGui::GetWindowDrawList();
+					float btnSize = 14.0f;
+					// Position immediately to the left of the standard ImGui 'X' button (approx 36px from right edge)
+					ImVec2 minBtnPos = ImVec2(w_pos.x + w_size.x - 42.0f, w_pos.y + 5.0f);
+					ImVec2 mousePos = ImGui::GetMousePos();
+					bool isHovered = mousePos.x >= minBtnPos.x && mousePos.x <= minBtnPos.x + btnSize &&
+					                 mousePos.y >= minBtnPos.y && mousePos.y <= minBtnPos.y + btnSize;
+
+					if (isHovered) {
+						dl->AddRectFilled(minBtnPos, ImVec2(minBtnPos.x + btnSize, minBtnPos.y + btnSize),
+							IM_COL32(200, 160, 60, 120), 3.0f);
+						ImGui::SetTooltip("Minimize to floating pill");
+						if (ImGui::IsMouseClicked(0)) {
+							notepad_minimized = true;
+						}
+					}
+					// Draw subtle '_' minimize dash icon in gold
+					dl->AddLine(ImVec2(minBtnPos.x + 2.5f, minBtnPos.y + btnSize - 3.5f),
+					            ImVec2(minBtnPos.x + btnSize - 2.5f, minBtnPos.y + btnSize - 3.5f),
+					            IM_COL32(230, 205, 130, isHovered ? 255 : 200), 2.0f);
+				}
+
+				// Top Task Input Bar
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.83f, 0.69f, 0.22f, 1.0f));
+				ImGui::Text("Inscribe Task:");
+				ImGui::PopStyleColor();
+
+				float btn_w = 70.0f;
+				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - btn_w - 8.0f);
+				bool enter_pressed = ImGui::InputText("##NewTaskInput", new_task_input, IM_ARRAYSIZE(new_task_input), ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::PopItemWidth();
+
+				ImGui::SameLine();
+				bool add_clicked = ImGui::Button("+ Add", ImVec2(btn_w, 0));
+
+				auto submit_task = [&]() {
+					std::string task_text = new_task_input;
+					// Trim whitespace
+					size_t first = task_text.find_first_not_of(" \t\r\n");
+					if (first != std::string::npos) {
+						size_t last = task_text.find_last_not_of(" \t\r\n");
+						task_text = task_text.substr(first, (last - first + 1));
+					} else {
+						task_text.clear();
+					}
+
+					if (!task_text.empty()) {
+						std::string author_name = "Mapper";
+						if (editor.IsLiveServer() && editor.GetLiveServer()) {
+							author_name = "Host";
+						} else if (editor.IsLiveClient() && editor.GetLiveClient()) {
+							author_name = nstr(editor.GetLiveClient()->getName());
+						}
+
+						uint32_t assignedId = ChecklistManager::getInstance().addItem(task_text, author_name, false);
+
+						// Multiplayer broadcast / send
+						if (editor.IsLiveServer() && editor.GetLiveServer()) {
+							editor.GetLiveServer()->broadcastChecklistAdd(assignedId, task_text, author_name, false);
+						} else if (editor.IsLiveClient() && editor.GetLiveClient()) {
+							editor.GetLiveClient()->sendChecklistAdd(assignedId, task_text, author_name, false);
+						}
+
+						new_task_input[0] = '\0';
+						ImGui::SetKeyboardFocusHere(-1);
+					}
+				};
+
+				if (enter_pressed || add_clicked) {
+					submit_task();
+				}
+
+				ImGui::Separator();
+
+				// Tabs: Active Tasks vs Completed
+				if (ImGui::BeginTabBar("##ChecklistTabs", ImGuiTabBarFlags_None)) {
+					// TAB 1: ACTIVE TASKS
+					std::string activeTabLabel = "Active (" + std::to_string(activeCount) + ")###ActiveTab";
+					if (ImGui::BeginTabItem(activeTabLabel.c_str())) {
+						auto activeItems = ChecklistManager::getInstance().getActiveItems();
+
+						if (activeItems.empty()) {
+							ImGui::Spacing();
+							ImGui::TextColored(ImVec4(0.65f, 0.60f, 0.48f, 0.8f), "No active tasks. Inscribe a new quest above!");
+						} else {
+							ImGui::BeginChild("##ActiveListChild", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+							for (const auto& item : activeItems) {
+								ImGui::PushID((int)item.id);
+
+								bool completed_state = false;
+								if (ImGui::Checkbox("##chk", &completed_state)) {
+									// Mark completed!
+									ChecklistManager::getInstance().toggleItem(item.id, true);
+									if (editor.IsLiveServer() && editor.GetLiveServer()) {
+										editor.GetLiveServer()->broadcastChecklistToggle(item.id, true);
+									} else if (editor.IsLiveClient() && editor.GetLiveClient()) {
+										editor.GetLiveClient()->sendChecklistToggle(item.id, true);
+									}
+								}
+								if (ImGui::IsItemHovered()) {
+									ImGui::SetTooltip("Check off this quest item");
+								}
+
+								ImGui::SameLine();
+								ImGui::TextWrapped("%s", item.text.c_str());
+
+								// Author stamp & Delete button
+								ImGui::SameLine(ImGui::GetWindowWidth() - 56.0f);
+								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.10f, 0.10f, 0.70f));
+								ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.60f, 0.15f, 0.15f, 0.90f));
+								if (ImGui::SmallButton("X")) {
+									ChecklistManager::getInstance().deleteItem(item.id);
+									if (editor.IsLiveServer() && editor.GetLiveServer()) {
+										editor.GetLiveServer()->broadcastChecklistDelete(item.id);
+									} else if (editor.IsLiveClient() && editor.GetLiveClient()) {
+										editor.GetLiveClient()->sendChecklistDelete(item.id);
+									}
+								}
+								if (ImGui::IsItemHovered()) {
+									ImGui::SetTooltip("Delete this task completely");
+								}
+								ImGui::PopStyleColor(2);
+
+								// Subtle author stamp below item
+								ImGui::TextColored(ImVec4(0.60f, 0.52f, 0.38f, 0.75f), "   by %s", item.author.c_str());
+								ImGui::Separator();
+
+								ImGui::PopID();
+							}
+							ImGui::EndChild();
+						}
+						ImGui::EndTabItem();
+					}
+
+					// TAB 2: COMPLETED TASKS
+					std::string completedTabLabel = "Completed (" + std::to_string(completedCount) + ")###CompletedTab";
+					if (ImGui::BeginTabItem(completedTabLabel.c_str())) {
+						auto completedItems = ChecklistManager::getInstance().getCompletedItems();
+
+						if (!completedItems.empty()) {
+							if (ImGui::Button("Clear All Completed")) {
+								ChecklistManager::getInstance().clearCompleted();
+								if (editor.IsLiveServer() && editor.GetLiveServer()) {
+									editor.GetLiveServer()->broadcastChecklistClearCompleted();
+								} else if (editor.IsLiveClient() && editor.GetLiveClient()) {
+									editor.GetLiveClient()->sendChecklistClearCompleted();
+								}
+							}
+							ImGui::Separator();
+						}
+
+						if (completedItems.empty()) {
+							ImGui::Spacing();
+							ImGui::TextColored(ImVec4(0.65f, 0.60f, 0.48f, 0.8f), "No completed quests yet.");
+						} else {
+							ImGui::BeginChild("##CompletedListChild", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
+							for (const auto& item : completedItems) {
+								ImGui::PushID((int)item.id);
+
+								bool checked_val = true;
+								if (ImGui::Checkbox("##restoreChk", &checked_val)) {
+									// Restore to active!
+									ChecklistManager::getInstance().toggleItem(item.id, false);
+									if (editor.IsLiveServer() && editor.GetLiveServer()) {
+										editor.GetLiveServer()->broadcastChecklistToggle(item.id, false);
+									} else if (editor.IsLiveClient() && editor.GetLiveClient()) {
+										editor.GetLiveClient()->sendChecklistToggle(item.id, false);
+									}
+								}
+								if (ImGui::IsItemHovered()) {
+									ImGui::SetTooltip("Uncheck to restore this quest back to Active");
+								}
+
+								ImGui::SameLine();
+								ImGui::TextColored(ImVec4(0.55f, 0.55f, 0.50f, 0.85f), "%s (Done)", item.text.c_str());
+
+								// Delete button
+								ImGui::SameLine(ImGui::GetWindowWidth() - 56.0f);
+								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.10f, 0.10f, 0.70f));
+								ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.60f, 0.15f, 0.15f, 0.90f));
+								if (ImGui::SmallButton("X")) {
+									ChecklistManager::getInstance().deleteItem(item.id);
+									if (editor.IsLiveServer() && editor.GetLiveServer()) {
+										editor.GetLiveServer()->broadcastChecklistDelete(item.id);
+									} else if (editor.IsLiveClient() && editor.GetLiveClient()) {
+										editor.GetLiveClient()->sendChecklistDelete(item.id);
+									}
+								}
+								ImGui::PopStyleColor(2);
+
+								ImGui::TextColored(ImVec4(0.50f, 0.45f, 0.35f, 0.65f), "   completed (by %s)", item.author.c_str());
+								ImGui::Separator();
+
+								ImGui::PopID();
+							}
+							ImGui::EndChild();
+						}
+						ImGui::EndTabItem();
+					}
+
+					ImGui::EndTabBar();
+				}
+			}
+			ImGui::End();
+
+			ImGui::PopStyleVar(5);
+			ImGui::PopStyleColor(21);
+
+			if (!notepad_open) {
+				g_settings.setInteger(Config::SHOW_NOTEPAD, 0);
 				if (g_gui.root) {
 					g_gui.root->UpdateMenubar();
 				}

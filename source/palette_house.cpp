@@ -68,6 +68,14 @@ HousePalettePanel::HousePalettePanel(wxWindow* parent, wxWindowID id) :
 
 	house_list = newd SortableListBox(this, PALETTE_HOUSE_LISTBOX);
 	house_list->Bind(wxEVT_CONTEXT_MENU, &HousePalettePanel::OnListBoxContextMenu, this);
+	house_list->Bind(wxEVT_KEY_DOWN, [this](wxKeyEvent& event) {
+		if (event.GetKeyCode() == WXK_DELETE || event.GetKeyCode() == WXK_NUMPAD_DELETE) {
+			wxCommandEvent ev;
+			OnClickRemoveHouse(ev);
+		} else {
+			event.Skip();
+		}
+	});
 #ifdef __APPLE__
 	// Used for detecting a deselect
 	house_list->Bind(wxEVT_LEFT_UP, &HousePalettePanel::OnListBoxClick, this);

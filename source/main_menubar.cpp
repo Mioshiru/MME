@@ -272,6 +272,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(ALWAYS_SHOW_ZONES, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(EXT_HOUSE_SHADER, wxITEM_CHECK, OnChangeViewSettings);
 	MAKE_ACTION(SHOW_CHAT, wxITEM_CHECK, OnChangeViewSettings);
+	MAKE_ACTION(SHOW_NOTEPAD, wxITEM_CHECK, OnChangeViewSettings);
 
 	MAKE_ACTION(NEW_PALETTE, wxITEM_NORMAL, OnNewPalette); // This is not used in the current UI design
 	MAKE_ACTION(TAKE_SCREENSHOT, wxITEM_NORMAL, OnTakeScreenshot);
@@ -665,6 +666,7 @@ void MainMenuBar::LoadValues() {
 	CheckItem(ALWAYS_SHOW_ZONES, g_settings.getBoolean(Config::ALWAYS_SHOW_ZONES));
 	CheckItem(EXT_HOUSE_SHADER, g_settings.getBoolean(Config::EXT_HOUSE_SHADER));
 	CheckItem(SHOW_CHAT, g_settings.getBoolean(Config::SHOW_CHAT));
+	CheckItem(SHOW_NOTEPAD, g_settings.getBoolean(Config::SHOW_NOTEPAD));
 
 	CheckItem(MenuBar::SHOW_MINIMAP_HUD, g_settings.getBoolean(Config::MINIMAP_VISIBLE)); // Check the new minimap HUD item
 	CheckItem(SHOW_MINIMAP_HUD, g_settings.getBoolean(Config::MINIMAP_VISIBLE));
@@ -1350,6 +1352,7 @@ void MainMenuBar::OnChangeViewSettings(wxCommandEvent& event) {
 	g_settings.setInteger(Config::SHOW_TOWNS, IsItemChecked(MenuBar::SHOW_TOWNS));
 	g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, IsItemChecked(MenuBar::ALWAYS_SHOW_ZONES));
 	g_settings.setInteger(Config::SHOW_CHAT, IsItemChecked(MenuBar::SHOW_CHAT));
+	g_settings.setInteger(Config::SHOW_NOTEPAD, IsItemChecked(MenuBar::SHOW_NOTEPAD));
 	g_gui.RefreshView();
 	if (g_gui.root) {
 		g_gui.root->UpdateMenubar();

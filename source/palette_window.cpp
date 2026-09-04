@@ -44,6 +44,8 @@
 #include <wx/listbox.h>
 #include <wx/splitter.h>
 #include <algorithm>
+#include "checklist_manager.h"
+#include <wx/scrolwin.h>
 
 class MinimapPanel : public wxPanel {
 public:
@@ -313,6 +315,125 @@ private:
 };
 
 // ============================================================================
+// ChecklistPalettePanel - wxWidgets native checklist docked inside the Palette
+
+class ChecklistPalettePanel : public wxPanel {
+public:
+	ChecklistPalettePanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
+		SetBackgroundColour(wxColor(10, 20, 35));
+		SetMinSize(wxSize(-1, 100));
+
+		wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+		// Input row: text field + "+" button
+		wxBoxSizer* input_row = new wxBoxSizer(wxHORIZONTAL);
+		task_input = new wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+		task_input->SetHint("New task...");
+		task_input->SetBackgroundColour(wxColor(14, 25, 45));
+		task_input->SetForegroundColour(wxColor(210, 190, 130));
+
+		wxButton* add_btn = new wxButton(this, wxID_ANY, "+", wxDefaultPosition, wxSize(26, -1), wxNO_BORDER);
+		add_btn->SetBackgroundColour(wxColor(28, 50, 18));
+		add_btn->SetForegroundColour(wxColor(150, 210, 80));
+		add_btn->SetToolTip("Add task (or press Enter)");
+
+		input_row->Add(task_input, 1, wxEXPAND | wxRIGHT, 2);
+		input_row->Add(add_btn, 0, wxEXPAND);
+
+		// Scrollable active task list
+		item_list = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxBORDER_NONE);
+		item_list->SetScrollRate(0, 12);
+		item_list->SetBackgroundColour(wxColor(10, 20, 35));
+		list_sizer = new wxBoxSizer(wxVERTICAL);
+		item_list->SetSizer(list_sizer);
+
+		sizer->Add(input_row, 0, wxEXPAND | wxALL, 3);
+		sizer->Add(item_list, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 3);
+		SetSizer(sizer);
+
+		// Button events
+		add_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { DoAdd(); });
+		task_input->Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent&) { DoAdd(); });
+
+		// Register change callback so the panel auto-refreshes when items change
+		ChecklistManager::getInstance().setChangeCallback([this]() {
+			if (!IsBeingDeleted()) {
+				CallAfter([this]() {
+					if (!IsBeingDeleted()) RefreshList();
+				});
+			}
+		});
+
+		RefreshList();
+	}
+
+	~ChecklistPalettePanel() override {
+		ChecklistManager::getInstance().setChangeCallback(nullptr);
+	}
+
+	void RefreshList() {
+		list_sizer->Clear(true); // destroys all child windows
+
+		auto items = ChecklistManager::getInstance().getActiveItems();
+		for (const auto& item : items) {
+			wxBoxSizer* row = new wxBoxSizer(wxHORIZONTAL);
+
+			wxCheckBox* chk = new wxCheckBox(item_list, wxID_ANY, "");
+			chk->SetValue(false);
+			chk->SetBackgroundColour(wxColor(10, 20, 35));
+			uint32_t id = item.id;
+			chk->Bind(wxEVT_CHECKBOX, [id](wxCommandEvent& ev) {
+				ChecklistManager::getInstance().toggleItem(id, ev.IsChecked());
+			});
+
+			wxStaticText* lbl = new wxStaticText(item_list, wxID_ANY,
+				wxString::FromUTF8(item.text),
+				wxDefaultPosition, wxDefaultSize,
+				wxST_ELLIPSIZE_END | wxALIGN_LEFT);
+			lbl->SetForegroundColour(wxColor(200, 185, 135));
+
+			wxButton* del_btn = new wxButton(item_list, wxID_ANY, "x",
+				wxDefaultPosition, wxSize(18, 18), wxNO_BORDER);
+			del_btn->SetBackgroundColour(wxColor(50, 18, 18));
+			del_btn->SetForegroundColour(wxColor(220, 90, 90));
+			del_btn->SetToolTip("Delete task");
+			del_btn->Bind(wxEVT_BUTTON, [id](wxCommandEvent&) {
+				ChecklistManager::getInstance().deleteItem(id);
+			});
+
+			row->Add(chk, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 2);
+			row->Add(lbl, 1, wxALIGN_CENTER_VERTICAL | wxEXPAND);
+			row->Add(del_btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 2);
+			list_sizer->Add(row, 0, wxEXPAND | wxALL, 2);
+		}
+
+		if (items.empty()) {
+			wxStaticText* empty_lbl = new wxStaticText(item_list, wxID_ANY, "No active tasks.");
+			empty_lbl->SetForegroundColour(wxColor(90, 80, 55));
+			list_sizer->Add(empty_lbl, 0, wxALL, 6);
+		}
+
+		item_list->FitInside();
+		item_list->Layout();
+		Layout();
+	}
+
+private:
+	void DoAdd() {
+		wxString text = task_input->GetValue().Trim();
+		if (!text.empty()) {
+			ChecklistManager::getInstance().addItem(text.ToStdString(), "Mapper");
+			task_input->SetValue("");
+			task_input->SetFocus();
+		}
+	}
+
+	wxTextCtrl* task_input = nullptr;
+	wxScrolledWindow* item_list = nullptr;
+	wxBoxSizer* list_sizer = nullptr;
+};
+
+// ============================================================================
 // Palette window
 
 BEGIN_EVENT_TABLE(PaletteWindow, wxPanel)
@@ -433,7 +554,8 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	palette_choice(nullptr),
 	search_box(nullptr),
 	card_assets(nullptr),
-	card_minimap(nullptr) {
+	card_minimap(nullptr),
+	card_checklist(nullptr) {
 	SetMinSize(wxSize(120, 150));
 	SetBackgroundColour(wxColor(10, 20, 35));
 
@@ -557,9 +679,23 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 
 	splitter->SplitHorizontally(card_assets, card_minimap, -180);
 
-	// Main window sizer hosts the splitter
+	// Module 3: Quest Checklist Card (hidden by default; enable via right-click context menu)
+	card_checklist = new PaletteModuleCard(this, "Quest Checklist", true);
+	ChecklistPalettePanel* checklist_content = new ChecklistPalettePanel(card_checklist);
+	card_checklist->SetContent(checklist_content);
+	card_checklist->OnClosed = [this]() {
+		allow_checklist = false;
+		if (card_checklist) card_checklist->Show(false);
+		g_gui.SetStatusText("Quest Checklist hidden. Right-click palette to restore.");
+		Layout();
+		Refresh();
+	};
+
+	// Main window sizer: splitter on top (stretches), checklist card below (fixed height)
 	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 	sizer->Add(splitter, 1, wxEXPAND | wxALL, 2);
+	sizer->Add(card_checklist, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 2);
+	card_checklist->Show(false); // Hidden by default
 	SetSizer(sizer);
 
 	RefreshFavoritesBox();
@@ -1315,6 +1451,13 @@ void PaletteWindow::SetHorizontalLayout(bool horizontal) {
 	Refresh();
 }
 
+void PaletteWindow::UpdateChecklistVisibility() {
+	if (!card_checklist) return;
+	card_checklist->Show(allow_checklist);
+	Layout();
+	Refresh();
+}
+
 void PaletteWindow::ShowContextMenu(const wxPoint& pos) {
 	wxMenu menu;
 	if (card_assets) {
@@ -1324,6 +1467,10 @@ void PaletteWindow::ShowContextMenu(const wxPoint& pos) {
 	if (card_minimap) {
 		wxMenuItem* item = menu.AppendCheckItem(12002, "Show Minimap");
 		item->Check(allow_minimap && (!splitter || splitter->IsSplit()));
+	}
+	if (card_checklist) {
+		wxMenuItem* item = menu.AppendCheckItem(12004, "Show Quest Checklist");
+		item->Check(allow_checklist && card_checklist->IsShown());
 	}
 	menu.AppendSeparator();
 	menu.Append(12003, "Reset Palette Modules");
@@ -1338,10 +1485,14 @@ void PaletteWindow::ShowContextMenu(const wxPoint& pos) {
 		} else if (id == 12002 && card_minimap) {
 			allow_minimap = !allow_minimap;
 			UpdateMinimapVisibility();
+		} else if (id == 12004 && card_checklist) {
+			allow_checklist = !allow_checklist;
+			UpdateChecklistVisibility();
 		} else if (id == 12003) {
 			allow_minimap = true;
 			if (card_assets) { card_assets->Show(true); card_assets->SetCollapsed(false); }
 			if (card_minimap) { card_minimap->Show(true); card_minimap->SetCollapsed(false); }
+			if (card_checklist) { card_checklist->Show(allow_checklist); }
 			if (splitter && !splitter->IsSplit()) {
 				splitter->SplitHorizontally(card_assets, card_minimap, -180);
 			}

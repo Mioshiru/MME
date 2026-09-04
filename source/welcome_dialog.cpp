@@ -20,6 +20,7 @@
 #include "style_manager.h"
 #include "settings.h"
 #include "preferences.h"
+#include "mme_updater.h"
 #include "main_menubar.h"
 #include <wx/app.h>
 #include "gui.h"
@@ -209,7 +210,9 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent& event) {
 	wxSize button_size = button->GetSize();
 	wxPoint click_point = event.GetPosition();
 	if (click_point.x > 0 && click_point.x < button_size.x && click_point.y > 0 && click_point.y < button_size.y) {
-		if (button->GetAction() == wxID_PREFERENCES) {
+		if (button->GetAction() == wxID_APPLY) {
+			MMEUpdater::Instance().CheckForUpdates(this, true);
+		} else if (button->GetAction() == wxID_PREFERENCES) {
 			// Disable signature checking temporarily during/before we load the settings dialog (to prevent "Signatures are incorrect" on clients.xml load inside Settings dialog)
 			int old_check_sigs = g_settings.getInteger(Config::CHECK_SIGNATURES);
 			g_settings.setInteger(Config::CHECK_SIGNATURES, 0);
@@ -424,33 +427,44 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 
 	rootSizer->AddSpacer(FROM_DIP(this, 15));
 
-	// Bottom bar with Settings and the Checkbox
+	// Bottom bar with Settings, Load Custom, Join, and Update buttons
 	wxBoxSizer* bottomSizer = newd wxBoxSizer(wxHORIZONTAL);
 	
-	wxSize button_size = FROM_DIP(this, wxSize(64, 48)); // Width is smaller because we only want a big gear wheel icon
 	wxColour button_base_colour = wxColor(32, 48, 78);
-	auto* preferences_button = newd WelcomeDialogButton(this, wxDefaultPosition, button_size, button_base_colour, wxString::FromUTF8("⚙"));
+
+	// Compact Settings button
+	wxSize pref_size = FROM_DIP(this, wxSize(40, 34));
+	auto* preferences_button = newd WelcomeDialogButton(this, wxDefaultPosition, pref_size, button_base_colour, wxString::FromUTF8("⚙"));
 	preferences_button->SetAction(wxID_PREFERENCES);
 	preferences_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
 	bottomSizer->Add(preferences_button, 0, wxALIGN_CENTER_VERTICAL);
 
-	bottomSizer->AddSpacer(FROM_DIP(this, 15));
+	bottomSizer->AddSpacer(FROM_DIP(this, 12));
 
-	wxSize load_button_size = FROM_DIP(this, wxSize(150, 48));
+	// Compact Load Custom button
+	wxSize load_button_size = FROM_DIP(this, wxSize(130, 34));
 	auto* load_custom_button = newd WelcomeDialogButton(this, wxDefaultPosition, load_button_size, button_base_colour, "Load Custom...");
 	load_custom_button->SetAction(wxID_OPEN);
 	load_custom_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
 	bottomSizer->Add(load_custom_button, 0, wxALIGN_CENTER_VERTICAL);
 
-	bottomSizer->AddSpacer(FROM_DIP(this, 15));
+	bottomSizer->AddSpacer(FROM_DIP(this, 12));
 
-	wxSize join_button_size = FROM_DIP(this, wxSize(130, 48));
+	// Compact Join button
+	wxSize join_button_size = FROM_DIP(this, wxSize(95, 34));
 	auto* join_button = newd WelcomeDialogButton(this, wxDefaultPosition, join_button_size, button_base_colour, "Join...");
 	join_button->SetAction(wxID_MORE);
 	join_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
 	bottomSizer->Add(join_button, 0, wxALIGN_CENTER_VERTICAL);
 
-	// Removed checkbox
+	bottomSizer->AddSpacer(FROM_DIP(this, 12));
+
+	// Compact Update button
+	wxSize update_button_size = FROM_DIP(this, wxSize(105, 34));
+	auto* update_button = newd WelcomeDialogButton(this, wxDefaultPosition, update_button_size, button_base_colour, wxString::FromUTF8("🔄 Update"));
+	update_button->SetAction(wxID_APPLY);
+	update_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
+	bottomSizer->Add(update_button, 0, wxALIGN_CENTER_VERTICAL);
 
 	rootSizer->Add(bottomSizer, 0, wxALIGN_CENTER_HORIZONTAL);
 	rootSizer->AddSpacer(FROM_DIP(this, 15));
@@ -505,13 +519,17 @@ void WelcomeDialogButton::OnPaint(const wxPaintEvent& event) {
 	dc.SetPen(wxPen(m_is_hover ? wxColor(255, 255, 255) : wxColor(140, 110, 40), m_is_hover ? 2 : 1));
 	dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
 
-	// Use larger font for the gear symbol
 	wxFont button_font = GetFont();
-	button_font.SetPointSize(16);
+	if (m_text == wxString::FromUTF8("⚙")) {
+		button_font.SetPointSize(13);
+	} else {
+		button_font.SetPointSize(10);
+		button_font.SetWeight(wxFONTWEIGHT_BOLD);
+	}
 	dc.SetFont(button_font);
 	dc.SetTextForeground(m_is_hover ? *wxBLACK : wxColour(255, 215, 0)); // Text gold im Standard, schwarz auf gold beim Hover
 	wxSize text_size = dc.GetTextExtent(m_text);
-	dc.DrawText(m_text, wxPoint(GetSize().x / 2 - text_size.x / 2, GetSize().y / 2 - text_size.y / 2 - 2));
+	dc.DrawText(m_text, wxPoint(GetSize().x / 2 - text_size.x / 2, GetSize().y / 2 - text_size.y / 2));
 }
 
 void WelcomeDialogButton::OnMouseEnter(const wxMouseEvent& event) {
@@ -534,7 +552,7 @@ RecentItem::RecentItem(wxWindow* parent, WelcomeDialog* dialog, const wxColour& 
 	m_is_hover(false) {
 	
 	SetBackgroundColour(wxColor(20, 25, 40));
-	SetMinSize(FROM_DIP(this, wxSize(460, 64)));
+	SetMinSize(FROM_DIP(this, wxSize(460, 48)));
 
 	Bind(wxEVT_PAINT, &RecentItem::OnPaint, this);
 	Bind(wxEVT_ENTER_WINDOW, &RecentItem::OnMouseEnter, this);
@@ -557,7 +575,7 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 	// Draw slot label/number index and title
 	dc.SetTextForeground(m_is_hover ? wxColour(255, 215, 0) : wxColour(218, 165, 32));
 	wxFont label_font = GetFont();
-	label_font.SetPointSize(12);
+	label_font.SetPointSize(10);
 	label_font.SetWeight(wxFONTWEIGHT_BOLD);
 	dc.SetFont(label_font);
 
@@ -571,7 +589,7 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 	}
 	
 	wxSize label_size = dc.GetTextExtent(slot_num);
-	dc.DrawText(slot_num, wxPoint(FROM_DIP(this, 15), GetSize().y / 2 - label_size.y / 2 - 8));
+	dc.DrawText(slot_num, wxPoint(FROM_DIP(this, 12), GetSize().y / 2 - label_size.y / 2 - 6));
 
 	// Make the text color stand out even more nicely on hollow slots
 	if (m_item_text.empty()) {
@@ -579,10 +597,11 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 	} else {
 		dc.SetTextForeground(m_is_hover ? wxColour(255, 255, 255) : wxColour(210, 215, 230));
 	}
-	dc.DrawText(title_text, wxPoint(FROM_DIP(this, 15) + label_size.x, GetSize().y / 2 - label_size.y / 2 - 8));
+	dc.DrawText(title_text, wxPoint(FROM_DIP(this, 12) + label_size.x, GetSize().y / 2 - label_size.y / 2 - 6));
 
 	// Draw file path or hint text
-	wxFont path_font = GetFont().Smaller();
+	wxFont path_font = GetFont();
+	path_font.SetPointSize(8);
 	dc.SetFont(path_font);
 	dc.SetTextForeground(m_is_hover ? wxColour(220, 200, 150) : wxColour(130, 130, 140));
 	wxString sub_text;
@@ -592,14 +611,14 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 		sub_text = wxFileName(m_item_text).GetPath(); // e.g. "Saves/Slot 1"
 	}
 	wxSize sub_size = dc.GetTextExtent(sub_text);
-	dc.DrawText(sub_text, wxPoint(FROM_DIP(this, 15), GetSize().y / 2 + 6));
+	dc.DrawText(sub_text, wxPoint(FROM_DIP(this, 12), GetSize().y / 2 + 5));
 
 	// Context menu tip for non-empty ones
 	if (!m_item_text.empty()) {
 		dc.SetTextForeground(wxColour(110, 110, 120));
 		wxString hint = "Right-click to Clear";
 		wxSize hint_size = dc.GetTextExtent(hint);
-		dc.DrawText(hint, wxPoint(GetSize().x - hint_size.x - FROM_DIP(this, 15), GetSize().y / 2 - hint_size.y / 2));
+		dc.DrawText(hint, wxPoint(GetSize().x - hint_size.x - FROM_DIP(this, 12), GetSize().y / 2 - hint_size.y / 2));
 	}
 }
 

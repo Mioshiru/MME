@@ -23,6 +23,7 @@
 #include "settings.h"
 #include "creature.h"
 #include "spawn.h"
+#include "map.h"
 
 //=============================================================================
 // Eraser brush
@@ -53,7 +54,59 @@ void EraserBrush::undraw(BaseMap* map, Tile* tile) {
 
 void EraserBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 	if (!tile) return;
-	tile->unsetMapFlags(TILESTATE_PROTECTIONZONE | TILESTATE_NOPVP | TILESTATE_NOLOGOUT | TILESTATE_PVPZONE);
+	// Clear ALL zone mapflags
+	tile->setMapFlags(TILESTATE_NONE);
+
+	// Clear house association
+	tile->setHouseID(0);
+
+	TileLocation* loc = tile->getLocation();
+	if (loc) {
+		// Clear house exits on this location
+		if (loc->getHouseExits()) {
+			loc->getHouseExits()->clear();
+		}
+		// Clear town temple count & reset matching town temples on map
+		if (loc->getTownCount() > 0) {
+			if (map) {
+				Map* actualMap = dynamic_cast<Map*>(map);
+				if (actualMap) {
+					Position tilePos = tile->getPosition();
+					for (auto& pair : actualMap->towns) {
+						if (pair.second && pair.second->getTemplePosition() == tilePos) {
+							pair.second->setTemplePosition(Position());
+						}
+					}
+				}
+			}
+			while (loc->getTownCount() > 0) {
+				loc->decreaseTownCount();
+			}
+		}
+		// Clear waypoints if any exist at this tile
+		if (loc->getWaypointCount() > 0) {
+			if (map) {
+				Map* actualMap = dynamic_cast<Map*>(map);
+				if (actualMap) {
+					std::vector<std::string> wp_to_remove;
+					for (auto& pair : actualMap->waypoints) {
+						if (pair.second && pair.second->pos == tile->getPosition()) {
+							wp_to_remove.push_back(pair.first);
+						}
+					}
+					for (const auto& wp_name : wp_to_remove) {
+						actualMap->waypoints.removeWaypoint(wp_name);
+					}
+				}
+			}
+			while (loc->getWaypointCount() > 0) {
+				loc->decreaseWaypointCount();
+			}
+		}
+		if (loc->qtree_node) {
+			loc->qtree_node->markDirty(tile->getZ());
+		}
+	}
 
 	bool leave_ground = g_settings.getInteger(Config::ERASER_LEAVE_GROUND);
 

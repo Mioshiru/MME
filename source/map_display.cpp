@@ -298,6 +298,48 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
   }
 
   if (event.ControlDown()) {
+    if (event.GetKeyCode() == 'A' || event.GetKeyCode() == 'a') {
+      int sel_type = g_settings.getInteger(Config::SELECTION_TYPE);
+      int min_z = floor;
+      int max_z = floor;
+      if (sel_type == SELECT_ALL_FLOORS) {
+        min_z = 0;
+        max_z = MAP_LAYERS - 1;
+      } else if (sel_type == SELECT_VISIBLE_FLOORS) {
+        if (floor <= GROUND_LAYER) {
+          min_z = floor;
+          max_z = GROUND_LAYER;
+        } else {
+          min_z = 8;
+          max_z = std::min(MAP_MAX_LAYER, floor + 2);
+        }
+      }
+      editor.selection.clear();
+      editor.selection.start(Selection::INTERNAL);
+      for (int z = min_z; z <= max_z; ++z) {
+        for (int y = 0; y < editor.map.getHeight(); ++y) {
+          for (int x = 0; x < editor.map.getWidth(); ++x) {
+            Tile* tile = editor.map.getTile(x, y, z);
+            if (tile && (!tile->empty() || tile->ground || tile->creature || tile->spawn)) {
+              editor.selection.add(tile);
+            }
+          }
+        }
+      }
+      editor.selection.finish(Selection::INTERNAL);
+      if (editor.selection.size() > 0) {
+        editor.copybuffer.copy(editor, floor);
+      }
+      markDirty();
+      Refresh();
+      return;
+    }
+    if (event.GetKeyCode() == 'D' || event.GetKeyCode() == 'd') {
+      editor.selection.clear();
+      markDirty();
+      Refresh();
+      return;
+    }
     if (event.GetKeyCode() == 'C' || event.GetKeyCode() == 'c') {
       editor.copybuffer.copy(editor, floor);
       return;

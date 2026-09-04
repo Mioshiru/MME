@@ -373,7 +373,7 @@ void Tile::select() {
 		++it;
 	}
 
-	if (items.empty() && !spawn && !creature && ground) {
+	if (ground) {
 		ground->select();
 	}
 
@@ -431,13 +431,8 @@ ItemVector Tile::popSelectedItems(bool ignoreTileSelected) {
 	it = items.begin();
 	while (it != items.end()) {
 		if ((*it)->isSelected()) {
-			if ((*it)->isBorder() && ground != nullptr) {
-				(*it)->deselect();
-				++it;
-			} else {
-				pop_items.push_back(*it);
-				it = items.erase(it);
-			}
+			pop_items.push_back(*it);
+			it = items.erase(it);
 		} else {
 			++it;
 		}

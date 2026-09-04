@@ -174,10 +174,13 @@ void CopyBuffer::copy(Editor& editor, int floor) {
 		bool has_sub_selection = ground_sel || creature_sel || spawn_sel || !sel_items.empty();
 
 		if (tile->ground && (!has_sub_selection || ground_sel)) {
-			copied_tile->house_id = tile->house_id;
-			copied_tile->setMapFlags(tile->getMapFlags());
 			copied_tile->addItem(tile->ground->deepCopy());
 			++item_count;
+		}
+
+		if (!has_sub_selection || ground_sel || tile->isSelected()) {
+			copied_tile->house_id = tile->house_id;
+			copied_tile->setMapFlags(tile->getMapFlags());
 		}
 
 		for (ItemVector::iterator iit = tile->items.begin(); iit != tile->items.end(); ++iit) {
@@ -242,15 +245,18 @@ void CopyBuffer::cut(Editor& editor, int floor) {
 		bool has_sub_selection = ground_sel || creature_sel || spawn_sel || !sel_items.empty();
 
 		if (newtile->ground) {
-			if (!has_sub_selection || ground_sel) {
-				copied_tile->house_id = newtile->house_id;
-				newtile->house_id = 0;
-				copied_tile->setMapFlags(tile->getMapFlags());
-				newtile->setMapFlags(TILESTATE_NONE);
+			if (!has_sub_selection || ground_sel || tile->isSelected()) {
 				copied_tile->addItem(newtile->ground);
 				newtile->ground = nullptr;
 				item_count++;
 			}
+		}
+
+		if (!has_sub_selection || ground_sel || tile->isSelected()) {
+			copied_tile->house_id = newtile->house_id;
+			newtile->house_id = 0;
+			copied_tile->setMapFlags(tile->getMapFlags());
+			newtile->setMapFlags(TILESTATE_NONE);
 		}
 
 		ItemVector remaining_items;

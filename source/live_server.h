@@ -73,6 +73,11 @@ public:
 	void broadcastPing(const LivePing& ping);
 	void broadcastAnnotation(const MapAnnotation& annotation, bool remove = false);
 	void broadcastHostFavorites();
+	void broadcastChecklistAdd(uint32_t id, const std::string& text, const std::string& author, bool completed);
+	void broadcastChecklistToggle(uint32_t id, bool completed);
+	void broadcastChecklistDelete(uint32_t id);
+	void broadcastChecklistClearCompleted();
+	void broadcastChecklistSyncAll();
 
 	void startOperation(const wxString& operationMessage);
 	void updateOperation(int32_t percent);

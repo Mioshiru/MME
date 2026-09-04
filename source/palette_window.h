@@ -177,9 +177,11 @@ public:
 	wxPanel* minimap_panel = nullptr;
 	PaletteModuleCard* card_assets = nullptr;
 	PaletteModuleCard* card_minimap = nullptr;
+	PaletteModuleCard* card_checklist = nullptr;
 	class wxSplitterWindow* splitter = nullptr;
 	int last_sash_pos = -180;
 	void UpdateMinimapVisibility();
+	void UpdateChecklistVisibility();
 	void SetAllowMinimap(bool allow) { allow_minimap = allow; UpdateMinimapVisibility(); }
 	bool AllowsMinimap() const { return allow_minimap; }
 	void SetHorizontalLayout(bool horizontal);
@@ -190,6 +192,7 @@ public:
 
 private:
 	bool allow_minimap = true;
+	bool allow_checklist = false;
 	bool is_horizontal = false;
 	bool snapping_active = false;
 
