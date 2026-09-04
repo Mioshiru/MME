@@ -14,9 +14,14 @@ rme
 rme.cfg
 data/user
 
-# exe and dll
+# exe, dll and pdb
 *.dll
 *.exe
+*.pdb
+
+# build output folders
+build/
+Mios_Map_Editor/
 
 # archives
 *.7z
