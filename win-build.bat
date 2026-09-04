@@ -80,6 +80,14 @@ if exist "!VCVARS!" (
 )
 
 where cl >nul 2>&1 || ( echo   %RED%ERROR: cl.exe not available after VS environment setup.%RESET% & pause & exit /b 1 )
+
+REM --- Auto-sync version from Release.md into definitions.h ---
+if exist "!PROJECT_ROOT!\..\sync_version.ps1" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "!PROJECT_ROOT!\..\sync_version.ps1" >nul 2>&1
+) else if exist "!PROJECT_ROOT!\sync_version.ps1" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "!PROJECT_ROOT!\sync_version.ps1" >nul 2>&1
+)
+
 echo   %GREEN%Environment OK%RESET%
 
 
