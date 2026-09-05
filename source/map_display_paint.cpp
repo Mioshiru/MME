@@ -339,7 +339,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	ImGui::SetNextWindowViewport(viewport->ID);
 	ImGuiWindowFlags dockspace_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
 		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
-		ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground;
+		ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMouseInputs;
 	ImGui::Begin("##MapDockSpaceHost", nullptr, dockspace_flags);
 	ImGuiID dockspace_id = ImGui::GetID("MapEditorDockSpace");
 	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
@@ -642,7 +642,13 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			}
 
 			bool notepad_open = true;
-			if (ImGui::Begin("Quest Notepad & Checklist", &notepad_open, ImGuiWindowFlags_NoDocking)) {
+			if (ImGui::Begin("Quest Notepad & Checklist", &notepad_open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse)) {
+				// If user collapsed the window or clicked minimize, switch to minimized floating pill
+				if (ImGui::IsWindowCollapsed()) {
+					ImGui::SetWindowCollapsed(false);
+					notepad_minimized = true;
+				}
+
 				// Magnetic Edge Snapping: If window edge is within snapThreshold of viewport boundary, snap to edge
 				ImVec2 w_pos = ImGui::GetWindowPos();
 				ImVec2 w_size = ImGui::GetWindowSize();
@@ -721,9 +727,15 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				ImGui::PopStyleColor();
 
 				float btn_w = 70.0f;
+				ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.04f, 0.03f, 0.02f, 0.95f));
+				ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.85f, 0.72f, 0.25f, 0.90f));
+				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.2f);
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 6.0f));
 				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - btn_w - 8.0f);
-				bool enter_pressed = ImGui::InputText("##NewTaskInput", new_task_input, IM_ARRAYSIZE(new_task_input), ImGuiInputTextFlags_EnterReturnsTrue);
+				bool enter_pressed = ImGui::InputTextWithHint("##NewTaskInput", "Example Text", new_task_input, IM_ARRAYSIZE(new_task_input), ImGuiInputTextFlags_EnterReturnsTrue);
 				ImGui::PopItemWidth();
+				ImGui::PopStyleVar(2);
+				ImGui::PopStyleColor(2);
 
 				ImGui::SameLine();
 				bool add_clicked = ImGui::Button("+ Add", ImVec2(btn_w, 0));

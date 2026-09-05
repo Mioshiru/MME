@@ -55,6 +55,7 @@
 #include "main_menubar.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_opengl3.h>
 
 #include "carpet_brush.h"
@@ -148,6 +149,30 @@ void SyncImGuiMouseState(const wxMouseEvent& event) {
   io.MouseDown[2] = event.MiddleIsDown();
 }
 
+bool IsImGuiCapturingMouse() {
+  ImGuiContext* g = ImGui::GetCurrentContext();
+  if (!g) {
+    return false;
+  }
+  ImGuiIO& io = ImGui::GetIO();
+  if (!io.WantCaptureMouse) {
+    return false;
+  }
+
+  // If a window is hovered, check whether it is a transparent overlay or the dockspace host
+  ImGuiWindow* hovered = g->HoveredWindow;
+  if (hovered && hovered->Name) {
+    if (strcmp(hovered->Name, "##MapDockSpaceHost") == 0 ||
+        strcmp(hovered->Name, "##BrushHoverPreviewOverlay") == 0 ||
+        strcmp(hovered->Name, "##MapNotesOverlay") == 0 ||
+        strcmp(hovered->Name, "##RadialMenuFullscreen") == 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 wxString ResolveBorderIconPath() {
   wxArrayString candidates;
   wxString exe_dir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
@@ -228,6 +253,10 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
 
 	if (ImGui::GetCurrentContext() && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantTextInput)) {
 		ImGuiIO& io = ImGui::GetIO();
+		io.AddKeyEvent(ImGuiMod_Ctrl, event.ControlDown());
+		io.AddKeyEvent(ImGuiMod_Shift, event.ShiftDown());
+		io.AddKeyEvent(ImGuiMod_Alt, event.AltDown());
+
 		int key = event.GetKeyCode();
 		if (key == WXK_BACK) { io.AddKeyEvent(ImGuiKey_Backspace, true); io.AddKeyEvent(ImGuiKey_Backspace, false); }
 		else if (key == WXK_RETURN || key == WXK_NUMPAD_ENTER) { io.AddKeyEvent(ImGuiKey_Enter, true); io.AddKeyEvent(ImGuiKey_Enter, false); }
@@ -237,6 +266,14 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
 		else if (key == WXK_END) { io.AddKeyEvent(ImGuiKey_End, true); io.AddKeyEvent(ImGuiKey_End, false); }
 		else if (key == WXK_DELETE) { io.AddKeyEvent(ImGuiKey_Delete, true); io.AddKeyEvent(ImGuiKey_Delete, false); }
 		else if (key == WXK_ESCAPE) { ImGui::SetWindowFocus(nullptr); }
+		else if (event.ControlDown()) {
+			if (key == 'A' || key == 'a') { io.AddKeyEvent(ImGuiKey_A, true); io.AddKeyEvent(ImGuiKey_A, false); }
+			else if (key == 'C' || key == 'c') { io.AddKeyEvent(ImGuiKey_C, true); io.AddKeyEvent(ImGuiKey_C, false); }
+			else if (key == 'V' || key == 'v') { io.AddKeyEvent(ImGuiKey_V, true); io.AddKeyEvent(ImGuiKey_V, false); }
+			else if (key == 'X' || key == 'x') { io.AddKeyEvent(ImGuiKey_X, true); io.AddKeyEvent(ImGuiKey_X, false); }
+			else if (key == 'Z' || key == 'z') { io.AddKeyEvent(ImGuiKey_Z, true); io.AddKeyEvent(ImGuiKey_Z, false); }
+			else if (key == 'Y' || key == 'y') { io.AddKeyEvent(ImGuiKey_Y, true); io.AddKeyEvent(ImGuiKey_Y, false); }
+		}
 		event.Skip();
 		Refresh();
 		return;
@@ -320,7 +357,7 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
         for (int y = 0; y < editor.map.getHeight(); ++y) {
           for (int x = 0; x < editor.map.getWidth(); ++x) {
             Tile* tile = editor.map.getTile(x, y, z);
-            if (tile && (!tile->empty() || tile->ground || tile->creature || tile->spawn)) {
+            if (tile && (!tile->empty() || tile->ground || tile->creature || tile->spawn || tile->getMapFlags() != 0 || tile->isHouseTile() || (tile->getLocation() && (tile->getLocation()->getTownCount() > 0 || tile->getLocation()->getWaypointCount() > 0 || tile->getLocation()->getHouseExits())))) {
               editor.selection.add(tile);
             }
           }
@@ -604,7 +641,7 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
 	SyncImGuiMouseState(event);
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     Refresh();
     return;
   }
@@ -868,7 +905,7 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 
 void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 	SyncImGuiMouseState(event);
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     return;
   }
   if (ui_toolbar && ui_toolbar->isVisible() && ui_toolbar->onMouseClick((float)event.GetX(), (float)event.GetY(), 0)) {
@@ -903,9 +940,8 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 								editor.selection.add(tile, top_item);
 							} else if (tile->ground) {
 								editor.selection.add(tile, tile->ground);
-							} else {
-								editor.selection.add(tile);
 							}
+							editor.selection.add(tile);
 						}
 					}
 					editor.selection.finish(Selection::INTERNAL);
@@ -1078,7 +1114,7 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
   SyncImGuiMouseState(event);
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     return;
   }
 
@@ -1163,7 +1199,7 @@ void MapCanvas::OnMouseRightClick(wxMouseEvent& event) {
 
 void MapCanvas::OnMouseRightRelease(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     return;
   }
 	if (drawing && dragging_draw && rectangle_mode) {
@@ -1208,7 +1244,7 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
   SyncImGuiMouseState(event);
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     return;
   }
 
@@ -1328,7 +1364,7 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 
 void MapCanvas::OnMouseLeftDoubleClick(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     return;
   }
   
@@ -1369,7 +1405,7 @@ void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
   if (tool_wheel_open) {
     return;
   }
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     return;
   }
 	if (!screendragging) {
@@ -1386,7 +1422,7 @@ void MapCanvas::OnMouseCenterClick(wxMouseEvent& event) {
 
 void MapCanvas::OnMouseCenterRelease(wxMouseEvent& event) {
   SyncImGuiMouseState(event);
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     return;
   }
 	if (screendragging) {
@@ -1420,7 +1456,7 @@ void MapCanvas::OnWheel(wxMouseEvent& event) {
     io.MouseWheel = (float)event.GetWheelRotation() / (float)event.GetWheelDelta();
   }
 
-  if (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse) {
+  if (IsImGuiCapturingMouse()) {
     return;
   }
 

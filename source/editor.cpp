@@ -1258,13 +1258,41 @@ void MapEditor::destroySelection() {
 				// Delete the items from the tile
 				delete *iit;
 			}
-			if (had_ground && newtile->ground == nullptr) {
-				ground_deleted = true;
+			if ((had_ground && newtile->ground == nullptr) || tile->isSelected()) {
+				if (had_ground && newtile->ground == nullptr) {
+					ground_deleted = true;
+				}
 				newtile->setMapFlags(TILESTATE_NONE);
 				newtile->setHouseID(0);
-			} else if (tile->isSelected()) {
-				newtile->setMapFlags(TILESTATE_NONE);
-				newtile->setHouseID(0);
+
+				TileLocation* loc = newtile->getLocation();
+				if (loc) {
+					if (loc->getHouseExits()) {
+						loc->getHouseExits()->clear();
+					}
+					if (loc->getTownCount() > 0) {
+						Position tilePos = tile->getPosition();
+						for (auto& pair : map.towns) {
+							if (pair.second && pair.second->getTemplePosition() == tilePos) {
+								pair.second->setTemplePosition(Position());
+							}
+						}
+						while (loc->getTownCount() > 0) {
+							loc->decreaseTownCount();
+						}
+					}
+					if (loc->getWaypointCount() > 0) {
+						std::vector<std::string> wp_to_remove;
+						for (auto& pair : map.waypoints) {
+							if (pair.second && pair.second->pos == tile->getPosition()) {
+								wp_to_remove.push_back(pair.first);
+							}
+						}
+						for (const auto& wp_name : wp_to_remove) {
+							map.waypoints.removeWaypoint(wp_name);
+						}
+					}
+				}
 			}
 
 			if (newtile->creature && newtile->creature->isSelected()) {

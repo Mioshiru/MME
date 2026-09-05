@@ -881,19 +881,8 @@ wxObject* MainMenuBar::LoadItem(pugi::xml_node node, wxMenu* parent, wxArrayStri
 		const std::string& action = attribute.as_string();
 		std::string hotkey = node.attribute("hotkey").as_string();
 
-		bool is_single_letter = false;
 		if (!hotkey.empty()) {
-			if (hotkey.length() == 1 && ((hotkey[0] >= 'A' && hotkey[0] <= 'Z') || (hotkey[0] >= 'a' && hotkey[0] <= 'z'))) {
-				is_single_letter = true;
-			}
-		}
-
-		if (!hotkey.empty()) {
-			if (!is_single_letter || !g_settings.getBoolean(Config::NO_HOTKEYS_MODE)) {
-				hotkey = '\t' + hotkey;
-			} else {
-				hotkey = "";
-			}
+			hotkey = '\t' + hotkey;
 		}
 
 		const std::string& help = node.attribute("help").as_string();
