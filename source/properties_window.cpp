@@ -656,7 +656,8 @@ void PropertiesWindow::saveTeleportSpecialPanel() {
 
 static bool isReservedStandardAttribute(const std::string& key) {
 	return key == "aid" || key == "uid" || key == "text" || key == "desc" ||
-	       key == "count" || key == "charges" || key == "tier" || key == "depot_id";
+	       key == "count" || key == "charges" || key == "tier" || key == "depot_id" ||
+	       key == "unmoveable" || key == "unmovable";
 }
 
 wxWindow* PropertiesWindow::createAttributesPanel(wxWindow* parent) {
@@ -792,8 +793,15 @@ void PropertiesWindow::saveGeneralPanel() {
 	}
 	if (unmoveable_checkbox) {
 		bool unmov = unmoveable_checkbox->IsChecked();
-		edit_item->setAttribute("unmoveable", unmov);
-		edit_item->setCustomAttribute("unmoveable", unmov ? 1 : 0);
+		if (unmov) {
+			edit_item->setAttribute("unmoveable", true);
+			edit_item->setCustomAttribute("unmoveable", 1);
+		} else {
+			edit_item->eraseAttribute("unmoveable");
+			edit_item->eraseAttribute("unmovable");
+			edit_item->setCustomAttribute("unmoveable", 0);
+			edit_item->setCustomAttribute("unmovable", 0);
+		}
 	}
 }
 
@@ -867,11 +875,11 @@ void PropertiesWindow::OnClickOK(wxCommandEvent&) {
 	if (!validateWaypointPanel()) {
 		return;
 	}
+	saveAttributesPanel();
 	saveGeneralPanel();
 	saveContainerSpecialPanel();
 	saveDoorSpecialPanel();
 	saveTeleportSpecialPanel();
-	saveAttributesPanel();
 	saveWaypointPanel();
 	EndModal(wxID_OK);
 }
