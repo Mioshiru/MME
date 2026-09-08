@@ -257,7 +257,6 @@ void Settings::IO(IOMode mode) {
 	Int(UNDO_SIZE, 5); // Speichert die letzten 5 Schritte für Undo / Redo
 	Int(UNDO_MEM_SIZE, 60);
 	Int(ERASER_LEAVE_GROUND, 0);
-	Int(NO_HOTKEYS_MODE, 0);
 	Int(GROUP_ACTIONS, 1);
 	Int(SELECTION_TYPE, SELECT_CURRENT_FLOOR);
 	Int(COMPENSATED_SELECT, 1);
@@ -357,7 +356,9 @@ void Settings::IO(IOMode mode) {
 
 	section("Window");
 	String(PALETTE_LAYOUT, "name=02c30f6048629894000011bc00000002;caption=Palette;state=2099148;dir=4;layer=0;row=0;pos=0;prop=100000;bestw=245;besth=100;minw=-1;minh=-1;maxw=-1;maxh=-1;floatx=-1;floaty=-1;floatw=-1;floath=-1");
+	String(TOOLBAR_LAYOUT, "");
 	Int(MINIMAP_VISIBLE, 0);
+	Int(MINIMAP_SASH_POS, 110);
 	String(MINIMAP_LAYOUT, "name=066e2bc8486298990000259a00000003;caption=Minimap;state=2099151;dir=4;layer=0;row=0;pos=0;prop=100000;bestw=170;besth=130;minw=-1;minh=-1;maxw=-1;maxh=-1;floatx=-1;floaty=-1;floatw=221;floath=164");
 	Int(MULTI_MONITOR_WORKSPACE, 0);
 	Int(WINDOW_HEIGHT, 500);
@@ -373,6 +374,8 @@ void Settings::IO(IOMode mode) {
 	Int(V_SYNC, 0);
 	Int(UI_TOOLBAR_X, 0);
 	Int(UI_TOOLBAR_Y, 0);
+	Int(TOOLBAR_ALIGNMENT, 0);   // 0 = Left (default), 1 = Center
+	Int(HIDE_STATUSBAR, 1);      // 0 = shown, 1 = hidden (default)
 
 	section("Hotkeys");
 	String(NUMERICAL_HOTKEYS, "none:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\n");

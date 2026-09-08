@@ -87,7 +87,6 @@ namespace MenuBar {
 		MAP_REMOVE_UNREACHABLE_TILES,
 		MAP_CLEAN_HOUSE_ITEMS,
 		ROTATE_ITEM,
-		TOGGLE_NO_HOTKEYS,
 		MAP_PROPERTIES,
 		MAP_STATISTICS,
 		VIEW_TOOLBARS_BRUSHES,
@@ -136,6 +135,7 @@ namespace MenuBar {
 		TAKE_SCREENSHOT,
 		LIVE_START,
 		LIVE_JOIN,
+		LIVE_COPY_IP,
 		LIVE_APPROVALS,
 		LIVE_CLOSE,
 		LIVE_HELP,
@@ -297,7 +297,6 @@ public:
 	void OnMapCleanHouseItems(wxCommandEvent& event);
 	void OnMapCleanup(wxCommandEvent& event);
 	void OnRotateItem(wxCommandEvent& event);
-	void OnToggleNoHotkeys(wxCommandEvent& event);
 	void OnMapProperties(wxCommandEvent& event);
 	void OnMapStatistics(wxCommandEvent& event);
 
@@ -334,6 +333,7 @@ public:
 
 	// Network menu
 	void OnJoinLive(wxCommandEvent& event);
+	void OnCopyLiveIP(wxCommandEvent& event);
 	void OnCloseLive(wxCommandEvent& event);
 	void OnHelpLive(wxCommandEvent& event);
 

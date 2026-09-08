@@ -105,6 +105,7 @@ protected:
   wxTextCtrl *text_field = nullptr;
   wxChoice *depot_town_field = nullptr;
   wxCheckBox *locked_door_checkbox = nullptr;
+  wxCheckBox *unmoveable_checkbox = nullptr;
 
   DECLARE_EVENT_TABLE()
 };

@@ -29,14 +29,14 @@ void OverlayManager::RenderHUD(int sw, int sh, int mx, int my, int mz, float fps
     // Hintergrund-Bar unten
     nvgBeginPath(m_nvg);
     nvgRect(m_nvg, 0, sh - 30, sw, 30);
-    nvgFillColor(m_nvg, nvgRGBA(10, 15, 25, 220));
+    nvgFillColor(m_nvg, nvgRGBA(13, 17, 23, 220));
     nvgFill(m_nvg);
 
     // FPS Anzeige (Rechts)
     if (g_settings.getBoolean(Config::SHOW_FPS)) {
         std::string fpsText = std::format("FPS: {:.1f}", fps);
         nvgFontSize(m_nvg, 14.0f);
-        nvgFillColor(m_nvg, nvgRGBA(218, 165, 32, 255)); // Gold
+        nvgFillColor(m_nvg, nvgRGBA(229, 193, 88, 255)); // Mystic Gold
         nvgTextAlign(m_nvg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
         nvgText(m_nvg, (float)sw - 20, (float)sh - 15, fpsText.c_str(), nullptr);
     }
@@ -60,11 +60,11 @@ void OverlayManager::RenderRPGToolbar(int sw, int sh) {
 
     nvgBeginFrame(m_nvg, (float)sw, (float)sh, 1.0f);
 
-    // Toolbar Background (Modern Floating Glass Look)
+    // Toolbar Background (Dark Runic Obsidian Glass Look)
     nvgBeginPath(m_nvg);
     nvgRoundedRect(m_nvg, startX, startY, totalWidth, buttonSize + padding * 2, 8.0f);
-    nvgFillColor(m_nvg, nvgRGBA(10, 15, 25, 200));
-    nvgStrokeColor(m_nvg, nvgRGBA(180, 140, 50, 255));
+    nvgFillColor(m_nvg, nvgRGBA(13, 17, 23, 210));
+    nvgStrokeColor(m_nvg, nvgRGBA(212, 175, 55, 255));
     nvgStrokeWidth(m_nvg, 2.0f);
     nvgFill(m_nvg);
     nvgStroke(m_nvg);

@@ -31,6 +31,7 @@
 #include "map_drawer.h"
 #include "palette_brushlist.h"
 #include "palette_window.h"
+#include "main_toolbar.h"
 #include "result_window.h"
 #include "welcome_dialog.h"
 #include <fstream>
@@ -170,17 +171,19 @@ PaletteWindow *GUI::NewPalette() { return CreatePalette(); }
 
 void GUI::RefreshPalettes(Map *m, bool usedefault) {
   for (auto &palette : palettes) {
-    palette->OnUpdate(m ? m
-                        : (usedefault
-                               ? (IsEditorOpen() ? &GetCurrentMap() : nullptr)
-                               : nullptr));
+    if (palette && !palette->IsBeingDeleted()) {
+      palette->OnUpdate(m ? m
+                          : (usedefault
+                                 ? (IsEditorOpen() ? &GetCurrentMap() : nullptr)
+                                 : nullptr));
+    }
   }
   SelectBrush();
 }
 
 void GUI::RefreshFavoritesBox() {
   for (auto &palette : palettes) {
-    if (palette) {
+    if (palette && !palette->IsBeingDeleted()) {
       palette->RefreshFavoritesBox();
     }
   }
@@ -188,15 +191,20 @@ void GUI::RefreshFavoritesBox() {
 
 void GUI::RefreshMinimapPanel() {
   for (auto &palette : palettes) {
-    if (palette && palette->minimap_panel && palette->minimap_panel->IsShown()) {
-      palette->minimap_panel->Refresh();
+    if (palette && !palette->IsBeingDeleted() && palette->minimap_panel &&
+        palette->minimap_panel->IsShown() && !palette->minimap_panel->IsBeingDeleted()) {
+      palette->minimap_panel->CallAfter([p = palette->minimap_panel]() {
+        if (p && !p->IsBeingDeleted()) {
+          p->Refresh();
+        }
+      });
     }
   }
 }
 
 void GUI::RefreshOtherPalettes(PaletteWindow *p) {
   for (auto &palette : palettes) {
-    if (palette != p) {
+    if (palette && palette != p && !palette->IsBeingDeleted()) {
       palette->OnUpdate(IsEditorOpen() ? &GetCurrentMap() : nullptr);
     }
   }
@@ -213,13 +221,15 @@ PaletteWindow *GUI::CreatePalette() {
   aui_manager->SetFlags(aui_manager->GetFlags() | wxAUI_MGR_TRANSPARENT_HINT |
                         wxAUI_MGR_LIVE_RESIZE | wxAUI_MGR_HINT_FADE);
 
-  std::string p_name = "Palette_" + std::to_string(palettes.size() + 1);
-  auto *palette = newd PaletteWindow(root, g_materials.tilesets);
-  if (palettes.empty()) {
+  static int s_palette_seq = 0;
+  std::string p_name = "Palette_" + std::to_string(++s_palette_seq);
+  bool is_first_palette = palettes.empty();
+  auto *palette = newd PaletteWindow(root, g_materials.tilesets, is_first_palette);
+  if (is_first_palette) {
     aui_manager->AddPane(palette, wxAuiPaneInfo()
                                       .Name(wxstr(p_name))
-                                      .Caption("Palette")
-                                      .Left()
+                                      .Caption("Tileset Palette")
+                                      .Right()
                                       .Layer(1)
                                       .Position(1)
                                       .CloseButton(true)
@@ -229,19 +239,23 @@ PaletteWindow *GUI::CreatePalette() {
                                       .RightDockable(true)
                                       .TopDockable(false)
                                       .BottomDockable(false)
-                                      .BestSize(255, 450)
-                                      .MinSize(wxSize(palette->FromDIP(136), 100))
+                                      .BestSize(270, 560)
+                                      .MinSize(wxSize(palette->FromDIP(160), 100))
                                       .Show(true));
   } else {
-    // Only the first opened palette has the minimap by default; subsequent palettes have it hidden
-    palette->SetAllowMinimap(false);
-    wxPoint float_pos = root->ClientToScreen(wxPoint(300 + static_cast<int>(palettes.size() * 30), 120 + static_cast<int>(palettes.size() * 30)));
+    wxPoint float_pos;
+    if (root && root->IsShown()) {
+      float_pos = root->ClientToScreen(wxPoint(300 + static_cast<int>((palettes.size() % 10) * 30),
+                                              120 + static_cast<int>((palettes.size() % 10) * 30)));
+    } else {
+      float_pos = wxPoint(300, 150);
+    }
     aui_manager->AddPane(palette, wxAuiPaneInfo()
                                       .Name(wxstr(p_name))
-                                      .Caption("Palette")
+                                      .Caption("Tileset Palette")
                                       .Float()
                                       .FloatingPosition(float_pos)
-                                      .FloatingSize(wxSize(260, 480))
+                                      .FloatingSize(wxSize(270, 520))
                                       .CloseButton(true)
                                       .Floatable(true)
                                       .Dockable(true)
@@ -249,13 +263,13 @@ PaletteWindow *GUI::CreatePalette() {
                                       .RightDockable(true)
                                       .TopDockable(false)
                                       .BottomDockable(false)
-                                      .BestSize(255, 450)
-                                      .MinSize(wxSize(palette->FromDIP(136), 100))
+                                      .BestSize(270, 520)
+                                      .MinSize(wxSize(palette->FromDIP(160), 100))
                                       .Show(true));
   }
 
   // NOTE: Collections Palette / Tileset panel intentionally removed.
-  // Only the main Terrain Palette (left) is retained for a lean UI.
+  // Only the main Terrain Palette (right) is retained for a lean UI.
 
   if (GetCurrentEditor()) {
     if (!in_game_preview) {
@@ -274,50 +288,6 @@ PaletteWindow *GUI::CreatePalette() {
     }
   }
 
-  if (!tools_panel || !size_panel) {
-    tools_panel = newd BrushToolPanel(root);
-    tools_panel->SetToolbarIconSize(
-        g_settings.getBoolean(Config::USE_LARGE_TERRAIN_TOOLBAR));
-
-    size_panel = newd BrushSizePanel(root);
-    size_panel->SetToolbarIconSize(
-        g_settings.getBoolean(Config::USE_LARGE_TERRAIN_TOOLBAR));
-
-    aui_manager->AddPane(tools_panel, wxAuiPaneInfo()
-                                          .Name("Tools")
-                                          .Caption("Tools")
-                                          .ToolbarPane()
-                                          .Right()
-                                          .Layer(1)
-                                          .Position(3)
-                                          .CloseButton(true)
-                                          .Floatable(true)
-                                          .Dockable(true)
-                                          .TopDockable(true)
-                                          .BottomDockable(true)
-                                          .LeftDockable(true)
-                                          .RightDockable(true)
-                                          .BestSize(180, 50)
-                                          .Hide());
-
-    aui_manager->AddPane(size_panel, wxAuiPaneInfo()
-                                         .Name("Brush Size")
-                                         .Caption("Brush Size")
-                                         .ToolbarPane()
-                                         .Right()
-                                         .Layer(1)
-                                         .Position(4)
-                                         .CloseButton(true)
-                                         .Floatable(true)
-                                         .Dockable(true)
-                                         .TopDockable(true)
-                                         .BottomDockable(true)
-                                         .LeftDockable(true)
-                                         .RightDockable(true)
-                                         .BestSize(180, 150)
-                                         .Hide());
-  }
-
   aui_manager->Update();
 
   // Make us the active palette
@@ -329,9 +299,12 @@ PaletteWindow *GUI::CreatePalette() {
   // fix for blank house list on f5 or new palette
   palette->OnUpdate(IsEditorOpen() ? &GetCurrentMap() : nullptr);
 
-  // Force the standalone panels to load their contents if they haven't already
-  tools_panel->LoadCurrentContents();
-  size_panel->LoadCurrentContents();
+  if (tools_panel) {
+    tools_panel->LoadCurrentContents();
+  }
+  if (size_panel) {
+    size_panel->LoadCurrentContents();
+  }
 
   return palette;
 }
@@ -339,31 +312,51 @@ PaletteWindow *GUI::CreatePalette() {
 void GUI::ActivatePalette(PaletteWindow *p) {
   if (!p)
     return;
-  palettes.erase(std::find(palettes.begin(), palettes.end(), p));
+  auto iter = std::find(palettes.begin(), palettes.end(), p);
+  if (iter != palettes.end()) {
+    palettes.erase(iter);
+  }
   palettes.push_front(p);
 }
 
 void GUI::DestroyPalettes() {
+  // Guard: aui_manager may already be uninitialized during OnExit teardown
+  if (!aui_manager) {
+    palettes.clear();
+    in_game_preview = nullptr;
+    tools_panel = nullptr;
+    size_panel = nullptr;
+    return;
+  }
+
   for (auto palette : palettes) {
-    aui_manager->DetachPane(palette);
-    palette->Destroy();
+    if (palette && palette->IsBeingDeleted() == false) {
+      aui_manager->DetachPane(palette);
+      palette->Destroy();
+    }
   }
   palettes.clear();
 
   if (in_game_preview) {
-    aui_manager->DetachPane(in_game_preview);
-    in_game_preview->Destroy();
+    if (in_game_preview->IsBeingDeleted() == false) {
+      aui_manager->DetachPane(in_game_preview);
+      in_game_preview->Destroy();
+    }
     in_game_preview = nullptr;
   }
 
   if (tools_panel) {
-    aui_manager->DetachPane(tools_panel);
-    tools_panel->Destroy();
+    if (tools_panel->IsBeingDeleted() == false) {
+      aui_manager->DetachPane(tools_panel);
+      tools_panel->Destroy();
+    }
     tools_panel = nullptr;
   }
   if (size_panel) {
-    aui_manager->DetachPane(size_panel);
-    size_panel->Destroy();
+    if (size_panel->IsBeingDeleted() == false) {
+      aui_manager->DetachPane(size_panel);
+      size_panel->Destroy();
+    }
     size_panel = nullptr;
   }
 
@@ -1009,7 +1002,13 @@ void GUI::FitViewToMap(MapTab *mt) {
   }
 }
 
-void GUI::SetStatusText(wxString text) { g_gui.root->SetStatusText(text, 0); }
+void GUI::SetStatusText(wxString text) {
+  if (!g_gui.root) return;
+  g_gui.root->SetStatusText(text, 0);
+  if (g_gui.root->tool_bar) {
+    g_gui.root->tool_bar->SetItemInfo(text);
+  }
+}
 
 void GUI::SetTitle(wxString title) {
   if (g_gui.root == nullptr) {
@@ -1376,6 +1375,13 @@ bool GUI::SelectBrush(const Brush *whatbrush, PaletteType primary) {
     if (tools_panel && tools_panel->SelectBrush(whatbrush)) {
       found = true;
       palettes.front()->OnSelectBrush(nullptr, primary);
+    } else if (whatbrush != nullptr) {
+      // Standalone toolbar brush (Doors, Windows, Zones, Eraser, Autoborder, Prefabs)
+      found = true;
+      palettes.front()->OnSelectBrush(nullptr, primary);
+      if (tools_panel) {
+        tools_panel->DeselectAll();
+      }
     }
   }
 
@@ -1386,7 +1392,9 @@ bool GUI::SelectBrush(const Brush *whatbrush, PaletteType primary) {
   }
 
   SelectBrushInternal(const_cast<Brush *>(whatbrush));
-  root->GetAuiToolBar()->UpdateBrushButtons();
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->UpdateBrushButtons();
+  }
 
   if (pending_change_mode && whatbrush != nullptr) {
     pending_change_mode = false;

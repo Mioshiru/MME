@@ -146,7 +146,7 @@ public:
 WelcomeDialog::WelcomeDialog(const wxString& title_text, const wxString& version_text, const wxSize& size, const wxBitmap& rme_logo, const std::vector<wxString>& recent_files) :
 	wxDialog(nullptr, wxID_ANY, "", wxDefaultPosition, size, wxSTAY_ON_TOP | wxDEFAULT_DIALOG_STYLE) {
 	Centre();
-	wxColour base_colour = wxColor(10, 15, 25); // Tiefes Dunkelblau/Schwarz
+	wxColour base_colour = wxColor(13, 17, 23); // Dark Runic Obsidian
 	SetBackgroundColour(base_colour);
 	
 	// Robustly load the specified icon from the user's explicit path
@@ -217,8 +217,14 @@ void WelcomeDialog::OnButtonClicked(const wxMouseEvent& event) {
 			int old_check_sigs = g_settings.getInteger(Config::CHECK_SIGNATURES);
 			g_settings.setInteger(Config::CHECK_SIGNATURES, 0);
 
-			PreferencesWindow preferences_window(this, true);
-			preferences_window.ShowModal();
+			try {
+				PreferencesWindow preferences_window(this, true);
+				preferences_window.ShowModal();
+			} catch (const std::exception& e) {
+				wxLogError("Failed to open Preferences dialog: %s", e.what());
+			} catch (...) {
+				wxLogError("An unknown error occurred while opening Preferences.");
+			}
 
 			// Restore the signature checking setting after the Settings window closes
 			g_settings.setInteger(Config::CHECK_SIGNATURES, old_check_sigs);
@@ -503,8 +509,8 @@ WelcomeDialogButton::WelcomeDialogButton(wxWindow* parent, const wxPoint& pos, c
 	m_action(wxID_CLOSE),
 	m_text(text),
 	m_text_colour(wxColor(255, 255, 255)),
-	m_background(wxColor(22, 33, 55)),
-	m_background_hover(wxColor(255, 215, 0)), // Goldenes Highlight beim Hover
+	m_background(wxColor(28, 36, 48)),
+	m_background_hover(wxColor(229, 193, 88)), // Mystic Gold Highlight beim Hover
 	m_is_hover(false) {
 	Bind(wxEVT_PAINT, &WelcomeDialogButton::OnPaint, this);
 	Bind(wxEVT_ENTER_WINDOW, &WelcomeDialogButton::OnMouseEnter, this);
@@ -516,7 +522,7 @@ void WelcomeDialogButton::OnPaint(const wxPaintEvent& event) {
 
 	wxColour colour = m_is_hover ? m_background_hover : m_background;
 	dc.SetBrush(wxBrush(colour));
-	dc.SetPen(wxPen(m_is_hover ? wxColor(255, 255, 255) : wxColor(140, 110, 40), m_is_hover ? 2 : 1));
+	dc.SetPen(wxPen(m_is_hover ? wxColor(255, 255, 255) : wxColor(212, 175, 55), m_is_hover ? 2 : 1));
 	dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
 
 	wxFont button_font = GetFont();
@@ -551,7 +557,7 @@ RecentItem::RecentItem(wxWindow* parent, WelcomeDialog* dialog, const wxColour& 
 	m_slot_index(slot_index),
 	m_is_hover(false) {
 	
-	SetBackgroundColour(wxColor(20, 25, 40));
+	SetBackgroundColour(wxColor(13, 17, 23));
 	SetMinSize(FROM_DIP(this, wxSize(460, 48)));
 
 	Bind(wxEVT_PAINT, &RecentItem::OnPaint, this);
@@ -564,16 +570,16 @@ RecentItem::RecentItem(wxWindow* parent, WelcomeDialog* dialog, const wxColour& 
 void RecentItem::OnPaint(const wxPaintEvent& event) {
 	wxPaintDC dc(this);
 
-	// Custom paint resembling a game slot (Golden frame, clean retro or sci-fi borders)
-	wxColour bg_col = m_is_hover ? wxColour(25, 35, 60) : wxColour(13, 18, 30);
-	wxColour border_col = m_is_hover ? wxColour(255, 215, 0) : wxColour(160, 130, 45);
+	// Custom paint resembling a dark runic game slot (Golden frame, obsidian basalt background)
+	wxColour bg_col = m_is_hover ? wxColour(28, 36, 48) : wxColour(21, 27, 36);
+	wxColour border_col = m_is_hover ? wxColour(229, 193, 88) : wxColour(74, 52, 35);
 
 	dc.SetBrush(wxBrush(bg_col));
 	dc.SetPen(wxPen(border_col, m_is_hover ? 2 : 1));
 	dc.DrawRectangle(wxRect(wxPoint(0, 0), GetClientSize()));
 
 	// Draw slot label/number index and title
-	dc.SetTextForeground(m_is_hover ? wxColour(255, 215, 0) : wxColour(218, 165, 32));
+	dc.SetTextForeground(m_is_hover ? wxColour(229, 193, 88) : wxColour(212, 175, 55));
 	wxFont label_font = GetFont();
 	label_font.SetPointSize(10);
 	label_font.SetWeight(wxFONTWEIGHT_BOLD);

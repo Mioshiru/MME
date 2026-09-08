@@ -464,7 +464,14 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				// Network Latency Display
 				if (editor.IsLiveServer()) {
 					LiveServer* server = editor.GetLiveServer();
-					ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Host Mode | Clients: %d", (int)server->clients.size());
+					ImGui::TextColored(ImVec4(0.9f, 0.78f, 0.35f, 1.0f), "Host Mode | Clients: %d", (int)server->clients.size());
+					ImGui::SameLine();
+					if (ImGui::SmallButton("📋 Copy IP")) {
+						TriggerCopyLiveIP();
+					}
+					if (ImGui::IsItemHovered()) {
+						ImGui::SetTooltip("Copy Host IP & Port to clipboard");
+					}
 					if (ImGui::IsItemHovered() && !server->clients.empty()) {
 						ImGui::BeginTooltip();
 						for (auto& clientEntry : server->clients) {
@@ -1783,8 +1790,6 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 	// Send new node requests
 	editor.SendNodeRequests();
-	
-	g_gui.RefreshMinimapPanel();
 }
 
 void MapCanvas::RenderCanvasContextMenu() {

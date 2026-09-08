@@ -587,7 +587,7 @@ void Tile::addBorderItem(Item* item) {
 	if (!item) {
 		return;
 	}
-	ASSERT(item->isBorder());
+	g_items[item->getID()].isBorder = true;
 	items.insert(items.begin(), item);
 }
 

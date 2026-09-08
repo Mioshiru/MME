@@ -1116,11 +1116,11 @@
 		<friend name="earth"/>
 	</brush>
 
-	<brush name="cobblestone" type="ground" server_lookid="724" z-order="1">
+	<brush name="cobblestone" type="ground" server_lookid="724" z-order="100">
 		<item id="724" chance="1000"/>
 	</brush>
 
-	<brush name="dark cobblestone" type="ground" server_lookid="8423" z-order="70">
+	<brush name="dark cobblestone" type="ground" server_lookid="8423" z-order="1610">
 		<item id="8423" chance="1000"/>
 		<item id="8425" chance="1000"/>
 		<item id="8426" chance="1000"/>
@@ -1133,7 +1133,7 @@
 		<border align="outer" id="127"/>
 	</brush>
 
-	<brush name="ugly cobblestone" type="ground" server_lookid="8424" z-order="65">
+	<brush name="ugly cobblestone" type="ground" server_lookid="8424" z-order="1600">
 		<item id="8424" chance="1000"/>
 		<item id="8432" chance="1000"/>
 		<item id="8433" chance="1000"/>

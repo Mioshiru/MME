@@ -120,14 +120,37 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 			}
 		}
 	} else {
+		std::vector<Tileset*> sorted_tilesets;
 		for (TilesetContainer::const_iterator iter = tilesets.begin(); iter != tilesets.end(); ++iter) {
-			if (iter->second->name == "Favorites") continue;
-			const TilesetCategory* tcg = iter->second->getCategory(category);
+			if (!iter->second) continue;
+			if (iter->second->name == "Favorites" || iter->second->name == "Host-Favorites") continue;
+			sorted_tilesets.push_back(iter->second);
+		}
+
+		auto getTilesetRank = [](const std::string& name) -> int {
+			if (name == "Nature") return 0;
+			if (name == "City Grounds") return 1;
+			return 10;
+		};
+
+		std::sort(sorted_tilesets.begin(), sorted_tilesets.end(), [&getTilesetRank](Tileset* a, Tileset* b) {
+			if (!a && !b) return false;
+			if (!a) return false;
+			if (!b) return true;
+			int rankA = getTilesetRank(a->name);
+			int rankB = getTilesetRank(b->name);
+			if (rankA != rankB) return rankA < rankB;
+			return a->name < b->name;
+		});
+
+		for (Tileset* ts : sorted_tilesets) {
+			if (!ts) continue;
+			const TilesetCategory* tcg = ts->getCategory(category);
 			if (tcg && tcg->size() > 0) {
 				BrushPanel* panel = newd BrushPanel(choicebook);
 				panel->AssignTileset(tcg);
-				choicebook->AddPage(panel, wxstr(iter->second->name));
-				tileset_choice->Append(wxstr(iter->second->name));
+				choicebook->AddPage(panel, wxstr(ts->name));
+				tileset_choice->Append(wxstr(ts->name));
 			}
 		}
 	}
@@ -846,7 +869,7 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 	wxBufferedPaintDC dc(this);
 	DoPrepareDC(dc);
 
-	dc.SetBackground(wxBrush(wxColor(10, 20, 35)));
+	dc.SetBackground(wxBrush(wxColor(13, 17, 23)));
 	dc.Clear();
 
 	if (g_gui.gfx.isUnloaded()) {
@@ -886,10 +909,10 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 		if (item.is_separator) {
 			int line_y = item.y + item.height / 2;
 
-			// Draw vector chevron
+			// Draw vector chevron in mystic gold / rune cyan
 			int chevron_x = item.x + 6;
-			dc.SetBrush(wxBrush(wxColor(130, 165, 205)));
-			dc.SetPen(wxPen(wxColor(130, 165, 205), 1, wxSOLID));
+			dc.SetBrush(wxBrush(wxColor(229, 193, 88)));
+			dc.SetPen(wxPen(wxColor(229, 193, 88), 1, wxSOLID));
 			if (item.is_collapsed) {
 				wxPoint pts[3] = {
 					wxPoint(chevron_x, line_y - 4),
@@ -909,12 +932,12 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 			int text_w = 0;
 			if (!item.label.empty()) {
 				dc.SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-				dc.SetTextForeground(wxColor(140, 175, 215));
+				dc.SetTextForeground(wxColor(229, 193, 88));
 				wxSize tsz = dc.GetTextExtent(wxstr(item.label));
 				text_w = tsz.x;
 				dc.DrawText(wxstr(item.label), item.x + 18, item.y + (item.height - tsz.y) / 2);
 			}
-			dc.SetPen(wxPen(wxColor(50, 75, 105), 1, wxSOLID));
+			dc.SetPen(wxPen(wxColor(74, 52, 35), 1, wxSOLID));
 			int line_start_x = item.x + (text_w > 0 ? text_w + 26 : 18);
 			int line_end_x = item.x + item.width - 2;
 			if (line_end_x > line_start_x) {

@@ -26,6 +26,9 @@
 #include "main_menubar.h"
 #include "palette_window.h"
 #include "preferences.h"
+#include "action.h"
+#include "tile.h"
+#include "items.h"
 #include "result_window.h"
 #include "sprites.h"
 
@@ -298,6 +301,8 @@ void LogErrorToFile(const std::string &message) {
 #endif
 }
 
+
+
 bool Application::OnInit() {
 #ifdef _WIN32
   SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
@@ -355,10 +360,12 @@ bool Application::OnInit() {
   wxAppConsole::SetInstance(this);
   wxArtProvider::Push(new ArtProvider());
 
+
+
 #if defined(__LINUX__) || defined(__WINDOWS__)
-  int argc = 1;
-  char *argv[1] = {wxString(this->argv[0]).char_str()};
-  glutInit(&argc, argv);
+  int glutArgc = 1;
+  char *glutArgv[1] = {wxString(this->argv[0]).char_str()};
+  glutInit(&glutArgc, glutArgv);
 #endif
 
   // Load some internal stuff
@@ -458,6 +465,8 @@ bool Application::OnInit() {
   } else if (g_gui.root && g_gui.root->menu_bar) {
     g_gui.root->menu_bar->LoadScriptsMenu();
   }
+
+
 
   wxIcon icon = LoadApplicationIcon();
   if (icon.IsOk()) {
@@ -612,9 +621,9 @@ void Application::FixVersionDiscrapencies() {
 
 void Application::Unload() {
   g_gui.CloseAllEditors();
-  g_gui.UnloadVersion();
-  g_gui.SaveHotkeys();
   g_gui.SavePerspective();
+  g_gui.SaveHotkeys();
+  g_gui.UnloadVersion();
   g_gui.root->SaveRecentFiles();
   ClientVersion::saveVersions();
   ClientVersion::unloadVersions();
@@ -735,10 +744,11 @@ MainFrame::MainFrame(const wxString &title, const wxPoint &pos,
                             "able to show its menu.\n");
   }
 
-  wxStatusBar *statusbar = CreateStatusBar();
-  statusbar->SetFieldsCount(4);
+  frame_statusbar = CreateStatusBar();
+  frame_statusbar->SetFieldsCount(4);
   SetStatusText(wxString("Welcome to ")
                 << __W_RME_APPLICATION_NAME__ << " " << __W_RME_VERSION__);
+  UpdateStatusBarVisibility();
 
   // Le sizer
   g_gui.async_loader = nullptr; // newd RME::Core::AsyncLoader();
@@ -746,8 +756,19 @@ MainFrame::MainFrame(const wxString &title, const wxPoint &pos,
   g_gui.aui_manager->SetFlags(g_gui.aui_manager->GetFlags() |
                               wxAUI_MGR_LIVE_RESIZE);
   if (wxAuiDockArt* art = g_gui.aui_manager->GetArtProvider()) {
-    art->SetMetric(wxAUI_DOCKART_SASH_SIZE, 5);
+    art->SetMetric(wxAUI_DOCKART_SASH_SIZE, 4);
     art->SetMetric(wxAUI_DOCKART_PANE_BORDER_SIZE, 0);
+    art->SetMetric(wxAUI_DOCKART_GRIPPER_SIZE, 6);
+    art->SetColour(wxAUI_DOCKART_BACKGROUND_COLOUR, wxColour(13, 17, 23));
+    art->SetColour(wxAUI_DOCKART_SASH_COLOUR, wxColour(20, 25, 35));
+    art->SetColour(wxAUI_DOCKART_GRIPPER_COLOUR, wxColour(75, 85, 105));
+    art->SetColour(wxAUI_DOCKART_BORDER_COLOUR, wxColour(25, 30, 42));
+    art->SetColour(wxAUI_DOCKART_ACTIVE_CAPTION_COLOUR, wxColour(25, 35, 52));
+    art->SetColour(wxAUI_DOCKART_ACTIVE_CAPTION_GRADIENT_COLOUR, wxColour(16, 20, 28));
+    art->SetColour(wxAUI_DOCKART_INACTIVE_CAPTION_COLOUR, wxColour(18, 22, 30));
+    art->SetColour(wxAUI_DOCKART_INACTIVE_CAPTION_GRADIENT_COLOUR, wxColour(13, 17, 23));
+    art->SetColour(wxAUI_DOCKART_ACTIVE_CAPTION_TEXT_COLOUR, wxColour(229, 193, 88));
+    art->SetColour(wxAUI_DOCKART_INACTIVE_CAPTION_TEXT_COLOUR, wxColour(180, 180, 190));
   }
   g_gui.tabbook = newd MapTabbook(this, wxID_ANY);
 
@@ -783,6 +804,25 @@ MainFrame::MainFrame(const wxString &title, const wxPoint &pos,
   // Start auto-save timer if enabled
   autosave_timer.SetOwner(this);
   RestartAutoSaveTimer();
+}
+
+void MainFrame::UpdateStatusBarVisibility() {
+  bool hide_sb = g_settings.getBoolean(Config::HIDE_STATUSBAR);
+  if (hide_sb) {
+    if (GetStatusBar() != nullptr) {
+      SetStatusBar(nullptr);
+    }
+    if (frame_statusbar != nullptr) {
+      frame_statusbar->Hide();
+    }
+  } else {
+    if (frame_statusbar != nullptr) {
+      frame_statusbar->Show();
+      SetStatusBar(frame_statusbar);
+    }
+  }
+  SendSizeEvent();
+  Layout();
 }
 
 MainFrame::~MainFrame() {
@@ -1084,7 +1124,9 @@ void MainFrame::OnExit(wxCloseEvent &event) {
     }
   }
   ((Application &)wxGetApp()).Unload();
-  g_gui.aui_manager->UnInit();
+  if (g_gui.aui_manager) {
+    g_gui.aui_manager->UnInit();
+  }
 #ifdef __RELEASE__
   // Hack, "crash" gracefully in release builds, let OS handle cleanup of
   // windows

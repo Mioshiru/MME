@@ -208,14 +208,23 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 	subsizer->Add(newd wxButton(this, wxID_APPLY, "Apply"), wxSizerFlags(1).Center());
 	sizer->Add(subsizer, 0, wxCENTER | wxLEFT | wxBOTTOM | wxRIGHT, 6);
 
-	SetMinSize(wxSize(720, 460));
-	SetSize(wxSize(740, 480));
+	SetMinSize(wxSize(740, 520));
+	SetSize(wxSize(750, 550));
 	SetSizer(sizer);
-	RME::UI::StyleManager::ApplyThemeRecursively(this, theme);
+
+	try {
+		RME::UI::StyleManager::ApplyThemeRecursively(this, theme);
+	} catch (...) {
+		// Suppress any non-critical theme applying errors
+	}
 	
 	// Layout updates
 	if (default_version_choice) {
-		UpdateScanStatus();
+		try {
+			UpdateScanStatus();
+		} catch (...) {
+			// Suppress any scanning errors
+		}
 	}
 	
 	Centre(wxBOTH);
@@ -358,6 +367,9 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 
 	open_folder_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
 		ClientVersionList env_versions = ClientVersion::getAllVisible();
+		std::sort(env_versions.begin(), env_versions.end(), [](const ClientVersion* a, const ClientVersion* b) {
+			return a->getID() < b->getID();
+		});
 		int selection = default_version_choice->GetSelection();
 		if (selection != wxNOT_FOUND) {
 			int counter = 0;
@@ -796,20 +808,20 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	wxStaticBoxSizer* theme_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Visual Theme & Cursors");
 	wxString theme_choices[] = { "Dark Mode (Restart required)", "Light Mode" };
 	theme_radio = new wxRadioBox(theme_panel, wxID_ANY, "Visual Theme", wxDefaultPosition, wxDefaultSize, 2, theme_choices, 1, wxRA_SPECIFY_COLS);
-	theme_group->Add(theme_radio, 0, wxALL | wxEXPAND, 3);
+	theme_group->Add(theme_radio, 0, wxALL | wxEXPAND, 2);
 
-	wxFlexGridSizer* color_grid = new wxFlexGridSizer(2, 4, 10);
+	wxFlexGridSizer* color_grid = new wxFlexGridSizer(2, 4, 6);
 	color_grid->Add(new wxStaticText(theme_panel, wxID_ANY, "Cursor Color:"), 0, wxALIGN_CENTER_VERTICAL);
 	cursor_color_pick = new wxColourPickerCtrl(theme_panel, wxID_ANY, wxColor(g_settings.getInteger(Config::CURSOR_RED), g_settings.getInteger(Config::CURSOR_GREEN), g_settings.getInteger(Config::CURSOR_BLUE)));
 	color_grid->Add(cursor_color_pick);
 	color_grid->Add(new wxStaticText(theme_panel, wxID_ANY, "Secondary Cursor:"), 0, wxALIGN_CENTER_VERTICAL);
 	cursor_alt_color_pick = new wxColourPickerCtrl(theme_panel, wxID_ANY, wxColor(g_settings.getInteger(Config::CURSOR_ALT_RED), g_settings.getInteger(Config::CURSOR_ALT_GREEN), g_settings.getInteger(Config::CURSOR_ALT_BLUE)));
 	color_grid->Add(cursor_alt_color_pick);
-	theme_group->Add(color_grid, 0, wxALL, 3);
-	theme_sizer->Add(theme_group, 0, wxEXPAND | wxALL, 4);
+	theme_group->Add(color_grid, 0, wxALL, 2);
+	theme_sizer->Add(theme_group, 0, wxEXPAND | wxALL, 3);
 
 	wxStaticBoxSizer* icon_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Icon Sizing");
-	wxGridSizer* icon_grid = new wxGridSizer(4, 2, 2, 8);
+	wxGridSizer* icon_grid = new wxGridSizer(4, 2, 2, 6);
 
 	large_terrain_tools_chkbox = newd wxCheckBox(theme_panel, wxID_ANY, "Large terrain tool icons");
 	large_terrain_tools_chkbox->SetValue(g_settings.getBoolean(Config::USE_LARGE_TERRAIN_TOOLBAR));
@@ -843,8 +855,15 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	large_pick_item_icons_chkbox->SetValue(g_settings.getBoolean(Config::USE_LARGE_CHOOSE_ITEM_ICONS));
 	icon_grid->Add(large_pick_item_icons_chkbox);
 
-	icon_group->Add(icon_grid, 0, wxEXPAND | wxALL, 3);
-	theme_sizer->Add(icon_group, 0, wxEXPAND | wxALL, 4);
+	icon_group->Add(icon_grid, 0, wxEXPAND | wxALL, 2);
+	theme_sizer->Add(icon_group, 0, wxEXPAND | wxALL, 3);
+
+	wxStaticBoxSizer* layout_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Layout & Toolbars");
+	hide_statusbar_chkbox = new wxCheckBox(theme_panel, wxID_ANY, "Hide bottom status bar (info displayed in top toolbar)");
+	hide_statusbar_chkbox->SetValue(g_settings.getBoolean(Config::HIDE_STATUSBAR));
+	layout_group->Add(hide_statusbar_chkbox, 0, wxALL, 4);
+
+	theme_sizer->Add(layout_group, 0, wxEXPAND | wxALL, 3);
 	theme_panel->SetSizer(theme_sizer);
 	sub_book->AddPage(theme_panel, "Theme");
 
@@ -966,6 +985,8 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 		doodad_palette_style_choice->SetSelection(0);
 		item_palette_style_choice->SetSelection(0);
 		raw_palette_style_choice->SetSelection(0);
+		if (toolbar_alignment_choice) toolbar_alignment_choice->SetSelection(0);
+		if (hide_statusbar_chkbox) hide_statusbar_chkbox->SetValue(false);
 		switch_mousebtn_chkbox->SetValue(false);
 		doubleclick_properties_chkbox->SetValue(false);
 		inversed_scroll_chkbox->SetValue(false);
@@ -1159,13 +1180,11 @@ void PreferencesWindow::Apply() {
 		g_settings.setInteger(Config::COPY_POSITION_FORMAT, position_choice->GetSelection());
 	}
 
-	if (g_settings.getBoolean(Config::SHOW_TILESET_EDITOR) != enable_tileset_editing_chkbox->GetValue()) {
-		palette_update_needed = true;
-	}
-	g_settings.setInteger(Config::SHOW_TILESET_EDITOR, enable_tileset_editing_chkbox->GetValue());
-
-	// Save Client Settings from within General Page
+	// Assets
 	ClientVersionList versions = ClientVersion::getAllVisible();
+	std::sort(versions.begin(), versions.end(), [](const ClientVersion* a, const ClientVersion* b) {
+		return a->getID() < b->getID();
+	});
 	if (default_version_choice) {
 		for (auto version : versions) {
 			if (version->getName() == default_version_choice->GetStringSelection()) {
@@ -1173,23 +1192,15 @@ void PreferencesWindow::Apply() {
 			}
 		}
 	}
-	if (check_sigs_chkbox) {
-		g_settings.setInteger(Config::CHECK_SIGNATURES, check_sigs_chkbox->GetValue());
-	}
-
-	// Make sure to reload client paths
-	ClientVersion::saveVersions();
-	ClientVersion::loadVersions();
-
 	// Editor
 	g_settings.setInteger(Config::GROUP_ACTIONS, group_actions_chkbox->GetValue());
 	g_settings.setInteger(Config::WARN_FOR_DUPLICATE_ID, duplicate_id_warn_chkbox->GetValue());
 	g_settings.setInteger(Config::HOUSE_BRUSH_REMOVE_ITEMS, house_remove_chkbox->GetValue());
 	g_settings.setInteger(Config::AUTO_ASSIGN_DOORID, auto_assign_doors_chkbox->GetValue());
-	g_settings.setInteger(Config::ERASER_LEAVE_UNIQUE, eraser_leave_unique_chkbox->GetValue());
-	g_settings.setInteger(Config::DOODAD_BRUSH_ERASE_LIKE, doodad_erase_same_chkbox->GetValue());
-	g_settings.setInteger(Config::AUTO_CREATE_SPAWN, auto_create_spawn_chkbox->GetValue());
 	g_settings.setInteger(Config::RAW_LIKE_SIMONE, allow_multiple_orderitems_chkbox->GetValue());
+	g_settings.setInteger(Config::DOODAD_BRUSH_ERASE_LIKE, doodad_erase_same_chkbox->GetValue());
+	g_settings.setInteger(Config::ERASER_LEAVE_UNIQUE, eraser_leave_unique_chkbox->GetValue());
+	g_settings.setInteger(Config::AUTO_CREATE_SPAWN, auto_create_spawn_chkbox->GetValue());
 	g_settings.setInteger(Config::MERGE_MOVE, merge_move_chkbox->GetValue());
 	g_settings.setInteger(Config::MERGE_PASTE, merge_paste_chkbox->GetValue());
 
@@ -1223,11 +1234,6 @@ void PreferencesWindow::Apply() {
 		g_settings.setFloat(Config::EXP_VIGNETTE_STRENGTH, float(exp_vignette_slider->GetValue()) / 10.0f);
 	}
 	g_gui.RefreshView();
-
-	// if (g_settings.getInteger(Config::RENDER_BACKEND) != backend_radio->GetSelection()) {
-	// 	g_settings.setInteger(Config::RENDER_BACKEND, backend_radio->GetSelection());
-	// 	must_restart = true;
-	// }
 
 	if (ui_scale_slider) {
 		int old_scale = g_settings.getInteger(Config::UI_SCALE);
@@ -1274,7 +1280,6 @@ void PreferencesWindow::Apply() {
 		g_settings.setInteger(Config::CURSOR_ALT_BLUE, clr.Blue());
 	}
 
-
 	// Interface
 	if (theme_radio) {
 		int theme_idx = theme_radio->GetSelection();
@@ -1317,6 +1322,14 @@ void PreferencesWindow::Apply() {
 	if (zoom_speed_slider) g_settings.setFloat(Config::ZOOM_SPEED, zoom_speed_slider->GetValue() / 5.f);
 	if (minimap_scroll_speed_slider) g_settings.setFloat(Config::MINIMAP_SCROLL_SPEED, (float)minimap_scroll_speed_slider->GetValue());
 
+	if (hide_statusbar_chkbox) {
+		bool hide_sb = hide_statusbar_chkbox->GetValue();
+		g_settings.setInteger(Config::HIDE_STATUSBAR, hide_sb ? 1 : 0);
+		if (g_gui.root) {
+			g_gui.root->UpdateStatusBarVisibility();
+		}
+	}
+
 	g_settings.save();
 
 	if (palette_update_needed) {
@@ -1346,6 +1359,9 @@ void PreferencesWindow::UpdateScanStatus() {
 	}
 
 	ClientVersionList versions = ClientVersion::getAllVisible();
+	std::sort(versions.begin(), versions.end(), [](const ClientVersion* a, const ClientVersion* b) {
+		return a->getID() < b->getID();
+	});
 	int selection = default_version_choice->GetSelection();
 	if (selection == wxNOT_FOUND) {
 		scan_status_txt->SetLabel("Select a version");
@@ -1380,19 +1396,27 @@ void PreferencesWindow::UpdateScanStatus() {
 		is_modern_client = true;
 	}
 
-	if (is_modern_client) {
-		check_sigs_chkbox->Hide();
-		// Automatically disable signature tracking for advanced simulated formats (since they lack valid headers)
-		check_sigs_chkbox->SetValue(false);
-	} else {
-		check_sigs_chkbox->Show();
+	if (check_sigs_chkbox) {
+		if (is_modern_client) {
+			check_sigs_chkbox->Hide();
+			check_sigs_chkbox->SetValue(false);
+		} else {
+			check_sigs_chkbox->Show();
+		}
 	}
 
 	// Backup current settings and apply the check sigs temporarily for validation
 	int orig_check_sigs = g_settings.getInteger(Config::CHECK_SIGNATURES);
-	g_settings.setInteger(Config::CHECK_SIGNATURES, check_sigs_chkbox->GetValue() ? 1 : 0);
+	if (check_sigs_chkbox) {
+		g_settings.setInteger(Config::CHECK_SIGNATURES, check_sigs_chkbox->GetValue() ? 1 : 0);
+	}
 
-	bool valid = selected_version->hasValidPaths();
+	bool valid = false;
+	try {
+		valid = selected_version->hasValidPaths();
+	} catch (...) {
+		valid = false;
+	}
 
 	// Restore settings
 	g_settings.setInteger(Config::CHECK_SIGNATURES, orig_check_sigs);

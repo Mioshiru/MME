@@ -72,6 +72,9 @@ public:
 		return optional_border != nullptr;
 	}
 
+	bool isIndoor() const;
+	void setIndoor(bool indoor) { is_indoor = indoor; }
+
 protected: // Members
 	int32_t z_order;
 	bool has_zilch_outer_border;
@@ -81,6 +84,7 @@ protected: // Members
 	AutoBorder* optional_border;
 	bool use_only_optional; // If this is true, there will be no normal border under the gravel
 	bool randomize;
+	bool is_indoor;
 
 	struct SpecificCaseBlock {
 		SpecificCaseBlock() :

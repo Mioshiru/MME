@@ -83,7 +83,6 @@ namespace Config {
 		AUTO_ASSIGN_DOORID,
 		ERASER_LEAVE_UNIQUE,
 		ERASER_LEAVE_GROUND,
-		NO_HOTKEYS_MODE,
 		DOODAD_BRUSH_ERASE_LIKE,
 		WARN_FOR_DUPLICATE_ID,
 		USE_UPDATER,
@@ -142,12 +141,14 @@ namespace Config {
 		SHOW_TILESET_EDITOR,
 
 		PALETTE_LAYOUT,
+		TOOLBAR_LAYOUT,
 		MINIMAP_VISIBLE,
 		MINIMAP_LAYOUT,
 		MINIMAP_DOCK_STYLE,
 		MINIMAP_OPACITY,
 		MINIMAP_UPDATE_DELAY,
 		MINIMAP_VIEW_BOX,
+		MINIMAP_SASH_POS,
 		MINIMAP_EXPORT_DIR,
 		TILESET_EXPORT_DIR,
 		WINDOW_HEIGHT,
@@ -223,6 +224,8 @@ namespace Config {
 		SHOW_CHAT,          // Multiplayer In-Editor Team Chat Window (0 or 1)
 		SHOW_NOTEPAD,       // Collaborative Medieval Checklist & Notepad Window (0 or 1)
 		MULTIPLAYER_ADOPTED_SERVERS, // Remembered host view settings decisions
+		TOOLBAR_ALIGNMENT,  // Toolbar & Menubar alignment (0 = Left, 1 = Center)
+		HIDE_STATUSBAR,     // Hide the bottom status bar (0 = shown, 1 = hidden)
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;

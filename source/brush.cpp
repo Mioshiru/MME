@@ -549,6 +549,10 @@ bool DoorBrush::canDraw(BaseMap* map, const Position& position) const {
 				ItemType& it = g_items[dt.id];
 				ASSERT(it.id != 0);
 
+				if (doortype == WALL_ARCHWAY) {
+					return true;
+				}
+
 				if (it.isOpen == open) {
 					if (open || dt.locked == prefLocked) {
 						return true;
@@ -628,6 +632,12 @@ void DoorBrush::draw(BaseMap* map, Tile* tile, void* parameter) {
 					ASSERT(dt.id);
 					ItemType& it = g_items[dt.id];
 					ASSERT(it.id != 0);
+
+					if (doortype == WALL_ARCHWAY) {
+						item = transformItem(item, dt.id, tile);
+						perfect_match = true;
+						break;
+					}
 
 					if (it.isOpen == open) {
 						if (open || dt.locked == prefLocked) {

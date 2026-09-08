@@ -16,49 +16,16 @@ void GUI::LoadPerspective() {
                            g_settings.getInteger(Config::WINDOW_HEIGHT)));
     }
   } else {
-    std::string tmp;
-    std::string layout = g_settings.getString(Config::PALETTE_LAYOUT);
+    // Destroy any existing palettes before recreating from saved layout
+    // to prevent the snowball duplication bug where each restart would
+    // accumulate more and more palette copies.
+    // Always clean up palettes and enforce exactly ONE clean main palette docked on the right
+    DestroyPalettes();
 
-    std::vector<std::string> palette_list;
-    for (char c : layout) {
-      if (c == '|') {
-        palette_list.push_back(tmp);
-        tmp.clear();
-      } else {
-        tmp.push_back(c);
-      }
-    }
-
-    if (!tmp.empty()) {
-      palette_list.push_back(tmp);
-    }
-
-    if (palette_list.empty()) {
-      CreatePalette();
-    } else {
-      for (const std::string &name : palette_list) {
-        PaletteWindow *palette = CreatePalette();
-
-        wxAuiPaneInfo &info = aui_manager->GetPane(palette);
-        aui_manager->LoadPaneInfo(wxstr(name), info);
-        info.MinSize(wxSize(palette->FromDIP(136), 100)); // Minimum 3 columns
-
-        if (info.IsFloatable()) {
-          bool offscreen = true;
-          for (uint32_t index = 0; index < wxDisplay::GetCount(); ++index) {
-            wxDisplay display(index);
-            wxRect rect = display.GetClientArea();
-            if (rect.Contains(info.floating_pos)) {
-              offscreen = false;
-              break;
-            }
-          }
-
-          if (offscreen) {
-            info.Dock();
-          }
-        }
-      }
+    PaletteWindow *palette = CreatePalette();
+    if (palette) {
+      wxAuiPaneInfo &info = aui_manager->GetPane(palette);
+      info.Right().Layer(1).Position(1).Dockable(true).LeftDockable(true).RightDockable(true).TopDockable(false).BottomDockable(false).CloseButton(true).Floatable(true).BestSize(270, 560).MinSize(wxSize(palette->FromDIP(160), 100)).Show(true);
     }
 
 

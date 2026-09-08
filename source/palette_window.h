@@ -106,7 +106,7 @@ private:
 
 class PaletteWindow : public wxPanel {
 public:
-	PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets);
+	PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets, bool allow_minimap = true);
 	~PaletteWindow();
 
 	// Interface

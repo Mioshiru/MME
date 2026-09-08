@@ -111,8 +111,11 @@ public:
 
 	void PrepareDC(wxDC& dc);
 
+	void UpdateStatusBarVisibility();
+
 	MainMenuBar* menu_bar;
 	MainToolBar* tool_bar;
+	wxStatusBar* frame_statusbar;
 	wxTimer autosave_timer;
 
 protected:

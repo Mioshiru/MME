@@ -121,7 +121,7 @@ GroundBrush::GroundBrush()
     : z_order(0), has_zilch_outer_border(false), has_zilch_inner_border(false),
       has_outer_border(false), has_inner_border(false),
       optional_border(nullptr), use_only_optional(false), randomize(true),
-      total_chance(0) {
+      total_chance(0), is_indoor(false) {
   ////
 }
 
@@ -139,6 +139,34 @@ GroundBrush::~GroundBrush() {
     delete borderBlock;
   }
   borders.clear();
+}
+
+bool GroundBrush::isIndoor() const {
+  if (is_indoor) return true;
+  std::string n = as_lower_str(getName());
+  if (n.find("wooden floor") != std::string::npos ||
+      n.find("wooden plank") != std::string::npos ||
+      n.find("parquet floor") != std::string::npos ||
+      n.find("timber floor") != std::string::npos ||
+      n.find("drawbridge") != std::string::npos ||
+      n.find("sandstone") != std::string::npos ||
+      n.find("marble floor") != std::string::npos ||
+      n.find("chess board") != std::string::npos ||
+      n.find("stone tiles") != std::string::npos ||
+      n.find("crystal glass floor") != std::string::npos ||
+      n.find("zao carpet") != std::string::npos ||
+      n.find("temple floor") != std::string::npos ||
+      n.find("tiled stone floor") != std::string::npos ||
+      n.find("orange tiled floor") != std::string::npos ||
+      n.find("stony floor") != std::string::npos ||
+      n.find("stone floor") != std::string::npos ||
+      n.find("pink stone floor") != std::string::npos ||
+      n.find("dark stone floor") != std::string::npos ||
+      n.find("dark ice stone floor") != std::string::npos ||
+      n.find("iron floor") != std::string::npos) {
+    return true;
+  }
+  return false;
 }
 
 bool GroundBrush::load(pugi::xml_node node, wxArrayString &warnings) {
@@ -161,6 +189,10 @@ bool GroundBrush::load(pugi::xml_node node, wxArrayString &warnings) {
 
   if ((attribute = node.attribute("randomize"))) {
     randomize = attribute.as_bool();
+  }
+
+  if ((attribute = node.attribute("indoor")) || (attribute = node.attribute("is_indoor"))) {
+    is_indoor = attribute.as_bool();
   }
 
   for (pugi::xml_node childNode = node.first_child(); childNode;
@@ -583,20 +615,22 @@ void GroundBrush::draw(BaseMap *map, Tile *tile, void *parameter) {
       return;
     }
   }
-  int chance = random(1, total_chance);
+  int chance = (total_chance > 0) ? random(1, total_chance) : 1;
   uint16_t id = 0;
   for (std::vector<ItemChanceBlock>::const_iterator it = border_items.begin();
        it != border_items.end(); ++it) {
-    if (chance < it->chance) {
+    if (chance <= it->chance) {
       id = it->id;
       break;
     }
   }
-  if (id == 0) {
+  if (id == 0 && !border_items.empty()) {
     id = border_items.front().id;
   }
 
-  tile->addItem(Item::Create(id));
+  if (id != 0 && g_items[id].id != 0) {
+    tile->addItem(Item::Create(id));
+  }
 }
 
 const GroundBrush::BorderBlock *GroundBrush::getBrushTo(GroundBrush *first,
@@ -605,15 +639,8 @@ const GroundBrush::BorderBlock *GroundBrush::getBrushTo(GroundBrush *first,
   // second->getName().c_str());
   if (first) {
     if (second) {
-      // If either brush has NO borders defined (e.g. wooden floor #405, white marble floor #406,
-      // green marble, stone tiles, carpet, interior floors with no borders), do NOT draw borders between them!
-      if (first->borders.empty() && !first->hasOuterBorder() &&
-          !first->hasInnerBorder()) {
-        return nullptr;
-      }
-
-      if (second->borders.empty() && !second->hasOuterBorder() &&
-          !second->hasInnerBorder()) {
+      // Do not draw borders between indoor floors and other grounds
+      if (first->isIndoor() || second->isIndoor()) {
         return nullptr;
       }
 
@@ -966,30 +993,29 @@ void GroundBrush::doBorders(BaseMap *map, Tile *tile) {
         break;
       }
 
-      if (borderCluster.border->tiles[direction]) {
-        tile->addBorderItem(
-            Item::Create(borderCluster.border->tiles[direction]));
+      uint16_t tile_id = borderCluster.border->tiles[direction];
+      if (tile_id != 0 && g_items[tile_id].id != 0) {
+        tile->addBorderItem(Item::Create(tile_id));
       } else {
+        uint16_t h_tile = 0, v_tile = 0;
         if (direction == NORTHWEST_DIAGONAL) {
-          tile->addBorderItem(
-              Item::Create(borderCluster.border->tiles[WEST_HORIZONTAL]));
-          tile->addBorderItem(
-              Item::Create(borderCluster.border->tiles[NORTH_HORIZONTAL]));
+          h_tile = borderCluster.border->tiles[WEST_HORIZONTAL];
+          v_tile = borderCluster.border->tiles[NORTH_HORIZONTAL];
         } else if (direction == NORTHEAST_DIAGONAL) {
-          tile->addBorderItem(
-              Item::Create(borderCluster.border->tiles[EAST_HORIZONTAL]));
-          tile->addBorderItem(
-              Item::Create(borderCluster.border->tiles[NORTH_HORIZONTAL]));
+          h_tile = borderCluster.border->tiles[EAST_HORIZONTAL];
+          v_tile = borderCluster.border->tiles[NORTH_HORIZONTAL];
         } else if (direction == SOUTHWEST_DIAGONAL) {
-          tile->addBorderItem(
-              Item::Create(borderCluster.border->tiles[SOUTH_HORIZONTAL]));
-          tile->addBorderItem(
-              Item::Create(borderCluster.border->tiles[WEST_HORIZONTAL]));
+          h_tile = borderCluster.border->tiles[SOUTH_HORIZONTAL];
+          v_tile = borderCluster.border->tiles[WEST_HORIZONTAL];
         } else if (direction == SOUTHEAST_DIAGONAL) {
-          tile->addBorderItem(
-              Item::Create(borderCluster.border->tiles[SOUTH_HORIZONTAL]));
-          tile->addBorderItem(
-              Item::Create(borderCluster.border->tiles[EAST_HORIZONTAL]));
+          h_tile = borderCluster.border->tiles[SOUTH_HORIZONTAL];
+          v_tile = borderCluster.border->tiles[EAST_HORIZONTAL];
+        }
+        if (h_tile != 0 && g_items[h_tile].id != 0) {
+          tile->addBorderItem(Item::Create(h_tile));
+        }
+        if (v_tile != 0 && g_items[v_tile].id != 0) {
+          tile->addBorderItem(Item::Create(v_tile));
         }
       }
     }

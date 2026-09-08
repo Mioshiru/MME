@@ -152,6 +152,7 @@ public:
 
   void ExecuteMagicWandSelect(int mouse_map_x, int mouse_map_y, int floor, bool add_to_selection = false);
   void ReplaceSelectionWithBrush(Brush* brush);
+  void TriggerCopyLiveIP();
 
 protected:
   void getTilesToDraw(int mouse_map_x, int mouse_map_y, int floor,

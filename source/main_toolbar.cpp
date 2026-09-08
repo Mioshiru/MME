@@ -86,6 +86,62 @@ wxBitmap CreateDayNightBitmap(const wxSize& size) {
 	}
 	return wxBitmap(img);
 }
+
+class CorporateToolBarArt : public wxAuiDefaultToolBarArt {
+public:
+	CorporateToolBarArt() : wxAuiDefaultToolBarArt() {
+		m_baseColour = wxColour(13, 17, 23);
+		m_highlightColour = wxColour(229, 193, 88);
+	}
+
+	wxAuiToolBarArt* Clone() wxOVERRIDE {
+		return new CorporateToolBarArt(*this);
+	}
+
+	void DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE {
+		dc.GradientFillLinear(rect, wxColour(22, 28, 38), wxColour(13, 17, 23), wxSOUTH);
+		dc.SetPen(wxPen(wxColour(28, 35, 48), 1));
+		dc.DrawLine(rect.GetLeft(), rect.GetBottom(), rect.GetRight() + 1, rect.GetBottom());
+	}
+
+	void DrawGripper(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE {
+		// Fantasy RPG drag handle (solid gold rounded rectangle)
+		dc.SetPen(wxPen(wxColour(197, 160, 89), 1));
+		dc.SetBrush(wxBrush(wxColour(229, 193, 88)));
+		if (m_flags & wxAUI_TB_VERTICAL) {
+			int bar_h = 4;
+			int y = rect.y + (rect.height - bar_h) / 2;
+			dc.DrawRoundedRectangle(rect.x + 6, y, rect.width - 12, bar_h, 1);
+		} else {
+			int bar_w = 4;
+			int x = rect.x + (rect.width - bar_w) / 2;
+			dc.DrawRoundedRectangle(x, rect.y + 4, bar_w, rect.height - 8, 1);
+		}
+	}
+
+	void DrawSeparator(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE {
+		if (m_flags & wxAUI_TB_VERTICAL) {
+			dc.SetPen(wxPen(wxColour(35, 45, 60)));
+			dc.DrawLine(rect.x + 2, rect.y + rect.height / 2, rect.x + rect.width - 2, rect.y + rect.height / 2);
+		} else {
+			dc.SetPen(wxPen(wxColour(35, 45, 60)));
+			dc.DrawLine(rect.x + rect.width / 2, rect.y + 2, rect.x + rect.width / 2, rect.y + rect.height - 2);
+		}
+	}
+
+	void DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& item, const wxRect& rect) wxOVERRIDE {
+		if (item.GetState() & wxAUI_BUTTON_STATE_CHECKED) {
+			dc.SetPen(wxPen(wxColour(229, 193, 88), 1));
+			dc.SetBrush(wxBrush(wxColour(28, 48, 76)));
+			dc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2);
+		} else if (item.GetState() & wxAUI_BUTTON_STATE_HOVER) {
+			dc.SetPen(wxPen(wxColour(70, 95, 135), 1));
+			dc.SetBrush(wxBrush(wxColour(35, 48, 68)));
+			dc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2);
+		}
+		wxAuiDefaultToolBarArt::DrawButton(dc, wnd, item, rect);
+	}
+};
 }
 
 const wxString MainToolBar::BRUSHES_BAR_NAME = "brushes_toolbar";
@@ -204,7 +260,10 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 		if (mem_bmp) window_bitmap = *mem_bmp;
 	}
 
-	brushes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_BRUSHES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
+	// --- Tools & Brushes Toolbar (Pencil, Bucket, Eraser, Doors, Windows, Floors, etc.) ---
+	brushes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_BRUSHES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT | wxAUI_TB_GRIPPER);
+	brushes_toolbar->SetArtProvider(new CorporateToolBarArt());
+	brushes_toolbar->SetBackgroundColour(wxColour(13, 17, 23));
 	brushes_toolbar->SetToolBitmapSize(icon_size);
 	if (pointer_bitmap.IsOk()) {
 		brushes_toolbar->AddTool(PALETTE_TERRAIN_SELECTION_TOOL, wxEmptyString, pointer_bitmap, wxNullBitmap, wxITEM_CHECK, "Selection Tool", wxEmptyString, NULL);
@@ -227,47 +286,23 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_DOORS_DROPDOWN, "Doors", normal_bitmap, wxNullBitmap, wxITEM_NORMAL, "Doors", wxEmptyString, NULL);
 	brushes_toolbar->AddSeparator();
 	brushes_toolbar->AddTool(PALETTE_TERRAIN_WINDOWS_DROPDOWN, "Windows", window_bitmap, wxNullBitmap, wxITEM_NORMAL, "Windows (Hatch Window, Window)", wxEmptyString, NULL);
-	brushes_toolbar->Realize();
+	brushes_toolbar->AddSeparator();
 
-	wxBitmap go_bitmap = wxArtProvider::GetBitmap(ART_POSITION_GO, wxART_TOOLBAR, icon_size);
-
-	position_toolbar = newd wxAuiToolBar(parent, TOOLBAR_POSITION, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE | wxAUI_TB_HORZ_TEXT);
-	position_toolbar->SetToolBitmapSize(icon_size);
-	
 	wxArrayString z_levels;
 	for (int i = 0; i <= MAP_MAX_LAYER; ++i) {
 		z_levels.Add(wxString::Format("Floor %d", i));
 	}
-	z_choice = newd wxChoice(position_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(75, -1)), z_levels);
+	z_choice = newd wxChoice(brushes_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(75, -1)), z_levels);
 	z_choice->SetToolTip("Select Z-Level (Floor)");
-	z_choice->SetBackgroundColour(wxColour(10, 20, 35));
-	z_choice->SetForegroundColour(wxColour(180, 150, 50));
-	
-	position_toolbar->AddControl(z_choice);
+	z_choice->SetBackgroundColour(wxColour(13, 17, 23));
+	z_choice->SetForegroundColour(wxColour(229, 193, 88));
+	brushes_toolbar->AddControl(z_choice);
 
-	wxBitmap day_night_bitmap = CreateDayNightBitmap(icon_size);
-	position_toolbar->AddSeparator();
-	position_toolbar->AddTool(TOOLBAR_LIGHT_TOGGLE, "Day/Night", day_night_bitmap, wxNullBitmap, wxITEM_CHECK, "Toggle Day / Night Lighting View (Shift+L)", wxEmptyString, NULL);
+	brushes_toolbar->Realize();
+	wxSize brush_best = brushes_toolbar->GetSize();
+	if (brush_best.x < 360) brush_best.x = FROM_DIP(parent, wxSize(380, -1)).x;
 
-	int cur_intensity = int(g_settings.getFloat(Config::LIGHT_INTENSITY) * 100.0f);
-	if (cur_intensity <= 0) cur_intensity = 50;
-
-	light_slider = new wxSlider(position_toolbar, TOOLBAR_LIGHT_INTENSITY, cur_intensity, 10, 100, wxDefaultPosition, FROM_DIP(parent, wxSize(80, -1)), wxSL_HORIZONTAL);
-	light_slider->SetToolTip("Night Light Intensity (10% - 100%)");
-	light_slider->SetBackgroundColour(wxColour(18, 32, 54));
-	light_slider->Bind(wxEVT_SLIDER, [this](wxCommandEvent&) {
-		float val = float(light_slider->GetValue()) / 100.0f;
-		g_settings.setFloat(Config::LIGHT_INTENSITY, val);
-		g_gui.RefreshView();
-	});
-
-	position_toolbar->AddControl(light_slider);
-	bool show_lights = g_settings.getBoolean(Config::SHOW_LIGHTS);
-	light_slider->Show(show_lights);
-	light_slider->Enable(show_lights);
-
-	position_toolbar->Realize();
-
+	// --- Brush Sizes Toolbar ---
 	wxBitmap circular_bitmap = wxArtProvider::GetBitmap(ART_CIRCULAR, wxART_TOOLBAR, icon_size);
 	wxBitmap rectangular_bitmap = wxArtProvider::GetBitmap(ART_RECTANGULAR, wxART_TOOLBAR, icon_size);
 	wxBitmap size1_bitmap = wxArtProvider::GetBitmap(ART_RECTANGULAR_1, wxART_TOOLBAR, icon_size);
@@ -278,7 +313,9 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	wxBitmap size6_bitmap = wxArtProvider::GetBitmap(ART_RECTANGULAR_6, wxART_TOOLBAR, icon_size);
 	wxBitmap size7_bitmap = wxArtProvider::GetBitmap(ART_RECTANGULAR_7, wxART_TOOLBAR, icon_size);
 
-	sizes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_SIZES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_DEFAULT_STYLE);
+	sizes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_SIZES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_GRIPPER);
+	sizes_toolbar->SetArtProvider(new CorporateToolBarArt());
+	sizes_toolbar->SetBackgroundColour(wxColour(13, 17, 23));
 	sizes_toolbar->SetToolBitmapSize(icon_size);
 	sizes_toolbar->AddTool(TOOLBAR_SIZES_RECTANGULAR, wxEmptyString, rectangular_bitmap, wxNullBitmap, wxITEM_CHECK, "Rectangular Brush", wxEmptyString, NULL);
 	sizes_toolbar->AddTool(TOOLBAR_SIZES_CIRCULAR, wxEmptyString, circular_bitmap, wxNullBitmap, wxITEM_CHECK, "Circular Brush", wxEmptyString, NULL);
@@ -293,10 +330,63 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	sizes_toolbar->Realize();
 	sizes_toolbar->ToggleTool(TOOLBAR_SIZES_RECTANGULAR, true);
 	sizes_toolbar->ToggleTool(TOOLBAR_SIZES_1, true);
+	wxSize sizes_best = sizes_toolbar->GetSize();
+	if (sizes_best.x < 200) sizes_best.x = FROM_DIP(parent, wxSize(220, -1)).x;
 
-	manager->AddPane(brushes_toolbar, wxAuiPaneInfo().Name(BRUSHES_BAR_NAME).ToolbarPane().Top().Row(0).Position(0).Floatable(false).CloseButton(false).Gripper(false));
-	manager->AddPane(sizes_toolbar, wxAuiPaneInfo().Name(SIZES_BAR_NAME).ToolbarPane().Top().Row(0).Position(1).Floatable(false).CloseButton(false).Gripper(false));
-	manager->AddPane(position_toolbar, wxAuiPaneInfo().Name(POSITION_BAR_NAME).ToolbarPane().Top().Row(0).Position(2).Floatable(false).CloseButton(false).Gripper(false));
+	// --- Status & Settings Toolbar (Coordinates, Item ID, then Day/Night fixed-right) ---
+	position_toolbar = newd wxAuiToolBar(parent, TOOLBAR_POSITION, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT | wxAUI_TB_GRIPPER);
+	position_toolbar->SetArtProvider(new CorporateToolBarArt());
+	position_toolbar->SetBackgroundColour(wxColour(13, 17, 23));
+	position_toolbar->SetToolBitmapSize(icon_size);
+
+	// Left side: position and item info labels
+	pos_label = new wxStaticText(position_toolbar, wxID_ANY, wxT("x:0  y:0  z:7"),
+		wxDefaultPosition, FROM_DIP(parent, wxSize(120, -1)), wxALIGN_LEFT | wxST_ELLIPSIZE_END);
+	pos_label->SetForegroundColour(wxColour(229, 193, 88)); // Corporate Gold
+	position_toolbar->AddControl(pos_label);
+
+	position_toolbar->AddSeparator();
+
+	item_label = new wxStaticText(position_toolbar, wxID_ANY, wxT("\u2014"),
+		wxDefaultPosition, FROM_DIP(parent, wxSize(185, -1)), wxALIGN_LEFT | wxST_ELLIPSIZE_END);
+	item_label->SetForegroundColour(wxColour(215, 215, 225));
+	position_toolbar->AddControl(item_label);
+
+	// Stretch spacer pushes Day/Night toggle to the far right edge
+	position_toolbar->AddStretchSpacer();
+
+	// Right side: Day/Night toggle and intensity slider (fixed at right edge)
+	wxBitmap day_night_bitmap = CreateDayNightBitmap(icon_size);
+	position_toolbar->AddTool(TOOLBAR_LIGHT_TOGGLE, "Day/Night", day_night_bitmap, wxNullBitmap, wxITEM_CHECK, "Toggle Day / Night Lighting View (Shift+L)", wxEmptyString, NULL);
+
+	int cur_intensity = int(g_settings.getFloat(Config::LIGHT_INTENSITY) * 100.0f);
+	if (cur_intensity <= 0) cur_intensity = 50;
+
+	light_slider = new wxSlider(position_toolbar, TOOLBAR_LIGHT_INTENSITY, cur_intensity, 10, 100, wxDefaultPosition, FROM_DIP(parent, wxSize(70, -1)), wxSL_HORIZONTAL);
+	light_slider->SetToolTip("Night Light Intensity (10% - 100%)");
+	light_slider->SetBackgroundColour(wxColour(13, 17, 23));
+	light_slider->Bind(wxEVT_SLIDER, [this](wxCommandEvent&) {
+		float val = float(light_slider->GetValue()) / 100.0f;
+		g_settings.setFloat(Config::LIGHT_INTENSITY, val);
+		g_gui.RefreshView();
+	});
+	position_toolbar->AddControl(light_slider);
+	bool show_lights = g_settings.getBoolean(Config::SHOW_LIGHTS);
+	light_slider->Show(show_lights);
+	light_slider->Enable(show_lights);
+
+	position_toolbar->Realize();
+	wxSize pos_best = position_toolbar->GetSize();
+	if (pos_best.x < 380) pos_best.x = FROM_DIP(parent, wxSize(430, -1)).x;
+
+	// Dock toolbars in the top row (Row 0):
+	// Brushes & Floors at Position 0, Brush Sizes at Position 1, Status Toolbar (Day/Night, Coords, Item ID) at Position 2
+	manager->AddPane(brushes_toolbar,  wxAuiPaneInfo().Name(BRUSHES_BAR_NAME).Caption("Tools Toolbar").ToolbarPane().Top().Row(0).Position(0).Gripper(false).Dockable(true).LeftDockable(true).RightDockable(true).TopDockable(true).BottomDockable(true).Floatable(true).CloseButton(false).Resizable(false).BestSize(brush_best).MinSize(brush_best));
+	manager->AddPane(sizes_toolbar,    wxAuiPaneInfo().Name(SIZES_BAR_NAME).Caption("Brush Sizes").ToolbarPane().Top().Row(0).Position(1).Gripper(false).Dockable(true).LeftDockable(true).RightDockable(true).TopDockable(true).BottomDockable(true).Floatable(true).CloseButton(false).Resizable(false).BestSize(sizes_best).MinSize(sizes_best));
+	manager->AddPane(position_toolbar, wxAuiPaneInfo().Name(POSITION_BAR_NAME).Caption("Status & Lighting").ToolbarPane().Top().Row(0).Position(2).Gripper(false).Dockable(true).LeftDockable(true).RightDockable(true).TopDockable(true).BottomDockable(true).Floatable(true).CloseButton(false).Resizable(true).BestSize(pos_best).MinSize(pos_best));
+
+	// Apply saved alignment on construction
+	ApplyAlignment();
 
 	brushes_toolbar->Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
 	brushes_toolbar->Bind(wxEVT_TOOL, &MainToolBar::OnBrushesButtonClick, this);
@@ -502,21 +592,32 @@ void MainToolBar::HideAll(bool update) {
 }
 
 void MainToolBar::LoadPerspective() {
-	bool show_brushes = true;
-	bool show_sizes = true;
-	bool show_position = true;
+	wxAuiManager* manager = g_gui.GetAuiManager();
+	if (!manager) return;
 
-	GetPane(TOOLBAR_BRUSHES).Show(show_brushes);
-	GetPane(TOOLBAR_SIZES).Show(show_sizes);
-	GetPane(TOOLBAR_POSITION).Show(show_position);
+	// Always ensure default top row dock placement
+	GetPane(TOOLBAR_BRUSHES).Show(true).Top().Row(0).Position(0).Gripper(false);
+	GetPane(TOOLBAR_SIZES).Show(true).Top().Row(0).Position(1).Gripper(false);
+	GetPane(TOOLBAR_POSITION).Show(true).Top().Row(0).Position(2).Gripper(false);
 
-	if (wxAuiManager* manager = g_gui.GetAuiManager()) {
-		manager->Update();
-	}
+	manager->Update();
 }
 
 void MainToolBar::SavePerspective() {
-	// Toolbars are now fixed and their layout isn't saved anymore
+	wxAuiManager* manager = g_gui.GetAuiManager();
+	if (!manager) return;
+
+	wxString tbinfo;
+	if (manager->GetPane(BRUSHES_BAR_NAME).IsOk()) {
+		tbinfo << manager->SavePaneInfo(manager->GetPane(BRUSHES_BAR_NAME)) << "|";
+	}
+	if (manager->GetPane(SIZES_BAR_NAME).IsOk()) {
+		tbinfo << manager->SavePaneInfo(manager->GetPane(SIZES_BAR_NAME)) << "|";
+	}
+	if (manager->GetPane(POSITION_BAR_NAME).IsOk()) {
+		tbinfo << manager->SavePaneInfo(manager->GetPane(POSITION_BAR_NAME)) << "|";
+	}
+	g_settings.setString(Config::TOOLBAR_LAYOUT, nstr(tbinfo));
 }
 
 void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
@@ -565,21 +666,38 @@ void MainToolBar::OnBrushesButtonClick(wxCommandEvent& event) {
 			g_gui.SelectBrush(g_gui.pvp_brush);
 			break;
 		case PALETTE_TERRAIN_NORMAL_DOOR:
+			g_gui.SetBrushSize(0);
+			g_gui.SetDoorLocked(false);
 			g_gui.SelectBrush(g_gui.normal_door_brush);
 			break;
 		case PALETTE_TERRAIN_LOCKED_DOOR:
+			g_gui.SetBrushSize(0);
+			g_gui.SetDoorLocked(true);
 			g_gui.SelectBrush(g_gui.locked_door_brush);
 			break;
 		case PALETTE_TERRAIN_MAGIC_DOOR:
+			g_gui.SetBrushSize(0);
+			g_gui.SetDoorLocked(false);
 			g_gui.SelectBrush(g_gui.magic_door_brush);
 			break;
 		case PALETTE_TERRAIN_QUEST_DOOR:
+			g_gui.SetBrushSize(0);
+			g_gui.SetDoorLocked(false);
 			g_gui.SelectBrush(g_gui.quest_door_brush);
 			break;
+		case PALETTE_TERRAIN_ARCHWAY_DOOR:
+			g_gui.SetBrushSize(0);
+			g_gui.SetDoorLocked(false);
+			g_gui.SelectBrush(g_gui.archway_door_brush);
+			break;
 		case PALETTE_TERRAIN_HATCH_DOOR:
+			g_gui.SetBrushSize(0);
+			g_gui.SetDoorLocked(false);
 			g_gui.SelectBrush(g_gui.hatch_door_brush);
 			break;
 		case PALETTE_TERRAIN_WINDOW_DOOR:
+			g_gui.SetBrushSize(0);
+			g_gui.SetDoorLocked(false);
 			g_gui.SelectBrush(g_gui.window_door_brush);
 			break;
 		case PALETTE_TERRAIN_PREFAB_CREATOR_TOOL:
@@ -596,6 +714,7 @@ void MainToolBar::OnZonesDropdown(wxCommandEvent& WXUNUSED(event)) {
 	menu.Append(PALETTE_TERRAIN_NOLOGOUT_TOOL, "No Logout Zone");
 	menu.Append(PALETTE_TERRAIN_NOPVP_TOOL, "No PvP Zone");
 	menu.Append(PALETTE_TERRAIN_PVPZONE_TOOL, "PvP Zone");
+	menu.Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
 	brushes_toolbar->PopupMenu(&menu);
 }
 
@@ -605,6 +724,8 @@ void MainToolBar::OnDoorsDropdown(wxCommandEvent& WXUNUSED(event)) {
 	menu.Append(PALETTE_TERRAIN_LOCKED_DOOR, "Locked Door");
 	menu.Append(PALETTE_TERRAIN_MAGIC_DOOR, "Magic Door");
 	menu.Append(PALETTE_TERRAIN_QUEST_DOOR, "Quest Door");
+	menu.Append(PALETTE_TERRAIN_ARCHWAY_DOOR, "Archway Door");
+	menu.Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
 	brushes_toolbar->PopupMenu(&menu);
 }
 
@@ -612,6 +733,7 @@ void MainToolBar::OnWindowsDropdown(wxCommandEvent& WXUNUSED(event)) {
 	wxMenu menu;
 	menu.Append(PALETTE_TERRAIN_HATCH_DOOR, "Hatch Window");
 	menu.Append(PALETTE_TERRAIN_WINDOW_DOOR, "Window");
+	menu.Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
 	brushes_toolbar->PopupMenu(&menu);
 }
 
@@ -705,6 +827,7 @@ wxAuiPaneInfo& MainToolBar::GetPane(ToolBarID id) {
 		case TOOLBAR_BRUSHES:
 			return manager->GetPane(BRUSHES_BAR_NAME);
 		case TOOLBAR_POSITION:
+		case TOOLBAR_INFO:
 			return manager->GetPane(POSITION_BAR_NAME);
 		case TOOLBAR_SIZES:
 			return manager->GetPane(SIZES_BAR_NAME);
@@ -712,6 +835,29 @@ wxAuiPaneInfo& MainToolBar::GetPane(ToolBarID id) {
 			return wxAuiNullPaneInfo;
 	}
 }
+
+void MainToolBar::SetItemInfo(const wxString& text) {
+	if (item_label) {
+		item_label->SetLabel(text);
+		if (position_toolbar) position_toolbar->Refresh();
+	}
+}
+
+void MainToolBar::SetPosInfo(const wxString& text) {
+	if (pos_label) {
+		pos_label->SetLabel(text);
+		if (position_toolbar) position_toolbar->Refresh();
+	}
+}
+
+void MainToolBar::ApplyAlignment() {
+	wxAuiManager* manager = g_gui.GetAuiManager();
+	if (!manager) return;
+
+	manager->Update();
+}
+
+
 
 
 

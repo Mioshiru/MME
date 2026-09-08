@@ -38,9 +38,9 @@ CommandPaletteDialog::CommandPaletteDialog(wxWindow* parent) :
 	wxDialog(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(620, 380), wxBORDER_NONE | wxSTAY_ON_TOP),
 	current_filter(FILTER_NO_RAW) {
 
-	// Corporate Navy Spotlight Background (#101C30) with Gold Accent
-	SetBackgroundColour(wxColour(16, 28, 48));
-	SetForegroundColour(wxColour(240, 245, 255));
+	// Dark Runic Obsidian Spotlight Background (#0D1117) with Mystic Gold Accent (#E5C158)
+	SetBackgroundColour(wxColour(13, 17, 23));
+	SetForegroundColour(wxColour(240, 244, 248));
 
 #ifdef __WXMSW__
 	// Native Windows Region für abgerundete Ecken
@@ -57,13 +57,13 @@ CommandPaletteDialog::CommandPaletteDialog(wxWindow* parent) :
 	// 1. Elegante, große Sucheingabezeile mit integriertem Dropdown-Button
 	wxBoxSizer* input_sizer = newd wxBoxSizer(wxHORIZONTAL);
 
-	// Schlankes, modernes Eingabefeld (#0B1424) mit zentriertem Text
+	// Schlankes, modernes Eingabefeld (#151B24) mit zentriertem Text
 	wxPanel* input_box = newd wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 46));
-	input_box->SetBackgroundColour(wxColour(11, 20, 36));
+	input_box->SetBackgroundColour(wxColour(21, 27, 36));
 	wxBoxSizer* box_inner_sizer = newd wxBoxSizer(wxVERTICAL);
 
 	search_field = newd wxTextCtrl(input_box, CMD_PALETTE_SEARCH, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER | wxBORDER_NONE | wxTE_CENTRE);
-	search_field->SetBackgroundColour(wxColour(11, 20, 36));
+	search_field->SetBackgroundColour(wxColour(21, 27, 36));
 	search_field->SetForegroundColour(wxColour(245, 248, 255));
 	wxFont search_font = search_field->GetFont();
 	search_font.SetPointSize(search_font.GetPointSize() + 3);
@@ -78,8 +78,8 @@ CommandPaletteDialog::CommandPaletteDialog(wxWindow* parent) :
 
 	// Passig integrierter Dropdown-Button
 	filter_btn = newd wxButton(this, CMD_PALETTE_FILTER_BTN, "No RAW v", wxDefaultPosition, wxSize(110, 46), wxBORDER_NONE);
-	filter_btn->SetBackgroundColour(wxColour(24, 42, 70));
-	filter_btn->SetForegroundColour(wxColour(255, 215, 0)); // Corporate Gold Accent
+	filter_btn->SetBackgroundColour(wxColour(28, 36, 48));
+	filter_btn->SetForegroundColour(wxColour(229, 193, 88)); // Mystic Gold Accent
 	wxFont btn_font = filter_btn->GetFont();
 	btn_font.SetWeight(wxFONTWEIGHT_BOLD);
 	btn_font.SetPointSize(btn_font.GetPointSize() + 1);
@@ -91,8 +91,8 @@ CommandPaletteDialog::CommandPaletteDialog(wxWindow* parent) :
 
 	// 2. Schlichte, direkte Text-Trefferliste
 	results_list = newd wxListBox(this, CMD_PALETTE_LIST, wxDefaultPosition, wxDefaultSize, 0, nullptr, wxLB_SINGLE | wxBORDER_NONE);
-	results_list->SetBackgroundColour(wxColour(11, 20, 36));
-	results_list->SetForegroundColour(wxColour(240, 245, 255));
+	results_list->SetBackgroundColour(wxColour(21, 27, 36));
+	results_list->SetForegroundColour(wxColour(240, 244, 248));
 	wxFont list_font = results_list->GetFont();
 	list_font.SetPointSize(list_font.GetPointSize() + 1);
 	results_list->SetFont(list_font);

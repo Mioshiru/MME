@@ -1,137 +1,139 @@
-# MME (Mios Map Editor) - Project Source Map & Architecture Directory
+# MME (Mios Map Editor) - Funktionsliste & QA-Regression-Testplan
 
-This document provides a comprehensive overview and Table of Contents of the codebase, categorizing source files by their functional domain within the application.
-
----
-
-## 1. Palette System (`Palette`)
-The Palette system handles side panels, brush selectors, item/creature trees, house management, and waypoint controls.
-
-| File Name | Description |
-| :--- | :--- |
-| [`source/palette_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_window.cpp) | Main container window for docking all palette notebooks and tabs. |
-| [`source/palette_common.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_common.cpp) | Base components, shared UI helpers, and controls used across all palettes. |
-| [`source/palette_brushlist.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_brushlist.cpp) | Brush selection lists for terrain, walls, doodads, and RAW item palettes. |
-| [`source/palette_creature.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_creature.cpp) | Creature & NPC palette selection tree and preview renderers. |
-| [`source/palette_house.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_house.cpp) | House, house exit, and town management panel. |
-| [`source/palette_waypoints.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_waypoints.cpp) | Waypoint management palette interface for pathing & AI markers. |
+Dieses Dokument dient als zentrale **Funktions- und Test-Checkliste** des MME Projekts. Es verknüpft die Quellcode-Architektur direkt mit testbaren Schritten, um nach jeder Änderung eine systematische Qualitätskontrolle (Regression Testing) durchzuführen.
 
 ---
 
-## 2. Canvas & Rendering Engine (`Canvas`)
-The Canvas domain manages map rendering, viewports, mouse/keyboard input on the map, overlays, ImGui radial wheel, and minimap displays.
-
-| File Name | Description |
-| :--- | :--- |
-| [`source/map_display.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_display.cpp) | Core interactive map canvas (`MapCanvas`), mouse/keyboard event loop, and viewport scrolling. |
-| [`source/map_display_paint.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_display_paint.cpp) | Canvas paint pass, ImGui overlay rendering, Shift+Q Radial Tool Wheel, and brush previews. |
-| [`source/map_display_menu.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_display_menu.cpp) | Canvas right-click context menus and popup actions. |
-| [`source/map_drawer.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_drawer.cpp) | OpenGL map rendering pipeline, tile layer drawing, grid lines, and lighting routines. |
-| [`source/drawer_overlay.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/drawer_overlay.cpp) | Canvas HUD overlays, minimap render boxes, and hover tooltips. |
-| [`source/map_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_window.cpp) | MDI sub-window wrapper containing a single map display canvas. |
-| [`source/map_tab.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_tab.cpp) | Tab bar page wrapper for multi-document map editor tabs. |
+## Legende für das Testmanagement
+- `[ ]` Noch nicht getestet
+- `[x]` Erfolgreich getestet / OK
+- `[!]` Fehler / Bug gefunden (Details in Issue / Chat notieren)
 
 ---
 
-## 3. Main Menu Bar (`Menüleiste`)
-Controls top-level application menus, menu shortcuts, search commands, and view toggles.
+## 1. Paletten-System (`Palette Management`)
+Verwaltet Seitenleisten, Pinselwähler, Item-/Monster-Bäume, Haus- und Wegpunkt-Verwaltung.
 
-| File Name | Description |
+| Quellcode-Dateien | Zuständigkeit |
 | :--- | :--- |
-| [`source/main_menubar.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/main_menubar.cpp) | Construction and event handlers for File, Edit, View, Window, and Help menus. |
-| [`source/main_menubar_map.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/main_menubar_map.cpp) | Map menu commands (Map Properties, Clean, Statistics, Floor Navigation). |
-| [`source/main_menubar_search.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/main_menubar_search.cpp) | Search menu actions (Find Item, Find Unique ID, Find Action ID). |
-| [`source/gui_menu.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/gui.cpp) | GUI state synchronizer for updating checked/enabled states of menu items. |
+| [`source/palette_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_window.cpp) | Haupt-Containerfenster für angedockte/schwebende Paletten |
+| [`source/palette_common.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_common.cpp) | Basis-Steuerelemente, Pinselbuttons, Listen |
+| [`source/palette_brushlist.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_brushlist.cpp) | Terrain-, Doodad-, Wall- und RAW-Listen |
+| [`source/palette_creature.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_creature.cpp) | Monster- & NPC-Auswahl |
+| [`source/palette_house.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_house.cpp) | Häuser-, Town- und Exit-Verwaltung |
+| [`source/palette_waypoints.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/palette_waypoints.cpp) | Wegpunkt- und Pfad-Verwaltung |
+
+### Test-Checkliste Palette
+- [ ] **Erste Palette (Hauptpalette)**: Öffnet sich beim Start am rechten Rand im Dark-Theme ohne Flackern.
+- [x] **Zweite Palette (`Windows -> New Palette`)**: Öffnet sich als schwebendes Fenster (`Float`), stürzt nicht ab, kann frei bewegt und angedockt werden.
+- [ ] **Minimap-Modul**: Minimap lässt sich in der Palette ein-/ausklappen und per Rechtsklick-Kontextmenü aktivieren/deaktivieren.
+- [ ] **Quest Checklist Modul**: Lässt sich per Rechtsklick-Kontextmenü einblenden und Einträge abhaken/bearbeiten.
+- [ ] **Paletten-Kategorien**: Umschalten zwischen Terrain, Doodads, Items, Creatures, Houses, Waypoints, RAW und Prefabs funktioniert sofort.
+- [ ] **Live-Suche**: Suchfeld filtert Tilesets/Items in Echtzeit; `ESC` leert die Suche und setzt den Fokus zurück.
+- [ ] **Favoriten**: Items können zu den Favoriten hinzugefügt werden und die Favoriten-Box aktualisiert sich nahtlos.
 
 ---
 
-## 4. Main Tool Bar & UI Controls (`Toolleiste`)
-Manages primary toolbars, tool selection icons, high-DPI art providers, and custom UI controls.
+## 2. Canvas & Rendering-Engine (`Map Viewport`)
+Zeichnen der Tiles, Beleuchtung, Layer, Overlays, ImGui Radial-Menü und Minimap.
 
-| File Name | Description |
+| Quellcode-Dateien | Zuständigkeit |
 | :--- | :--- |
-| [`source/main_toolbar.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/main_toolbar.cpp) | Main application toolbar construction, tool buttons, and icon scaling. |
-| [`source/artprovider.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/artprovider.cpp) | High-DPI candidate icon loader and fallback artwork provider for tools/zones. |
-| [`source/dcbutton.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/dcbutton.cpp) | Custom device-context button control for specialized toolbar buttons. |
-| [`source/gui_ids.h`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/gui_ids.h) | Central menu and toolbar action identifier declarations. |
+| [`source/map_display.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_display.cpp) | MapCanvas, Maus- und Tastatur-Events, Viewport-Scrolling |
+| [`source/map_display_paint.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_display_paint.cpp) | Paint-Pipeline, ImGui Overlays, Shift+Q Radial Wheel, Pinsel-Vorschau |
+| [`source/map_display_menu.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_display_menu.cpp) | Rechtsklick-Kontextmenüs auf der Map |
+| [`source/map_drawer.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_drawer.cpp) | OpenGL/BGFX Rendering, Layer-Blending, Gitterlinien, Lichteffekte |
+| [`source/drawer_overlay.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/drawer_overlay.cpp) | HUD-Overlays, Minimap-Kasten, Hover-Tooltips |
+| [`source/map_tab.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_tab.cpp) | Tabs für mehrere geöffnete Karten |
+
+### Test-Checkliste Canvas
+- [ ] **Kartenansicht & Zoom**: Zoomen mit Mausrad (vor/zurück) und Panning mit mittlerer Maustaste/Leertaste flüssig.
+- [ ] **Stockwerk-Navigation**: `+` / `-` bzw. Bild-Auf / Bild-Ab wechselt die Ebenen (Floor 0 bis 15) sauber.
+- [ ] **ImGui Radial Tool Wheel (`Shift + Q`)**: Öffnet sich am Mauszeiger, Pinsel- und Werkzeugauswahl funktioniert per Klick.
+- [ ] **Pinsel-Vorschau**: Zeigt die Pinselform (Quadrat/Kreis) mit exakter Größe (1-7) transparent auf der Karte an.
+- [ ] **Rechtsklick-Menü**: Properties, Cut, Copy, Delete, Browse Field, Create Prefab öffnen die korrekten Aktionen.
+- [ ] **Multi-Tab**: Mehrere Maps können in Tabs geöffnet und unabhängig voneinander editiert werden.
 
 ---
 
-## 5. Pop-Up Windows & Dialogs (`Pop-Up Fenster`)
-Includes preferences, modal property editors, diagnostic tools, and wizard dialogs.
+## 3. Menüleiste (`Main Menu Bar`)
+Alle Befehle in Datei, Bearbeiten, Ansicht, Karte, Suchen, Tools, TFS-Tools, Live, Window, Hilfe.
 
-| File Name | Description |
+| Quellcode-Dateien | Zuständigkeit |
 | :--- | :--- |
-| [`source/preferences.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/preferences.cpp) | Wide-format Settings/Preferences dialog with sub-tabs (General, Editing, Graphic, Interface, Hotkeys). |
-| [`source/properties_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/properties_window.cpp) | Modern item, tile, creature, and spawn property editor window. |
-| [`source/old_properties_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/old_properties_window.cpp) | Legacy item and container properties edit window. |
-| [`source/container_properties_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/container_properties_window.cpp) | Specialized container contents and slot editor dialog. |
-| [`source/browse_tile_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/browse_tile_window.cpp) | Tile contents browser window for stacked items. |
-| [`source/map_diff_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_diff_window.cpp) | Visual map comparison and diff review window. |
-| [`source/map_diagnostic_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_diagnostic_window.cpp) | Map error, duplicate item, and invalid tile diagnostic scanner dialog. |
-| [`source/find_item_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/find_item_window.cpp) | Item search dialog with filtering by name, ID, or attribute. |
-| [`source/replace_items_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/replace_items_window.cpp) | Batch item replacement dialog across maps or selections. |
-| [`source/add_tileset_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/add_tileset_window.cpp) | Custom tileset creation and edit window. |
-| [`source/tfs_npc_editor.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/tfs_npc_editor.cpp) | TFS NPC file editor and dialogue builder dialog. |
-| [`source/tfs_quest_generator.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/tfs_quest_generator.cpp) | TFS Quest script generator wizard. |
-| [`source/creature_wiki_dialog.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/creature_wiki_dialog.cpp) | Tibia Creature Wiki & Bestiary Knowledge Base dialog with live search, official difficulty filtering, clickable column sorting, and heart favorites. |
-| [`source/creature_bestiary.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/creature_bestiary.cpp) | Official TibiaWiki creature stats database, HP/EXP ratio calculator, and CipSoft difficulty tier estimator. |
-| [`source/welcome_dialog.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/welcome_dialog.cpp) | Startup welcome screen, recent map history, and quick actions. |
-| [`source/about_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/about_window.cpp) | Application About dialog with credits and version information. |
-| [`source/common_windows.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/common_windows.cpp) | Shared auxiliary modal windows (Jump To Position, Selection Options, Floor Jumper). |
+| [`source/main_menubar.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/main_menubar.cpp) | Menü-Definitionen, Event-Routing |
+| [`source/main_menubar_map.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/main_menubar_map.cpp) | Map-Menü (Eigenschaften, Bereinigen, Statistik, Floor) |
+| [`source/main_menubar_search.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/main_menubar_search.cpp) | Suchen-Menü (Find Item, Action-ID, Unique-ID) |
+
+### Test-Checkliste Menüs
+- [ ] **File**: New Map, Open Map, Save Map (`Strg+S`), Save As, Export OTBM/OTC, Recent Files Liste.
+- [ ] **Edit**: Undo (`Strg+Z`), Redo (`Strg+Y`), Select All, Selection Mode, Preferences (`P`).
+- [ ] **View**: Toggle Spawns, Houses, Pathing, Special Tiles, Light Shading, FPS Display, Chat.
+- [ ] **Map**: Map Properties (Name, Client-Version, Dimensionen), Clean Map, Statistics (Item-/Spawn-Zählung).
+- [ ] **Search**: Find Item (`Strg+F`), Find Unique ID, Find Action ID, Jump to Coordinate (`Strg+J`).
 
 ---
 
-## 6. Brushes & Editing Tools (`Brushes & Tools`)
-Implements placement brushes, flood fill, magic wand selection, and automatic border logic.
+## 4. Werkzeugleiste & Pinsel (`Toolbar & Brushes`)
+Modi, Pinsel-Größen, Pinsel-Formen und Zeichenwerkzeuge.
 
-| File Name | Description |
+| Quellcode-Dateien | Zuständigkeit |
 | :--- | :--- |
-| [`source/brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/brush.cpp) | Core brush class hierarchy, shape calculation, and brush sizing. |
-| [`source/ground_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/ground_brush.cpp) | Ground terrain painting, autobordering, and flood fill (bucket) algorithms. |
-| [`source/wall_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/wall_brush.cpp) | Automatic wall cornering, door placement, and window alignment logic. |
-| [`source/doodad_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/doodad_brush.cpp) | Multi-tile doodad and composite object placement brush. |
-| [`source/creature_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/creature_brush.cpp) | Monster & NPC placement brush. |
-| [`source/house_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/house_brush.cpp) | House tile & exit assignment brush. |
-| [`source/spawn_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/spawn_brush.cpp) | Creature spawn area brush. |
-| [`source/eraser_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/eraser_brush.cpp) | Eraser tool logic for removing items/tiles. |
+| [`source/main_toolbar.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/main_toolbar.cpp) | Obere Werkzeugleiste, Icons, Tooltips |
+| [`source/brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/brush.cpp) | Pinsel-Basishierarchie |
+| [`source/ground_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/ground_brush.cpp) | Ground-Terrain, Auto-Border, Eimer (Bucket Fill) |
+| [`source/wall_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/wall_brush.cpp) | Wände, Ecken, Türen, Fenster |
+| [`source/eraser_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/eraser_brush.cpp) | Radiergummi-Pinsel |
+
+### Test-Checkliste Werkzeuge & Pinsel
+- [ ] **Pencil (Stift)**: Normales Platzieren von Terrain und Items.
+- [ ] **Bucket (Fülleimer)**: Füllt geschlossene Bereiche mit dem gewählten Terrain aus.
+- [ ] **Eraser (Radierer)**: Entfernt Items/Terrain entsprechend der eingestellten Filter.
+- [ ] **Auto-Bordering**: Erzeugt korrekte Übergangskanten zwischen verschiedenen Bodentypen.
+- [ ] **Türen- & Wand-Tool**: Setzt normale, Locked-, Magic-, Quest- und Window-Türen korrekt in Wände.
+- [ ] **Zonen-Pinsel**: PZ (Protection Zone), Non-PVP, No-Logout und PVP-Zones lassen sich zeichnen und optisch hervorheben.
 
 ---
 
-## 7. Backend Engine & Map Core (`Backend-Funktionen`)
-Core data structures, file I/O (OTBM/OTMM), undo/redo history, item registry, and graphics manager.
+## 5. Dialoge, Tools & Assistenten (`Pop-Up Windows & Tools`)
+Spezialfenster für Einstellungen, Diagnose, NPC/Quest-Generatoren und Prefabs.
 
-| File Name | Description |
+| Quellcode-Dateien | Zuständigkeit |
 | :--- | :--- |
-| [`source/editor.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/editor.cpp) | Main editor document state, action stack, selection manager, and copy buffer. |
-| [`source/map.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map.cpp) | High-level map representation, spatial indexing, house/town lists, and tile lookups. |
-| [`source/basemap.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/basemap.cpp) | Low-level grid storage for map nodes and quad-tree regions. |
-| [`source/tile.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/tile.cpp) | Tile data model (ground, items, creatures, spawns, zone flags). |
-| [`source/item.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/item.cpp) | Item instance model, attributes (Action ID, Unique ID, text), and sub-items. |
-| [`source/items.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/items.cpp) | Global item type database (`items.otb` / `items.xml` loader). |
-| [`source/iomap_otbm.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/iomap_otbm.cpp) | Binary OTBM map format reader and writer. |
-| [`source/graphics.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/graphics.cpp) | Sprite sheet loader (`Tibia.dat` / `Tibia.spr`), texture cache, and surface blitters. |
-| [`source/action.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/action.cpp) | Undo/Redo action queue implementation. |
+| [`source/preferences.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/preferences.cpp) | Einstellungen (Allgemein, Grafik, Interface, Hotkeys, Paletten) |
+| [`source/properties_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/properties_window.cpp) | Item-/Spawn-/Creature-Eigenschaften (Action ID, Unique ID, Text) |
+| [`source/map_diagnostic_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_diagnostic_window.cpp) | Diagnose-Scanner für ungültige Tiles, Duplikate & Geisteritems |
+| [`source/map_diff_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/map_diff_window.cpp) | Vergleich zweier Maps mit farblicher Hervorhebung |
+| [`source/procedural_generator_window.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/procedural_generator_window.cpp) | Prozeduraler Generator für Höhlen, Inseln und Ruinen |
+| [`source/creature_wiki_dialog.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/creature_wiki_dialog.cpp) | Tibia Bestiary & Monster-Wiki Dialog mit Suche und Sortierung |
+| [`source/tfs_npc_editor.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/tfs_npc_editor.cpp) | TFS XML/Lua NPC-Editor |
+| [`source/tfs_quest_generator.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/tfs_quest_generator.cpp) | TFS Quest Script & Chest Generator |
+| [`source/prefab_manager.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/prefab_manager.cpp) | Prefab-Bibliothek zum Speichern und Einfügen vorgefertigter Bauten |
+
+### Test-Checkliste Dialoge
+- [ ] **Einstellungen (`P`)**: Änderungen von UI-Scale, Theme, Hotkeys und Dateipfaden werden korrekt gespeichert.
+- [ ] **Properties (`Rechtsklick -> Properties`)**: Modifizieren von Action ID, Unique ID, Texten und Container-Inhalten funktioniert und wird in Undo/Redo erfasst.
+- [ ] **Map Diagnostic**: Scan läuft durch, findet Fehler und bietet "Jump to" / "Fix all" an.
+- [ ] **Map Diff**: Öffnet zwei Maps und stellt Unterschiede visuell dar.
+- [ ] **Procedural Generator**: Generiert Höhlen/Dungeons mit konfigurierbaren Parametern auf dem Canvas.
+- [ ] **Creature Wiki**: Öffnet sich schnell, Suchfunktion filtert Monster, Bestiary-Stats stimmen.
 
 ---
 
-## 8. Multiplayer Live Collaboration (`Multiplayer Live`)
-Real-time peer-to-peer and client-server map co-editing.
+## 6. Backend, File I/O & Multiplayer (`Core Engine`)
+Laden und Speichern von Dateien, Versionskompatibilität und Live-Multiplayer.
 
-| File Name | Description |
+| Quellcode-Dateien | Zuständigkeit |
 | :--- | :--- |
-| [`source/live_server.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/live_server.cpp) | Live collaboration host server manager. |
-| [`source/live_client.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/live_client.cpp) | Live collaboration client sync manager. |
-| [`source/live_socket.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/live_socket.cpp) | Low-level TCP socket handler for live editing packets. |
-| [`source/live_peer.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/live_peer.cpp) | Connected user session & peer state tracking. |
+| [`source/iomap_otbm.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/iomap_otbm.cpp) | OTBM Binary Reader / Writer |
+| [`source/graphics.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/graphics.cpp) | `Tibia.dat` / `Tibia.spr` Spritelader und Cache |
+| [`source/action.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/action.cpp) | Undo- und Redo-Stack |
+| [`source/live_server.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/live_server.cpp) | Host-Server für Live-Multiplayer-Mapping |
+| [`source/live_client.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/live_client.cpp) | Client für Live-Multiplayer-Session |
+| [`source/lua/lua_script_manager.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/lua/lua_script_manager.cpp) | Lua-Skripting-Engine und API-Bindings |
 
----
-
-## 9. Scripting & Extension Engine (`Lua Scripting`)
-Lua API bindings and custom extension script execution environment.
-
-| File Name | Description |
-| :--- | :--- |
-| [`source/lua/lua_script_manager.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/lua/lua_script_manager.cpp) | Main Lua environment initialization, plugin loader, and event bindings. |
-| [`source/lua/lua_api_map.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/lua/lua_api_map.cpp) | Lua map manipulation API bindings. |
-| [`source/lua/lua_api_brush.cpp`](file:///c:/Users/weber/Dokumente/Projekt/In%20Arbeit/Map%20Editor/source/lua/lua_api_brush.cpp) | Lua brush execution and procedural generation bindings. |
+### Test-Checkliste Backend & Stabilität
+- [ ] **OTBM Speichern & Laden**: Gespeicherte Maps lassen sich ohne Datenverlust oder falsche Sprites wieder öffnen.
+- [ ] **Undo / Redo (`Strg+Z / Strg+Y`)**: 20+ Aktionen rückgängig machen und wiederholen ohne Crash oder inkonsistente Tiles.
+- [ ] **Live Multiplayer**: Host starten (`Live -> Start`), zweiter Client verbindet sich (`Live -> Join`), Änderungen werden in Echtzeit synchronisiert.
+- [ ] **Crash-Resilienz / Logging**: Unerwartete Fehler schreiben einen Stacktrace in `error.log`, ohne den Benutzer ohne Meldung zu beenden.

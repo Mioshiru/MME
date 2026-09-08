@@ -3,6 +3,7 @@ REM ============================================================
 REM   Mios Map Editor - Professional Windows Build Script (Ninja + .NET)
 REM ============================================================
 
+chcp 65001 >nul 2>&1
 setlocal enabledelayedexpansion
 
 REM --- Deep Cleanup Environment to prevent vcpkg/git mismatches ---
@@ -38,6 +39,12 @@ type nul > "!LOG_FILE!" 2>nul || (
 echo Initializing Build Log>"!LOG_FILE!"
 if exist "!ERROR_FILE!" del /f /q "!ERROR_FILE!"
 
+set "NO_PAUSE="
+for %%a in (%*) do (
+    if /i "%%a"=="-nopause" set "NO_PAUSE=1"
+    if /i "%%a"=="--nopause" set "NO_PAUSE=1"
+)
+
 echo.
 echo %BOLD%%CYAN%========================================================%RESET%
 echo %BOLD%%CYAN%   Mios Map Editor Build Script%RESET%
@@ -46,6 +53,8 @@ echo.
 
 :start_build
 REM --- STEP 1: Prep & Environment ---
+taskkill /F /IM MME-Win64.exe /T >nul 2>&1
+taskkill /F /IM MME.exe /T >nul 2>&1
 set /a "STEP=1"
 echo %BOLD%[1/%TOTAL_STEPS%] Verifying environment...%RESET%
 
@@ -91,7 +100,7 @@ if exist "!PROJECT_ROOT!\..\sync_version.ps1" (
 echo   %GREEN%Environment OK%RESET%
 
 
-REM --- STEP 3: Dependencies & Tools ---
+REM --- STEP 2: Dependencies & Tools ---
 set /a "STEP+=1"
 echo.
 echo %BOLD%[%STEP%/%TOTAL_STEPS%] Resolving Dependencies ^& Tools (vcpkg, Vulkan, Shaders)...%RESET%
@@ -235,7 +244,7 @@ if !ERRORLEVEL! neq 0 ( set "FAIL_REASON=C++ Compilation" & goto :handle_error )
 echo.
 echo   %GREEN%Native C++ Build abgeschlossen.%RESET%
 
-REM --- STEP 6: Standalone Release Deployment ---
+REM --- STEP 5: Standalone Release Deployment ---
 set /a "STEP+=1"
 echo.
 echo %BOLD%[%STEP%/%TOTAL_STEPS%] Packaging Runtime Release Artifacts...%RESET%
@@ -272,10 +281,28 @@ REM 4. Copy Runtime Asset Folders to both BUILD_DIR and RELEASE_DIR
 if exist "!RELEASE_DIR!\tools" rd /s /q "!RELEASE_DIR!\tools" >nul 2>&1
 for %%D in (data brushes scripts extensions icons Saves) do (
     if exist "!PROJECT_ROOT!\%%D" (
-        robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /PURGE /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
-        robocopy "!PROJECT_ROOT!\%%D" "!RELEASE_DIR!\%%D" /E /PURGE /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+        if /i "%%D"=="Saves" (
+            robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+            robocopy "!PROJECT_ROOT!\%%D" "!RELEASE_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+        ) else (
+            robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /PURGE /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+            robocopy "!PROJECT_ROOT!\%%D" "!RELEASE_DIR!\%%D" /E /PURGE /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+        )
     )
 )
+
+REM 5. Integrate World_Backup into Save directories
+set "WB_DIR=!PROJECT_ROOT!\..\World_Backup"
+if exist "!WB_DIR!\Saves" (
+    robocopy "!WB_DIR!\Saves" "!PROJECT_ROOT!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+    robocopy "!WB_DIR!\Saves" "!BUILD_DIR!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+    robocopy "!WB_DIR!\Saves" "!RELEASE_DIR!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+) else if exist "!WB_DIR!" (
+    robocopy "!WB_DIR!" "!PROJECT_ROOT!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+    robocopy "!WB_DIR!" "!BUILD_DIR!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+    robocopy "!WB_DIR!" "!RELEASE_DIR!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
+)
+
 if not exist "!BUILD_DIR!\Saves" mkdir "!BUILD_DIR!\Saves" >nul 2>&1
 if not exist "!RELEASE_DIR!\Saves" mkdir "!RELEASE_DIR!\Saves" >nul 2>&1
 
@@ -291,7 +318,7 @@ echo   - Dev Incremental Cache : !BUILD_DIR!
 echo   - Clean Release Package  : !RELEASE_DIR!
 echo %GREEN%========================================================%RESET%
 echo.
-pause
+if not defined NO_PAUSE pause
 exit /b 0
 
 :cleanup_cmake_state
@@ -335,4 +362,5 @@ echo ^`^`^`text >> "!ERROR_FILE!"
 powershell -command "$content = Get-Content '!LOG_FILE!' -ErrorAction SilentlyContinue; $out = if ($content) { $content | Select-Object -Last 80 } else { 'Log is empty' }; $out | Out-File -FilePath '!ERROR_FILE!' -Encoding utf8 -Append"
 echo ^`^`^` >> "!ERROR_FILE!"
 echo %YELLOW%Details written to compiler_error_latest.md for review.%RESET%
-pause & exit /b 1
+if not defined NO_PAUSE pause
+exit /b 1

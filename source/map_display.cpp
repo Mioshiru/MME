@@ -52,7 +52,9 @@
 #include "svg_icons.h"
 #include "tile.h"
 #include "tileset_window.h"
+#include "application.h"
 #include "main_menubar.h"
+#include "main_toolbar.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -247,6 +249,12 @@ void MapCanvas::ShowHUDNotification(const std::string& text, uint32_t color) {
 
 void MapCanvas::OnKeyDown(wxKeyEvent& event) {
   if (!GetParent()) {
+    event.Skip();
+    return;
+  }
+
+  wxWindow* focus = wxWindow::FindFocus();
+  if (focus && dynamic_cast<wxTextCtrlBase*>(focus)) {
     event.Skip();
     return;
   }
@@ -1835,7 +1843,13 @@ void MapCanvas::UpdatePositionStatus(int /*x*/, int /*y*/) {
   
   static wxString last_ss_pos;
   if (last_ss_pos != ss) {
-      g_gui.root->SetStatusText(ss, 2);
+      if (g_gui.root && g_gui.root->GetStatusBar() && g_gui.root->GetStatusBar()->IsShown()) {
+        g_gui.root->SetStatusText(ss, 2);
+      }
+      // Mirror to toolbar right-aligned pos label
+      if (g_gui.root && g_gui.root->tool_bar) {
+        g_gui.root->tool_bar->SetPosInfo(ss);
+      }
       last_ss_pos = ss;
   }
 
@@ -1877,7 +1891,13 @@ void MapCanvas::UpdatePositionStatus(int /*x*/, int /*y*/) {
 
   static wxString last_ss_info;
   if (last_ss_info != ss) {
-      g_gui.root->SetStatusText(ss, 1);
+      if (g_gui.root && g_gui.root->GetStatusBar() && g_gui.root->GetStatusBar()->IsShown()) {
+        g_gui.root->SetStatusText(ss, 1);
+      }
+      // Mirror to toolbar right-aligned item label
+      if (g_gui.root && g_gui.root->tool_bar) {
+        g_gui.root->tool_bar->SetItemInfo(ss);
+      }
       last_ss_info = ss;
   }
 }
@@ -1888,7 +1908,9 @@ void MapCanvas::UpdateZoomStatus() {
     percentage = 1;
   wxString ss;
   ss << "zoom: " << percentage << "%";
-  g_gui.root->SetStatusText(ss, 3);
+  if (g_gui.root && g_gui.root->GetStatusBar() && g_gui.root->GetStatusBar()->IsShown()) {
+    g_gui.root->SetStatusText(ss, 3);
+  }
 }
 
 
@@ -2736,6 +2758,14 @@ void MapCanvas::OnAddAnnotation(wxCommandEvent &event) {
     }
   });
 }
+
+void MapCanvas::TriggerCopyLiveIP() {
+  if (g_gui.root && g_gui.root->menu_bar) {
+    wxCommandEvent dummy;
+    g_gui.root->menu_bar->OnCopyLiveIP(dummy);
+  }
+}
+
 
 
 

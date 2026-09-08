@@ -52,6 +52,13 @@ public:
 	void OnZChoiceChanged(wxCommandEvent& event);
 	void OnSizesButtonClick(wxCommandEvent& event);
 
+	// Update the right-aligned hover-info labels in the position toolbar
+	void SetItemInfo(const wxString& text);
+	void SetPosInfo(const wxString& text);
+
+	// Re-layout toolbars according to current TOOLBAR_ALIGNMENT setting
+	void ApplyAlignment();
+
 private:
 	static const wxString BRUSHES_BAR_NAME;
 	static const wxString POSITION_BAR_NAME;
@@ -64,6 +71,10 @@ private:
 	wxChoice* z_choice;
 	wxSlider* light_slider;
 	wxAuiToolBar* sizes_toolbar;
+
+	// Status & hover labels inside position_toolbar
+	wxStaticText* item_label  = nullptr;
+	wxStaticText* pos_label   = nullptr;
 };
 
 #endif // RME_MAINTOOLBAR_H_

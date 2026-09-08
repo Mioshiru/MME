@@ -53,13 +53,13 @@ public:
 
 	MinimapPanel(wxWindow* parent) :
 		wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize) {
-		SetMinSize(wxSize(100, 80));
-		SetBackgroundColour(wxColor(10, 20, 35));
+		SetMinSize(wxSize(60, 40));
+		SetBackgroundColour(wxColor(13, 17, 23));
 		
 		// Dropdown for jumping to towns
 		town_choice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-		town_choice->SetBackgroundColour(wxColour(10, 20, 35));
-		town_choice->SetForegroundColour(wxColour(180, 150, 50));
+		town_choice->SetBackgroundColour(wxColour(13, 17, 23));
+		town_choice->SetForegroundColour(wxColour(229, 193, 88));
 		town_choice->Bind(wxEVT_CHOICE, &MinimapPanel::OnTownSelected, this);
 
 		Bind(wxEVT_PAINT, &MinimapPanel::OnPaint, this);
@@ -68,6 +68,14 @@ public:
 		Bind(wxEVT_MOTION, &MinimapPanel::OnMouseMove, this);
 		Bind(wxEVT_LEFT_UP, &MinimapPanel::OnLeftUp, this);
 		Bind(wxEVT_MOUSEWHEEL, &MinimapPanel::OnMouseWheel, this);
+		Bind(wxEVT_SIZE, [this](wxSizeEvent& ev) {
+			int total_w = GetClientSize().x;
+			int total_h = GetClientSize().y;
+			if (town_choice && total_h > 24 && total_w > 4) {
+				town_choice->SetSize(2, total_h - 24, total_w - 4, 22);
+			}
+			ev.Skip();
+		});
 	}
 
 	void OnRightDown(wxMouseEvent& event) {
@@ -173,9 +181,6 @@ public:
 
 		// Make sure texture data is updated
 		canvas->UpdateMinimapTexture();
-
-		// Position town_choice dropdown below the minimap image
-		town_choice->SetSize(2, total_h - 24, total_w - 4, 22);
 
 		// Draw the minimap image
 		wxImage img(180, 180, canvas->minimap_pixels, true);
@@ -320,7 +325,7 @@ private:
 class ChecklistPalettePanel : public wxPanel {
 public:
 	ChecklistPalettePanel(wxWindow* parent) : wxPanel(parent, wxID_ANY) {
-		SetBackgroundColour(wxColor(10, 20, 35));
+		SetBackgroundColour(wxColor(13, 17, 23));
 		SetMinSize(wxSize(-1, 100));
 
 		wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
@@ -329,8 +334,8 @@ public:
 		wxBoxSizer* input_row = new wxBoxSizer(wxHORIZONTAL);
 		task_input = new wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
 		task_input->SetHint("New task...");
-		task_input->SetBackgroundColour(wxColor(14, 25, 45));
-		task_input->SetForegroundColour(wxColor(210, 190, 130));
+		task_input->SetBackgroundColour(wxColor(21, 27, 36));
+		task_input->SetForegroundColour(wxColor(229, 193, 88));
 
 		wxButton* add_btn = new wxButton(this, wxID_ANY, "+", wxDefaultPosition, wxSize(26, -1), wxNO_BORDER);
 		add_btn->SetBackgroundColour(wxColor(28, 50, 18));
@@ -343,7 +348,7 @@ public:
 		// Scrollable active task list
 		item_list = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxBORDER_NONE);
 		item_list->SetScrollRate(0, 12);
-		item_list->SetBackgroundColour(wxColor(10, 20, 35));
+		item_list->SetBackgroundColour(wxColor(13, 17, 23));
 		list_sizer = new wxBoxSizer(wxVERTICAL);
 		item_list->SetSizer(list_sizer);
 
@@ -449,16 +454,16 @@ END_EVENT_TABLE()
 
 PaletteModuleCard::PaletteModuleCard(wxWindow* parent, const wxString& title, bool canClose)
 	: wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_STATIC), can_close(canClose) {
-	SetBackgroundColour(wxColor(12, 24, 42));
+	SetBackgroundColour(wxColor(13, 17, 23));
 
 	main_sizer = new wxBoxSizer(wxVERTICAL);
 
 	header_panel = new wxPanel(this, wxID_ANY);
-	header_panel->SetBackgroundColour(wxColor(20, 38, 62));
+	header_panel->SetBackgroundColour(wxColor(21, 27, 36));
 
 	wxBoxSizer* header_sizer = new wxBoxSizer(wxHORIZONTAL);
 	title_text = new wxStaticText(header_panel, wxID_ANY, title);
-	title_text->SetForegroundColour(wxColor(220, 235, 255));
+	title_text->SetForegroundColour(wxColor(229, 193, 88));
 	wxFont font = title_text->GetFont();
 	font.SetWeight(wxFONTWEIGHT_BOLD);
 	font.SetPointSize(8);
@@ -466,15 +471,15 @@ PaletteModuleCard::PaletteModuleCard(wxWindow* parent, const wxString& title, bo
 	header_sizer->Add(title_text, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, 6);
 
 	btn_collapse = new wxButton(header_panel, wxID_ANY, "-", wxDefaultPosition, wxSize(20, 18), wxNO_BORDER);
-	btn_collapse->SetBackgroundColour(wxColor(32, 54, 82));
-	btn_collapse->SetForegroundColour(wxColor(240, 245, 255));
+	btn_collapse->SetBackgroundColour(wxColor(28, 36, 48));
+	btn_collapse->SetForegroundColour(wxColor(240, 244, 248));
 	btn_collapse->SetToolTip("Minimize / Expand Module");
 	btn_collapse->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { OnToggleCollapse(); });
 	header_sizer->Add(btn_collapse, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 2);
 
 	if (can_close) {
 		btn_close = new wxButton(header_panel, wxID_ANY, "x", wxDefaultPosition, wxSize(20, 18), wxNO_BORDER);
-		btn_close->SetBackgroundColour(wxColor(48, 28, 38));
+		btn_close->SetBackgroundColour(wxColor(48, 20, 24));
 		btn_close->SetForegroundColour(wxColor(255, 180, 180));
 		btn_close->SetToolTip("Remove / Hide Module");
 		btn_close->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { OnCloseModule(); });
@@ -537,7 +542,7 @@ void PaletteModuleCard::SetTitle(const wxString& title) {
 	}
 }
 
-PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets) :
+PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets, bool initial_allow_minimap) :
 	wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(180, 255)),
 	choicebook(nullptr),
 	terrain_palette(nullptr),
@@ -555,9 +560,10 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	search_box(nullptr),
 	card_assets(nullptr),
 	card_minimap(nullptr),
-	card_checklist(nullptr) {
+	card_checklist(nullptr),
+	allow_minimap(initial_allow_minimap) {
 	SetMinSize(wxSize(120, 150));
-	SetBackgroundColour(wxColor(10, 20, 35));
+	SetBackgroundColour(wxColor(13, 17, 23));
 
 	// Context menu binding to restore modules
 	Bind(wxEVT_RIGHT_DOWN, [this](wxMouseEvent& event) {
@@ -566,18 +572,26 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 
 	// Splitter Window to allow interactive height adjustment between Asset Palette and Minimap
 	splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_LIVE_UPDATE | wxSP_3D);
-	splitter->SetBackgroundColour(wxColor(10, 20, 35));
-	splitter->SetMinimumPaneSize(50);
-	splitter->SetSashGravity(1.0); // Top pane takes vertical resize growth, keeping user's chosen minimap height
+	splitter->SetBackgroundColour(wxColor(13, 17, 23));
+	splitter->SetMinimumPaneSize(35);
+	splitter->SetSashGravity(0.0); // Top pane (Minimap) stays compact, all vertical expansion goes to Asset Palette!
+
+	splitter->Bind(wxEVT_SPLITTER_SASH_POS_CHANGED, [this](wxSplitterEvent& ev) {
+		int pos = ev.GetSashPosition();
+		if (pos > 30) {
+			last_sash_pos = pos;
+			g_settings.setInteger(Config::MINIMAP_SASH_POS, pos);
+		}
+	});
 
 	// Module 1: Asset Browser Card
 	card_assets = new PaletteModuleCard(splitter, "Asset Palette", false);
 	wxPanel* asset_container = new wxPanel(card_assets, wxID_ANY);
-	asset_container->SetBackgroundColour(wxColor(10, 20, 35));
+	asset_container->SetBackgroundColour(wxColor(13, 17, 23));
 	wxBoxSizer* asset_sizer = new wxBoxSizer(wxVERTICAL);
 
 	palette_choice = newd wxChoice(asset_container, wxID_ANY);
-	palette_choice->SetBackgroundColour(wxColour(10, 20, 35));
+	palette_choice->SetBackgroundColour(wxColour(13, 17, 23));
 	search_box = newd wxTextCtrl(asset_container, PALETTE_SEARCH_BOX, "", wxDefaultPosition, wxDefaultSize, 0);
 	search_box->SetHint("Search");
 	search_box->Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& event) {
@@ -595,48 +609,48 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 	});
 
 	choicebook = newd wxChoicebook(asset_container, PALETTE_CHOICEBOOK, wxDefaultPosition, wxDefaultSize);
-	choicebook->SetBackgroundColour(wxColor(10, 20, 35));
+	choicebook->SetBackgroundColour(wxColor(13, 17, 23));
 	if (auto* choice_ctrl = choicebook->GetChoiceCtrl()) {
 		choice_ctrl->Hide();
 	}
 
+	favorites_palette = static_cast<BrushPalettePanel*>(CreateFavoritesPalette(choicebook, tilesets));
+	favorites_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	choicebook->AddPage(favorites_palette, favorites_palette->GetName());
+
 	terrain_palette = static_cast<BrushPalettePanel*>(CreateTerrainPalette(choicebook, tilesets));
-	terrain_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	terrain_palette->SetBackgroundColour(wxColor(13, 17, 23));
 	choicebook->AddPage(terrain_palette, terrain_palette->GetName());
 
 	doodad_palette = static_cast<BrushPalettePanel*>(CreateDoodadPalette(choicebook, tilesets));
-	doodad_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	doodad_palette->SetBackgroundColour(wxColor(13, 17, 23));
 	choicebook->AddPage(doodad_palette, doodad_palette->GetName());
 
 	collection_palette = nullptr;
 
 	item_palette = static_cast<BrushPalettePanel*>(CreateItemPalette(choicebook, tilesets));
-	item_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	item_palette->SetBackgroundColour(wxColor(13, 17, 23));
 	choicebook->AddPage(item_palette, item_palette->GetName());
 
 	house_palette = static_cast<HousePalettePanel*>(CreateHousePalette(choicebook, tilesets));
-	house_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	house_palette->SetBackgroundColour(wxColor(13, 17, 23));
 	choicebook->AddPage(house_palette, house_palette->GetName());
 
 	waypoint_palette = static_cast<WaypointPalettePanel*>(CreateWaypointPalette(choicebook, tilesets));
-	waypoint_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	waypoint_palette->SetBackgroundColour(wxColor(13, 17, 23));
 	choicebook->AddPage(waypoint_palette, waypoint_palette->GetName());
 
 	creature_palette = static_cast<CreaturePalettePanel*>(CreateCreaturePalette(choicebook, tilesets));
-	creature_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	creature_palette->SetBackgroundColour(wxColor(13, 17, 23));
 	choicebook->AddPage(creature_palette, creature_palette->GetName());
 
 	raw_palette = static_cast<BrushPalettePanel*>(CreateRAWPalette(choicebook, tilesets));
-	raw_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	raw_palette->SetBackgroundColour(wxColor(13, 17, 23));
 	choicebook->AddPage(raw_palette, raw_palette->GetName());
 
 	prefab_palette = static_cast<PrefabPalettePanel*>(CreatePrefabPalette(choicebook));
-	prefab_palette->SetBackgroundColour(wxColor(10, 20, 35));
+	prefab_palette->SetBackgroundColour(wxColor(13, 17, 23));
 	choicebook->AddPage(prefab_palette, prefab_palette->GetName());
-
-	favorites_palette = static_cast<BrushPalettePanel*>(CreateFavoritesPalette(choicebook, tilesets));
-	favorites_palette->SetBackgroundColour(wxColor(10, 20, 35));
-	choicebook->AddPage(favorites_palette, favorites_palette->GetName());
 
 	for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {
 		palette_choice->Append(choicebook->GetPageText(i));
@@ -668,16 +682,33 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets)
 		if (collapsed) {
 			if (splitter && splitter->IsSplit()) {
 				last_sash_pos = splitter->GetSashPosition();
+				if (last_sash_pos > 30) g_settings.setInteger(Config::MINIMAP_SASH_POS, last_sash_pos);
 				splitter->Unsplit(card_minimap);
 			}
 		} else {
 			if (splitter && !splitter->IsSplit()) {
-				splitter->SplitHorizontally(card_assets, card_minimap, last_sash_pos > 0 ? last_sash_pos : -180);
+				int saved_sash = g_settings.getInteger(Config::MINIMAP_SASH_POS);
+				if (saved_sash <= 30) saved_sash = 100;
+				int total_h = splitter->GetClientSize().y;
+				int target_sash = last_sash_pos > 30 ? last_sash_pos : (total_h > 150 ? std::min(saved_sash, total_h / 6) : 90);
+				if (target_sash < 40) target_sash = 40;
+				splitter->SplitHorizontally(card_minimap, card_assets, target_sash);
 			}
 		}
 	};
 
-	splitter->SplitHorizontally(card_assets, card_minimap, -180);
+	int saved_sash = g_settings.getInteger(Config::MINIMAP_SASH_POS);
+	if (saved_sash <= 30) saved_sash = 100;
+	last_sash_pos = saved_sash;
+
+	if (allow_minimap && g_settings.getBoolean(Config::MINIMAP_VISIBLE)) {
+		int total_h = splitter->GetClientSize().y;
+		int target_sash = (total_h > 150) ? std::min(saved_sash, total_h / 6) : saved_sash;
+		if (target_sash < 40) target_sash = 40;
+		splitter->SplitHorizontally(card_minimap, card_assets, target_sash);
+	} else {
+		splitter->Initialize(card_assets);
+	}
 
 	// Module 3: Quest Checklist Card (hidden by default; enable via right-click context menu)
 	card_checklist = new PaletteModuleCard(this, "Quest Checklist", true);
@@ -1353,11 +1384,24 @@ void PaletteWindow::OnUpdate(Map* map) {
 void PaletteWindow::UpdateMinimapVisibility() {
 	bool show_minimap = allow_minimap && g_settings.getBoolean(Config::MINIMAP_VISIBLE);
 	if (splitter && card_assets && card_minimap) {
-		if (!show_minimap && splitter->IsSplit()) {
-			last_sash_pos = splitter->GetSashPosition();
-			splitter->Unsplit(card_minimap);
-		} else if (show_minimap && !splitter->IsSplit()) {
-			splitter->SplitHorizontally(card_assets, card_minimap, last_sash_pos > 0 ? last_sash_pos : -180);
+		if (!show_minimap) {
+			if (splitter->IsSplit()) {
+				int sash = splitter->GetSashPosition();
+				if (sash > 30) {
+					last_sash_pos = sash;
+					g_settings.setInteger(Config::MINIMAP_SASH_POS, sash);
+				}
+				splitter->Unsplit(card_minimap);
+			}
+		} else {
+			if (!splitter->IsSplit()) {
+				int saved_sash = g_settings.getInteger(Config::MINIMAP_SASH_POS);
+				if (saved_sash <= 30) saved_sash = 100;
+				int total_h = splitter->GetClientSize().y;
+				int target_sash = last_sash_pos > 30 ? last_sash_pos : (total_h > 150 ? std::min(saved_sash, total_h / 6) : 90);
+				if (target_sash < 40) target_sash = 40;
+				splitter->SplitHorizontally(card_minimap, card_assets, target_sash);
+			}
 		}
 	}
 	Layout();
@@ -1371,6 +1415,11 @@ void PaletteWindow::InvalidatePrefabPalette() {
 }
 
 void PaletteWindow::OnKey(wxKeyEvent& event) {
+	wxWindow* focus = wxWindow::FindFocus();
+	if (focus && dynamic_cast<wxTextCtrlBase*>(focus)) {
+		event.Skip();
+		return;
+	}
 	if (g_gui.GetCurrentTab() != nullptr) {
 		g_gui.GetCurrentMapTab()->GetEventHandler()->AddPendingEvent(event);
 	}
@@ -1388,6 +1437,9 @@ void PaletteWindow::SnapDockWidth() {
 	wxAuiPaneInfo& pane = g_gui.aui_manager->GetPane(this);
 	if (!pane.IsOk()) return;
 
+	if (!pane.IsDocked()) return;
+	if (pane.dock_direction != wxAUI_DOCK_LEFT && pane.dock_direction != wxAUI_DOCK_RIGHT) return;
+
 	int scale_percent = g_settings.getInteger(Config::UI_SCALE);
 	if (scale_percent < 100) scale_percent = 100;
 	if (scale_percent > 200) scale_percent = 200;
@@ -1400,30 +1452,6 @@ void PaletteWindow::SnapDockWidth() {
 	int min_w = 3 * btn_w + chrome;
 	if (pane.min_size.x != min_w) {
 		pane.MinSize(wxSize(min_w, 100));
-	}
-
-	if (!pane.IsDocked()) return;
-	if (pane.dock_direction != wxAUI_DOCK_LEFT && pane.dock_direction != wxAUI_DOCK_RIGHT) return;
-
-	int current_w = GetSize().x;
-	if (current_w <= 0) return;
-
-	int cols = (current_w - chrome + btn_w / 2) / btn_w;
-	if (cols < 3) cols = 3;
-	int snapped_w = cols * btn_w + chrome;
-
-	if (std::abs(current_w - snapped_w) > 3 && !snapping_active) {
-		snapping_active = true;
-		CallAfter([this, snapped_w]() {
-			if (g_gui.aui_manager) {
-				wxAuiPaneInfo& p = g_gui.aui_manager->GetPane(this);
-				if (p.IsOk() && p.IsDocked()) {
-					p.best_size.x = snapped_w;
-					g_gui.aui_manager->Update();
-				}
-			}
-			snapping_active = false;
-		});
 	}
 }
 

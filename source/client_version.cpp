@@ -501,14 +501,20 @@ bool ClientVersion::hasValidPaths() {
 	sprites_path = wxFileName(client_path.GetFullPath(), wxString(ASSETS_NAME) + ".spr");
 
 	if (dir.GetFirst(&otfi_file, "*.otfi", wxDIR_FILES)) {
-		wxFileName otfi(client_path.GetFullPath(), otfi_file);
-		OTMLDocumentPtr doc = OTMLDocument::parse(otfi.GetFullPath().ToStdString());
-		if (doc->size() != 0 && doc->hasChildAt("DatSpr")) {
-			OTMLNodePtr node = doc->get("DatSpr");
-			std::string metadata = node->valueAt<std::string>("metadata-file", std::string(ASSETS_NAME) + ".dat");
-			std::string sprites = node->valueAt<std::string>("sprites-file", std::string(ASSETS_NAME) + ".spr");
-			metadata_path = wxFileName(client_path.GetFullPath(), wxString(metadata));
-			sprites_path = wxFileName(client_path.GetFullPath(), wxString(sprites));
+		try {
+			wxFileName otfi(client_path.GetFullPath(), otfi_file);
+			OTMLDocumentPtr doc = OTMLDocument::parse(otfi.GetFullPath().ToStdString());
+			if (doc && doc->size() != 0 && doc->hasChildAt("DatSpr")) {
+				OTMLNodePtr node = doc->get("DatSpr");
+				if (node) {
+					std::string metadata = node->valueAt<std::string>("metadata-file", std::string(ASSETS_NAME) + ".dat");
+					std::string sprites = node->valueAt<std::string>("sprites-file", std::string(ASSETS_NAME) + ".spr");
+					metadata_path = wxFileName(client_path.GetFullPath(), wxString(metadata));
+					sprites_path = wxFileName(client_path.GetFullPath(), wxString(sprites));
+				}
+			}
+		} catch (...) {
+			// Ignore OTML parse errors and fall back to default metadata_path / sprites_path
 		}
 	}
 

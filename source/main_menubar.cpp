@@ -223,7 +223,6 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(MAP_CLEANUP, wxITEM_NORMAL, OnMapCleanup);
 	MAKE_ACTION(MAP_CLEAN_HOUSE_ITEMS, wxITEM_NORMAL, OnMapCleanHouseItems);
 	MAKE_ACTION(ROTATE_ITEM, wxITEM_NORMAL, OnRotateItem);
-	MAKE_ACTION(TOGGLE_NO_HOTKEYS, wxITEM_CHECK, OnToggleNoHotkeys);
 	MAKE_ACTION(MAP_PROPERTIES, wxITEM_NORMAL, OnMapProperties);
 	MAKE_ACTION(MAP_STATISTICS, wxITEM_NORMAL, OnMapStatistics);
 
@@ -279,6 +278,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 
 	MAKE_ACTION(LIVE_START, wxITEM_NORMAL, OnStartLive); // Intern verknüpft mit "Host"
 	MAKE_ACTION(LIVE_JOIN, wxITEM_NORMAL, OnJoinLive);   // Intern verknüpft mit "Join"
+	MAKE_ACTION(LIVE_COPY_IP, wxITEM_NORMAL, OnCopyLiveIP);
 	MAKE_ACTION(LIVE_APPROVALS, wxITEM_NORMAL, OnApprovalsLive);
 	MAKE_ACTION(LIVE_CLOSE, wxITEM_NORMAL, OnCloseLive); // Intern verknüpft mit "Disconnect"
 	MAKE_ACTION(LIVE_HELP, wxITEM_NORMAL, OnHelpLive);
@@ -559,7 +559,6 @@ void MainMenuBar::Update() {
 	EnableItem(CLEAR_INVALID_HOUSES, is_local);
 	EnableItem(CLEAR_MODIFIED_STATE, is_local);
 	EnableItem(ROTATE_ITEM, has_map);
-	EnableItem(TOGGLE_NO_HOTKEYS, true);
 
 	EnableItem(EDIT_TOWNS, has_map);
 	EnableItem(EDIT_ITEMS, false);
@@ -592,6 +591,7 @@ void MainMenuBar::Update() {
 
 	EnableItem(LIVE_START, is_local);
 	EnableItem(LIVE_JOIN, loaded);
+	EnableItem(LIVE_COPY_IP, true);
 	EnableItem(LIVE_APPROVALS, is_live);
 	EnableItem(LIVE_CLOSE, is_live);
 	EnableItem(LIVE_HELP, true);
@@ -670,7 +670,6 @@ void MainMenuBar::LoadValues() {
 
 	CheckItem(MenuBar::SHOW_MINIMAP_HUD, g_settings.getBoolean(Config::MINIMAP_VISIBLE)); // Check the new minimap HUD item
 	CheckItem(SHOW_MINIMAP_HUD, g_settings.getBoolean(Config::MINIMAP_VISIBLE));
-	CheckItem(TOGGLE_NO_HOTKEYS, g_settings.getBoolean(Config::NO_HOTKEYS_MODE));
 }
 
 void MainMenuBar::LoadRecentFiles() {
@@ -977,16 +976,26 @@ void MainMenuBar::OnTestMap(wxCommandEvent& WXUNUSED(event)) {
 
 
 void MainMenuBar::OnPreferences(wxCommandEvent& WXUNUSED(event)) {
-	PreferencesWindow dialog(frame);
-	dialog.ShowModal();
-	dialog.Destroy();
+	try {
+		PreferencesWindow dialog(frame);
+		dialog.ShowModal();
+	} catch (const std::exception& e) {
+		wxLogError("Failed to open Preferences dialog: %s", e.what());
+	} catch (...) {
+		wxLogError("An unknown error occurred while opening Preferences.");
+	}
 }
 
 void MainMenuBar::OnShowHotkeys(wxCommandEvent& WXUNUSED(event)) {
-	PreferencesWindow dialog(frame);
-	dialog.SelectHotkeysTab();
-	dialog.ShowModal();
-	dialog.Destroy();
+	try {
+		PreferencesWindow dialog(frame);
+		dialog.SelectHotkeysTab();
+		dialog.ShowModal();
+	} catch (const std::exception& e) {
+		wxLogError("Failed to open Hotkeys dialog: %s", e.what());
+	} catch (...) {
+		wxLogError("An unknown error occurred while opening Hotkeys.");
+	}
 }
 
 void MainMenuBar::OnQuit(wxCommandEvent& WXUNUSED(event)) {
@@ -1647,6 +1656,30 @@ void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
 	Update();
 }
 
+void MainMenuBar::OnCopyLiveIP(wxCommandEvent& event) {
+	Editor* editor = g_gui.GetCurrentEditor();
+	int port = g_settings.getInteger(Config::MULTIPLAYER_PORT);
+	if (editor && editor->IsLive()) {
+		if (LiveServer* server = editor->GetLiveServer()) {
+			port = server->getPort();
+		}
+	}
+
+	wxString externalIp;
+	wxString errorMessage;
+	if (!GetExternalIpAddress(externalIp, errorMessage) || externalIp.empty()) {
+		externalIp = "127.0.0.1";
+	}
+
+	wxString invite = externalIp + ":" + wxString::Format("%d", port);
+	if (CopyTextToClipboard(invite)) {
+		g_gui.SetStatusText("Host IP Copied: " + invite);
+		g_gui.PopupDialog("Host IP Copied", "The Host IP address and port have been copied to your clipboard:\n\n" + invite + "\n\nOther users can join using this IP and Port in 'Multiplayer -> Join Server...' or on the Welcome screen.", wxOK);
+	} else {
+		g_gui.PopupDialog("Invite", "Could not copy the invite to clipboard:\n" + invite, wxOK);
+	}
+}
+
 void MainMenuBar::OnCloseLive(wxCommandEvent& event) {
 	Editor* editor = g_gui.GetCurrentEditor();
 	if (editor && editor->IsLive()) {
@@ -1940,25 +1973,6 @@ void MainMenuBar::OnRotateItem(wxCommandEvent& event) {
 	if (mapTab && mapTab->GetCanvas()) {
 		mapTab->GetCanvas()->OnRotateItem(event);
 	}
-}
-
-void MainMenuBar::OnToggleNoHotkeys(wxCommandEvent& WXUNUSED(event)) {
-	bool current = g_settings.getBoolean(Config::NO_HOTKEYS_MODE);
-	g_settings.setInteger(Config::NO_HOTKEYS_MODE, !current ? 1 : 0);
-	CheckItem(MenuBar::TOGGLE_NO_HOTKEYS, !current);
-	if (!current) {
-		g_gui.SetStatusText("No Hotkeys Mode: ON (Single-key hotkeys disabled)");
-	} else {
-		g_gui.SetStatusText("No Hotkeys Mode: OFF (Single-key hotkeys enabled)");
-	}
-
-	FileName filename(g_gui.getFoundDataDirectory() + "menubar.xml");
-	if (!filename.FileExists()) {
-		filename = FileName(GUI::GetDataDirectory() + "menubar.xml");
-	}
-	wxArrayString warnings;
-	wxString error;
-	Load(filename, warnings, error);
 }
 
 void MainMenuBar::OnRadioPlayer(wxCommandEvent& WXUNUSED(event)) {

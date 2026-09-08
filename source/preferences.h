@@ -131,6 +131,8 @@ public:
 	wxSlider* minimap_scroll_speed_slider = nullptr;
 
 	wxCheckBox* vsync_chkbox = nullptr;
+	wxChoice* toolbar_alignment_choice = nullptr;
+	wxCheckBox* hide_statusbar_chkbox = nullptr;
 	// Client info
 	wxChoice* default_version_choice = nullptr;
 	wxStaticText* scan_status_txt = nullptr;

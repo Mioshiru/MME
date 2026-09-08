@@ -1303,7 +1303,7 @@ void GameSprite::Image::createGLTexture(GLuint whatid) {
     }
   }
 
-  GLint filter = GL_LINEAR;
+  GLint filter = GL_NEAREST;
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
