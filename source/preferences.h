@@ -50,6 +50,7 @@ public:
 
 	// General
 	wxCheckBox* always_make_backup_chkbox = nullptr;
+	wxChoice* pixel_upscale_choice = nullptr;
 	wxCheckBox* autosave_enabled_chkbox = nullptr;
 	wxSlider*   autosave_interval_slider = nullptr;
 	wxStaticText* autosave_interval_label = nullptr;

@@ -212,7 +212,8 @@ namespace Config {
 		MULTIPLAYER_FAVORITES,
 		MULTIPLAYER_NAME,
 		UI_SCALE,
-		FAKE_HD_ASSETS,     // Bilinear filtering for smoother 32x32 assets
+		FAKE_HD_ASSETS,     // Optional pixel-art enhancement
+		PIXEL_UPSCALE_MODE, // 0 = Sharp Nearest, 1 = xBRZ edge reconstruction
 		AMBIENT_EFFECTS,    // Atmospheric cloud shadows, godrays & ambient glow
 		EXP_HDR_BLOOM,      // 2D HDR Bloom & Glow (Feuer, Fackeln, Lava, Magie)
 		EXP_BLOOM_INTENSITY,// Bloom Intensity float (0.1 - 1.0)

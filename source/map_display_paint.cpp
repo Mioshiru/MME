@@ -1454,7 +1454,10 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 						if (item && !item->isContainer()) {
 							uint16_t aid = item->getActionID();
 							uint16_t uid = item->getUniqueID();
-							if (aid > 0 || uid > 0) {
+							// For doors locked via Action ID 100 show a simple "Locked" popup
+							if (item->isDoor() && aid == 100) {
+								bubbles.push_back({ "Locked", std::string("Locked"), ImVec4(0.9f, 0.45f, 0.45f, 1.0f), ImVec4(0.75f, 0.35f, 0.35f, 1.0f) });
+							} else if (aid > 0 || uid > 0) {
 								std::string aid_str = aid > 0 ? "Action ID: " + std::to_string(aid) : "";
 								std::string uid_str = uid > 0 ? "Unique ID: " + std::to_string(uid) : "";
 								std::string content = aid_str + (aid > 0 && uid > 0 ? "\n" : "") + uid_str;

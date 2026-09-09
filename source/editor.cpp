@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "editor.h"
+#include <fstream>
 #include "materials.h"
 #include "map.h"
 #include "complexitem.h"
@@ -286,7 +287,22 @@ bool MapEditor::saveMap(FileName filename, bool show_dialog, bool is_autosave) {
 
 		// Perform the actual save
 		IOMapOTBM mapsaver(map.getVersion());
+		// Write an immediately-located save attempt log next to the target file
+		try {
+			std::string attempt_log = map_path + nstr(converter.GetName()) + ".save_attempt.log";
+			std::ofstream al(attempt_log.c_str(), std::ios::app);
+			al << "[saveMap] Starting save to: " << savefile << std::endl;
+			al.close();
+		} catch(...) { }
+
 		bool success = mapsaver.saveMap(map, fn);
+		// Log result
+		try {
+			std::string attempt_log = map_path + nstr(converter.GetName()) + ".save_attempt.log";
+			std::ofstream al(attempt_log.c_str(), std::ios::app);
+			al << "[saveMap] mapsaver.saveMap returned: " << (success ? "true" : "false") << std::endl;
+			al.close();
+		} catch(...) { }
 
 		if (show_dialog) {
 			g_gui.DestroyLoadBar();

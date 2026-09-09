@@ -205,6 +205,7 @@ void MainMenuBar::OnMapEditTowns(wxCommandEvent& WXUNUSED(event)) {
 		wxDialog* town_dialog = newd EditTownsDialog(frame, *g_gui.GetCurrentEditor());
 		town_dialog->ShowModal();
 		town_dialog->Destroy();
+		g_gui.RefreshMinimapPanel();
 	}
 }
 

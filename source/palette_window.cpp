@@ -95,18 +95,26 @@ public:
 	}
 
 	void UpdateTownList() {
-		town_choice->Clear();
-		town_choice->Append("Go to...");
-		town_choice->Append("Map Center");
-		
+		wxArrayString towns_for_choice;
+		towns_for_choice.Add("Go to...");
+		towns_for_choice.Add("Map Center");
+
 		MapTab* map_tab = g_gui.GetCurrentMapTab();
 		if (!map_tab) {
-			town_choice->SetSelection(0);
+			if (town_choice->GetCount() != towns_for_choice.size()) {
+				town_choice->Clear();
+				town_choice->Append(towns_for_choice);
+				town_choice->SetSelection(0);
+			}
 			return;
 		}
 		MapCanvas* canvas = map_tab->GetCanvas();
 		if (!canvas) {
-			town_choice->SetSelection(0);
+			if (town_choice->GetCount() != towns_for_choice.size()) {
+				town_choice->Clear();
+				town_choice->Append(towns_for_choice);
+				town_choice->SetSelection(0);
+			}
 			return;
 		}
 
@@ -114,10 +122,24 @@ public:
 		for (TownMap::const_iterator it = towns.begin(); it != towns.end(); ++it) {
 			Town* town = it->second;
 			if (town && !town->getName().empty()) {
-				town_choice->Append(wxString::FromUTF8(town->getName().c_str()));
+				towns_for_choice.Add(wxString::FromUTF8(town->getName().c_str()));
 			}
 		}
-		town_choice->SetSelection(0);
+
+		bool changed = town_choice->GetCount() != towns_for_choice.size();
+		if (!changed) {
+			for (unsigned int i = 0; i < town_choice->GetCount(); ++i) {
+				if (town_choice->GetString(i) != towns_for_choice[i]) {
+					changed = true;
+					break;
+				}
+			}
+		}
+		if (changed) {
+			town_choice->Clear();
+			town_choice->Append(towns_for_choice);
+			town_choice->SetSelection(0);
+		}
 	}
 
 	void OnTownSelected(wxCommandEvent& event) {
@@ -173,19 +195,17 @@ public:
 		int offset_x = (total_w - map_size) / 2;
 		int offset_y = (avail_h - map_size) / 2;
 
-		// Rebuild town list dynamically if town count differs
-		const Towns& towns = canvas->editor.map.towns;
-		if ((int)town_choice->GetCount() - 2 != (int)towns.count()) {
-			UpdateTownList();
-		}
+		// Keep the dropdown synchronized with renamed, added, or removed towns.
+		UpdateTownList();
 
 		// Make sure texture data is updated
 		canvas->UpdateMinimapTexture();
 
 		// Draw the minimap image
-		wxImage img(180, 180, canvas->minimap_pixels, true);
+		wxImage img(180, 180);
+		std::memcpy(img.GetData(), canvas->minimap_pixels, 180 * 180 * 3);
 		if (map_size != 180) {
-			img.Rescale(map_size, map_size, wxIMAGE_QUALITY_NORMAL);
+			img.Rescale(map_size, map_size, wxIMAGE_QUALITY_NEAREST);
 		}
 		wxBitmap bmp(img);
 		dc.DrawBitmap(bmp, offset_x, offset_y, false);

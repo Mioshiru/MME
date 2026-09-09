@@ -185,6 +185,14 @@ varying vec4  vColor;
 varying vec2  vWorldPos;
 varying float vShaderData;
 
+vec3 applyPixelGrade(vec3 color, float gammaValue, float contrastValue, float saturationValue, vec3 tint) {
+  color = pow(max(color, vec3(0.0)), vec3(gammaValue));
+  color = (color - 0.5) * contrastValue + 0.5;
+  float luma = dot(color, vec3(0.299, 0.587, 0.114));
+  color = mix(vec3(luma), color, saturationValue);
+  return clamp(color * tint, 0.0, 1.0);
+}
+
 void main() {
     vec2 uv = vTexCoord;
     vec4 raw = texture2D(uTexture, uv);
@@ -192,40 +200,20 @@ void main() {
 
     vec4 texel = raw;
 
-    // ── 1. Graphic Upgrader: Rich Color Vibrance without Brightness Washout ──
     if (uUpscaling == 1) {
-        vec3 col = texel.rgb;
-        float luma = dot(col, vec3(0.299, 0.587, 0.114));
-        // Pure chroma vibrance boost without lifting luminance
-        col = mix(vec3(luma), col, 1.25);
-        texel.rgb = clamp(col, 0.0, 1.0);
-    }
-
-    // ── 2. Cinematic Biome Color Grading & Moods ──
-    if (uExpColorGrading == 0) {
-        // 0: Vibrant Fantasy RPG (Oberwelt - Standard & Natürlich)
-        texel.rgb *= vec3(1.04, 1.03, 0.97);
-        float g = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
-        texel.rgb = mix(vec3(g), texel.rgb, 1.15);
-    } else if (uExpColorGrading == 1) {
-        // 1: Dark & Dangerous (Drachen, Untote, Blight, Dungeons)
-        texel.rgb = pow(texel.rgb, vec3(1.10));
-        float g = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
-        vec3 desat = mix(vec3(g), texel.rgb, 0.82);
-        float warm = max(0.0, texel.r - max(texel.g, texel.b));
-        texel.rgb = desat * vec3(0.92, 0.88, 1.04) + vec3(warm * 0.30, warm * 0.10, 0.0);
-    } else if (uExpColorGrading == 2) {
-        // 2: Gloomy Crypt & Cave (Kühler Höhlen-Look)
-        float g = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
-        texel.rgb = mix(vec3(g), texel.rgb * vec3(0.88, 0.92, 1.08), 0.75);
-    } else if (uExpColorGrading == 3) {
-        // 3: Golden Sunset & Twilight (Warme Abenddämmerung)
-        texel.rgb *= vec3(1.12, 0.98, 0.82);
-    } else if (uExpColorGrading == 4) {
-        // 4: Frozen Wastes & Frost (Kühles Eis-Blau)
-        texel.rgb *= vec3(0.88, 1.05, 1.18);
-    } else if (uExpColorGrading == 5) {
-        // 5: Neutral / Classic Vanilla (Ungefiltert)
+      if (uExpColorGrading == 0) {
+        texel.rgb = applyPixelGrade(texel.rgb, 0.94, 1.16, 1.28, vec3(1.04, 1.02, 0.96));
+      } else if (uExpColorGrading == 1) {
+        texel.rgb = applyPixelGrade(texel.rgb, 1.12, 1.24, 0.88, vec3(1.02, 0.94, 0.90));
+      } else if (uExpColorGrading == 2) {
+        texel.rgb = applyPixelGrade(texel.rgb, 1.16, 1.18, 0.72, vec3(0.84, 0.92, 1.12));
+      } else if (uExpColorGrading == 3) {
+        texel.rgb = applyPixelGrade(texel.rgb, 0.98, 1.12, 1.06, vec3(1.14, 0.98, 0.78));
+      } else if (uExpColorGrading == 4) {
+        texel.rgb = applyPixelGrade(texel.rgb, 1.04, 1.20, 1.10, vec3(0.82, 1.04, 1.20));
+      } else {
+        texel.rgb = applyPixelGrade(texel.rgb, 1.0, 1.0, 1.0, vec3(1.0));
+      }
     }
 
     // ── 3. Cinematic Vignette ──

@@ -43,6 +43,8 @@
 
 #include <wx/snglinst.h>
 #include <wx/stdpaths.h>
+#include <wx/combo.h>
+#include <wx/spinctrl.h>
 
 #if defined(__LINUX__) || defined(__WINDOWS__)
 #include <GL/glut.h>
@@ -936,8 +938,23 @@ void MainFrame::OnUpdateMenus(wxCommandEvent &) {
 }
 
 #ifdef __WINDOWS__
+namespace {
+bool IsTextInputFocused() {
+  wxWindow *focus = wxWindow::FindFocus();
+  while (focus) {
+    if (dynamic_cast<wxTextCtrlBase *>(focus) ||
+        dynamic_cast<wxComboBox *>(focus) ||
+        dynamic_cast<wxSpinCtrl *>(focus)) {
+      return true;
+    }
+    focus = focus->GetParent();
+  }
+  return false;
+}
+}
+
 bool MainFrame::MSWTranslateMessage(WXMSG *msg) {
-  if (g_gui.AreHotkeysEnabled()) {
+  if (g_gui.AreHotkeysEnabled() && !IsTextInputFocused()) {
     if (wxFrame::MSWTranslateMessage(msg)) {
       return true;
     }

@@ -2589,29 +2589,6 @@ void MapCanvas::UpdateMinimapTexture() {
     return;
   }
 
-  uint32_t current_time = wxGetLocalTimeMillis().GetValue();
-  if (minimap_tex_id != 0 && current_time - last_minimap_update_time < 200) {
-    return;
-  }
-  last_minimap_update_time = current_time;
-
-  if (IsShownOnScreen()) {
-    SetCurrent(*g_gui.GetGLContext(this));
-  }
-
-  if (minimap_tex_id == 0) {
-    glGenTextures(1, &minimap_tex_id); // Generate texture ID only once
-    glBindTexture(GL_TEXTURE_2D, minimap_tex_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                    0x812F); // GL_CLAMP_TO_EDGE
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                    0x812F); // GL_CLAMP_TO_EDGE
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 180, 180, 0, GL_RGB,
-                 GL_UNSIGNED_BYTE, nullptr);
-  }
-
   Editor &editor = *g_gui.GetCurrentEditor();
   int center_x, center_y;
   GetScreenCenter(&center_x, &center_y);
@@ -2640,36 +2617,55 @@ void MapCanvas::UpdateMinimapTexture() {
   minimap_span_w = std::max(1, span_w);
   minimap_span_h = std::max(1, span_h);
 
-  static uint8_t tex_data[180 * 180 * 3];
-  memset(tex_data, 0, sizeof(tex_data));
+  uint8_t tex_data[180 * 180 * 3] = {};
 
-  if (g_gui.IsRenderingEnabled()) {
-    for (int window_y = 0; window_y < 180; ++window_y) {
-      for (int window_x = 0; window_x < 180; ++window_x) {
-        int x = start_x + (int)(window_x * ((double)span_w / 180.0));
-        int y = start_y + (int)(window_y * ((double)span_h / 180.0));
-        if (x >= 0 && x < map_width && y >= 0 && y < map_height) {
-          Tile *tile = editor.map.getTile(x, y, floor);
-          if (tile) {
-            uint8_t color_idx = tile->getMiniMapColor();
-            if (color_idx) {
-              int idx = (window_y * 180 + window_x) * 3;
-              tex_data[idx] = minimap_color[color_idx].red;
-              tex_data[idx + 1] = minimap_color[color_idx].green;
-              tex_data[idx + 2] = minimap_color[color_idx].blue;
-            }
-          }
-        }
+  for (int window_y = 0; window_y < 180; ++window_y) {
+    for (int window_x = 0; window_x < 180; ++window_x) {
+      int x = start_x + (int)(window_x * ((double)span_w / 180.0));
+      int y = start_y + (int)(window_y * ((double)span_h / 180.0));
+      if (x < 0 || x >= map_width || y < 0 || y >= map_height) {
+        continue;
       }
+
+      Tile *tile = editor.map.getTile(x, y, floor);
+      if (!tile) {
+        continue;
+      }
+
+      uint8_t color_idx = tile->getMiniMapColor();
+      if (color_idx == 0 || color_idx >= INVALID_MINIMAP_COLOR) {
+        continue;
+      }
+
+      int idx = (window_y * 180 + window_x) * 3;
+      tex_data[idx] = minimap_color[color_idx].red;
+      tex_data[idx + 1] = minimap_color[color_idx].green;
+      tex_data[idx + 2] = minimap_color[color_idx].blue;
     }
   }
 
   // Copy into minimap_pixels so the palette-docked minimap can read it via wxImage
   memcpy(minimap_pixels, tex_data, sizeof(tex_data));
 
-  glBindTexture(GL_TEXTURE_2D, minimap_tex_id);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 180, 180, GL_RGB, GL_UNSIGNED_BYTE,
-                  tex_data);
+  // The wx minimap above is CPU-backed. Upload the same pixels only when the
+  // canvas owns a valid OpenGL context for the main minimap renderer.
+  if (IsShownOnScreen() && g_gui.GetGLContext(this)) {
+    SetCurrent(*g_gui.GetGLContext(this));
+    if (minimap_tex_id == 0) {
+      glGenTextures(1, &minimap_tex_id);
+      glBindTexture(GL_TEXTURE_2D, minimap_tex_id);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 180, 180, 0, GL_RGB,
+                   GL_UNSIGNED_BYTE, nullptr);
+    }
+    glBindTexture(GL_TEXTURE_2D, minimap_tex_id);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 180, 180, GL_RGB,
+                    GL_UNSIGNED_BYTE, tex_data);
+  }
+
 }
 
 void MapCanvas::OnIdle(wxIdleEvent& event) {

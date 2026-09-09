@@ -1724,7 +1724,38 @@ bool IOMapOTBM::saveSpawns(Map& map, const FileName& dir) {
 	// Create the XML file
 	pugi::xml_document doc;
 	if (saveSpawns(map, doc)) {
-		return doc.save_file(filepath.wc_str(), "\t", pugi::format_default, pugi::encoding_utf8);
+		// Debug logging to help diagnose save issues.
+		// Write logs to the executable directory so they are easy to find next to the binary.
+		try {
+			std::string execdir = nstr(g_gui.GetExecDirectory());
+			std::string logname = execdir + "save_debug.log";
+			std::ofstream elog(logname.c_str(), std::ios::app);
+			if (elog) {
+				std::time_t t = std::time(nullptr);
+				elog << "[" << std::asctime(std::localtime(&t)) << "] ";
+				elog << "[saveSpawns] Attempting to save spawns to: " << nstr(filepath) << std::endl;
+			}
+			bool ok = doc.save_file(filepath.wc_str(), "\t", pugi::format_default, pugi::encoding_utf8);
+			if (elog) {
+				elog << "[saveSpawns] doc.save_file returned: " << (ok ? "true" : "false") << std::endl;
+				elog.close();
+			}
+			return ok;
+		} catch (const std::exception& e) {
+			// Log exception to execdir if possible, then fallback to regular save
+			try {
+				std::string execdir = nstr(g_gui.GetExecDirectory());
+				std::string logname = execdir + "save_debug.log";
+				std::ofstream elog(logname.c_str(), std::ios::app);
+				if (elog) {
+					elog << "[saveSpawns] Exception: " << e.what() << std::endl;
+					elog.close();
+				}
+			} catch (...) {}
+			return doc.save_file(filepath.wc_str(), "\t", pugi::format_default, pugi::encoding_utf8);
+		} catch (...) {
+			return doc.save_file(filepath.wc_str(), "\t", pugi::format_default, pugi::encoding_utf8);
+		}
 	}
 	return false;
 }

@@ -235,8 +235,7 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 	// 4. Locked Door
 	if (edit_item->isDoor()) {
 		wxBoxSizer* doorRow = new wxBoxSizer(wxHORIZONTAL);
-		doorRow->Add(createLabel("Locked Door:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
-		locked_door_checkbox = new wxCheckBox(panel, wxID_ANY, "Locked Key Door (Action ID 100)");
+		locked_door_checkbox = new wxCheckBox(panel, wxID_ANY, "Locked");
 		locked_door_checkbox->SetForegroundColour(wxColour(248, 250, 252));
 		locked_door_checkbox->SetValue(edit_item->getActionID() == 100);
 
@@ -255,31 +254,6 @@ wxWindow* PropertiesWindow::createGeneralPanel(wxWindow* parent) {
 		topSizer->Add(doorRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 4);
 	} else {
 		locked_door_checkbox = nullptr;
-	}
-
-	// 4b. Item Movement Flag (Unmovable / Not Moveable)
-	{
-		wxBoxSizer* moveRow = new wxBoxSizer(wxHORIZONTAL);
-		bool is_unmovable = false;
-		if (const bool* bVal = edit_item->getBooleanAttribute("unmoveable")) {
-			is_unmovable = *bVal;
-		} else if (const bool* bVal2 = edit_item->getBooleanAttribute("unmovable")) {
-			is_unmovable = *bVal2;
-		} else if (const int32_t* iVal = edit_item->getIntegerAttribute("unmoveable")) {
-			is_unmovable = (*iVal != 0);
-		} else if (const int32_t* iVal2 = edit_item->getIntegerAttribute("unmovable")) {
-			is_unmovable = (*iVal2 != 0);
-		} else if (edit_item->getCustomAttribute("unmoveable", 0) != 0 || edit_item->getCustomAttribute("unmovable", 0) != 0) {
-			is_unmovable = true;
-		} else {
-			is_unmovable = edit_item->isNotMoveable();
-		}
-
-		unmoveable_checkbox = new wxCheckBox(panel, wxID_ANY, "Not Moveable / Unmovable (Fest platziert, darf nicht bewegt werden)");
-		unmoveable_checkbox->SetForegroundColour(wxColour(248, 250, 252));
-		unmoveable_checkbox->SetValue(is_unmovable);
-		moveRow->Add(unmoveable_checkbox, 1, wxALIGN_CENTER_VERTICAL);
-		topSizer->Add(moveRow, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 6);
 	}
 
 	// Sync Action ID
@@ -656,8 +630,7 @@ void PropertiesWindow::saveTeleportSpecialPanel() {
 
 static bool isReservedStandardAttribute(const std::string& key) {
 	return key == "aid" || key == "uid" || key == "text" || key == "desc" ||
-	       key == "count" || key == "charges" || key == "tier" || key == "depot_id" ||
-	       key == "unmoveable" || key == "unmovable";
+	       key == "count" || key == "charges" || key == "tier" || key == "depot_id";
 }
 
 wxWindow* PropertiesWindow::createAttributesPanel(wxWindow* parent) {
@@ -789,18 +762,6 @@ void PropertiesWindow::saveGeneralPanel() {
 		if (depot && depot_town_field->GetSelection() != wxNOT_FOUND) {
 			uint16_t selected_town_id = static_cast<uint16_t>(reinterpret_cast<uintptr_t>(depot_town_field->GetClientData(depot_town_field->GetSelection())));
 			depot->setDepotID(selected_town_id);
-		}
-	}
-	if (unmoveable_checkbox) {
-		bool unmov = unmoveable_checkbox->IsChecked();
-		if (unmov) {
-			edit_item->setAttribute("unmoveable", true);
-			edit_item->setCustomAttribute("unmoveable", 1);
-		} else {
-			edit_item->eraseAttribute("unmoveable");
-			edit_item->eraseAttribute("unmovable");
-			edit_item->setCustomAttribute("unmoveable", 0);
-			edit_item->setCustomAttribute("unmovable", 0);
 		}
 	}
 }

@@ -337,6 +337,7 @@ void Settings::IO(IOMode mode) {
 	Int(SHOW_FPS, 0);
 	Int(UI_SCALE, 100);
 	Int(FAKE_HD_ASSETS, 1);
+	Int(PIXEL_UPSCALE_MODE, 0);
 	Int(AMBIENT_EFFECTS, 1);
 	Int(EXP_HDR_BLOOM, 0);
 	Float(EXP_BLOOM_INTENSITY, 0.5f);

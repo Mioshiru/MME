@@ -124,6 +124,7 @@ protected:
 
 		void visit();
 		virtual void clean(int time);
+		void invalidateGLTexture();
 
 		virtual GLuint getHardwareID() = 0;
 		virtual uint8_t* getRGBData() = 0;
@@ -278,6 +279,7 @@ public:
 
 	void clear();
 	void cleanSoftwareSprites();
+	void invalidateGLTextures();
 
 	Sprite* getSprite(int id);
 	GameSprite* getCreatureSprite(int id);

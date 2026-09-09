@@ -564,28 +564,45 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	top_row->Add(bg_color_sizer, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 15);
 
 	wxStaticBoxSizer* wip_group = newd wxStaticBoxSizer(wxHORIZONTAL, visual_panel, "Enhancements");
-	fake_hd_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Graphic Upgrader (Sattere Fantasy-Farben)");
+	fake_hd_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Sharp Pixel-Art Enhancement");
 	fake_hd_chkbox->SetValue(g_settings.getBoolean(Config::FAKE_HD_ASSETS));
-	fake_hd_chkbox->SetToolTip("Aktiviert saubere, satte Fantasy-Farbsaettigung und Kontrast ohne Ueberbelichtung.");
+	fake_hd_chkbox->SetToolTip("Uses crisp nearest-neighbor sprites, controlled contrast, and stepped pixel-art lighting.");
 	wip_group->Add(fake_hd_chkbox, 0, wxALL | wxALIGN_CENTER_VERTICAL, 4);
+	wxArrayString upscale_choices;
+	upscale_choices.Add("Sharp Nearest (Crisp Pixels)");
+	upscale_choices.Add("xBRZ Edge (Smooth Diagonals)");
+	pixel_upscale_choice = newd wxChoice(visual_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, upscale_choices);
+	int upscale_mode = std::clamp(g_settings.getInteger(Config::PIXEL_UPSCALE_MODE), 0, 1);
+	pixel_upscale_choice->SetSelection(upscale_mode);
+	pixel_upscale_choice->SetToolTip("Choose the sprite reconstruction style used by Sharp Pixel-Art Enhancement.");
+	pixel_upscale_choice->SetBackgroundColour(wxColour(35, 47, 62));
+	pixel_upscale_choice->SetForegroundColour(wxColour(210, 225, 240));
+	wip_group->Add(pixel_upscale_choice, 0, wxALL | wxALIGN_CENTER_VERTICAL, 4);
 	top_row->Add(wip_group, 1, wxEXPAND);
 	visual_group->Add(top_row, 0, wxEXPAND | wxALL, 4);
 
 	// 1. Cinematic Color Grading Moods
 	wxBoxSizer* mood_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	mood_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Biome Farbstimmung:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	wxStaticText* mood_label = newd wxStaticText(visual_panel, wxID_ANY, "Biome Color Mood:");
+	mood_label->SetForegroundColour(wxColour(255, 205, 50));
+	mood_label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	mood_sizer->Add(mood_label, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 	wxArrayString mood_choices;
-	mood_choices.Add("Vibrant Fantasy RPG (Oberwelt - Standard & Natuerlich)");
-	mood_choices.Add("Dark & Dangerous (Drachen, Untote, Blight & Dungeons)");
-	mood_choices.Add("Gloomy Crypt & Cave (Kuehler Hoehlen-Look)");
-	mood_choices.Add("Golden Sunset & Twilight (Warme Abenddaemmerung)");
-	mood_choices.Add("Frozen Wastes & Frost (Kuehles Eis-Blau)");
-	mood_choices.Add("Neutral / Classic Vanilla (Ungefiltert)");
+	mood_choices.Add("Vibrant Fantasy RPG (Bright and Natural)");
+	mood_choices.Add("Dark and Dangerous (Dragons, Undead, Blight, Dungeons)");
+	mood_choices.Add("Gloomy Crypt and Cave (Cool Cave Look)");
+	mood_choices.Add("Golden Sunset and Twilight (Warm Evening Light)");
+	mood_choices.Add("Frozen Wastes and Frost (Cool Ice Blue)");
+	mood_choices.Add("Neutral / Classic Vanilla (Unfiltered)");
 	exp_color_grading_choice = newd wxChoice(visual_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, mood_choices);
+	exp_color_grading_choice->SetBackgroundColour(wxColour(61, 47, 18));
+	exp_color_grading_choice->SetForegroundColour(wxColour(255, 224, 130));
+	exp_color_grading_choice->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	exp_color_grading_choice->SetMinSize(wxSize(340, -1));
 	int cur_mood = g_settings.getInteger(Config::EXP_COLOR_GRADING);
 	if (cur_mood < 0 || cur_mood >= static_cast<int>(mood_choices.size())) cur_mood = 0;
 	exp_color_grading_choice->SetSelection(cur_mood);
-	exp_color_grading_choice->SetToolTip("Waehle die atmosphaerische Farbstimmung fuer verschiedene Biome, Dungeons und Gebiete.");
+	exp_color_grading_choice->SetToolTip("Choose the atmospheric color mood for different biomes, dungeons, and areas.");
 	mood_sizer->Add(exp_color_grading_choice, 0, wxALIGN_CENTER_VERTICAL);
 	visual_group->Add(mood_sizer, 0, wxALL, 4);
 
@@ -741,6 +758,7 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	def_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
 		if (bg_color_choice) bg_color_choice->SetSelection(0);
 		if (fake_hd_chkbox) fake_hd_chkbox->SetValue(false);
+		if (pixel_upscale_choice) pixel_upscale_choice->SetSelection(0);
 		if (exp_color_grading_choice) exp_color_grading_choice->SetSelection(0);
 		if (exp_vignette_chkbox) exp_vignette_chkbox->SetValue(false);
 		if (exp_vignette_slider) exp_vignette_slider->SetValue(4);
@@ -1219,6 +1237,15 @@ void PreferencesWindow::Apply() {
 		bool new_fake_hd = fake_hd_chkbox->GetValue();
 		if (old_fake_hd != new_fake_hd) {
 			g_settings.setInteger(Config::FAKE_HD_ASSETS, new_fake_hd ? 1 : 0);
+			g_gui.RefreshView();
+		}
+	}
+	if (pixel_upscale_choice) {
+		int old_upscale_mode = g_settings.getInteger(Config::PIXEL_UPSCALE_MODE);
+		int new_upscale_mode = pixel_upscale_choice->GetSelection();
+		g_settings.setInteger(Config::PIXEL_UPSCALE_MODE, new_upscale_mode);
+		if (old_upscale_mode != new_upscale_mode) {
+			g_gui.gfx.invalidateGLTextures();
 			g_gui.RefreshView();
 		}
 	}
