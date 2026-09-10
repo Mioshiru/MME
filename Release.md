@@ -8,6 +8,18 @@
 
 ### 🌟 Major Highlights & New Features in v1.9.5
 
+* **🛡️ Stability, Recovery & Collaboration Hardening:**
+  * **Malformed Network Packet Protection:** `NetworkMessage` now latches truncated reads and invalid string lengths. The live client logs the offending packet type and closes the session cleanly instead of continuing with default or partial values.
+  * **Reliable Undo Memory Budget:** Existing `UNDO_MEM_SIZE` limits are enforced after inserting or merging the newest action, including oversized single operations. The configured minimum is clamped to a safe positive value.
+  * **Transactional Map Saving:** OTBM data is written completely to a temporary file and renamed into place only after all writes succeed, preserving the previous map file during interrupted saves. Crash recovery also records and restores waypoint backups in addition to OTBM, house, and spawn files.
+  * **Release Package Hygiene:** Personal `Saves` and `World_Backup` content remain available to local build output but are excluded from the clean release package.
+  * **Viewport-Aware Lighting API:** Deferred lighting now accepts explicit viewport bounds and requests only lights intersecting the visible map area, removing the former fixed 10,000 x 10,000 fallback.
+  * **Visible Multiplayer Lock Feedback:** Lock and unlock broadcasts now report the affected map position and current editor in the status bar, complementing the existing property and context-menu protection.
+  * **Auto-Save Status Feedback:** The coordinates/status bar now keeps the time of the last successful automatic save visible alongside the zoom level.
+  * **Canvas Lock Overlay:** Multiplayer-locked positions are rendered as color-coded translucent tiles with a highlighted border, so active edits are visible before a conflicting click.
+  * **Ocean & Landmass Generator:** Added an undoable procedural ocean mode with configurable grass, sand, water, snow, and shoreline ground IDs. The generator creates smoothed island/landmass distributions, places sand along coasts, adds cold snow regions, applies shoreline walls, supports deterministic seeds and live preview, and protects houses, spawns, creatures, containers, doors, walls, and protection zones.
+  * **Palette Card Redesign:** Brush and item tiles now use larger Obsidian cards with restrained blue-gray borders, centered sprites, a dedicated item-ID footer, and a clear Mystic Gold selection frame while preserving the existing MME color language.
+
 * **🔮 Dark Runic Obsidian & Mystic Gold Fantasy RPG UI Overhaul:**
   * **Complete Theme Transformation:** Entire editor user interface transformed into an immersive AAA Dark Fantasy aesthetic with deep basalt/obsidian panels (`#0D1117`, `#161B22`), mystic gold framing (`#E5C158`, `#D4AF37`), and subtle amber/sapphire glowing accents.
   * **Unified Palette & Brush System:** High-contrast selection highlights with double gold contour borders, polished runic-slate category headers, and refined icon grid spacing.

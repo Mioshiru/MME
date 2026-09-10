@@ -198,6 +198,7 @@ void MapEditor::addAction(Action* action, int stacking_delay) {
 
 bool MapEditor::saveMap(FileName filename, bool show_dialog, bool is_autosave) {
 	std::string savefile = filename.GetFullPath().mb_str(wxConvUTF8).data();
+	const std::string previous_map_filename = map.filename;
 	bool save_as = false;
 	bool save_otgz = false;
 
@@ -271,7 +272,8 @@ bool MapEditor::saveMap(FileName filename, bool show_dialog, bool is_autosave) {
 		std::ofstream f(n.c_str(), std::ios::trunc | std::ios::out);
 		f << backup_otbm << std::endl
 		  << backup_house << std::endl
-		  << backup_spawn << std::endl;
+		  << backup_spawn << std::endl
+		  << backup_waypoint << std::endl;
 	}
 
 	{
@@ -312,6 +314,7 @@ bool MapEditor::saveMap(FileName filename, bool show_dialog, bool is_autosave) {
 
 		// Check for errors...
 		if (!success) {
+			map.filename = previous_map_filename;
 			// Rename the temporary backup files back to their previous names
 			if (!backup_otbm.empty()) {
 				converter.SetFullName(wxstr(savefile));

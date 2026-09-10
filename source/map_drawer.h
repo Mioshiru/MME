@@ -194,6 +194,7 @@ public:
   void DrawHigherFloors();
   void DrawSelectionBox();
   void DrawLiveCursors();
+  void DrawLiveLocks();
   void DrawBrush();
   void DrawIngameBox();
   void DrawGrid();

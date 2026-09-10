@@ -569,15 +569,17 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	fake_hd_chkbox->SetToolTip("Uses crisp nearest-neighbor sprites, controlled contrast, and stepped pixel-art lighting.");
 	wip_group->Add(fake_hd_chkbox, 0, wxALL | wxALIGN_CENTER_VERTICAL, 4);
 	wxArrayString upscale_choices;
-	upscale_choices.Add("Sharp Nearest (Crisp Pixels)");
-	upscale_choices.Add("xBRZ Edge (Smooth Diagonals)");
+	upscale_choices.Add("Sharp Nearest (Pixel-Perfect)");
+	upscale_choices.Add("xBRZ Modern Pixel-Art (Soft & Vibrant)");
 	pixel_upscale_choice = newd wxChoice(visual_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, upscale_choices);
 	int upscale_mode = std::clamp(g_settings.getInteger(Config::PIXEL_UPSCALE_MODE), 0, 1);
 	pixel_upscale_choice->SetSelection(upscale_mode);
-	pixel_upscale_choice->SetToolTip("Choose the sprite reconstruction style used by Sharp Pixel-Art Enhancement.");
+	pixel_upscale_choice->SetToolTip("xBRZ smooths pixel-art edges and intensifies colors for a modern look.");
 	pixel_upscale_choice->SetBackgroundColour(wxColour(35, 47, 62));
 	pixel_upscale_choice->SetForegroundColour(wxColour(210, 225, 240));
 	wip_group->Add(pixel_upscale_choice, 0, wxALL | wxALIGN_CENTER_VERTICAL, 4);
+	wip_group->Detach(fake_hd_chkbox);
+	fake_hd_chkbox->Hide();
 	top_row->Add(wip_group, 1, wxEXPAND);
 	visual_group->Add(top_row, 0, wxEXPAND | wxALL, 4);
 
@@ -836,6 +838,16 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	cursor_alt_color_pick = new wxColourPickerCtrl(theme_panel, wxID_ANY, wxColor(g_settings.getInteger(Config::CURSOR_ALT_RED), g_settings.getInteger(Config::CURSOR_ALT_GREEN), g_settings.getInteger(Config::CURSOR_ALT_BLUE)));
 	color_grid->Add(cursor_alt_color_pick);
 	theme_group->Add(color_grid, 0, wxALL, 2);
+	wxBoxSizer* toolbar_row = new wxBoxSizer(wxHORIZONTAL);
+	toolbar_row->Add(new wxStaticText(theme_panel, wxID_ANY, "Toolbar alignment:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	toolbar_alignment_choice = new wxChoice(theme_panel, wxID_ANY);
+	toolbar_alignment_choice->Append("Left");
+	toolbar_alignment_choice->Append("Centered");
+	toolbar_alignment_choice->Append("Right");
+	toolbar_alignment_choice->SetSelection(std::clamp(g_settings.getInteger(Config::TOOLBAR_ALIGNMENT), 0, 2));
+	toolbar_alignment_choice->SetToolTip("Align the icons inside the current toolbar without moving the toolbar itself.");
+	toolbar_row->Add(toolbar_alignment_choice, 0, wxALIGN_CENTER_VERTICAL);
+	theme_group->Add(toolbar_row, 0, wxALL, 2);
 	theme_sizer->Add(theme_group, 0, wxEXPAND | wxALL, 3);
 
 	wxStaticBoxSizer* icon_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Icon Sizing");
@@ -1237,6 +1249,7 @@ void PreferencesWindow::Apply() {
 		bool new_fake_hd = fake_hd_chkbox->GetValue();
 		if (old_fake_hd != new_fake_hd) {
 			g_settings.setInteger(Config::FAKE_HD_ASSETS, new_fake_hd ? 1 : 0);
+			must_restart = true;
 			g_gui.RefreshView();
 		}
 	}
@@ -1245,6 +1258,7 @@ void PreferencesWindow::Apply() {
 		int new_upscale_mode = pixel_upscale_choice->GetSelection();
 		g_settings.setInteger(Config::PIXEL_UPSCALE_MODE, new_upscale_mode);
 		if (old_upscale_mode != new_upscale_mode) {
+			must_restart = true;
 			g_gui.gfx.invalidateGLTextures();
 			g_gui.RefreshView();
 		}
@@ -1314,10 +1328,18 @@ void PreferencesWindow::Apply() {
 		RME::UI::Theme::SetTheme(theme_idx == 0 ? RME::UI::Theme::Type::Dark : RME::UI::Theme::Type::Light);
 		palette_style_changed = true;
 	}
+	if (toolbar_alignment_choice) {
+		int old_alignment = g_settings.getInteger(Config::TOOLBAR_ALIGNMENT);
+		int new_alignment = toolbar_alignment_choice->GetSelection();
+		g_settings.setInteger(Config::TOOLBAR_ALIGNMENT, new_alignment);
+		if (old_alignment != new_alignment && g_gui.root && g_gui.root->GetAuiToolBar()) {
+			g_gui.root->GetAuiToolBar()->ApplyAlignment();
+		}
+	}
 
 	if (terrain_palette_style_choice && collection_palette_style_choice &&
 		doodad_palette_style_choice && item_palette_style_choice && raw_palette_style_choice) {
-		palette_style_changed =
+		palette_style_changed = palette_style_changed ||
 			g_settings.getString(Config::PALETTE_TERRAIN_STYLE) != (terrain_palette_style_choice->GetSelection() == 0 ? "large icons" : terrain_palette_style_choice->GetSelection() == 1 ? "small icons" : "listbox") ||
 			g_settings.getString(Config::PALETTE_COLLECTION_STYLE) != (collection_palette_style_choice->GetSelection() == 0 ? "large icons" : collection_palette_style_choice->GetSelection() == 1 ? "small icons" : "listbox") ||
 			g_settings.getString(Config::PALETTE_DOODAD_STYLE) != (doodad_palette_style_choice->GetSelection() == 0 ? "large icons" : doodad_palette_style_choice->GetSelection() == 1 ? "small icons" : "listbox") ||
@@ -1358,6 +1380,9 @@ void PreferencesWindow::Apply() {
 	}
 
 	g_settings.save();
+	if (must_restart) {
+		g_gui.PopupDialog("Restart required", "Enhancement preset changes are saved and will be applied after restarting Mios Map Editor.", wxOK);
+	}
 
 	if (palette_update_needed) {
 		// change palette structure
@@ -1369,6 +1394,7 @@ void PreferencesWindow::Apply() {
 	} else {
 		if (palette_style_changed) {
 			g_gui.RebuildPalettes();
+			g_settings.save();
 		}
 	}
 

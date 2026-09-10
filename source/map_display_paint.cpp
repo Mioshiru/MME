@@ -90,6 +90,19 @@ static GLuint ConvertBitmapToTexture(const wxBitmap& bitmap) {
 	return tex_id;
 }
 
+static GLuint GetDayNightTexture() {
+	static GLuint texture = 0;
+	if (texture != 0) return texture;
+	wxBitmap bitmap = LoadBitmapFromCandidatesRadial(wxSize(32, 32), {
+		"icons/day-night.png",
+		"../icons/day-night.png",
+		"Map Editor/icons/day-night.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "day-night.png"
+	});
+	texture = ConvertBitmapToTexture(bitmap);
+	return texture;
+}
+
 
 #ifdef __WINDOWS__
 #include <windows.h>
@@ -948,13 +961,49 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		nvgEndFrame(drawer->GetNanoVGContext());
 	}
 
+	// Day/Night toggle pinned to the top-right corner of the canvas.
+	constexpr float kDayNightBarHeight = 54.0f;
+	{
+		bool show_lights = g_settings.getBoolean(Config::SHOW_LIGHTS);
+		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 118.0f, 10.0f), ImGuiCond_Always);
+		ImGui::SetNextWindowBgAlpha(0.75f);
+		ImGuiWindowFlags daynight_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+			ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+		if (ImGui::Begin("##DayNightOverlay", nullptr, daynight_flags)) {
+			ImVec2 icon_pos = ImGui::GetCursorScreenPos();
+			GLuint day_night_texture = GetDayNightTexture();
+			if (day_night_texture != 0) {
+				ImGui::Image((void*)(intptr_t)day_night_texture, ImVec2(32.0f, 32.0f));
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Toggle day/night lighting");
+			} else {
+				ImGui::Dummy(ImVec2(32.0f, 32.0f));
+			}
+			ImGui::SetCursorScreenPos(icon_pos);
+			if (ImGui::InvisibleButton("##DayNightButton", ImVec2(32.0f, 32.0f))) {
+				show_lights = !show_lights;
+				g_settings.setInteger(Config::SHOW_LIGHTS, show_lights ? 1 : 0);
+				Refresh();
+			}
+			if (show_lights) {
+				int pct = int(g_settings.getFloat(Config::LIGHT_INTENSITY) * 100.0f);
+				ImGui::SetNextItemWidth(100.0f);
+				if (ImGui::SliderInt("##LightIntensity", &pct, 10, 100, "%d%%")) {
+					g_settings.setFloat(Config::LIGHT_INTENSITY, float(pct) / 100.0f);
+					Refresh();
+				}
+			}
+		}
+		ImGui::End();
+	}
+
 	// Movable minimap window
 	if (g_settings.getBoolean(Config::MINIMAP_VISIBLE) && g_settings.getInteger(Config::MINIMAP_DOCK_STYLE) == 0) {
 		bool minimap_open = true;
 
 		UpdateMinimapTexture();
 		ImGui::SetNextWindowSize(ImVec2(200.0f, 260.0f), ImGuiCond_Always);
-		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 210.0f, 10.0f), ImGuiCond_Always);
+		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 210.0f, 10.0f + kDayNightBarHeight), ImGuiCond_Always);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 5.0f));

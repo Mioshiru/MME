@@ -66,6 +66,10 @@ void MapWindow::CloseReplaceItemsDialog() {
   if (replaceItemsDialog) {
     replaceItemsDialog->Close();
   }
+
+  // Scrolling changes the minimap viewport as well. Refresh without erasing
+  // the background to avoid a visible white/black flash during minimap drag.
+  canvas->Refresh(false);
 }
 
 void MapWindow::OnReplaceItemsDialogClose(wxCloseEvent &event) {

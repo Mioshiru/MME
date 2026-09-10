@@ -90,7 +90,9 @@ void DeferredRenderer::createQuad() {
     m_quadIBO = bgfx::createIndexBuffer(bgfx::copy(indices, sizeof(indices)));
 }
 
-void DeferredRenderer::render(const LightingSystem& lightingSystem) {
+void DeferredRenderer::render(const LightingSystem& lightingSystem,
+                              float view_min_x, float view_min_y,
+                              float view_max_x, float view_max_y) {
     if (!bgfx::isValid(m_legacyColorTexture) || !bgfx::isValid(m_lightPassProgram) || !bgfx::isValid(m_compositionProgram)) {
         return; // Not ready
     }
@@ -102,7 +104,7 @@ void DeferredRenderer::render(const LightingSystem& lightingSystem) {
     bgfx::touch(0);
 
     // 2. Setup Instancing for Lights
-    auto lights = lightingSystem.getVisibleLights(0, 0, 10000, 10000); // TODO: pass actual camera frustum
+    auto lights = lightingSystem.getVisibleLights(view_min_x, view_min_y, view_max_x, view_max_y);
     if (!lights.empty()) {
         const uint16_t instanceStride = sizeof(LightInstanceData);
         uint32_t numInstances = bgfx::getAvailInstanceDataBuffer(static_cast<uint32_t>(lights.size()), instanceStride);

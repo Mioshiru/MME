@@ -377,6 +377,8 @@ void Settings::IO(IOMode mode) {
 	Int(UI_TOOLBAR_Y, 0);
 	Int(TOOLBAR_ALIGNMENT, 0);   // 0 = Left (default), 1 = Center
 	Int(HIDE_STATUSBAR, 1);      // 0 = shown, 1 = hidden (default)
+	Int(PALETTE_SELECTED_PAGE, 1);
+	String(PALETTE_SELECTED_TILESET, "");
 
 	section("Hotkeys");
 	String(NUMERICAL_HOTKEYS, "none:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\n");

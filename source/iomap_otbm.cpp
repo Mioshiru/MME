@@ -1504,17 +1504,38 @@ bool IOMapOTBM::saveMap(Map& map, const FileName& identifier) {
 		dir.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
 	}
 
-	wxFile diskFile(identifier.GetFullPath(), wxFile::write);
+	const std::string temporary_filename = nstr(identifier.GetFullPath()) + ".tmp";
+	std::remove(temporary_filename.c_str());
+	wxFile diskFile(wxstr(temporary_filename), wxFile::write);
+	if (!diskFile.IsOpened()) {
+		return false;
+	}
 	if (g_settings.getInteger(Config::SAVE_WITH_OTB_MAGIC_NUMBER)) {
-		diskFile.Write("OTBM", 4);
+		if (diskFile.Write("OTBM", 4) != 4) {
+			diskFile.Close();
+			std::remove(temporary_filename.c_str());
+			return false;
+		}
 	} else {
 		// Always write 4 header bytes so DiskNodeFileReadHandle can read the file.
 		// RME uses 0x00000000 as the "no magic number" identifier.
 		const uint8_t nullHeader[4] = {0, 0, 0, 0};
-		diskFile.Write(nullHeader, 4);
+		if (diskFile.Write(nullHeader, 4) != 4) {
+			diskFile.Close();
+			std::remove(temporary_filename.c_str());
+			return false;
+		}
 	}
-	diskFile.Write(f.getMemory(), f.getSize());
+	if (diskFile.Write(f.getMemory(), f.getSize()) != f.getSize()) {
+		diskFile.Close();
+		std::remove(temporary_filename.c_str());
+		return false;
+	}
 	diskFile.Close();
+	if (!wxRenameFile(wxstr(temporary_filename), identifier.GetFullPath(), true)) {
+		std::remove(temporary_filename.c_str());
+		return false;
+	}
 
 	g_gui.SetLoadDone(99, "Saving spawns...");
 	saveSpawns(map, identifier);

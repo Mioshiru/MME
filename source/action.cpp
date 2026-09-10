@@ -572,13 +572,6 @@ void ActionQueue::addBatch(BatchAction* batch, int stacking_delay) {
 		delete todelete;
 	}
 
-	while (memory_size > size_t(1024 * 1024 * g_settings.getInteger(Config::UNDO_MEM_SIZE)) && !actions.empty()) {
-		memory_size -= actions.front()->memsize();
-		delete actions.front();
-		actions.pop_front();
-		current--;
-	}
-
 	if (actions.size() > size_t(g_settings.getInteger(Config::UNDO_SIZE)) && !actions.empty()) {
 		memory_size -= actions.front()->memsize();
 		BatchAction* todelete = actions.front();
@@ -603,6 +596,14 @@ void ActionQueue::addBatch(BatchAction* batch, int stacking_delay) {
 		batch->timestamp = time(nullptr);
 		current++;
 	} while (false);
+
+	const size_t undo_memory_limit = size_t(std::max(1, g_settings.getInteger(Config::UNDO_MEM_SIZE))) * 1024 * 1024;
+	while (memory_size > undo_memory_limit && !actions.empty() && current > 0) {
+		memory_size -= actions.front()->memsize();
+		delete actions.front();
+		actions.pop_front();
+		current--;
+	}
 
 	// Notify Lua scripts about action change
 	g_luaScripts.emit("actionChange");

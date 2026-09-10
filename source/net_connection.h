@@ -31,11 +31,14 @@ struct NetworkMessage {
 
 	void clear();
 	void expand(const size_t length);
+	bool hasError() const { return malformed; }
+	size_t remaining() const { return position < buffer.size() ? buffer.size() - position : 0; }
 
 	//
 	template <typename T>
 	T read() {
 		if (position + sizeof(T) > buffer.size()) {
+			malformed = true;
 			position = buffer.size();
 			return T();
 		}
@@ -55,6 +58,7 @@ struct NetworkMessage {
 	std::vector<uint8_t> buffer;
 	size_t position;
 	size_t size;
+	bool malformed;
 };
 
 template <>

@@ -47,6 +47,7 @@ LiveClient::LiveClient() :
 }
 
 LiveClient::~LiveClient() {
+	invalidateCallbacks();
 	g_gui.latencies.erase(this);
 }
 
@@ -69,8 +70,10 @@ bool LiveClient::connect(const std::string& address, uint16_t port) {
 	}
 
 	socket = std::make_shared<boost::asio::ip::tcp::socket>(service);
+	auto alive = callbackAlive;
 
-	resolver->async_resolve(address, std::to_string(port), [this](const boost::system::error_code& error, boost::asio::ip::tcp::resolver::results_type results) -> void {
+	resolver->async_resolve(address, std::to_string(port), [this, alive](const boost::system::error_code& error, boost::asio::ip::tcp::resolver::results_type results) -> void {
+		if (!alive->load()) return;
 		if (error) {
 			if (!scheduleReconnect("Name resolution failed: " + wxstr(error.message()))) {
 				logMessage("Error: " + error.message());
@@ -90,7 +93,9 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 
 	logMessage("Connecting to server...");
 
-	boost::asio::async_connect(*socket, results, [this](boost::system::error_code error, const boost::asio::ip::tcp::endpoint& endpoint) -> void {
+	auto alive = callbackAlive;
+	boost::asio::async_connect(*socket, results, [this, alive](boost::system::error_code error, const boost::asio::ip::tcp::endpoint& endpoint) -> void {
+		if (!alive->load()) return;
 		if (error) {
 			if (handleError(error)) {
 				//
@@ -155,7 +160,9 @@ void LiveClient::close() {
 
 bool LiveClient::handleError(const boost::system::error_code& error) {
 	if (error) {
-		wxTheApp->CallAfter([this, error]() {
+		auto alive = callbackAlive;
+		wxTheApp->CallAfter([this, error, alive]() {
+			if (!alive->load()) return;
 			if (!scheduleReconnect(wxString::Format("%s: disconnected (%s).", getHostName(), error.message()))) {
 				if (log) {
 					log->Message(wxString::Format("%s: disconnected (%s).", getHostName(), error.message()));
@@ -241,7 +248,9 @@ void LiveClient::receiveHeader() {
 		return;
 	}
 	readMessage.position = 0;
-	boost::asio::async_read(*socket, boost::asio::buffer(readMessage.buffer, 4), [this](const boost::system::error_code& error, size_t bytesReceived) -> void {
+	auto alive = callbackAlive;
+	boost::asio::async_read(*socket, boost::asio::buffer(readMessage.buffer, 4), [this, alive](const boost::system::error_code& error, size_t bytesReceived) -> void {
+		if (!alive->load()) return;
 		if (error) {
 			if (!handleError(error)) {
 				logMessage(wxString() + getHostName() + ": " + error.message());
@@ -256,7 +265,9 @@ void LiveClient::receiveHeader() {
 
 void LiveClient::receive(uint32_t packetSize) {
 	readMessage.buffer.resize(readMessage.position + packetSize);
-	boost::asio::async_read(*socket, boost::asio::buffer(&readMessage.buffer[readMessage.position], packetSize), [this](const boost::system::error_code& error, size_t bytesReceived) -> void {
+	auto alive = callbackAlive;
+	boost::asio::async_read(*socket, boost::asio::buffer(&readMessage.buffer[readMessage.position], packetSize), [this, alive](const boost::system::error_code& error, size_t bytesReceived) -> void {
+		if (!alive->load()) return;
 		if (error) {
 			if (!handleError(error)) {
 				logMessage(wxString() + getHostName() + ": " + error.message());
@@ -266,7 +277,9 @@ void LiveClient::receive(uint32_t packetSize) {
 		} else {
 			NetworkMessage msg = std::move(readMessage);
 			readMessage.clear();
-			wxTheApp->CallAfter([this, msg = std::move(msg)]() mutable {
+			auto alive = callbackAlive;
+			wxTheApp->CallAfter([this, alive, msg = std::move(msg)]() mutable {
+				if (!alive->load()) return;
 				if (stopped) return;
 				try {
 					parsePacket(msg);
@@ -311,7 +324,8 @@ void LiveClient::doWrite() {
 	boost::asio::async_write(
 		*socket,
 		boost::asio::buffer(*buffer),
-		[this, buffer](const boost::system::error_code& error, size_t /*bytesTransferred*/) {
+		[this, buffer, alive = callbackAlive](const boost::system::error_code& error, size_t /*bytesTransferred*/) {
+			if (!alive->load()) return;
 			if (error) {
 				{
 					std::lock_guard<std::mutex> lock(writeMutex);
@@ -659,6 +673,14 @@ void LiveClient::parsePacket(NetworkMessage message) {
 				close();
 				return; // Stop processing after close
 			}
+		}
+
+		if (message.hasError()) {
+			if (log) {
+				log->Message(wxString::Format("Malformed packet received (type 0x%02X)", packetType));
+			}
+			close();
+			return;
 		}
 	}
 
@@ -1096,8 +1118,12 @@ void LiveClient::parseLockBroadcast(NetworkMessage& message) {
 		uint8_t b = message.read<uint8_t>();
 		lock.ownerColor = wxColor(r, g, b, 255);
 		lockedEntities[pos] = lock;
+		g_gui.SetStatusText(wxString::Format("%s is editing position (%d, %d, %d).",
+			lock.ownerName, pos.x, pos.y, pos.z));
 	} else {
 		lockedEntities.erase(pos);
+		g_gui.SetStatusText(wxString::Format("Position (%d, %d, %d) is available again.",
+			pos.x, pos.y, pos.z));
 	}
 }
 

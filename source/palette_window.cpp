@@ -274,9 +274,9 @@ public:
 		int click_map_x = canvas->minimap_start_x + (int)(rel_x * (float)std::max(1, canvas->minimap_span_w - 1));
 		int click_map_y = canvas->minimap_start_y + (int)(rel_y * (float)std::max(1, canvas->minimap_span_h - 1));
 
-		g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, canvas->floor), true);
+		g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, canvas->floor), false);
 		canvas->last_minimap_update_time = 0; // immediate update
-		canvas->Refresh();
+		canvas->Refresh(false);
 		Refresh();
 	}
 
@@ -331,7 +331,7 @@ public:
 		canvas->minimap_span_w = (int)(180.0f * canvas->minimap_zoom);
 		canvas->minimap_span_h = (int)(180.0f * canvas->minimap_zoom);
 		canvas->last_minimap_update_time = 0;
-		canvas->Refresh();
+		canvas->Refresh(false);
 		Refresh();
 	}
 
@@ -753,7 +753,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets,
 
 	// Load first page
 	LoadCurrentContents();
-	SelectPage(TILESET_TERRAIN);
+	SelectPage(static_cast<PaletteType>(g_settings.getInteger(Config::PALETTE_SELECTED_PAGE)));
 
 	UpdateMinimapVisibility();
 }
@@ -1156,6 +1156,8 @@ void PaletteWindow::SelectPage(PaletteType id) {
 		PalettePanel* panel = dynamic_cast<PalettePanel*>(choicebook->GetPage(iz));
 		if (panel->GetType() == id) {
 			choicebook->SetSelection(iz);
+			g_settings.setInteger(Config::PALETTE_SELECTED_PAGE, static_cast<int>(id));
+			g_settings.save();
 			// LoadCurrentContents();
 			break;
 		}

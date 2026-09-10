@@ -32,6 +32,9 @@ enum {
 	ID_GEN_D_PICK_WALL,
 	ID_GEN_C_PICK_FLOOR,
 	ID_GEN_C_PICK_WALL,
+	ID_GEN_C_PICK_WATER,
+	ID_GEN_C_PICK_SAND,
+	ID_GEN_C_PICK_SNOW,
 	ID_GEN_H_PICK_FLOOR,
 	ID_GEN_H_PICK_WALL,
 };
@@ -69,6 +72,7 @@ public:
 private:
 	void GenerateDungeon(BatchAction* batch, int start_x, int start_y, int area_w, int area_h, int floor);
 	void GenerateCave(BatchAction* batch, int start_x, int start_y, int area_w, int area_h, int floor);
+	void GenerateOcean(BatchAction* batch, int start_x, int start_y, int area_w, int area_h, int floor);
 	void GenerateHouse(BatchAction* batch, int center_x, int center_y, int floor);
 
 	uint16_t GetActivePaletteItemId() const;
@@ -113,6 +117,9 @@ private:
 	wxSpinCtrl* c_floorItemSpin;
 	wxStaticText* c_floorNameLabel;
 	wxSpinCtrl* c_wallItemSpin;
+	wxSpinCtrl* c_waterItemSpin;
+	wxSpinCtrl* c_sandItemSpin;
+	wxSpinCtrl* c_snowItemSpin;
 	wxStaticText* c_wallNameLabel;
 	wxSlider* c_densitySlider;
 	wxSpinCtrl* c_smoothStepsSpin;

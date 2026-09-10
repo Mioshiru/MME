@@ -37,48 +37,6 @@ vec4 sampleSmoothPixelArt(sampler2D tex, vec2 uv) {
     return mix(top, bot, w.y);
 }
 
-// RGB to HSL
-vec3 rgb2hsl(vec3 c) {
-    float maxC = max(c.r, max(c.g, c.b));
-    float minC = min(c.r, min(c.g, c.b));
-    float delta = maxC - minC;
-    float l = (maxC + minC) * 0.5;
-    float s = 0.0;
-    float h = 0.0;
-    if (delta > 0.00001) {
-        s = l > 0.5 ? delta / (2.0 - maxC - minC) : delta / (maxC + minC);
-        if (maxC == c.r) {
-            h = (c.g - c.b) / delta + (c.g < c.b ? 6.0 : 0.0);
-        } else if (maxC == c.g) {
-            h = (c.b - c.r) / delta + 2.0;
-        } else {
-            h = (c.r - c.g) / delta + 4.0;
-        }
-        h /= 6.0;
-    }
-    return vec3(h, s, l);
-}
-
-float hue2rgb_f(float p, float q, float t) {
-    if (t < 0.0) t += 1.0;
-    if (t > 1.0) t -= 1.0;
-    if (t < 1.0/6.0) return p + (q - p) * 6.0 * t;
-    if (t < 1.0/2.0) return q;
-    if (t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6.0;
-    return p;
-}
-
-vec3 hsl2rgb(vec3 hsl) {
-    if (hsl.y <= 0.00001) return vec3(hsl.z);
-    float q = hsl.z < 0.5 ? hsl.z * (1.0 + hsl.y) : hsl.z + hsl.y - hsl.z * hsl.y;
-    float p = 2.0 * hsl.z - q;
-    return vec3(
-        hue2rgb_f(p, q, hsl.x + 1.0/3.0),
-        hue2rgb_f(p, q, hsl.x),
-        hue2rgb_f(p, q, hsl.x - 1.0/3.0)
-    );
-}
-
 void main() {
     vec4 rawCenter = texture2D(uTexture, vTexCoord);
     if (rawCenter.a < 0.01) discard;
@@ -93,35 +51,21 @@ void main() {
     vec4 center = sampleSmoothPixelArt(uTexture, vTexCoord);
     center.a = rawCenter.a;
 
-    vec3 hslCheck = rgb2hsl(center.rgb);
-    bool isWater = (vShaderData == 1.0) || (hslCheck.x >= 0.50 && hslCheck.x <= 0.72);
-    bool isGrass = (hslCheck.x >= 0.20 && hslCheck.x <= 0.44 && hslCheck.y > 0.15);
+    if (uUpscaling == 2) {
+        // Modern Pixel-Art xBRZ: a soft neighbor blur smooths reconstruction
+        // artifacts, followed by a vibrance boost that intensifies color.
+        vec2 stepUv = vec2(1.0 / 128.0);
+        vec3 blur = (texture2D(uTexture, vTexCoord - vec2(stepUv.x, 0.0)).rgb +
+                     texture2D(uTexture, vTexCoord + vec2(stepUv.x, 0.0)).rgb +
+                     texture2D(uTexture, vTexCoord - vec2(0.0, stepUv.y)).rgb +
+                     texture2D(uTexture, vTexCoord + vec2(0.0, stepUv.y)).rgb) * 0.25;
+        center.rgb = mix(center.rgb, blur, 0.60);
+
+        float luma = dot(center.rgb, vec3(0.299, 0.587, 0.114));
+        center.rgb = clamp(mix(vec3(luma), center.rgb, 1.30), 0.0, 1.0);
+    }
 
     vec4 texel = center;
-
-    // ── 1. Optimiertes Wasser: Lebendige, weiche Wasserströmung & Tiefenblau ──
-    if (isWater) {
-        vec2 waveDisp = vec2(
-            sin(uTime * 1.6 + vWorldPos.x * 0.15 + vWorldPos.y * 0.10) * 0.003,
-            cos(uTime * 1.3 - vWorldPos.x * 0.10 + vWorldPos.y * 0.12) * 0.003
-        );
-        vec4 refracTex = texture2D(uTexture, vTexCoord + waveDisp);
-        texel.rgb = mix(texel.rgb, refracTex.rgb, 0.45);
-
-        // Satte, kristallklare Azur-Tönung
-        vec3 deepAqua = vec3(0.04, 0.28, 0.60);
-        texel.rgb = mix(deepAqua, texel.rgb, 0.88);
-    }
-
-    // ── 2. Optimiertes Gras & Flora: Saftiges, natürliches Smaragdgrün ──
-    if (isGrass) {
-        vec3 hslGras = rgb2hsl(texel.rgb);
-        // Frisches, sattes RPG-Grün ohne Gelbstich oder Übersättigung
-        hslGras.x = mix(hslGras.x, 0.30, 0.22);
-        hslGras.y = clamp(hslGras.y * 1.15, 0.0, 0.95);
-        hslGras.z = clamp(hslGras.z * 1.03, 0.0, 1.0);
-        texel.rgb = hsl2rgb(hslGras);
-    }
 
     gl_FragColor = texel * vColor;
 }

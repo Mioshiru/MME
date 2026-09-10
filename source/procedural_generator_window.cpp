@@ -84,6 +84,9 @@ BEGIN_EVENT_TABLE(ProceduralGeneratorDialog, wxDialog)
 	EVT_BUTTON(ID_GEN_D_PICK_WALL, ProceduralGeneratorDialog::OnPickFromPalette)
 	EVT_BUTTON(ID_GEN_C_PICK_FLOOR, ProceduralGeneratorDialog::OnPickFromPalette)
 	EVT_BUTTON(ID_GEN_C_PICK_WALL, ProceduralGeneratorDialog::OnPickFromPalette)
+	EVT_BUTTON(ID_GEN_C_PICK_WATER, ProceduralGeneratorDialog::OnPickFromPalette)
+	EVT_BUTTON(ID_GEN_C_PICK_SAND, ProceduralGeneratorDialog::OnPickFromPalette)
+	EVT_BUTTON(ID_GEN_C_PICK_SNOW, ProceduralGeneratorDialog::OnPickFromPalette)
 	EVT_BUTTON(ID_GEN_H_PICK_FLOOR, ProceduralGeneratorDialog::OnPickFromPalette)
 	EVT_BUTTON(ID_GEN_H_PICK_WALL, ProceduralGeneratorDialog::OnPickFromPalette)
 	EVT_SPINCTRL(wxID_ANY, ProceduralGeneratorDialog::OnParamSpin)
@@ -106,7 +109,10 @@ ProceduralGeneratorDialog::ProceduralGeneratorDialog(wxWindow* parent, Editor& e
 	customHeightSpin(nullptr),
 	dungeonPanel(nullptr),
 	cavePanel(nullptr),
-	housePanel(nullptr) {
+	housePanel(nullptr),
+	c_waterItemSpin(nullptr),
+	c_sandItemSpin(nullptr),
+	c_snowItemSpin(nullptr) {
 
 	SetBackgroundColour(wxColour(12, 22, 38));
 	SetForegroundColour(wxColour(240, 245, 255));
@@ -144,6 +150,7 @@ ProceduralGeneratorDialog::ProceduralGeneratorDialog(wxWindow* parent, Editor& e
 	wxArrayString modes;
 	modes.Add("Dungeon (Rooms & Corridors)");
 	modes.Add("Cave System (Organic Caverns)");
+	modes.Add("Ocean / Landmass (Coasts & Islands)");
 	modes.Add("House / Building (Enclosed Structure)");
 	modeChoice = new wxChoice(topControlsPanel, ID_GEN_MODE_CHOICE, wxDefaultPosition, wxDefaultSize, modes);
 	modeChoice->SetBackgroundColour(wxColour(12, 22, 38));
@@ -414,9 +421,9 @@ ProceduralGeneratorDialog::ProceduralGeneratorDialog(wxWindow* parent, Editor& e
 		c_itemsGrid->Add(l, 0, wxALIGN_CENTER_VERTICAL);
 	};
 
-	addCItemLabel("Walkable Floor:");
+	addCItemLabel("Grass Ground / Inland:");
 	wxBoxSizer* c_floorRow = new wxBoxSizer(wxHORIZONTAL);
-	uint16_t c_floorDef = 4414;
+	uint16_t c_floorDef = 4526;
 	c_floorItemSpin = new wxSpinCtrl(cavePanel, wxID_ANY, wxString::Format("%d", c_floorDef), wxDefaultPosition, wxSize(75, -1), wxSP_ARROW_KEYS, 1, 65535, c_floorDef);
 	styleSpin(c_floorItemSpin);
 	wxButton* c_floorPick = new wxButton(cavePanel, ID_GEN_C_PICK_FLOOR, "Select via Palette");
@@ -443,6 +450,39 @@ ProceduralGeneratorDialog::ProceduralGeneratorDialog(wxWindow* parent, Editor& e
 	c_wallRow->Add(c_wallPick, 0, wxRIGHT, 6);
 	c_wallRow->Add(c_wallNameLabel, 0, wxALIGN_CENTER_VERTICAL);
 	c_itemsGrid->Add(c_wallRow, 1, wxEXPAND);
+
+	addCItemLabel("Water Ground (Ocean):");
+	wxBoxSizer* c_waterRow = new wxBoxSizer(wxHORIZONTAL);
+	uint16_t c_waterDef = 4608;
+	c_waterItemSpin = new wxSpinCtrl(cavePanel, wxID_ANY, wxString::Format("%d", c_waterDef), wxDefaultPosition, wxSize(75, -1), wxSP_ARROW_KEYS, 1, 65535, c_waterDef);
+	styleSpin(c_waterItemSpin);
+	wxButton* c_waterPick = new wxButton(cavePanel, ID_GEN_C_PICK_WATER, "Select via Palette");
+	stylePickBtn(c_waterPick);
+	c_waterRow->Add(c_waterItemSpin, 0, wxRIGHT, 6);
+	c_waterRow->Add(c_waterPick, 0, wxRIGHT, 6);
+	c_itemsGrid->Add(c_waterRow, 1, wxEXPAND);
+
+	addCItemLabel("Sand Ground / Coast:");
+	wxBoxSizer* c_sandRow = new wxBoxSizer(wxHORIZONTAL);
+	uint16_t c_sandDef = 231;
+	c_sandItemSpin = new wxSpinCtrl(cavePanel, wxID_ANY, wxString::Format("%d", c_sandDef), wxDefaultPosition, wxSize(75, -1), wxSP_ARROW_KEYS, 1, 65535, c_sandDef);
+	styleSpin(c_sandItemSpin);
+	wxButton* c_sandPick = new wxButton(cavePanel, ID_GEN_C_PICK_SAND, "Select via Palette");
+	stylePickBtn(c_sandPick);
+	c_sandRow->Add(c_sandItemSpin, 0, wxRIGHT, 6);
+	c_sandRow->Add(c_sandPick, 0, wxRIGHT, 6);
+	c_itemsGrid->Add(c_sandRow, 1, wxEXPAND);
+
+	addCItemLabel("Snow Ground / Cold Region:");
+	wxBoxSizer* c_snowRow = new wxBoxSizer(wxHORIZONTAL);
+	uint16_t c_snowDef = 670;
+	c_snowItemSpin = new wxSpinCtrl(cavePanel, wxID_ANY, wxString::Format("%d", c_snowDef), wxDefaultPosition, wxSize(75, -1), wxSP_ARROW_KEYS, 1, 65535, c_snowDef);
+	styleSpin(c_snowItemSpin);
+	wxButton* c_snowPick = new wxButton(cavePanel, ID_GEN_C_PICK_SNOW, "Select via Palette");
+	stylePickBtn(c_snowPick);
+	c_snowRow->Add(c_snowItemSpin, 0, wxRIGHT, 6);
+	c_snowRow->Add(c_snowPick, 0, wxRIGHT, 6);
+	c_itemsGrid->Add(c_snowRow, 1, wxEXPAND);
 
 	c_mainSizer->Add(c_itemsGrid, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 8);
 	cavePanel->SetSizer(c_mainSizer);
@@ -731,6 +771,15 @@ void ProceduralGeneratorDialog::OnPickFromPalette(wxCommandEvent& event) {
 			c_wallItemSpin->SetValue(activeId);
 			c_wallNameLabel->SetLabel(name);
 			break;
+			case ID_GEN_C_PICK_WATER:
+				c_waterItemSpin->SetValue(activeId);
+				break;
+			case ID_GEN_C_PICK_SAND:
+				c_sandItemSpin->SetValue(activeId);
+				break;
+			case ID_GEN_C_PICK_SNOW:
+				c_snowItemSpin->SetValue(activeId);
+				break;
 		case ID_GEN_H_PICK_FLOOR:
 			h_floorItemSpin->SetValue(activeId);
 			h_floorNameLabel->SetLabel(name);
@@ -746,8 +795,8 @@ void ProceduralGeneratorDialog::OnPickFromPalette(wxCommandEvent& event) {
 void ProceduralGeneratorDialog::OnModeChange(wxCommandEvent& WXUNUSED(event)) {
 	int sel = modeChoice->GetSelection();
 	dungeonPanel->Show(sel == 0);
-	cavePanel->Show(sel == 1);
-	housePanel->Show(sel == 2);
+	cavePanel->Show(sel == 1 || sel == 2);
+	housePanel->Show(sel == 3);
 	Layout();
 	Fit();
 	UpdatePreview();
@@ -886,6 +935,40 @@ void ProceduralGeneratorDialog::UpdatePreview() {
 			}
 		}
 	} else if (mode == 2) {
+		int dens = c_densitySlider->GetValue();
+		srand(c_seedSpin->GetValue());
+		for (int y = 0; y < ph; ++y) {
+			for (int x = 0; x < pw; ++x) {
+				if (x > 1 && x < pw - 2 && y > 1 && y < ph - 2 && rand() % 100 < dens) {
+					grid[y][x] = 1;
+				}
+			}
+		}
+		for (int step = 0; step < c_smoothStepsSpin->GetValue(); ++step) {
+			auto next_grid = grid;
+			for (int y = 1; y < ph - 1; ++y) {
+				for (int x = 1; x < pw - 1; ++x) {
+					int neighbors = 0;
+					for (int dy = -1; dy <= 1; ++dy) {
+						for (int dx = -1; dx <= 1; ++dx) {
+							neighbors += grid[y + dy][x + dx] == 1 ? 1 : 0;
+						}
+					}
+					next_grid[y][x] = neighbors >= 5 ? 1 : 0;
+				}
+			}
+			grid = next_grid;
+		}
+		for (int y = 0; y < ph; ++y) {
+			for (int x = 0; x < pw; ++x) {
+				if (grid[y][x] == 0) {
+					bool coast = (y > 0 && grid[y - 1][x] == 1) || (y + 1 < ph && grid[y + 1][x] == 1) ||
+						(x > 0 && grid[y][x - 1] == 1) || (x + 1 < pw && grid[y][x + 1] == 1);
+					if (coast) grid[y][x] = 2;
+				}
+			}
+		}
+	} else if (mode == 3) {
 		int hw = h_widthSpin->GetValue();
 		int hh = h_heightSpin->GetValue();
 		int shapeSel = h_shapeChoice->GetSelection();
@@ -1000,6 +1083,8 @@ void ProceduralGeneratorDialog::OnClickGenerate(wxCommandEvent& WXUNUSED(event))
 	} else if (mode == 1) {
 		GenerateCave(batch, min_x, min_y, max_x - min_x + 1, max_y - min_y + 1, floor);
 	} else if (mode == 2) {
+		GenerateOcean(batch, min_x, min_y, max_x - min_x + 1, max_y - min_y + 1, floor);
+	} else if (mode == 3) {
 		GenerateHouse(batch, map_x, map_y, floor);
 	}
 
@@ -1416,6 +1501,124 @@ void ProceduralGeneratorDialog::GenerateCave(BatchAction* batch, int start_x, in
 		}
 	}
 
+	batch->addAndCommitAction(action2);
+}
+
+void ProceduralGeneratorDialog::GenerateOcean(BatchAction* batch, int start_x, int start_y, int area_w, int area_h, int floor) {
+	const uint16_t landId = static_cast<uint16_t>(c_floorItemSpin->GetValue());
+	const uint16_t wallId = static_cast<uint16_t>(c_wallItemSpin->GetValue());
+	const uint16_t waterId = static_cast<uint16_t>(c_waterItemSpin->GetValue());
+	const int landDensity = c_densitySlider->GetValue();
+	const int smoothSteps = c_smoothStepsSpin->GetValue();
+
+	std::vector<std::vector<bool>> land(area_h, std::vector<bool>(area_w, false));
+	srand(c_seedSpin->GetValue());
+	for (int y = 1; y < area_h - 1; ++y) {
+		for (int x = 1; x < area_w - 1; ++x) {
+			land[y][x] = rand() % 100 < landDensity;
+		}
+	}
+
+	for (int step = 0; step < smoothSteps; ++step) {
+		auto next_land = land;
+		for (int y = 1; y < area_h - 1; ++y) {
+			for (int x = 1; x < area_w - 1; ++x) {
+				int neighbors = 0;
+				for (int dy = -1; dy <= 1; ++dy) {
+					for (int dx = -1; dx <= 1; ++dx) {
+						neighbors += land[y + dy][x + dx] ? 1 : 0;
+					}
+				}
+				next_land[y][x] = neighbors >= 5;
+			}
+		}
+		land = next_land;
+	}
+
+	std::vector<std::vector<bool>> coast(area_h, std::vector<bool>(area_w, false));
+	std::vector<std::vector<bool>> shoreline(area_h, std::vector<bool>(area_w, false));
+	for (int y = 0; y < area_h; ++y) {
+		for (int x = 0; x < area_w; ++x) {
+			if (land[y][x]) {
+				shoreline[y][x] = (y == 0 || y == area_h - 1 || x == 0 || x == area_w - 1 ||
+					(y > 0 && !land[y - 1][x]) || (y + 1 < area_h && !land[y + 1][x]) ||
+					(x > 0 && !land[y][x - 1]) || (x + 1 < area_w && !land[y][x + 1]));
+				continue;
+			}
+			coast[y][x] = (y > 0 && land[y - 1][x]) || (y + 1 < area_h && land[y + 1][x]) ||
+				(x > 0 && land[y][x - 1]) || (x + 1 < area_w && land[y][x + 1]);
+		}
+	}
+
+	GroundBrush* landBrush = g_items[landId].brush ? g_items[landId].brush->asGround() : nullptr;
+	GroundBrush* waterBrush = g_items[waterId].brush ? g_items[waterId].brush->asGround() : nullptr;
+	GroundBrush* sandBrush = g_items[c_sandItemSpin->GetValue()].brush ? g_items[c_sandItemSpin->GetValue()].brush->asGround() : nullptr;
+	GroundBrush* snowBrush = g_items[c_snowItemSpin->GetValue()].brush ? g_items[c_snowItemSpin->GetValue()].brush->asGround() : nullptr;
+	WallBrush* wallBrush = FindWallBrushForId(wallId);
+	std::set<Position> touched_positions;
+	Action* action1 = editor.actionQueue->createAction(batch);
+
+	for (int y = 0; y < area_h; ++y) {
+		for (int x = 0; x < area_w; ++x) {
+			const Position pos(start_x + x, start_y + y, floor);
+			Tile* tile = editor.map.getOrCreateTile(pos);
+			if (!tile || IsTileOccupiedByPlayer(tile)) {
+				continue;
+			}
+
+			Tile* newTile = tile->deepCopy(editor.map);
+			newTile->cleanWalls();
+			if (land[y][x]) {
+				const bool cold_region = y < area_h / 6 || y >= (area_h * 5) / 6;
+				const bool use_snow = !shoreline[y][x] && (cold_region || rand() % 100 < 8);
+				const uint16_t groundId = use_snow ? static_cast<uint16_t>(c_snowItemSpin->GetValue()) :
+					(shoreline[y][x] ? static_cast<uint16_t>(c_sandItemSpin->GetValue()) : landId);
+				GroundBrush* groundBrush = use_snow ? snowBrush : (shoreline[y][x] ? sandBrush : landBrush);
+				if (groundBrush) {
+					groundBrush->draw(&editor.map, newTile, nullptr);
+				} else if (Item* ground = Item::Create(groundId)) {
+					newTile->addItem(ground);
+				}
+			} else {
+				if (waterBrush) {
+					waterBrush->draw(&editor.map, newTile, nullptr);
+				} else if (Item* water = Item::Create(waterId)) {
+					newTile->addItem(water);
+				}
+				if (coast[y][x]) {
+					if (wallBrush) {
+						wallBrush->draw(&editor.map, newTile, nullptr);
+					} else if (Item* wall = Item::Create(wallId)) {
+						newTile->addItem(wall);
+					}
+				}
+			}
+			action1->addChange(newd Change(newTile));
+			touched_positions.insert(pos);
+		}
+	}
+
+	batch->addAndCommitAction(action1);
+
+	Action* action2 = editor.actionQueue->createAction(batch);
+	std::set<Position> borderize_positions;
+	for (const Position& pos : touched_positions) {
+		for (int dy = -1; dy <= 1; ++dy) {
+			for (int dx = -1; dx <= 1; ++dx) {
+				borderize_positions.insert(Position(pos.x + dx, pos.y + dy, pos.z));
+			}
+		}
+	}
+	for (const Position& pos : borderize_positions) {
+		Tile* tile = editor.map.getTile(pos);
+		if (!tile || IsTileOccupiedByPlayer(tile)) {
+			continue;
+		}
+		Tile* newTile = tile->deepCopy(editor.map);
+		newTile->borderize(&editor.map);
+		newTile->wallize(&editor.map);
+		action2->addChange(newd Change(newTile));
+	}
 	batch->addAndCommitAction(action2);
 }
 

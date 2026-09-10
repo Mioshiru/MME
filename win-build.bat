@@ -279,7 +279,7 @@ if exist "launcher.obj" del /f /q "launcher.obj" >nul 2>&1
 
 REM 4. Copy Runtime Asset Folders to both BUILD_DIR and RELEASE_DIR
 if exist "!RELEASE_DIR!\tools" rd /s /q "!RELEASE_DIR!\tools" >nul 2>&1
-for %%D in (data brushes scripts extensions icons Saves) do (
+for %%D in (data brushes scripts extensions icons) do (
     if exist "!PROJECT_ROOT!\%%D" (
         if /i "%%D"=="Saves" (
             robocopy "!PROJECT_ROOT!\%%D" "!BUILD_DIR!\%%D" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
@@ -296,15 +296,12 @@ set "WB_DIR=!PROJECT_ROOT!\..\World_Backup"
 if exist "!WB_DIR!\Saves" (
     robocopy "!WB_DIR!\Saves" "!PROJECT_ROOT!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
     robocopy "!WB_DIR!\Saves" "!BUILD_DIR!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
-    robocopy "!WB_DIR!\Saves" "!RELEASE_DIR!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
 ) else if exist "!WB_DIR!" (
     robocopy "!WB_DIR!" "!PROJECT_ROOT!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
     robocopy "!WB_DIR!" "!BUILD_DIR!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
-    robocopy "!WB_DIR!" "!RELEASE_DIR!\Saves" /E /NFL /NDL /NJH /NJS /NP /R:1 /W:1 >nul 2>&1
 )
 
 if not exist "!BUILD_DIR!\Saves" mkdir "!BUILD_DIR!\Saves" >nul 2>&1
-if not exist "!RELEASE_DIR!\Saves" mkdir "!RELEASE_DIR!\Saves" >nul 2>&1
 
 echo.
 echo   %GREEN%Deployment OK%RESET%

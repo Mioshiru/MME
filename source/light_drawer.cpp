@@ -122,11 +122,9 @@ void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x,
 					// Keep light transitions aligned with the hard pixel-art grid.
 					float linear_falloff = (1.0f - (dist / static_cast<float>(rad)));
 					if (linear_falloff <= 0.0f) continue;
+					// Keep the continuous quadratic falloff. Quantizing this value
+					// makes the light visibly angular when HD assets are enabled.
 					float falloff = linear_falloff * linear_falloff;
-					if (g_settings.getBoolean(Config::FAKE_HD_ASSETS)) {
-						const float stepped = std::floor(falloff * 4.0f + 0.5f) / 4.0f;
-						falloff = std::clamp(stepped, 0.0f, 1.0f);
-					}
 
 					size_t idx = gy * w + gx;
 					float cur_r = lr * falloff;
@@ -156,7 +154,7 @@ void LightDrawer::draw(int map_x, int map_y, int end_x, int end_y, int scroll_x,
 	}
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	GLint light_filter = g_settings.getBoolean(Config::FAKE_HD_ASSETS) ? GL_NEAREST : GL_LINEAR;
+	GLint light_filter = GL_LINEAR;
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, light_filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, light_filter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE

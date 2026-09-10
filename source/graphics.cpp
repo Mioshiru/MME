@@ -1026,9 +1026,9 @@ void GameSprite::unloadDC() {
 
 namespace {
 float PixelColorDistance(uint32_t left, uint32_t right) {
-  const int lr = left & 0xFF, lg = (left >> 8) & 0xFF, lb = (left >> 16) & 0xFF;
-  const int rr = right & 0xFF, rg = (right >> 8) & 0xFF, rb = (right >> 16) & 0xFF;
-  return static_cast<float>(std::abs(lr - rr) + std::abs(lg - rg) + std::abs(lb - rb));
+  const int lr = left & 0xFF, lg = (left >> 8) & 0xFF, lb = (left >> 16) & 0xFF, la = (left >> 24) & 0xFF;
+  const int rr = right & 0xFF, rg = (right >> 8) & 0xFF, rb = (right >> 16) & 0xFF, ra = (right >> 24) & 0xFF;
+  return static_cast<float>(std::abs(lr - rr) + std::abs(lg - rg) + std::abs(lb - rb) + std::abs(la - ra) * 2);
 }
 
 uint32_t BlendPixel(uint32_t first, uint32_t second, float amount) {
@@ -1039,6 +1039,10 @@ uint32_t BlendPixel(uint32_t first, uint32_t second, float amount) {
          (channel((first >> 8) & 0xFF, (second >> 8) & 0xFF) << 8) |
          (channel((first >> 16) & 0xFF, (second >> 16) & 0xFF) << 16) |
          (channel((first >> 24) & 0xFF, (second >> 24) & 0xFF) << 24);
+}
+
+bool HasVisibleAlpha(uint32_t pixel) {
+  return ((pixel >> 24) & 0xFF) >= 32;
 }
 
 template <int InputSize, int OutputSize>
@@ -1054,12 +1058,26 @@ void UpscaleXbrzPass(const uint32_t* source, uint32_t* target) {
       const uint32_t diagonal = pixel(x + 1, y + 1);
       const uint32_t horizontal = pixel(x + 1, y);
       const uint32_t vertical = pixel(x, y + 1);
-      const bool diagonal_edge = PixelColorDistance(center, diagonal) >
-                                 PixelColorDistance(horizontal, vertical);
+      const uint32_t left = pixel(x - 1, y);
+      const uint32_t up = pixel(x, y - 1);
+      const uint32_t up_right = pixel(x + 1, y - 1);
+      const uint32_t down_left = pixel(x - 1, y + 1);
+      const float cardinal_edge = PixelColorDistance(center, horizontal) +
+                  PixelColorDistance(center, vertical) +
+                  PixelColorDistance(center, left) +
+                  PixelColorDistance(center, up);
+      const float diagonal_edge = PixelColorDistance(center, diagonal) +
+                  PixelColorDistance(center, up_right) +
+                  PixelColorDistance(center, down_left);
+      const bool edge = cardinal_edge > 90.0f || diagonal_edge > 120.0f;
+      const bool transparent_boundary = !HasVisibleAlpha(center) ||
+                    !HasVisibleAlpha(horizontal) ||
+                    !HasVisibleAlpha(vertical);
       const uint32_t top_left = center;
-      const uint32_t top_right = diagonal_edge ? BlendPixel(center, horizontal, 0.35f) : center;
-      const uint32_t bottom_left = diagonal_edge ? BlendPixel(center, vertical, 0.35f) : center;
-      const uint32_t bottom_right = diagonal_edge ? BlendPixel(center, diagonal, 0.20f) : center;
+      const float blend = transparent_boundary ? 0.0f : (edge ? 0.42f : 0.24f);
+      const uint32_t top_right = BlendPixel(center, horizontal, blend);
+      const uint32_t bottom_left = BlendPixel(center, vertical, blend);
+      const uint32_t bottom_right = BlendPixel(center, diagonal, transparent_boundary ? 0.0f : 0.30f);
       const int output_x = x * 2;
       const int output_y = y * 2;
       target[output_y * OutputSize + output_x] = top_left;
@@ -1083,10 +1101,33 @@ void UpscaleSpriteNearest4x(const uint32_t* src32, uint32_t* dst128) {
     }
 }
 
+// Boosts saturation around each pixel's own luma, leaving transparent pixels untouched.
+void IntensifyColors(uint32_t* pixels, size_t count) {
+  constexpr float kVibrance = 1.28f;
+  for (size_t i = 0; i < count; ++i) {
+    const uint32_t p = pixels[i];
+    const uint32_t alpha = (p >> 24) & 0xFF;
+    if (alpha == 0) continue;
+    const float r = (p & 0xFF) / 255.0f;
+    const float g = ((p >> 8) & 0xFF) / 255.0f;
+    const float b = ((p >> 16) & 0xFF) / 255.0f;
+    const float luma = r * 0.299f + g * 0.587f + b * 0.114f;
+    const auto boost = [luma](float channel) {
+      return std::clamp(luma + (channel - luma) * kVibrance, 0.0f, 1.0f);
+    };
+    const uint32_t nr = static_cast<uint32_t>(boost(r) * 255.0f + 0.5f);
+    const uint32_t ng = static_cast<uint32_t>(boost(g) * 255.0f + 0.5f);
+    const uint32_t nb = static_cast<uint32_t>(boost(b) * 255.0f + 0.5f);
+    pixels[i] = nr | (ng << 8) | (nb << 16) | (alpha << 24);
+  }
+}
+
 void UpscaleSpriteXbrz4x(const uint32_t* src32, uint32_t* dst128) {
-  std::vector<uint32_t> intermediate64(64 * 64);
+  static thread_local std::vector<uint32_t> intermediate64;
+  intermediate64.resize(64 * 64);
   UpscaleXbrzPass<32, 64>(src32, intermediate64.data());
   UpscaleXbrzPass<64, 128>(intermediate64.data(), dst128);
+  IntensifyColors(dst128, 128 * 128);
 }
 
 } // namespace
@@ -1110,6 +1151,7 @@ void GameSprite::Image::createGLTexture(GLuint whatid) {
   g_gui.gfx.loaded_textures += 1;
 
   glBindTexture(GL_TEXTURE_2D, whatid);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
   std::vector<uint32_t> hd128(128 * 128);
   const uint32_t* source = reinterpret_cast<const uint32_t*>(rgba);
@@ -1119,7 +1161,7 @@ void GameSprite::Image::createGLTexture(GLuint whatid) {
     UpscaleSpriteNearest4x(source, hd128.data());
   }
 
-  GLint filter = GL_NEAREST;
+  GLint filter = g_settings.getInteger(Config::PIXEL_UPSCALE_MODE) == 1 ? GL_LINEAR : GL_NEAREST;
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE

@@ -225,8 +225,10 @@ namespace Config {
 		SHOW_CHAT,          // Multiplayer In-Editor Team Chat Window (0 or 1)
 		SHOW_NOTEPAD,       // Collaborative Medieval Checklist & Notepad Window (0 or 1)
 		MULTIPLAYER_ADOPTED_SERVERS, // Remembered host view settings decisions
-		TOOLBAR_ALIGNMENT,  // Toolbar & Menubar alignment (0 = Left, 1 = Center)
+		TOOLBAR_ALIGNMENT,  // Toolbar icon alignment (0 = Left, 1 = Center, 2 = Right)
 		HIDE_STATUSBAR,     // Hide the bottom status bar (0 = shown, 1 = hidden)
+		PALETTE_SELECTED_PAGE,
+		PALETTE_SELECTED_TILESET,
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;

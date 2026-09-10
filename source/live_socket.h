@@ -25,6 +25,7 @@
 #include "iomap.h"
 
 #include <memory>
+#include <atomic>
 #include <unordered_map>
 #include <cstdint>
 class MapEditor;
@@ -92,6 +93,7 @@ public:
 
 	//
 	void logMessage(const wxString& message);
+	void invalidateCallbacks() { callbackAlive->store(false); }
 
 	//
 	virtual void receiveHeader() = 0;
@@ -134,6 +136,7 @@ public:
 	wxString name;
 	wxString password;
 	wxString lastError;
+	std::shared_ptr<std::atomic<bool>> callbackAlive;
 
 	friend class LiveLogTab;
 };

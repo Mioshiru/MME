@@ -100,6 +100,8 @@ public:
 	void OnExit(wxCloseEvent& event);
 	void OnAutoSaveTimer(wxTimerEvent& event);
 	void RestartAutoSaveTimer();
+	void SetAutoSaveStatus();
+	const wxString& GetAutoSaveStatus() const { return last_auto_save_status; }
 
 #ifdef _USE_UPDATER_
 	void OnUpdateReceived(wxCommandEvent& event);
@@ -117,6 +119,7 @@ public:
 	MainToolBar* tool_bar;
 	wxStatusBar* frame_statusbar;
 	wxTimer autosave_timer;
+	wxString last_auto_save_status;
 
 protected:
 	friend class Application;

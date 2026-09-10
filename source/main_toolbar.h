@@ -25,8 +25,6 @@
 #include "gui_ids.h"
 #include "numbertextctrl.h"
 
-#include <wx/slider.h>
-
 class MainToolBar : public wxEvtHandler {
 public:
 	MainToolBar(wxWindow* parent, wxAuiManager* manager);
@@ -46,8 +44,6 @@ public:
 	void OnZonesDropdown(wxCommandEvent& event);
 	void OnDoorsDropdown(wxCommandEvent& event);
 	void OnWindowsDropdown(wxCommandEvent& event);
-	void OnPositionButtonClick(wxCommandEvent& event);
-	void OnPositionKeyUp(wxKeyEvent& event);
 	void OnPastePositionText(wxClipboardTextEvent& event);
 	void OnZChoiceChanged(wxCommandEvent& event);
 	void OnSizesButtonClick(wxCommandEvent& event);
@@ -69,8 +65,10 @@ private:
 	wxAuiToolBar* brushes_toolbar;
 	wxAuiToolBar* position_toolbar;
 	wxChoice* z_choice;
-	wxSlider* light_slider;
 	wxAuiToolBar* sizes_toolbar;
+	wxStaticText* toolbar_left_spacer = nullptr;
+	wxStaticText* toolbar_right_spacer = nullptr;
+	int toolbar_content_width = 0;
 
 	// Status & hover labels inside position_toolbar
 	wxStaticText* item_label  = nullptr;

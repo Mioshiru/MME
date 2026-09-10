@@ -517,11 +517,12 @@ bool Application::OnInit() {
   if (save_failed_file.FileExists()) {
     std::ifstream f(nstr(save_failed_file.GetFullPath()).c_str(), std::ios::in);
 
-    std::string backup_otbm, backup_house, backup_spawn;
+      std::string backup_otbm, backup_house, backup_spawn, backup_waypoint;
 
     getline(f, backup_otbm);
     getline(f, backup_house);
     getline(f, backup_spawn);
+      getline(f, backup_waypoint);
 
     // Remove the file
     f.close();
@@ -555,6 +556,11 @@ bool Application::OnInit() {
           std::rename(backup_spawn.c_str(),
                       backup_spawn.substr(0, backup_spawn.size() - 1).c_str());
         }
+    if (!backup_waypoint.empty()) {
+      std::remove(backup_waypoint.substr(0, backup_waypoint.size() - 1).c_str());
+      std::rename(backup_waypoint.c_str(),
+            backup_waypoint.substr(0, backup_waypoint.size() - 1).c_str());
+    }
 
         // Load the map
         g_gui.LoadMap(wxstr(backup_otbm.substr(0, backup_otbm.size() - 1)));
@@ -872,10 +878,19 @@ void MainFrame::OnAutoSaveTimer(wxTimerEvent& /*event*/) {
       bool is_live_server = editor->IsLiveServer();
       bool auto_save_enabled = g_settings.getBoolean(Config::AUTO_SAVE_ENABLED);
       if ((is_live_server || auto_save_enabled) && editor->map.hasChanged() && editor->map.hasFile()) {
-        editor->saveMap(FileName(), false, true);
+			if (editor->saveMap(FileName(), false, true)) {
+				SetAutoSaveStatus();
+			}
         g_gui.UpdateTitle();
       }
     }
+  }
+}
+
+void MainFrame::SetAutoSaveStatus() {
+  last_auto_save_status = wxDateTime::Now().FormatISOTime();
+  if (GetStatusBar() && GetStatusBar()->IsShown()) {
+    SetStatusText("Auto-save: " + last_auto_save_status, 3);
   }
 }
 

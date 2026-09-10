@@ -156,14 +156,12 @@ BrushPalettePanel::BrushPalettePanel(wxWindow* parent, const TilesetContainer& t
 	}
 
 	if (tileset_choice->GetCount() > 0) {
+		wxString saved_tileset = wxstr(g_settings.getString(Config::PALETTE_SELECTED_TILESET));
+		int saved_idx = saved_tileset.empty() ? wxNOT_FOUND : tileset_choice->FindString(saved_tileset);
 		int caveIdx = tileset_choice->FindString("Cave");
-		if (caveIdx != wxNOT_FOUND) {
-			tileset_choice->SetSelection(caveIdx);
-			choicebook->SetSelection(caveIdx);
-		} else {
-			tileset_choice->SetSelection(0);
-			choicebook->SetSelection(0);
-		}
+		int initial_idx = saved_idx != wxNOT_FOUND ? saved_idx : (caveIdx != wxNOT_FOUND ? caveIdx : 0);
+		tileset_choice->SetSelection(initial_idx);
+		choicebook->SetSelection(initial_idx);
 	}
 	if (choicebook->GetChoiceCtrl()) {
 		choicebook->GetChoiceCtrl()->Hide();
@@ -361,6 +359,8 @@ void BrushPalettePanel::OnTilesetChoice(wxCommandEvent& event) {
 			}
 		}
 		choicebook->SetSelection(sel);
+		g_settings.setString(Config::PALETTE_SELECTED_TILESET, nstr(tileset_choice->GetString(sel)));
+		g_settings.save();
 	}
 }
 
@@ -782,7 +782,7 @@ void BrushIconBox::UpdateLayout() {
 	if (scale_percent < 100) scale_percent = 100;
 	if (scale_percent > 200) scale_percent = 200;
 
-	int base_btn_w = (icon_size == RENDER_SIZE_16x16 ? 20 : 36);
+	int base_btn_w = (icon_size == RENDER_SIZE_16x16 ? 58 : 78);
 	int btn_width = FromDIP(base_btn_w * scale_percent / 100);
 
 	if (client_width <= 0) {
@@ -880,20 +880,7 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 	if (scale_percent < 100) scale_percent = 100;
 	if (scale_percent > 200) scale_percent = 200;
 
-	int spr_w = FromDIP((icon_size == RENDER_SIZE_16x16 ? 16 : 32) * scale_percent / 100);
-	int offset = FromDIP(2 * scale_percent / 100);
-
-	static std::unique_ptr<wxPen> highlight_pen;
-	static std::unique_ptr<wxPen> dark_highlight_pen;
-	static std::unique_ptr<wxPen> light_shadow_pen;
-	static std::unique_ptr<wxPen> shadow_pen;
-
-	if (highlight_pen.get() == nullptr) {
-		highlight_pen.reset(newd wxPen(wxColor(0xFF, 0xFF, 0xFF), 1, wxSOLID));
-		dark_highlight_pen.reset(newd wxPen(wxColor(0xD4, 0xD0, 0xC8), 1, wxSOLID));
-		light_shadow_pen.reset(newd wxPen(wxColor(0x80, 0x80, 0x80), 1, wxSOLID));
-		shadow_pen.reset(newd wxPen(wxColor(0x40, 0x40, 0x40), 1, wxSOLID));
-	}
+	int offset = FromDIP(1 * scale_percent / 100);
 
 	SpriteSize spr_sz = (icon_size == RENDER_SIZE_16x16 ? SPRITE_SIZE_16x16 : SPRITE_SIZE_32x32);
 
@@ -952,31 +939,12 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 		Brush* brush = item.brush;
 		bool is_selected = (brush == selected_brush);
 
-		dc.SetBrush(*wxBLACK_BRUSH);
-		dc.SetPen(*wxTRANSPARENT_PEN);
-		dc.DrawRectangle(x, y, btn_width, btn_width);
-
-		if (is_selected) {
-			// High-contrast clear selection frame: outer dark outline + bright gold highlight frame
-			dc.SetPen(wxPen(wxColor(0, 0, 0), 2, wxSOLID));
-			dc.SetBrush(*wxTRANSPARENT_BRUSH);
-			dc.DrawRectangle(x, y, btn_width, btn_width);
-			dc.SetPen(wxPen(wxColor(255, 205, 50), 2, wxSOLID));
-			dc.DrawRectangle(x + 1, y + 1, btn_width - 2, btn_width - 2);
-		} else {
-			dc.SetPen(*highlight_pen);
-			dc.DrawLine(x, y, x + btn_width - 1, y);
-			dc.DrawLine(x, y + 1, x, y + btn_width - 1);
-			dc.SetPen(*dark_highlight_pen);
-			dc.DrawLine(x + 1, y + 1, x + btn_width - 2, y + 1);
-			dc.DrawLine(x + 1, y + 2, x + 1, y + btn_width - 2);
-			dc.SetPen(*light_shadow_pen);
-			dc.DrawLine(x + btn_width - 2, y + 1, x + btn_width - 2, y + btn_width - 2);
-			dc.DrawLine(x + 1, y + btn_width - 2, x + btn_width - 1, y + btn_width - 2);
-			dc.SetPen(*shadow_pen);
-			dc.DrawLine(x + btn_width - 1, y, x + btn_width - 1, y + btn_width - 1);
-			dc.DrawLine(x, y + btn_width - 1, x + btn_width, y + btn_width - 1);
-		}
+		const int card_margin = FromDIP(2);
+		const int footer_height = FromDIP(17);
+		const int icon_area_height = btn_width - footer_height;
+		dc.SetBrush(wxBrush(is_selected ? wxColour(25, 35, 52) : wxColour(22, 27, 36)));
+		dc.SetPen(wxPen(is_selected ? wxColour(229, 193, 88) : wxColour(58, 68, 84), is_selected ? 2 : 1, wxSOLID));
+		dc.DrawRoundedRectangle(x + card_margin, y + card_margin, btn_width - card_margin * 2, btn_width - card_margin * 2, FromDIP(3));
 
 		if (brush) {
 			if (brush->isCreature()) {
@@ -985,7 +953,10 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 				if (ct) {
 					GameSprite* spr = g_gui.gfx.getCreatureSprite(ct->outfit.lookType);
 					if (spr) {
-						spr->DrawOutfitTo(&dc, ct->outfit, x + offset, y + offset, spr_w, spr_w, 2, ct->outfit.lookAddon, 0, 0);
+						int spr_w = std::max(1, std::min(btn_width - FromDIP(10), icon_area_height - FromDIP(6)));
+						int spr_x = x + (btn_width - spr_w) / 2;
+						int spr_y = y + (icon_area_height - spr_w) / 2;
+						spr->DrawOutfitTo(&dc, ct->outfit, spr_x, spr_y, spr_w, spr_w, 2, ct->outfit.lookAddon, 0, 0);
 					}
 				}
 			} else {
@@ -998,8 +969,20 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 				}
 
 				if (sprite) {
-					sprite->DrawTo(&dc, spr_sz, x + offset, y + offset, spr_w, spr_w);
+					int spr_w = std::max(1, std::min(btn_width - FromDIP(10), icon_area_height - FromDIP(6)));
+					int spr_x = x + (btn_width - spr_w) / 2;
+					int spr_y = y + (icon_area_height - spr_w) / 2;
+					sprite->DrawTo(&dc, spr_sz, spr_x, spr_y, spr_w, spr_w);
 				}
+			}
+
+			int look_id = brush->getLookID();
+			if (look_id > 0) {
+				dc.SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));
+				dc.SetTextForeground(is_selected ? wxColour(255, 215, 102) : wxColour(164, 174, 190));
+				wxString id_text = wxString::Format("%d", look_id);
+				wxSize id_size = dc.GetTextExtent(id_text);
+				dc.DrawText(id_text, x + (btn_width - id_size.x) / 2, y + btn_width - footer_height + FromDIP(1));
 			}
 
 			// Render Tag Color (Color coding for Favorites)

@@ -174,24 +174,15 @@ uniform sampler2D uTexture;
 uniform int   uUpscaling;
 uniform float uTime;
 uniform int   uFloor;
-
-// Experimental Biome & Post-Processing Shaders
 uniform int   uExpColorGrading;
 uniform int   uExpVignette;
 uniform float uExpVignetteStrength;
+
 
 varying vec2  vTexCoord;
 varying vec4  vColor;
 varying vec2  vWorldPos;
 varying float vShaderData;
-
-vec3 applyPixelGrade(vec3 color, float gammaValue, float contrastValue, float saturationValue, vec3 tint) {
-  color = pow(max(color, vec3(0.0)), vec3(gammaValue));
-  color = (color - 0.5) * contrastValue + 0.5;
-  float luma = dot(color, vec3(0.299, 0.587, 0.114));
-  color = mix(vec3(luma), color, saturationValue);
-  return clamp(color * tint, 0.0, 1.0);
-}
 
 void main() {
     vec2 uv = vTexCoord;
@@ -200,28 +191,34 @@ void main() {
 
     vec4 texel = raw;
 
-    if (uUpscaling == 1) {
-      if (uExpColorGrading == 0) {
-        texel.rgb = applyPixelGrade(texel.rgb, 0.94, 1.16, 1.28, vec3(1.04, 1.02, 0.96));
-      } else if (uExpColorGrading == 1) {
-        texel.rgb = applyPixelGrade(texel.rgb, 1.12, 1.24, 0.88, vec3(1.02, 0.94, 0.90));
-      } else if (uExpColorGrading == 2) {
-        texel.rgb = applyPixelGrade(texel.rgb, 1.16, 1.18, 0.72, vec3(0.84, 0.92, 1.12));
-      } else if (uExpColorGrading == 3) {
-        texel.rgb = applyPixelGrade(texel.rgb, 0.98, 1.12, 1.06, vec3(1.14, 0.98, 0.78));
-      } else if (uExpColorGrading == 4) {
-        texel.rgb = applyPixelGrade(texel.rgb, 1.04, 1.20, 1.10, vec3(0.82, 1.04, 1.20));
-      } else {
-        texel.rgb = applyPixelGrade(texel.rgb, 1.0, 1.0, 1.0, vec3(1.0));
-      }
+    if (uExpColorGrading == 1) {
+      texel.rgb = clamp(texel.rgb * vec3(1.03, 0.96, 0.90), 0.0, 1.0);
+    } else if (uExpColorGrading == 2) {
+      texel.rgb = clamp(texel.rgb * vec3(0.84, 0.92, 1.10), 0.0, 1.0);
+    } else if (uExpColorGrading == 3) {
+      texel.rgb = clamp(texel.rgb * vec3(1.12, 0.98, 0.82), 0.0, 1.0);
+    } else if (uExpColorGrading == 4) {
+      texel.rgb = clamp(texel.rgb * vec3(0.86, 1.04, 1.18), 0.0, 1.0);
     }
 
-    // ── 3. Cinematic Vignette ──
+    if (uUpscaling == 2) {
+      // Modern Pixel-Art xBRZ: a soft neighbor blur smooths reconstruction
+      // artifacts, followed by a vibrance boost that intensifies color.
+      vec2 stepUv = vec2(1.0 / 128.0);
+      vec3 blur = (texture2D(uTexture, uv - vec2(stepUv.x, 0.0)).rgb +
+                   texture2D(uTexture, uv + vec2(stepUv.x, 0.0)).rgb +
+                   texture2D(uTexture, uv - vec2(0.0, stepUv.y)).rgb +
+                   texture2D(uTexture, uv + vec2(0.0, stepUv.y)).rgb) * 0.25;
+      texel.rgb = mix(texel.rgb, blur, 0.60);
+
+      float luma = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+      texel.rgb = clamp(mix(vec3(luma), texel.rgb, 1.30), 0.0, 1.0);
+    }
+
     if (uExpVignette == 1) {
-        vec2 normPos = gl_FragCoord.xy / vec2(1920.0, 1080.0) - vec2(0.5);
-        float dist = length(normPos);
-        float vig = smoothstep(0.35, 0.80, dist);
-        texel.rgb = mix(texel.rgb, texel.rgb * 0.55, vig * uExpVignetteStrength);
+      vec2 norm_pos = gl_FragCoord.xy / vec2(1920.0, 1080.0) - vec2(0.5);
+      float vignette = smoothstep(0.35, 0.80, length(norm_pos));
+      texel.rgb = mix(texel.rgb, texel.rgb * 0.55, vignette * uExpVignetteStrength);
     }
 
     gl_FragColor = texel * vColor;
@@ -374,6 +371,50 @@ void MapDrawer::DrawLiveCursors() {
     glVertex2f(draw_x, draw_y + TileSize);
     glEnd();
   }
+}
+
+void MapDrawer::DrawLiveLocks() {
+  if (options.ingame || !editor.IsLive()) {
+    return;
+  }
+
+  LiveSocket& live = editor.GetLive();
+  glDisable(GL_TEXTURE_2D);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  for (const auto& pair : live.lockedEntities) {
+    const LiveEntityLock& lock = pair.second;
+    if (lock.pos.z != floor) {
+      continue;
+    }
+
+    int offset = (lock.pos.z <= GROUND_LAYER)
+                     ? (GROUND_LAYER - lock.pos.z) * TileSize
+                     : TileSize * (floor - lock.pos.z);
+    float draw_x = ((lock.pos.x * TileSize) - view_scroll_x) - offset;
+    float draw_y = ((lock.pos.y * TileSize) - view_scroll_y) - offset;
+
+    glColor4ub(lock.ownerColor.Red(), lock.ownerColor.Green(), lock.ownerColor.Blue(), 80);
+    glBegin(GL_QUADS);
+    glVertex2f(draw_x, draw_y);
+    glVertex2f(draw_x + TileSize, draw_y);
+    glVertex2f(draw_x + TileSize, draw_y + TileSize);
+    glVertex2f(draw_x, draw_y + TileSize);
+    glEnd();
+
+    glColor4ub(lock.ownerColor.Red(), lock.ownerColor.Green(), lock.ownerColor.Blue(), 230);
+    glLineWidth(std::max(1.0f, 2.0f / zoom));
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(draw_x, draw_y);
+    glVertex2f(draw_x + TileSize, draw_y);
+    glVertex2f(draw_x + TileSize, draw_y + TileSize);
+    glVertex2f(draw_x, draw_y + TileSize);
+    glEnd();
+  }
+
+  glDisable(GL_BLEND);
+  glEnable(GL_TEXTURE_2D);
 }
 
 void MapDrawer::DrawBrush() {
@@ -1348,15 +1389,16 @@ void MapDrawer::SetupGL() {
     }
     g_shader_last_ms = now_ms;
 
-    bool allow_upscaling = g_settings.getBoolean(Config::FAKE_HD_ASSETS);
+    const bool enhancement_enabled = g_settings.getBoolean(Config::FAKE_HD_ASSETS);
+    const int enhancement_mode = enhancement_enabled
+      ? (g_settings.getInteger(Config::PIXEL_UPSCALE_MODE) == 1 ? 2 : 0)
+      : 0;
 
     g_map_shader.use();
     g_map_shader.setFloat("uTime",   g_shader_time);
     g_map_shader.setInt("uTexture", 0); // texture unit 0
-    g_map_shader.setInt("uUpscaling", allow_upscaling ? 1 : 0);
+    g_map_shader.setInt("uUpscaling", enhancement_mode);
     g_map_shader.setInt("uFloor", 7); // default: Oberflaeche
-
-    // Experimental Biome & Vignette uniforms
     g_map_shader.setInt("uExpColorGrading", g_settings.getInteger(Config::EXP_COLOR_GRADING));
     g_map_shader.setInt("uExpVignette", g_settings.getBoolean(Config::EXP_VIGNETTE) ? 1 : 0);
     g_map_shader.setFloat("uExpVignetteStrength", g_settings.getFloat(Config::EXP_VIGNETTE_STRENGTH));
@@ -1419,6 +1461,7 @@ void MapDrawer::Draw() {
     DrawSelectionBox();
   }
   DrawLiveCursors();
+  DrawLiveLocks();
   DrawBrush();
   if (options.show_grid) {
     DrawGrid();
@@ -1791,7 +1834,11 @@ void MapDrawer::DrawMap() {
         g_map_shader.use();
         g_map_shader.setFloat("uTime", g_shader_time);
         g_map_shader.setInt("uTexture", 0);
-        g_map_shader.setInt("uUpscaling", allow_upscaling ? 1 : 0);
+        const bool enhancement_enabled = g_settings.getBoolean(Config::FAKE_HD_ASSETS);
+        const int enhancement_mode = enhancement_enabled
+          ? (g_settings.getInteger(Config::PIXEL_UPSCALE_MODE) == 1 ? 2 : 0)
+          : 0;
+        g_map_shader.setInt("uUpscaling", enhancement_mode);
         g_map_shader.setInt("uAmbientEffects", allow_ambient ? 1 : 0);
         g_map_shader.setInt("uFloor", map_z);
 

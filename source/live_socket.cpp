@@ -25,12 +25,13 @@
 LiveSocket::LiveSocket() :
 	cursors(), mapReader(nullptr, 0), mapWriter(),
 	mapVersion(MapVersion(MAP_OTBM_4, CLIENT_VERSION_NONE)), log(nullptr),
-	name("User"), password("") {
+	name("User"), password(""),
+	callbackAlive(std::make_shared<std::atomic<bool>>(true)) {
 	//
 }
 
 LiveSocket::~LiveSocket() {
-	//
+	invalidateCallbacks();
 }
 
 wxString LiveSocket::getName() const {
@@ -83,7 +84,9 @@ std::vector<LiveCursor> LiveSocket::getCursorList() const {
 }
 
 void LiveSocket::logMessage(const wxString& message) {
-	wxTheApp->CallAfter([this, message]() {
+	auto alive = callbackAlive;
+	wxTheApp->CallAfter([this, message, alive]() {
+		if (!alive->load()) return;
 		if (log) {
 			log->Message(message);
 		}

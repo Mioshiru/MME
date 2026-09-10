@@ -1908,6 +1908,12 @@ void MapCanvas::UpdateZoomStatus() {
     percentage = 1;
   wxString ss;
   ss << "zoom: " << percentage << "%";
+  if (g_gui.root) {
+    const wxString& autosave_status = g_gui.root->GetAutoSaveStatus();
+    if (!autosave_status.empty()) {
+      ss << " | Auto-save: " << autosave_status;
+    }
+  }
   if (g_gui.root && g_gui.root->GetStatusBar() && g_gui.root->GetStatusBar()->IsShown()) {
     g_gui.root->SetStatusText(ss, 3);
   }

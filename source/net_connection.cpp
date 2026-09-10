@@ -26,6 +26,7 @@ void NetworkMessage::clear() {
 	buffer.resize(4);
 	position = 4;
 	size = 0;
+	malformed = false;
 }
 
 void NetworkMessage::expand(const size_t length) {
@@ -39,6 +40,7 @@ template <>
 std::string NetworkMessage::read<std::string>() {
 	const uint32_t length = read<uint32_t>();
 	if (position + length > buffer.size()) {
+		malformed = true;
 		position = buffer.size();
 		return std::string();
 	}

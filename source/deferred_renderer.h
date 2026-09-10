@@ -19,8 +19,10 @@ public:
     // Pass the Legacy OpenGL FBO texture ID so bgfx can read it
     void setLegacyColorTexture(uint32_t glTextureId);
 
-    // Renders the lighting pass using Instancing
-    void render(const LightingSystem& lightingSystem);
+    // Renders the lighting pass using only lights intersecting the viewport.
+    void render(const LightingSystem& lightingSystem,
+                float view_min_x, float view_min_y,
+                float view_max_x, float view_max_y);
 
     // Shuts down bgfx
     void shutdown();
