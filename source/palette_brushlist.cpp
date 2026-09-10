@@ -497,7 +497,7 @@ BrushPanel::BrushPanel(wxWindow* parent) :
 	list_type(BRUSHLIST_LISTBOX) {
 	sizer = newd wxBoxSizer(wxVERTICAL);
 	SetSizer(sizer);
-	SetMinSize(wxSize(120, 100));
+	SetMinSize(wxSize(100, 100));
 }
 
 BrushPanel::~BrushPanel() {
@@ -782,7 +782,7 @@ void BrushIconBox::UpdateLayout() {
 	if (scale_percent < 100) scale_percent = 100;
 	if (scale_percent > 200) scale_percent = 200;
 
-	int base_btn_w = (icon_size == RENDER_SIZE_16x16 ? 58 : 78);
+	int base_btn_w = (icon_size == RENDER_SIZE_16x16 ? 44 : 58);
 	int btn_width = FromDIP(base_btn_w * scale_percent / 100);
 
 	if (client_width <= 0) {
@@ -790,9 +790,9 @@ void BrushIconBox::UpdateLayout() {
 	}
 	last_layout_width = client_width;
 
-	// Determine how many full columns fit in client_width (minimum 3 columns)
+	// Determine how many full columns fit in client_width (minimum 2 columns)
 	int columns = client_width / btn_width;
-	if (columns < 3) columns = 3;
+	if (columns < 2) columns = 2;
 
 	int total_tiles_w = columns * btn_width;
 
@@ -939,12 +939,13 @@ void BrushIconBox::OnPaint(wxPaintEvent& event) {
 		Brush* brush = item.brush;
 		bool is_selected = (brush == selected_brush);
 
-		const int card_margin = FromDIP(2);
 		const int footer_height = FromDIP(17);
 		const int icon_area_height = btn_width - footer_height;
-		dc.SetBrush(wxBrush(is_selected ? wxColour(25, 35, 52) : wxColour(22, 27, 36)));
-		dc.SetPen(wxPen(is_selected ? wxColour(229, 193, 88) : wxColour(58, 68, 84), is_selected ? 2 : 1, wxSOLID));
-		dc.DrawRoundedRectangle(x + card_margin, y + card_margin, btn_width - card_margin * 2, btn_width - card_margin * 2, FromDIP(3));
+		if (is_selected) {
+			dc.SetBrush(*wxTRANSPARENT_BRUSH);
+			dc.SetPen(wxPen(wxColour(229, 193, 88), 2, wxSOLID));
+			dc.DrawRectangle(x + 1, y + 1, btn_width - 2, btn_width - 2);
+		}
 
 		if (brush) {
 			if (brush->isCreature()) {

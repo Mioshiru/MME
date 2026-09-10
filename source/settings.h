@@ -218,7 +218,7 @@ namespace Config {
 		EXP_HDR_BLOOM,      // 2D HDR Bloom & Glow (Feuer, Fackeln, Lava, Magie)
 		EXP_BLOOM_INTENSITY,// Bloom Intensity float (0.1 - 1.0)
 		EXP_RELIEF_MAPPING, // 2D Dynamic Relief & Bump Normal Mapping
-		EXP_COLOR_GRADING,  // Cinematic Color Grading Mood (0: Off, 1: Fantasy, 2: Dungeon, 3: Sunset, 4: Frost)
+		EXP_COLOR_GRADING,  // Cinematic Color Grading Mood (0: Vibrant, 1: Dark, 2: Cave, 3: Sunset, 4: Frost, 5: Neutral)
 		EXP_VIGNETTE,       // Cinematic Vignette Darkening
 		EXP_VIGNETTE_STRENGTH, // Vignette Strength float (0.1 - 1.0)
 		EXP_PIXEL_SNAPPING, // Sub-pixel camera snapping to eliminate shimmer

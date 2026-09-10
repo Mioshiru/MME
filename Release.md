@@ -19,6 +19,16 @@
   * **Canvas Lock Overlay:** Multiplayer-locked positions are rendered as color-coded translucent tiles with a highlighted border, so active edits are visible before a conflicting click.
   * **Ocean & Landmass Generator:** Added an undoable procedural ocean mode with configurable grass, sand, water, snow, and shoreline ground IDs. The generator creates smoothed island/landmass distributions, places sand along coasts, adds cold snow regions, applies shoreline walls, supports deterministic seeds and live preview, and protects houses, spawns, creatures, containers, doors, walls, and protection zones.
   * **Palette Card Redesign:** Brush and item tiles now use larger Obsidian cards with restrained blue-gray borders, centered sprites, a dedicated item-ID footer, and a clear Mystic Gold selection frame while preserving the existing MME color language.
+  * **Compact Palette Layout:** Tile preview cards are reduced to 75% of their previous redesign size, while the palette docking logic now permits a two-column compact width instead of enforcing three columns.
+  * **Toolbar Lighting Control:** The Day/Night control was removed from the canvas overlay and placed at the far right of the position toolbar, keeping the map viewport clear while retaining quick access to lighting.
+  * **Biome Color Mood Rendering Fix:** Color-grading and vignette preferences are now applied in the actual per-floor VBO shader path, so changing Biome Color Mood visibly affects the map canvas again.
+  * **Correct Mood Mapping:** The six Graphics mood choices now map to distinct shader states, including the previously unhandled `Vibrant Fantasy RPG` index and explicit neutral behavior.
+  * **PNG Day/Night Toolbar Control:** The day/night PNG control now lives at the far right of the upper tools and brushes toolbar; it is no longer placed in the lower coordinate/item status toolbar or over the canvas.
+  * **Stronger Fantasy Color Mood:** Vibrant Fantasy now uses warmer biome colors, stronger saturation separation, and a controlled contrast lift so it is visibly distinct from Neutral / Classic Vanilla.
+  * **Softer Modern Pixel-Art Upscaling:** The xBRZ visual mode now uses weighted 3x3 reconstruction with stronger softening and restrained detail preservation for a smoother top-down pixel-art presentation.
+  * **Centered Tool Group & Pinned Day/Night Icon:** The upper tools/brushes toolbar now centers its complete tool group, while the day/night PNG control remains attached as the final right-edge control instead of drifting with the group.
+  * **Mood Switch Refresh Stability:** Removed the redundant intermediate canvas refresh during Graphics Apply, preventing visible flicker while switching Biome Color Mood settings.
+  * **Accessible Toolbar Scaling:** UI Scaling now reapplies the configured size to all toolbar tool bitmaps, brush-size icons, and the Day/Night PNG immediately, preserving toolbar state and improving readability for users with visual impairments.
 
 * **🔮 Dark Runic Obsidian & Mystic Gold Fantasy RPG UI Overhaul:**
   * **Complete Theme Transformation:** Entire editor user interface transformed into an immersive AAA Dark Fantasy aesthetic with deep basalt/obsidian panels (`#0D1117`, `#161B22`), mystic gold framing (`#E5C158`, `#D4AF37`), and subtle amber/sapphire glowing accents.

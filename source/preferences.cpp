@@ -1274,8 +1274,6 @@ void PreferencesWindow::Apply() {
 	if (exp_vignette_slider) {
 		g_settings.setFloat(Config::EXP_VIGNETTE_STRENGTH, float(exp_vignette_slider->GetValue()) / 10.0f);
 	}
-	g_gui.RefreshView();
-
 	if (ui_scale_slider) {
 		int old_scale = g_settings.getInteger(Config::UI_SCALE);
 		if (old_scale < 100) old_scale = 100;
@@ -1286,6 +1284,9 @@ void PreferencesWindow::Apply() {
 		if (old_scale != new_scale) {
 			g_settings.setInteger(Config::UI_SCALE, new_scale);
 			palette_style_changed = true;
+			if (g_gui.root && g_gui.root->GetAuiToolBar()) {
+				g_gui.root->GetAuiToolBar()->ApplyIconScale();
+			}
 		}
 	}
 

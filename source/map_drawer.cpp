@@ -191,10 +191,17 @@ void main() {
 
     vec4 texel = raw;
 
-    if (uExpColorGrading == 1) {
-      texel.rgb = clamp(texel.rgb * vec3(1.03, 0.96, 0.90), 0.0, 1.0);
+    if (uExpColorGrading == 0) {
+      // Vibrant Fantasy: warmer greens, stronger color separation and a
+      // restrained saturation lift so terrain reads clearly without clipping.
+      texel.rgb = clamp(texel.rgb * vec3(1.10, 1.08, 0.86), 0.0, 1.0);
+      float fantasy_luma = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+      texel.rgb = clamp(mix(vec3(fantasy_luma), texel.rgb, 1.28), 0.0, 1.0);
+      texel.rgb = clamp((texel.rgb - 0.035) * 1.08 + 0.035, 0.0, 1.0);
+    } else if (uExpColorGrading == 1) {
+      texel.rgb = clamp(texel.rgb * vec3(0.82, 0.84, 0.90), 0.0, 1.0);
     } else if (uExpColorGrading == 2) {
-      texel.rgb = clamp(texel.rgb * vec3(0.84, 0.92, 1.10), 0.0, 1.0);
+      texel.rgb = clamp(texel.rgb * vec3(0.74, 0.84, 1.08), 0.0, 1.0);
     } else if (uExpColorGrading == 3) {
       texel.rgb = clamp(texel.rgb * vec3(1.12, 0.98, 0.82), 0.0, 1.0);
     } else if (uExpColorGrading == 4) {
@@ -202,17 +209,26 @@ void main() {
     }
 
     if (uUpscaling == 2) {
-      // Modern Pixel-Art xBRZ: a soft neighbor blur smooths reconstruction
-      // artifacts, followed by a vibrance boost that intensifies color.
+      // Modern top-down pixel art: use a weighted 3x3 reconstruction around
+      // the source sample. This softens staircase edges while retaining the
+      // sprite's broad color masses and avoiding a flat bilinear blur.
       vec2 stepUv = vec2(1.0 / 128.0);
-      vec3 blur = (texture2D(uTexture, uv - vec2(stepUv.x, 0.0)).rgb +
-                   texture2D(uTexture, uv + vec2(stepUv.x, 0.0)).rgb +
-                   texture2D(uTexture, uv - vec2(0.0, stepUv.y)).rgb +
-                   texture2D(uTexture, uv + vec2(0.0, stepUv.y)).rgb) * 0.25;
-      texel.rgb = mix(texel.rgb, blur, 0.60);
+      vec3 soft = texture2D(uTexture, uv).rgb * 4.0;
+      soft += texture2D(uTexture, uv + vec2(stepUv.x, 0.0)).rgb * 2.0;
+      soft += texture2D(uTexture, uv - vec2(stepUv.x, 0.0)).rgb * 2.0;
+      soft += texture2D(uTexture, uv + vec2(0.0, stepUv.y)).rgb * 2.0;
+      soft += texture2D(uTexture, uv - vec2(0.0, stepUv.y)).rgb * 2.0;
+      soft += texture2D(uTexture, uv + vec2(stepUv.x, stepUv.y)).rgb;
+      soft += texture2D(uTexture, uv + vec2(stepUv.x, -stepUv.y)).rgb;
+      soft += texture2D(uTexture, uv + vec2(-stepUv.x, stepUv.y)).rgb;
+      soft += texture2D(uTexture, uv - vec2(stepUv.x, stepUv.y)).rgb;
+      soft /= 16.0;
 
+      // Stronger than the previous 60% cross blur, but retain some source
+      // detail so outlines do not disappear.
+      texel.rgb = mix(texel.rgb, soft, 0.78);
       float luma = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
-      texel.rgb = clamp(mix(vec3(luma), texel.rgb, 1.30), 0.0, 1.0);
+      texel.rgb = clamp(mix(vec3(luma), texel.rgb, 1.16), 0.0, 1.0);
     }
 
     if (uExpVignette == 1) {
@@ -1841,6 +1857,9 @@ void MapDrawer::DrawMap() {
         g_map_shader.setInt("uUpscaling", enhancement_mode);
         g_map_shader.setInt("uAmbientEffects", allow_ambient ? 1 : 0);
         g_map_shader.setInt("uFloor", map_z);
+    g_map_shader.setInt("uExpColorGrading", g_settings.getInteger(Config::EXP_COLOR_GRADING));
+    g_map_shader.setInt("uExpVignette", g_settings.getBoolean(Config::EXP_VIGNETTE) ? 1 : 0);
+    g_map_shader.setFloat("uExpVignetteStrength", g_settings.getFloat(Config::EXP_VIGNETTE_STRENGTH));
 
         const GLsizei stride = sizeof(RME_Rendering::MapVertex);
         glEnableVertexAttribArray(0);

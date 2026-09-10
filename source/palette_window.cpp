@@ -582,7 +582,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets,
 	card_minimap(nullptr),
 	card_checklist(nullptr),
 	allow_minimap(initial_allow_minimap) {
-	SetMinSize(wxSize(120, 150));
+	SetMinSize(wxSize(100, 150));
 	SetBackgroundColour(wxColor(13, 17, 23));
 
 	// Context menu binding to restore modules
@@ -1466,12 +1466,12 @@ void PaletteWindow::SnapDockWidth() {
 	if (scale_percent < 100) scale_percent = 100;
 	if (scale_percent > 200) scale_percent = 200;
 
-	int btn_w = FromDIP(36 * scale_percent / 100);
+	int btn_w = FromDIP(58 * scale_percent / 100);
 	int vscroll = wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
 	if (vscroll <= 0) vscroll = FromDIP(18);
 	int chrome = vscroll + FromDIP(4);
 
-	int min_w = 3 * btn_w + chrome;
+	int min_w = 2 * btn_w + chrome;
 	if (pane.min_size.x != min_w) {
 		pane.MinSize(wxSize(min_w, 100));
 	}

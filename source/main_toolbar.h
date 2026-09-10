@@ -54,6 +54,7 @@ public:
 
 	// Re-layout toolbars according to current TOOLBAR_ALIGNMENT setting
 	void ApplyAlignment();
+	void ApplyIconScale();
 
 private:
 	static const wxString BRUSHES_BAR_NAME;
@@ -73,6 +74,7 @@ private:
 	// Status & hover labels inside position_toolbar
 	wxStaticText* item_label  = nullptr;
 	wxStaticText* pos_label   = nullptr;
+	wxBitmapButton* day_night_button = nullptr;
 };
 
 #endif // RME_MAINTOOLBAR_H_
