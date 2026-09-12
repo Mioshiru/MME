@@ -965,13 +965,15 @@ bool GUI::DoRedo() {
 
 int GUI::GetCurrentFloor() const {
   MapTab *tab = GetCurrentMapTab();
-  ASSERT(tab);
+  if (!tab || !tab->GetCanvas()) {
+    return GROUND_LAYER;
+  }
   return tab->GetCanvas()->GetFloor();
 }
 
 void GUI::ChangeFloor(int new_floor) {
   MapTab *tab = GetCurrentMapTab();
-  if (tab) {
+  if (tab && tab->GetCanvas()) {
     int old_floor = GetCurrentFloor();
     if (new_floor < 0 || new_floor > MAP_MAX_LAYER) {
       return;

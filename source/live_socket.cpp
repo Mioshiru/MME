@@ -21,6 +21,7 @@
 #include "iomap_otbm.h"
 #include "live_tab.h"
 #include "editor.h"
+#include <zlib.h>
 
 LiveSocket::LiveSocket() :
 	cursors(), mapReader(nullptr, 0), mapWriter(),
@@ -160,6 +161,200 @@ void LiveSocket::sendNode(uint32_t clientId, QTreeNode* node, int32_t ndx, int32
 	}
 
 	send(message);
+}
+
+void LiveSocket::sendBatchNodesZlib(uint32_t clientId, const std::vector<BatchNodePayload>& batch) {
+	if (batch.empty()) {
+		return;
+	}
+
+	NetworkMessage rawMsg;
+	rawMsg.write<uint32_t>(static_cast<uint32_t>(batch.size()));
+
+	for (const auto& item : batch) {
+		int32_t ndx = item.ndx;
+		int32_t ndy = item.ndy;
+		uint32_t floorMask = item.floorMask;
+		QTreeNode* node = item.node;
+
+		bool underground = (floorMask & 0xFF00) && !(floorMask & 0x00FF);
+		uint32_t ind = (ndx << 18) | (ndy << 4) | (underground ? 1 : 0);
+		rawMsg.write<uint32_t>(ind);
+
+		if (!node) {
+			rawMsg.write<uint16_t>(0);
+			continue;
+		}
+
+		node->setVisible(clientId, underground, true);
+		Floor** floors = node->getFloors();
+
+		uint16_t sendMask = 0;
+		for (uint32_t z = 0; z < MAP_LAYERS; ++z) {
+			uint32_t bit = 1 << z;
+			if (floors[z] && testFlags(floorMask, bit)) {
+				sendMask |= bit;
+			}
+		}
+
+		rawMsg.write<uint16_t>(sendMask);
+		for (uint32_t z = 0; z < MAP_LAYERS; ++z) {
+			if (testFlags(sendMask, static_cast<uint64_t>(1) << z)) {
+				Floor* floor = floors[z];
+				uint16_t tileBits = 0;
+				for (uint_fast8_t x = 0; x < 4; ++x) {
+					for (uint_fast8_t y = 0; y < 4; ++y) {
+						uint_fast8_t index = (x * 4) + y;
+						Tile* tile = floor->locs[index].get();
+						if (tile && tile->size() > 0) {
+							tileBits |= (1 << index);
+						}
+					}
+				}
+
+				rawMsg.write<uint16_t>(tileBits);
+				if (tileBits != 0) {
+					mapWriter.reset();
+					mapWriter.addNode(0x00);
+					for (uint_fast8_t x = 0; x < 4; ++x) {
+						for (uint_fast8_t y = 0; y < 4; ++y) {
+							uint_fast8_t index = (x * 4) + y;
+							if (testFlags(tileBits, static_cast<uint64_t>(1) << index)) {
+								sendTile(mapWriter, floor->locs[index].get(), nullptr);
+							}
+						}
+					}
+					mapWriter.endNode();
+
+					std::string stream(
+						reinterpret_cast<const char*>(mapWriter.getMemory()),
+						mapWriter.getSize()
+					);
+					rawMsg.write<std::string>(stream);
+				}
+			}
+		}
+	}
+
+	size_t rawDataSize = rawMsg.size;
+	if (rawDataSize == 0) {
+		return;
+	}
+
+	uLongf maxCompressed = compressBound(static_cast<uLong>(rawDataSize));
+	std::vector<uint8_t> compressed(maxCompressed);
+
+	// buffer has an initial 4-byte offset in NetworkMessage
+	const uint8_t* rawPtr = rawMsg.buffer.data() + 4;
+	int res = compress(compressed.data(), &maxCompressed, rawPtr, static_cast<uLong>(rawDataSize));
+	if (res != Z_OK) {
+		if (log) {
+			log->Message("Warning: ZLIB compression failed for node batch.");
+		}
+		return;
+	}
+
+	NetworkMessage packet;
+	packet.write<uint8_t>(PACKET_BATCH_NODES_ZLIB);
+	packet.write<uint32_t>(static_cast<uint32_t>(rawDataSize));
+	packet.write<uint32_t>(static_cast<uint32_t>(maxCompressed));
+	
+	packet.expand(maxCompressed);
+	memcpy(&packet.buffer[packet.position], compressed.data(), maxCompressed);
+	packet.position += maxCompressed;
+
+	send(packet);
+}
+
+void LiveSocket::receiveBatchNodesZlib(NetworkMessage& message, MapEditor& editor, Action* action) {
+	uint32_t rawDataSize = message.read<uint32_t>();
+	uint32_t compressedSize = message.read<uint32_t>();
+
+	if (message.position + compressedSize > message.buffer.size()) {
+		if (log) {
+			log->Message("Error: Truncated compressed node batch received.");
+		}
+		return;
+	}
+
+	const uint8_t* compressedPtr = &message.buffer[message.position];
+	message.position += compressedSize;
+
+	std::vector<uint8_t> rawBuffer(rawDataSize + 4, 0);
+	uLongf destLen = static_cast<uLongf>(rawDataSize);
+
+	int res = uncompress(rawBuffer.data() + 4, &destLen, compressedPtr, static_cast<uLong>(compressedSize));
+	if (res != Z_OK || destLen != rawDataSize) {
+		if (log) {
+			log->Message("Error: Failed to decompress ZLIB node batch.");
+		}
+		return;
+	}
+
+	NetworkMessage reader;
+	reader.buffer = std::move(rawBuffer);
+	reader.position = 4;
+	reader.size = rawDataSize;
+
+	uint32_t nodeCount = reader.read<uint32_t>();
+	Map& map = editor.map;
+
+	for (uint32_t i = 0; i < nodeCount; ++i) {
+		uint32_t ind = reader.read<uint32_t>();
+		int32_t ndx = ind >> 18;
+		int32_t ndy = (ind >> 4) & 0x3FFF;
+		bool underground = ind & 1;
+
+		uint16_t sendMask = reader.read<uint16_t>();
+		if (sendMask == 0) {
+			continue;
+		}
+
+		QTreeNode* node = map.createLeaf(ndx * 4, ndy * 4);
+		if (!node) {
+			continue;
+		}
+
+		node->setRequested(underground, false);
+		node->setVisible(underground, true);
+
+		for (uint_fast8_t z = 0; z < MAP_LAYERS; ++z) {
+			if (testFlags(sendMask, static_cast<uint64_t>(1) << z)) {
+				uint16_t tileBits = reader.read<uint16_t>();
+				if (tileBits == 0) {
+					continue;
+				}
+
+				const std::string& data = reader.read<std::string>();
+				mapReader.assign(reinterpret_cast<const uint8_t*>(data.data()), data.size());
+
+				BinaryNode* rootNode = mapReader.getRootNode();
+				if (!rootNode) {
+					continue;
+				}
+				BinaryNode* tileNode = rootNode->getChild();
+
+				Position position(0, 0, z);
+				for (uint_fast8_t x = 0; x < 4; ++x) {
+					for (uint_fast8_t y = 0; y < 4; ++y) {
+						position.x = (ndx * 4) + x;
+						position.y = (ndy * 4) + y;
+
+						if (testFlags(tileBits, static_cast<uint64_t>(1) << ((x * 4) + y))) {
+							if (tileNode) {
+								Tile* tile = readTile(tileNode, editor, &position);
+								if (tile) {
+									map.setTile(position.x, position.y, position.z, tile);
+								}
+								tileNode->advance();
+							}
+						}
+					}
+				}
+				mapReader.close();
+			}
+		}
+	}
 }
 
 void LiveSocket::receiveFloor(NetworkMessage& message, MapEditor& editor, Action* action, int32_t ndx, int32_t ndy, int32_t z, QTreeNode* node, Floor* floor) {

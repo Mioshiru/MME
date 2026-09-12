@@ -92,6 +92,7 @@ private:
 };
 
 class RadioPlayerWindow : public wxDialog {
+	friend class RadioPlayerPanel;
 public:
 	static void Toggle(wxWindow* parent);
 	static void ShowDocked(bool dock);

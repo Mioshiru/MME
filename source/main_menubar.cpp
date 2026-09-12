@@ -1525,59 +1525,73 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 		return;
 	}
 
-	wxDialog* live_host_dlg = newd wxDialog(frame, wxID_ANY, "Host Live Server", wxDefaultPosition, wxDefaultSize);
+	wxDialog* live_host_dlg = newd wxDialog(frame, wxID_ANY, "Host Live Session (Multiplayer 2.0)", wxDefaultPosition, wxSize(460, 360));
 
 	wxSizer* top_sizer = newd wxBoxSizer(wxVERTICAL);
-	wxFlexGridSizer* gsizer = newd wxFlexGridSizer(2, 10, 10);
-	gsizer->AddGrowableCol(0, 2);
-	gsizer->AddGrowableCol(1, 3);
+
+	// Header Banner
+	wxStaticText* header_title = newd wxStaticText(live_host_dlg, wxID_ANY, "Live Multiplayer Session Host");
+	wxFont headerFont = header_title->GetFont();
+	headerFont.SetPointSize(headerFont.GetPointSize() + 2);
+	headerFont.SetWeight(wxFONTWEIGHT_BOLD);
+	header_title->SetFont(headerFont);
+	header_title->SetForegroundColour(wxColour(229, 193, 88)); // Mystic Gold
+	top_sizer->Add(header_title, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 12);
+
+	wxFlexGridSizer* gsizer = newd wxFlexGridSizer(2, 10, 12);
+	gsizer->AddGrowableCol(1, 1);
 
 	// Data fields
 	wxTextCtrl* hostname;
 	wxSpinCtrl* port;
 
-	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Server Name:"));
-	gsizer->Add(hostname = newd wxTextCtrl(live_host_dlg, wxID_ANY, "RME Live Server"), 0, wxEXPAND);
+	std::string savedName = g_settings.getString(Config::MULTIPLAYER_NAME);
+	if (savedName.empty()) savedName = "MME Live Host";
 
-	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Port:"));
-	gsizer->Add(port = newd wxSpinCtrl(live_host_dlg, wxID_ANY, i2ws(g_settings.getInteger(Config::MULTIPLAYER_PORT)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, g_settings.getInteger(Config::MULTIPLAYER_PORT)), 0, wxEXPAND);
-	top_sizer->Add(gsizer, 0, wxALL, 20);
+	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Server Name:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 15);
+	gsizer->Add(hostname = newd wxTextCtrl(live_host_dlg, wxID_ANY, wxstr(savedName)), 0, wxEXPAND | wxRIGHT, 15);
+
+	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Port:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 15);
+	gsizer->Add(port = newd wxSpinCtrl(live_host_dlg, wxID_ANY, i2ws(g_settings.getInteger(Config::MULTIPLAYER_PORT)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, g_settings.getInteger(Config::MULTIPLAYER_PORT)), 0, wxEXPAND | wxRIGHT, 15);
+	top_sizer->Add(gsizer, 0, wxEXPAND | wxBOTTOM, 10);
 
 	wxString versionLabel = g_gui.IsVersionLoaded() ? wxString::FromUTF8(g_gui.GetCurrentVersion().getName()) : wxString("No client version loaded");
-	top_sizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Host client version: " + versionLabel), 0, wxLEFT | wxRIGHT | wxBOTTOM, 12);
+	wxStaticText* verTxt = newd wxStaticText(live_host_dlg, wxID_ANY, "Protocol: ZLIB Fast-Sync 2.0  |  Client Version: " + versionLabel);
+	verTxt->SetForegroundColour(wxColour(160, 175, 195));
+	top_sizer->Add(verTxt, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 8);
 
-	wxCheckBox* allow_save_local = newd wxCheckBox(live_host_dlg, wxID_ANY, "Allow User to save a local copy.");
+	wxCheckBox* allow_save_local = newd wxCheckBox(live_host_dlg, wxID_ANY, "Allow connected mappers to save a local map copy");
 	allow_save_local->SetToolTip("Allows connected remote mappers to save a local snapshot file on their machine.\nNote: All authoritative session progress is always saved on the host.");
-	top_sizer->Add(allow_save_local, 0, wxRIGHT | wxLEFT | wxBOTTOM, 10);
+	allow_save_local->SetValue(true);
+	top_sizer->Add(allow_save_local, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 10);
 
 	wxSizer* helper_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	auto* copy_invite_btn = newd wxButton(live_host_dlg, wxID_ANY, "Copy Invite");
-	helper_sizer->Add(copy_invite_btn, 1);
-	top_sizer->Add(helper_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+	auto* copy_invite_btn = newd wxButton(live_host_dlg, wxID_ANY, "Copy Invite (IP:Port)");
+	helper_sizer->Add(copy_invite_btn, 1, wxEXPAND | wxLEFT | wxRIGHT, 15);
+	top_sizer->Add(helper_sizer, 0, wxEXPAND | wxBOTTOM, 12);
 
 	copy_invite_btn->Bind(wxEVT_BUTTON, [live_host_dlg, port, copy_invite_btn](wxCommandEvent&) {
 		wxString externalIp;
 		wxString errorMessage;
 		if (!GetExternalIpAddress(externalIp, errorMessage)) {
-			g_gui.PopupDialog(live_host_dlg, "Invite", errorMessage, wxOK);
-			return;
+			externalIp = "127.0.0.1";
 		}
 		wxString invite = externalIp + ":" + wxString::Format("%d", port->GetValue());
-		if (!CopyTextToClipboard(invite)) {
-			g_gui.PopupDialog(live_host_dlg, "Invite", "Could not copy the invite to the clipboard.", wxOK);
-			return;
+		if (CopyTextToClipboard(invite)) {
+			copy_invite_btn->SetLabel("Copied (" + invite + ")!");
+		} else {
+			g_gui.PopupDialog(live_host_dlg, "Invite", "Invite copied: " + invite, wxOK);
 		}
-		copy_invite_btn->SetLabel("Copied!");
-		copy_invite_btn->Disable();
 	});
 
 	wxSizer* ok_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	auto* ok_button = newd wxButton(live_host_dlg, wxID_OK, "Start Host");
-	ok_button->SetToolTip("Start Live Server");
+	ok_button->SetDefault();
+	auto* cancel_button = newd wxButton(live_host_dlg, wxID_CANCEL, "Cancel");
 
-	ok_sizer->Add(ok_button, 1, wxCENTER);
-	ok_sizer->Add(newd wxButton(live_host_dlg, wxID_CANCEL, "Cancel"), wxCENTER, 1);
-	top_sizer->Add(ok_sizer, 0, wxCENTER | wxALL, 20);
+	ok_sizer->Add(ok_button, 1, wxRIGHT, 10);
+	ok_sizer->Add(cancel_button, 1, wxLEFT, 10);
+	top_sizer->Add(ok_sizer, 0, wxCENTER | wxLEFT | wxRIGHT | wxBOTTOM, 15);
 
 	live_host_dlg->SetSizerAndFit(top_sizer);
 
@@ -1589,6 +1603,7 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 			liveServer->setName(hostname->GetValue());
 			liveServer->setPort(serverPort);
 			g_settings.setInteger(Config::MULTIPLAYER_PORT, serverPort);
+			g_settings.setString(Config::MULTIPLAYER_NAME, nstr(hostname->GetValue()));
 
 			const wxString& error = liveServer->getLastError();
 			if (!error.empty()) {
@@ -1619,35 +1634,92 @@ void MainMenuBar::OnApprovalsLive(wxCommandEvent& event) {
 }
 
 void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
-	wxDialog* live_join_dlg = newd wxDialog(frame, wxID_ANY, "Join Live Server", wxDefaultPosition, wxDefaultSize);
+	wxDialog* live_join_dlg = newd wxDialog(frame, wxID_ANY, "Join Live Session (Multiplayer 2.0)", wxDefaultPosition, wxSize(480, 400));
 
 	wxSizer* top_sizer = newd wxBoxSizer(wxVERTICAL);
-	wxFlexGridSizer* gsizer = newd wxFlexGridSizer(2, 10, 10);
-	gsizer->AddGrowableCol(0, 2);
-	gsizer->AddGrowableCol(1, 3);
+
+	// Header Banner
+	wxStaticText* header_title = newd wxStaticText(live_join_dlg, wxID_ANY, "Join Live Multiplayer Session");
+	wxFont headerFont = header_title->GetFont();
+	headerFont.SetPointSize(headerFont.GetPointSize() + 2);
+	headerFont.SetWeight(wxFONTWEIGHT_BOLD);
+	header_title->SetFont(headerFont);
+	header_title->SetForegroundColour(wxColour(229, 193, 88)); // Mystic Gold
+	top_sizer->Add(header_title, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 12);
+
+	wxFlexGridSizer* gsizer = newd wxFlexGridSizer(2, 10, 12);
+	gsizer->AddGrowableCol(1, 1);
+
+	// Retrieve saved configuration
+	std::string savedName = g_settings.getString(Config::MULTIPLAYER_NAME);
+	if (savedName.empty()) savedName = "Mapper";
+
+	std::string savedFavs = g_settings.getString(Config::MULTIPLAYER_FAVORITES);
+	wxArrayString favList;
+	if (!savedFavs.empty()) {
+		favList = wxSplit(wxstr(savedFavs), ';');
+	}
+	if (favList.empty()) {
+		favList.Add("127.0.0.1:7171");
+		favList.Add("localhost:7171");
+	}
 
 	// Data fields
 	wxTextCtrl* name;
+	wxComboBox* serverCombo;
 	wxTextCtrl* ip;
 	wxSpinCtrl* port;
 
-	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Name:"));
-	gsizer->Add(name = newd wxTextCtrl(live_join_dlg, wxID_ANY, ""), 0, wxEXPAND);
+	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Mapper Name:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 15);
+	gsizer->Add(name = newd wxTextCtrl(live_join_dlg, wxID_ANY, wxstr(savedName)), 0, wxEXPAND | wxRIGHT, 15);
 
-	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "IP:"));
-	gsizer->Add(ip = newd wxTextCtrl(live_join_dlg, wxID_ANY, "localhost"), 0, wxEXPAND);
+	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Recent Hosts:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 15);
+	gsizer->Add(serverCombo = newd wxComboBox(live_join_dlg, wxID_ANY, favList[0], wxDefaultPosition, wxDefaultSize, favList, wxCB_READONLY), 0, wxEXPAND | wxRIGHT, 15);
 
-	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Port:"));
-	gsizer->Add(port = newd wxSpinCtrl(live_join_dlg, wxID_ANY, i2ws(g_settings.getInteger(Config::MULTIPLAYER_PORT)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, g_settings.getInteger(Config::MULTIPLAYER_PORT)), 0, wxEXPAND);
-	top_sizer->Add(gsizer, 0, wxALL, 20);
+	wxString initIp = "127.0.0.1";
+	int initPort = g_settings.getInteger(Config::MULTIPLAYER_PORT);
+	if (initPort <= 0) initPort = 7171;
 
-	wxString joinVersionLabel = g_gui.IsVersionLoaded() ? wxString::FromUTF8(g_gui.GetCurrentVersion().getName()) : wxString("Will auto-switch to the host version if available");
-	top_sizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Local client version: " + joinVersionLabel), 0, wxLEFT | wxRIGHT | wxBOTTOM, 20);
+	wxString firstChoice = favList[0];
+	int colonIdx = firstChoice.Find(':');
+	if (colonIdx != wxNOT_FOUND) {
+		initIp = firstChoice.Left(colonIdx);
+		initPort = wxAtoi(firstChoice.Mid(colonIdx + 1));
+	} else {
+		initIp = firstChoice;
+	}
+
+	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Server IP:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 15);
+	gsizer->Add(ip = newd wxTextCtrl(live_join_dlg, wxID_ANY, initIp), 0, wxEXPAND | wxRIGHT, 15);
+
+	gsizer->Add(newd wxStaticText(live_join_dlg, wxID_ANY, "Port:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 15);
+	gsizer->Add(port = newd wxSpinCtrl(live_join_dlg, wxID_ANY, i2ws(initPort), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, initPort), 0, wxEXPAND | wxRIGHT, 15);
+	top_sizer->Add(gsizer, 0, wxEXPAND | wxBOTTOM, 10);
+
+	serverCombo->Bind(wxEVT_COMBOBOX, [serverCombo, ip, port](wxCommandEvent&) {
+		wxString val = serverCombo->GetValue();
+		int sep = val.Find(':');
+		if (sep != wxNOT_FOUND) {
+			ip->SetValue(val.Left(sep));
+			port->SetValue(wxAtoi(val.Mid(sep + 1)));
+		} else {
+			ip->SetValue(val);
+		}
+	});
+
+	wxString joinVersionLabel = g_gui.IsVersionLoaded() ? wxString::FromUTF8(g_gui.GetCurrentVersion().getName()) : wxString("Auto-sync to Host version");
+	wxStaticText* subTxt = newd wxStaticText(live_join_dlg, wxID_ANY, "ZLIB Fast-Sync 2.0  |  Local Version: " + joinVersionLabel);
+	subTxt->SetForegroundColour(wxColour(160, 175, 195));
+	top_sizer->Add(subTxt, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 12);
 
 	wxSizer* ok_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	ok_sizer->Add(newd wxButton(live_join_dlg, wxID_OK, "OK"), 1, wxRIGHT);
-	ok_sizer->Add(newd wxButton(live_join_dlg, wxID_CANCEL, "Cancel"), 1, wxRIGHT);
-	top_sizer->Add(ok_sizer, 0, wxCENTER | wxALL, 20);
+	auto* ok_btn = newd wxButton(live_join_dlg, wxID_OK, "Connect");
+	ok_btn->SetDefault();
+	auto* cancel_btn = newd wxButton(live_join_dlg, wxID_CANCEL, "Cancel");
+
+	ok_sizer->Add(ok_btn, 1, wxRIGHT, 10);
+	ok_sizer->Add(cancel_btn, 1, wxLEFT, 10);
+	top_sizer->Add(ok_sizer, 0, wxCENTER | wxLEFT | wxRIGHT | wxBOTTOM, 15);
 
 	live_join_dlg->SetSizerAndFit(top_sizer);
 
@@ -1656,9 +1728,9 @@ void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
 		if (ret == wxID_OK) {
 			LiveClient* liveClient = newd LiveClient();
 
-			wxString tmp = name->GetValue();
+			wxString tmp = name->GetValue().Trim().Trim(false);
 			if (tmp.empty()) {
-				tmp = "User";
+				tmp = "Mapper";
 			}
 			liveClient->setName(tmp);
 
@@ -1669,10 +1741,24 @@ void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
 				continue;
 			}
 
-			const wxString& address = ip->GetValue();
+			const wxString& address = ip->GetValue().Trim().Trim(false);
 			int32_t portNumber = port->GetValue();
+
+			// Save settings & history
 			g_settings.setInteger(Config::MULTIPLAYER_PORT, portNumber);
-			g_gui.SetStatusText("Joining live session...");
+			g_settings.setString(Config::MULTIPLAYER_NAME, nstr(tmp));
+
+			wxString currentHostEntry = address + ":" + wxString::Format("%d", portNumber);
+			wxArrayString updatedFavs;
+			updatedFavs.Add(currentHostEntry);
+			for (size_t i = 0; i < favList.size(); ++i) {
+				if (favList[i] != currentHostEntry && updatedFavs.size() < 10) {
+					updatedFavs.Add(favList[i]);
+				}
+			}
+			g_settings.setString(Config::MULTIPLAYER_FAVORITES, nstr(wxJoin(updatedFavs, ';')));
+
+			g_gui.SetStatusText("Joining live session: " + currentHostEntry + "...");
 
 			liveClient->createLogWindow(g_gui.tabbook);
 			if (!liveClient->connect(nstr(address), portNumber)) {

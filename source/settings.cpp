@@ -414,6 +414,12 @@ void Settings::IO(IOMode mode) {
 	// checkbox in terrain palette
 	Int(DRAW_LOCKED_DOOR, 0);
 
+	section("Multiplayer");
+	Int(MULTIPLAYER_PORT, 7171);
+	String(MULTIPLAYER_NAME, "Mapper");
+	String(MULTIPLAYER_FAVORITES, "127.0.0.1:7171");
+	String(MULTIPLAYER_ADOPTED_SERVERS, "");
+
 #undef section
 #undef Int
 #undef IntToSave

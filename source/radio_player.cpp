@@ -447,6 +447,12 @@ RadioPlayerPanel::RadioPlayerPanel(wxWindow* parent)
 }
 
 RadioPlayerPanel::~RadioPlayerPanel() {
+	if (RadioPlayerWindow::s_dockedPanelInstance == this) {
+		RadioPlayerWindow::s_dockedPanelInstance = nullptr;
+	}
+	if (RadioPlayerWindow::s_panelInstance == this) {
+		RadioPlayerWindow::s_panelInstance = nullptr;
+	}
 }
 
 void RadioPlayerPanel::UpdateUI() {
@@ -468,7 +474,11 @@ void RadioPlayerPanel::UpdateUI() {
 	if (statusLabel) {
 		if (rm.IsPlaying()) {
 			const auto& stations = rm.GetStations();
-			statusLabel->SetLabel("Playing: " + stations[curIdx].name);
+			if (curIdx >= 0 && curIdx < static_cast<int>(stations.size())) {
+				statusLabel->SetLabel("Playing: " + stations[curIdx].name);
+			} else {
+				statusLabel->SetLabel("Playing");
+			}
 			statusLabel->SetForegroundColour(wxColour(120, 240, 120));
 		} else {
 			statusLabel->SetLabel("Stopped");
@@ -635,6 +645,7 @@ RadioPlayerWindow::RadioPlayerWindow(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, "Radio Player", wxDefaultPosition, wxSize(360, 130),
 	           wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxSTAY_ON_TOP) {
 
+	s_instance = this;
 	SetBackgroundColour(wxColour(18, 36, 62));
 	SetForegroundColour(wxColour(240, 245, 255));
 
@@ -648,8 +659,12 @@ RadioPlayerWindow::RadioPlayerWindow(wxWindow* parent)
 }
 
 RadioPlayerWindow::~RadioPlayerWindow() {
-	s_instance = nullptr;
-	s_panelInstance = nullptr;
+	if (s_instance == this) {
+		s_instance = nullptr;
+	}
+	if (s_panelInstance == playerPanel) {
+		s_panelInstance = nullptr;
+	}
 }
 
 void RadioPlayerWindow::SetWindowTransparency(int percent) {

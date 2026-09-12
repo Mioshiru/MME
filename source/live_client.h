@@ -130,6 +130,7 @@ protected:
 	bool scheduleReconnect(const wxString& reason);
 	void attemptReconnect();
 	void resetConnectionMetrics();
+	void checkAndApplyHostSettings();
 
 	uint32_t followClientId = 0;
 	UserStatus localStatus = USER_STATUS_ACTIVE;
@@ -162,6 +163,8 @@ protected:
 
 	Position pendingFocusPos;
 	bool hasCreatedEditorTab = false;
+	uint32_t pendingHostViewFlags = 0;
+	bool hasPendingHostViewFlags = false;
 
 	std::deque<std::vector<uint8_t>> writeQueue;
 	std::mutex writeMutex;

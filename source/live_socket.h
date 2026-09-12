@@ -73,6 +73,13 @@ struct MapAnnotation {
 	wxColor color = *wxWHITE;
 };
 
+struct BatchNodePayload {
+	int32_t ndx;
+	int32_t ndy;
+	uint32_t floorMask;
+	QTreeNode* node;
+};
+
 class LiveSocket {
 public:
 	LiveSocket();
@@ -107,6 +114,9 @@ public:
 	// receive / send methods
 	void receiveNode(NetworkMessage& message, MapEditor& editor, Action* action, int32_t ndx, int32_t ndy, bool underground);
 	void sendNode(uint32_t clientId, QTreeNode* node, int32_t ndx, int32_t ndy, uint32_t floorMask);
+
+	void sendBatchNodesZlib(uint32_t clientId, const std::vector<BatchNodePayload>& batch);
+	void receiveBatchNodesZlib(NetworkMessage& message, MapEditor& editor, Action* action);
 
 	void receiveFloor(NetworkMessage& message, MapEditor& editor, Action* action, int32_t ndx, int32_t ndy, int32_t z, QTreeNode* node, Floor* floor);
 	void sendFloor(NetworkMessage& message, Floor* floor);

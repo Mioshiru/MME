@@ -592,6 +592,14 @@ void LiveClient::parsePacket(NetworkMessage message) {
 					needsRefresh = true;
 				}
 				break;
+			case PACKET_BATCH_NODES_ZLIB:
+				if (mapEditor) {
+					receiveBatchNodesZlib(message, *mapEditor, nullptr);
+				}
+				if (currentOperation.empty()) {
+					needsRefresh = true;
+				}
+				break;
 			case PACKET_CURSOR_UPDATE:
 				parseCursorUpdate(message);
 				if (currentOperation.empty()) {
@@ -703,11 +711,12 @@ void LiveClient::parseHello(NetworkMessage& message) {
 	map.setHeight(message.read<uint16_t>());
 	pendingFocusPos = message.read<Position>();
 
-	uint32_t hostViewFlags = 0;
-	bool hasHostViewFlags = false;
 	if (message.position + sizeof(uint32_t) <= message.buffer.size()) {
-		hostViewFlags = message.read<uint32_t>();
-		hasHostViewFlags = true;
+		pendingHostViewFlags = message.read<uint32_t>();
+		hasPendingHostViewFlags = true;
+	} else {
+		pendingHostViewFlags = 0;
+		hasPendingHostViewFlags = false;
 	}
 
 	map.clearChanges();
@@ -723,101 +732,11 @@ void LiveClient::parseHello(NetworkMessage& message) {
 		g_gui.root->UpdateMenubar();
 	}
 
-	if (hasHostViewFlags) {
-		std::string srvKey = getHostName();
-		if (srvKey.empty() || srvKey == "Unknown IP" || srvKey == "not connected") {
-			if (!reconnectAddress.empty()) srvKey = reconnectAddress;
-		}
-
-		std::string adoptedList = g_settings.getString(Config::MULTIPLAYER_ADOPTED_SERVERS);
-		bool alreadyAnswered = false;
-		int savedDecision = -1; // 1 = adopt, 0 = keep
-
-		if (!adoptedList.empty()) {
-			wxArrayString entries = wxSplit(wxString::FromUTF8(adoptedList), ';');
-			for (size_t i = 0; i < entries.size(); ++i) {
-				wxString entry = entries[i];
-				int sep = entry.Find(':');
-				if (sep != wxNOT_FOUND) {
-					std::string entryIp = nstr(entry.Left(sep));
-					if (entryIp == srvKey || (!reconnectAddress.empty() && entryIp == reconnectAddress)) {
-						alreadyAnswered = true;
-						savedDecision = wxAtoi(entry.Mid(sep + 1));
-						break;
-					}
-				}
-			}
-		}
-
-		auto applyHostSettings = [hostViewFlags]() {
-			g_settings.setInteger(Config::SHOW_ALL_FLOORS, (hostViewFlags & (1 << 0)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_CREATURES, (hostViewFlags & (1 << 1)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_SPAWNS, (hostViewFlags & (1 << 2)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_HOUSES, (hostViewFlags & (1 << 3)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_SHADE, (hostViewFlags & (1 << 4)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_SPECIAL_TILES, (hostViewFlags & (1 << 5)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_ITEMS, (hostViewFlags & (1 << 6)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_BLOCKING, (hostViewFlags & (1 << 7)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_TOOLTIPS, (hostViewFlags & (1 << 8)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_WALL_HOOKS, (hostViewFlags & (1 << 9)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_AS_MINIMAP, (hostViewFlags & (1 << 10)) ? 1 : 0);
-			g_settings.setInteger(Config::TRANSPARENT_FLOORS, (hostViewFlags & (1 << 13)) ? 1 : 0);
-			g_settings.setInteger(Config::TRANSPARENT_ITEMS, (hostViewFlags & (1 << 14)) ? 1 : 0);
-			g_settings.setInteger(Config::HIGHLIGHT_ITEMS, (hostViewFlags & (1 << 15)) ? 1 : 0);
-			g_settings.setInteger(Config::HIGHLIGHT_LOCKED_DOORS, (hostViewFlags & (1 << 16)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_MINIMAP_HUD, (hostViewFlags & (1 << 17)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_GRID, (hostViewFlags & (1 << 18)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_TECHNICAL_ITEMS, (hostViewFlags & (1 << 19)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_WAYPOINTS, (hostViewFlags & (1 << 20)) ? 1 : 0);
-			g_settings.setInteger(Config::SHOW_TOWNS, (hostViewFlags & (1 << 21)) ? 1 : 0);
-			g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, (hostViewFlags & (1 << 22)) ? 1 : 0);
-
-			if (hostViewFlags & (1 << 23)) {
-				if (!RadioPlayerWindow::IsDocked() && !RadioPlayerWindow::GetInstance()) {
-					RadioPlayerWindow::ShowDocked(true);
-				}
-			}
-
-			if (g_gui.root) {
-				g_gui.root->UpdateMenubar();
-			}
-			if (g_gui.IsEditorOpen()) {
-				g_gui.RefreshView();
-				g_gui.RefreshPalettes();
-				g_gui.RefreshMinimapPanel();
-			}
-		};
-
-		if (alreadyAnswered) {
-			if (savedDecision == 1) {
-				applyHostSettings();
-			}
-		} else {
-			// Defer dialog until after the editor tab is created to prevent blocking the socket packet loop
-			wxTheApp->CallAfter([srvKey, hostViewFlags, applyHostSettings]() {
-				wxMessageDialog dlg(g_gui.root,
-					"The Host is sharing their active View & Workspace Settings (Overlays, Layers, Minimap, Docked Radio Player, Grid, etc.).\n\nWould you like to adopt the Host's View Settings, or keep your own?",
-					"Adopt Host View Settings?",
-					wxYES_NO | wxICON_QUESTION);
-				dlg.SetYesNoLabels("Adopt Host Settings", "Keep My Settings");
-				int res = dlg.ShowModal();
-				int decision = (res == wxID_YES) ? 1 : 0;
-				if (decision == 1) {
-					applyHostSettings();
-				}
-				std::string adoptedList = g_settings.getString(Config::MULTIPLAYER_ADOPTED_SERVERS);
-				std::string newEntry = srvKey + ":" + std::to_string(decision);
-				if (!adoptedList.empty()) adoptedList += ";";
-				adoptedList += newEntry;
-				g_settings.setString(Config::MULTIPLAYER_ADOPTED_SERVERS, adoptedList);
-			});
-		}
-	}
-
 	if (reconnectAttempts > 0) {
 		g_gui.SetScreenCenterPosition(pendingFocusPos);
 		g_gui.RefreshView();
 		g_gui.UpdateMinimap();
+		checkAndApplyHostSettings();
 	}
 
 	// Now that the server has set connected=true and is in parseEditorPacket mode,
@@ -964,6 +883,7 @@ void LiveClient::parseUpdateOperation(NetworkMessage& message) {
 				g_gui.root->UpdateMenubar();
 				g_gui.root->Refresh();
 			}
+			checkAndApplyHostSettings();
 		}
 
 		g_gui.RefreshView();
@@ -973,6 +893,100 @@ void LiveClient::parseUpdateOperation(NetworkMessage& message) {
 			g_gui.SetLoadDone(percent, currentOperation + wxString::Format(" (%d%%)", percent));
 		}
 		g_gui.SetStatusText("Server Operation: " + currentOperation + wxString::Format(" (%d%%)", percent));
+	}
+}
+
+void LiveClient::checkAndApplyHostSettings() {
+	if (!hasPendingHostViewFlags) return;
+
+	uint32_t hostViewFlags = pendingHostViewFlags;
+	std::string srvKey = getHostName();
+	if (srvKey.empty() || srvKey == "Unknown IP" || srvKey == "not connected") {
+		if (!reconnectAddress.empty()) srvKey = reconnectAddress;
+	}
+
+	std::string adoptedList = g_settings.getString(Config::MULTIPLAYER_ADOPTED_SERVERS);
+	bool alreadyAnswered = false;
+	int savedDecision = -1; // 1 = adopt, 0 = keep
+
+	if (!adoptedList.empty()) {
+		wxArrayString entries = wxSplit(wxString::FromUTF8(adoptedList), ';');
+		for (size_t i = 0; i < entries.size(); ++i) {
+			wxString entry = entries[i];
+			int sep = entry.Find(':');
+			if (sep != wxNOT_FOUND) {
+				std::string entryIp = nstr(entry.Left(sep));
+				if (entryIp == srvKey || (!reconnectAddress.empty() && entryIp == reconnectAddress)) {
+					alreadyAnswered = true;
+					savedDecision = wxAtoi(entry.Mid(sep + 1));
+					break;
+				}
+			}
+		}
+	}
+
+	auto applyHostSettings = [hostViewFlags]() {
+		g_settings.setInteger(Config::SHOW_ALL_FLOORS, (hostViewFlags & (1 << 0)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_CREATURES, (hostViewFlags & (1 << 1)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_SPAWNS, (hostViewFlags & (1 << 2)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_HOUSES, (hostViewFlags & (1 << 3)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_SHADE, (hostViewFlags & (1 << 4)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_SPECIAL_TILES, (hostViewFlags & (1 << 5)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_ITEMS, (hostViewFlags & (1 << 6)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_BLOCKING, (hostViewFlags & (1 << 7)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_TOOLTIPS, (hostViewFlags & (1 << 8)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_WALL_HOOKS, (hostViewFlags & (1 << 9)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_AS_MINIMAP, (hostViewFlags & (1 << 10)) ? 1 : 0);
+		g_settings.setInteger(Config::TRANSPARENT_FLOORS, (hostViewFlags & (1 << 13)) ? 1 : 0);
+		g_settings.setInteger(Config::TRANSPARENT_ITEMS, (hostViewFlags & (1 << 14)) ? 1 : 0);
+		g_settings.setInteger(Config::HIGHLIGHT_ITEMS, (hostViewFlags & (1 << 15)) ? 1 : 0);
+		g_settings.setInteger(Config::HIGHLIGHT_LOCKED_DOORS, (hostViewFlags & (1 << 16)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_MINIMAP_HUD, (hostViewFlags & (1 << 17)) ? 1 : 0);
+		g_settings.setInteger(Config::MINIMAP_VISIBLE, (hostViewFlags & (1 << 17)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_GRID, (hostViewFlags & (1 << 18)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_TECHNICAL_ITEMS, (hostViewFlags & (1 << 19)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_WAYPOINTS, (hostViewFlags & (1 << 20)) ? 1 : 0);
+		g_settings.setInteger(Config::SHOW_TOWNS, (hostViewFlags & (1 << 21)) ? 1 : 0);
+		g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, (hostViewFlags & (1 << 22)) ? 1 : 0);
+
+		if (hostViewFlags & (1 << 23)) {
+			if (!RadioPlayerWindow::IsDocked() && !RadioPlayerWindow::GetInstance()) {
+				RadioPlayerWindow::ShowDocked(true);
+			}
+		}
+
+		if (g_gui.root) {
+			g_gui.root->UpdateMenubar();
+		}
+		if (g_gui.IsEditorOpen()) {
+			g_gui.RefreshView();
+			g_gui.RefreshPalettes();
+			g_gui.RefreshMinimapPanel();
+		}
+	};
+
+	if (alreadyAnswered) {
+		if (savedDecision == 1) {
+			applyHostSettings();
+		}
+	} else {
+		wxTheApp->CallAfter([srvKey, applyHostSettings]() {
+			wxMessageDialog dlg(g_gui.root,
+				"The Host is sharing their active View & Workspace Settings (Overlays, Layers, Minimap, Docked Radio Player, Grid, etc.).\n\nWould you like to adopt the Host's View Settings, or keep your own?",
+				"Adopt Host View Settings?",
+				wxYES_NO | wxICON_QUESTION);
+			dlg.SetYesNoLabels("Adopt Host Settings", "Keep My Settings");
+			int res = dlg.ShowModal();
+			int decision = (res == wxID_YES) ? 1 : 0;
+			if (decision == 1) {
+				applyHostSettings();
+			}
+			std::string adoptedList = g_settings.getString(Config::MULTIPLAYER_ADOPTED_SERVERS);
+			std::string newEntry = srvKey + ":" + std::to_string(decision);
+			if (!adoptedList.empty()) adoptedList += ";";
+			adoptedList += newEntry;
+			g_settings.setString(Config::MULTIPLAYER_ADOPTED_SERVERS, adoptedList);
+		});
 	}
 }
 

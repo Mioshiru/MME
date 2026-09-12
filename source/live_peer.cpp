@@ -546,11 +546,10 @@ void LivePeer::parseReady(NetworkMessage &message) {
   }
   send(checklistSyncMsg);
 
-  // Step 3: Initial Map Sync — send ALL non-empty nodes to this client
-  // Send start operation so the client displays a smooth loading bar and avoids redraw lag
+  // Step 3: Initial Map Sync — send ALL non-empty nodes to this client in ZLIB batches
   NetworkMessage startOpMsg;
   startOpMsg.write<uint8_t>(PACKET_START_OPERATION);
-  startOpMsg.write<std::string>("Downloading Map from Host...");
+  startOpMsg.write<std::string>("Downloading Map from Host (ZLIB Fast-Sync)...");
   send(startOpMsg);
 
   int nodesSent = 0;
@@ -558,6 +557,9 @@ void LivePeer::parseReady(NetworkMessage &message) {
   map.root.getVisibleLeaves(0, 0, -1, 0, 0, 65535, 65535, visibleNodes);
   size_t totalVisible = visibleNodes.size();
   int lastPercent = 0;
+
+  std::vector<BatchNodePayload> currentBatch;
+  const size_t BATCH_SIZE = 150; // Batch ~150 nodes per compressed payload
 
   for (size_t i = 0; i < totalVisible; ++i) {
     const auto& vn = visibleNodes[i];
@@ -585,12 +587,17 @@ void LivePeer::parseReady(NetworkMessage &message) {
     }
 
     if (hasOverground) {
-      sendNode(clientId, node, ndx, ndy, 0x00FF);
+      currentBatch.push_back({ndx, ndy, 0x00FF, node});
       ++nodesSent;
     }
     if (hasUnderground) {
-      sendNode(clientId, node, ndx, ndy, 0xFF00);
+      currentBatch.push_back({ndx, ndy, 0xFF00, node});
       ++nodesSent;
+    }
+
+    if (currentBatch.size() >= BATCH_SIZE) {
+      sendBatchNodesZlib(clientId, currentBatch);
+      currentBatch.clear();
     }
 
     int currentPercent = totalVisible > 0 ? static_cast<int>((i * 100) / totalVisible) : 100;
@@ -603,13 +610,18 @@ void LivePeer::parseReady(NetworkMessage &message) {
     }
   }
 
+  if (!currentBatch.empty()) {
+    sendBatchNodesZlib(clientId, currentBatch);
+    currentBatch.clear();
+  }
+
   // Signal completion of map synchronization
   NetworkMessage endOpMsg;
   endOpMsg.write<uint8_t>(PACKET_UPDATE_OPERATION);
   endOpMsg.write<uint32_t>(100);
   send(endOpMsg);
 
-  logMessage(wxString::Format("%s: Initial sync complete (%d nodes sent).", name, nodesSent));
+  logMessage(wxString::Format("%s: Fast-Sync complete (%d nodes compressed & sent).", name, nodesSent));
 }
 
 void LivePeer::parseNodeRequest(NetworkMessage &message) {
