@@ -644,21 +644,24 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	opacity_sizer->Add(grid_opacity_slider, 0, wxALIGN_CENTER_VERTICAL);
 	visual_group->Add(opacity_sizer, 0, wxALL, 4);
 
-	wxStaticBoxSizer* scale_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "UI & Icon Scaling (Scale 1 to 10)");
+	wxStaticBoxSizer* scale_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "UI & Icon Scaling (100% to 200%)");
 
 	int cur_scale = g_settings.getInteger(Config::UI_SCALE);
 	if (cur_scale < 100) cur_scale = 100;
-	if (cur_scale > 170) cur_scale = 170;
-	int cur_level = std::clamp((cur_scale - 100) * 9 / 70 + 1, 1, 10);
+	if (cur_scale > 200) cur_scale = 200;
+	int cur_step = (cur_scale + 5) / 10;
+	cur_step = std::clamp(cur_step, 10, 20);
 
 	wxBoxSizer* slider_row = newd wxBoxSizer(wxHORIZONTAL);
-	slider_row->Add(newd wxStaticText(visual_panel, wxID_ANY, "Scale Level:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	slider_row->Add(newd wxStaticText(visual_panel, wxID_ANY, "Scale:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 
-	ui_scale_slider = newd wxSlider(visual_panel, wxID_ANY, cur_level, 1, 10, wxDefaultPosition, wxSize(240, -1), wxSL_HORIZONTAL | wxSL_AUTOTICKS);
-	ui_scale_slider->SetToolTip("Adjust UI scale from 1 (Smallest / 100%) to 10 (Largest / 170%).");
+	ui_scale_slider = newd wxSlider(visual_panel, wxID_ANY, cur_step, 10, 20, wxDefaultPosition, wxSize(240, -1), wxSL_HORIZONTAL | wxSL_AUTOTICKS);
+	ui_scale_slider->SetTickFreq(1);
+	ui_scale_slider->SetToolTip("Adjust UI scale in 10% steps from 100% (Remere's Default standard) to 200%.");
 	slider_row->Add(ui_scale_slider, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
 
-	ui_scale_level_txt = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_level, 100 + (cur_level - 1) * 70 / 9));
+	int initial_pct = cur_step * 10;
+	ui_scale_level_txt = newd wxStaticText(visual_panel, wxID_ANY, initial_pct == 100 ? wxString("100% (Standard)") : wxString::Format("%d%%", initial_pct));
 	ui_scale_level_txt->SetForegroundColour(wxColor(255, 205, 50));
 	ui_scale_level_txt->SetFont(wxFont(9, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	slider_row->Add(ui_scale_level_txt, 0, wxALIGN_CENTER_VERTICAL);
@@ -676,9 +679,9 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 		dc.SetBackground(wxBrush(wxColor(10, 15, 25)));
 		dc.Clear();
 
-		int level = ui_scale_slider ? ui_scale_slider->GetValue() : 1;
-		int scale_pct = 100 + (level - 1) * 70 / 9;
-		if (scale_pct > 170) scale_pct = 170;
+		int scale_pct = ui_scale_slider ? (ui_scale_slider->GetValue() * 10) : 100;
+		if (scale_pct < 100) scale_pct = 100;
+		if (scale_pct > 200) scale_pct = 200;
 
 		int btn_w = 30 * scale_pct / 100;
 
@@ -775,7 +778,7 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 		if (exp_vignette_chkbox) exp_vignette_chkbox->SetValue(false);
 		if (exp_vignette_slider) exp_vignette_slider->SetValue(4);
 		grid_opacity_slider->SetValue(128);
-		ui_scale_slider->SetValue(3);
+		ui_scale_slider->SetValue(10);
 		UpdateScalePreview();
 		if (screenshot_format_choice) screenshot_format_choice->SetSelection(0);
 		if (hide_items_when_zoomed_chkbox) hide_items_when_zoomed_chkbox->SetValue(true);
@@ -880,6 +883,11 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	palette_opacity_slider = newd wxSlider(theme_panel, wxID_ANY, g_settings.getInteger(Config::PALETTE_OPACITY), 20, 100, wxDefaultPosition, wxSize(120, -1));
 	opacity_row->Add(palette_opacity_slider, 0, wxALIGN_CENTER_VERTICAL);
 	theme_group->Add(opacity_row, 0, wxALL, 2);
+
+	hide_statusbar_chkbox = new wxCheckBox(theme_panel, wxID_ANY, "Hide bottom status bar (info displayed in modern canvas overlay)");
+	hide_statusbar_chkbox->SetValue(g_settings.getBoolean(Config::HIDE_STATUSBAR));
+	theme_group->Add(hide_statusbar_chkbox, 0, wxALL, 4);
+
 	theme_sizer->Add(theme_group, 0, wxEXPAND | wxALL, 3);
 
 	wxStaticBoxSizer* icon_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Icon Sizing");
@@ -920,12 +928,6 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	icon_group->Add(icon_grid, 0, wxEXPAND | wxALL, 2);
 	theme_sizer->Add(icon_group, 0, wxEXPAND | wxALL, 3);
 
-	wxStaticBoxSizer* layout_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Layout & Toolbars");
-	hide_statusbar_chkbox = new wxCheckBox(theme_panel, wxID_ANY, "Hide bottom status bar (info displayed in top toolbar)");
-	hide_statusbar_chkbox->SetValue(g_settings.getBoolean(Config::HIDE_STATUSBAR));
-	layout_group->Add(hide_statusbar_chkbox, 0, wxALL, 4);
-
-	theme_sizer->Add(layout_group, 0, wxEXPAND | wxALL, 3);
 	theme_panel->SetSizer(theme_sizer);
 	sub_book->AddPage(theme_panel, "Theme");
 
@@ -1344,10 +1346,10 @@ void PreferencesWindow::Apply() {
 	if (ui_scale_slider) {
 		int old_scale = g_settings.getInteger(Config::UI_SCALE);
 		if (old_scale < 100) old_scale = 100;
-		if (old_scale > 170) old_scale = 170;
-		int level = ui_scale_slider->GetValue();
-		int new_scale = 100 + (level - 1) * 70 / 9;
-		if (new_scale > 170) new_scale = 170;
+		if (old_scale > 200) old_scale = 200;
+		int new_scale = ui_scale_slider->GetValue() * 10;
+		if (new_scale < 100) new_scale = 100;
+		if (new_scale > 200) new_scale = 200;
 		if (old_scale != new_scale) {
 			g_settings.setInteger(Config::UI_SCALE, new_scale);
 			palette_style_changed = true;
@@ -1582,10 +1584,10 @@ void PreferencesWindow::UpdateScanStatus() {
 
 void PreferencesWindow::UpdateScalePreview() {
 	if (!ui_scale_slider || !ui_scale_level_txt || !ui_scale_preview_panel) return;
-	int level = ui_scale_slider->GetValue();
-	int scale_pct = 100 + (level - 1) * 70 / 9;
-	if (scale_pct > 170) scale_pct = 170;
+	int scale_pct = ui_scale_slider->GetValue() * 10;
+	if (scale_pct < 100) scale_pct = 100;
+	if (scale_pct > 200) scale_pct = 200;
 
-	ui_scale_level_txt->SetLabel(wxString::Format("Level %d (%d%%)", level, scale_pct));
+	ui_scale_level_txt->SetLabel(scale_pct == 100 ? wxString("100% (Standard)") : wxString::Format("%d%%", scale_pct));
 	ui_scale_preview_panel->Refresh();
 }

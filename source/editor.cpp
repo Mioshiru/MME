@@ -19,6 +19,8 @@
 
 #include "editor.h"
 #include <fstream>
+#include <filesystem>
+#include <wx/dir.h>
 #include "materials.h"
 #include "map.h"
 #include "complexitem.h"
@@ -92,11 +94,41 @@ MapEditor::MapEditor(CopyBuffer& copybuffer, const wxString& target_dir) :
 	std::string sname = "NewWorld";
 	map.name = sname + ".otbm";
 
-	if (target_dir.empty()) {
-		map.filename = "Saves/" + map.name;
-	} else {
-		map.filename = std::string(target_dir.mb_str()) + "/" + map.name;
+	wxString base_dir = target_dir;
+	if (base_dir.empty()) {
+		wxString execDir = GUI::GetExecDirectory();
+		std::filesystem::path rootDir(execDir.wc_str());
+		std::error_code ec;
+		for (size_t i = 1; i <= 50; ++i) {
+			std::filesystem::path slotDir = rootDir / "Saves" / ("Slot " + std::to_string(i));
+			bool occupied = false;
+			if (std::filesystem::exists(slotDir, ec) && std::filesystem::is_directory(slotDir, ec)) {
+				for (const auto& entry : std::filesystem::directory_iterator(slotDir, ec)) {
+					if (entry.is_regular_file(ec)) {
+						std::string ext = entry.path().extension().string();
+						for (char &c : ext) c = tolower(c);
+						if (ext == ".otbm") {
+							occupied = true;
+							break;
+						}
+					}
+				}
+			}
+			if (!occupied) {
+				base_dir = wxString(slotDir.wstring().c_str());
+				break;
+			}
+		}
+		if (base_dir.empty()) {
+			base_dir = execDir + "Saves/Slot 1";
+		}
 	}
+
+	if (!wxDir::Exists(base_dir)) {
+		wxFileName::Mkdir(base_dir, 511, wxPATH_MKDIR_FULL);
+	}
+
+	map.filename = std::string(base_dir.mb_str(wxConvUTF8).data()) + "/" + map.name;
 
 	map.spawnfile = sname + "-spawn.xml";
 	map.housefile = sname + "-house.xml";

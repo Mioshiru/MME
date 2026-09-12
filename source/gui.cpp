@@ -265,19 +265,19 @@ PaletteWindow *GUI::CreatePalette() {
                                       .Float()
                                       .FloatingPosition(float_pos)
                                       .FloatingSize(wxSize(270, 520))
-                                      .CloseButton(true)
-                                      .Floatable(true)
-                                      .Dockable(true)
-                                      .LeftDockable(true)
-                                      .RightDockable(true)
-                                      .TopDockable(true)
-                                      .BottomDockable(true)
+                                      .CloseButton(false)
+                                      .Floatable(false)
+                                      .Dockable(false)
+                                      .LeftDockable(false)
+                                      .RightDockable(false)
+                                      .TopDockable(false)
+                                      .BottomDockable(false)
                                       .CaptionVisible(false)
                                       .PaneBorder(false)
-                                      .Gripper(true)
+                                      .Gripper(false)
                                       .BestSize(270, 520)
                                       .MinSize(wxSize(palette->FromDIP(160), 100))
-                                      .Show(true));
+                                      .Show(false));
   }
 
   // NOTE: Collections Palette / Tileset panel intentionally removed.
@@ -574,13 +574,14 @@ void GUI::FinishWelcomeDialog() {
     wxTheApp->ScheduleForDestruction(welcomeDialog);
     welcomeDialog = nullptr;
   }
-  // Restore toolbar and palette after slot selection
+  // Keep legacy wxAuiToolBar and wxWidgets palettes hidden because the modern
+  // in-canvas floating toolbar & palette (OpenGL/ImGui) are active.
   if (root && root->GetAuiToolBar()) {
-    root->GetAuiToolBar()->GetPane(TOOLBAR_BRUSHES).Show(true);
-    root->GetAuiToolBar()->ApplyAlignment();
+    root->GetAuiToolBar()->GetPane(TOOLBAR_BRUSHES).Show(false);
+    root->GetAuiToolBar()->GetPane(TOOLBAR_POSITION).Show(false);
   }
   for (auto* pal : palettes) {
-    if (aui_manager) aui_manager->GetPane(pal).Show(true);
+    if (aui_manager) aui_manager->GetPane(pal).Show(false);
   }
   if (aui_manager) aui_manager->Update();
   UpdateMenubar();
@@ -1232,7 +1233,9 @@ void GUI::SetBrushShape(BrushShape bs) {
     size_panel->OnUpdateBrushSize(brush_shape, brush_size);
   }
 
-  root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->UpdateBrushSize(brush_shape, brush_size);
+  }
 
   if (current_brush) {
     if (GetPalette()) {

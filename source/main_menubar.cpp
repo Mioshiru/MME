@@ -1479,7 +1479,9 @@ void MainMenuBar::OnChangeFloor(wxCommandEvent& event) {
 }
 
 void MainMenuBar::OnNewPalette(wxCommandEvent& event) {
-	g_gui.NewPalette();
+	g_settings.setInteger(Config::SHOW_PALETTE, 1);
+	g_gui.RefreshView();
+	Update();
 }
 
 void MainMenuBar::OnSelectTerrainPalette(wxCommandEvent& WXUNUSED(event)) {
@@ -1660,8 +1662,8 @@ void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
 		favList = wxSplit(wxstr(savedFavs), ';');
 	}
 	if (favList.empty()) {
-		favList.Add("127.0.0.1:7171");
-		favList.Add("localhost:7171");
+		favList.Add("127.0.0.1:3074");
+		favList.Add("localhost:3074");
 	}
 
 	// Data fields
@@ -1678,7 +1680,7 @@ void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
 
 	wxString initIp = "127.0.0.1";
 	int initPort = g_settings.getInteger(Config::MULTIPLAYER_PORT);
-	if (initPort <= 0) initPort = 7171;
+	if (initPort <= 0) initPort = 3074;
 
 	wxString firstChoice = favList[0];
 	int colonIdx = firstChoice.Find(':');

@@ -352,7 +352,7 @@ void Settings::IO(IOMode mode) {
 	String(PALETTE_TERRAIN_STYLE, "large icons");
 	String(PALETTE_COLLECTION_STYLE, "large icons");
 	String(PALETTE_DOODAD_STYLE, "large icons");
-	String(PALETTE_ITEM_STYLE, "listbox");
+	String(PALETTE_ITEM_STYLE, "large icons");
 	String(PALETTE_RAW_STYLE, "listbox");
 
 	section("Window");
@@ -415,9 +415,9 @@ void Settings::IO(IOMode mode) {
 	Int(DRAW_LOCKED_DOOR, 0);
 
 	section("Multiplayer");
-	Int(MULTIPLAYER_PORT, 7171);
+	Int(MULTIPLAYER_PORT, 3074);
 	String(MULTIPLAYER_NAME, "Mapper");
-	String(MULTIPLAYER_FAVORITES, "127.0.0.1:7171");
+	String(MULTIPLAYER_FAVORITES, "127.0.0.1:3074");
 	String(MULTIPLAYER_ADOPTED_SERVERS, "");
 
 #undef section

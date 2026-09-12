@@ -401,26 +401,24 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	}
 #endif
 
-	for (const auto& root : searchRoots) {
-		std::filesystem::path testSaves = root / "Saves";
-		if (std::filesystem::exists(testSaves, ec) && std::filesystem::is_directory(testSaves, ec)) {
-			savesDir = testSaves;
-			break;
-		}
-	}
 	for (size_t i = 1; i <= 50; ++i) {
 		wxString file;
-		std::filesystem::path slotDir = savesDir / ("Slot " + std::to_string(i));
-		if (std::filesystem::exists(slotDir, ec) && std::filesystem::is_directory(slotDir, ec)) {
-			for (const auto& entry : std::filesystem::directory_iterator(slotDir, ec)) {
-				if (entry.is_regular_file(ec)) {
-					std::string ext = entry.path().extension().string();
-					for (char &c : ext) c = tolower(c);
-					if (ext == ".otbm") {
-						file = wxString(entry.path().wstring().c_str());
-						break;
+		for (const auto& root : searchRoots) {
+			std::filesystem::path slotDir = root / "Saves" / ("Slot " + std::to_string(i));
+			if (std::filesystem::exists(slotDir, ec) && std::filesystem::is_directory(slotDir, ec)) {
+				for (const auto& entry : std::filesystem::directory_iterator(slotDir, ec)) {
+					if (entry.is_regular_file(ec)) {
+						std::string ext = entry.path().extension().string();
+						for (char &c : ext) c = tolower(c);
+						if (ext == ".otbm") {
+							file = wxString(entry.path().wstring().c_str());
+							break;
+						}
 					}
 				}
+			}
+			if (!file.empty()) {
+				break;
 			}
 		}
 		auto* recent_item = newd RecentItem(scrollWin, dialog, base_colour, file, static_cast<int>(i - 1));

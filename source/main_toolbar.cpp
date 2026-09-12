@@ -619,18 +619,8 @@ void MainToolBar::LoadPerspective() {
 	wxAuiManager* manager = g_gui.GetAuiManager();
 	if (!manager) return;
 
-	if (!g_gui.IsEditorOpen()) {
-		GetPane(TOOLBAR_BRUSHES).Hide();
-		GetPane(TOOLBAR_POSITION).Hide();
-		manager->Update();
-		return;
-	}
-
-	GetPane(TOOLBAR_BRUSHES).Show(true);
-	brushes_toolbar->SetTransparent(static_cast<wxByte>(std::clamp(g_settings.getInteger(Config::TOOLBAR_OPACITY), 20, 100) * 255 / 100));
+	GetPane(TOOLBAR_BRUSHES).Hide();
 	GetPane(TOOLBAR_POSITION).Hide();
-
-	ApplyAlignment();
 	manager->Update();
 }
 
