@@ -85,7 +85,18 @@ CommandPaletteDialog::CommandPaletteDialog(wxWindow* parent) :
 	btn_font.SetPointSize(btn_font.GetPointSize() + 1);
 	filter_btn->SetFont(btn_font);
 	filter_btn->SetToolTip("Select Search Scope: No RAW (Standard Palettes) or RAW (Item IDs)");
-	input_sizer->Add(filter_btn, 0, wxALIGN_CENTER_VERTICAL);
+	input_sizer->Add(filter_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+
+	// Schließen-Button (X) oben rechts
+	wxButton* close_btn = newd wxButton(this, wxID_CANCEL, "✕", wxDefaultPosition, wxSize(44, 46), wxBORDER_NONE);
+	close_btn->SetBackgroundColour(wxColour(36, 24, 28));
+	close_btn->SetForegroundColour(wxColour(245, 120, 120));
+	wxFont close_font = close_btn->GetFont();
+	close_font.SetWeight(wxFONTWEIGHT_BOLD);
+	close_font.SetPointSize(close_font.GetPointSize() + 2);
+	close_btn->SetFont(close_font);
+	close_btn->SetToolTip("Close (Esc)");
+	input_sizer->Add(close_btn, 0, wxALIGN_CENTER_VERTICAL);
 
 	main_sizer->Add(input_sizer, 0, wxEXPAND | wxALL, 12);
 

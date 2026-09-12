@@ -25,7 +25,13 @@ void GUI::LoadPerspective() {
     PaletteWindow *palette = CreatePalette();
     if (palette) {
       wxAuiPaneInfo &info = aui_manager->GetPane(palette);
-      info.Right().Layer(1).Position(1).Dockable(true).LeftDockable(true).RightDockable(true).TopDockable(false).BottomDockable(false).CloseButton(true).Floatable(true).BestSize(270, 560).MinSize(wxSize(palette->FromDIP(160), 100)).Show(true);
+      const bool dock_left = g_settings.getInteger(Config::PALETTE_DOCK_SIDE) == 0;
+      if (dock_left) {
+        info.Left().Layer(1).Position(1);
+      } else {
+        info.Right().Layer(1).Position(1);
+      }
+      info.Dockable(false).CaptionVisible(false).PaneBorder(false).Gripper(false).CloseButton(false).Floatable(false).Show(false);
     }
 
 

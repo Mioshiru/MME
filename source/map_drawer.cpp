@@ -178,11 +178,92 @@ uniform int   uExpColorGrading;
 uniform int   uExpVignette;
 uniform float uExpVignetteStrength;
 
-
 varying vec2  vTexCoord;
 varying vec4  vColor;
 varying vec2  vWorldPos;
 varying float vShaderData;
+
+// ── Fast, Robust RGB <-> HSV in GLSL ──
+vec3 rgb2hsv(vec3 c) {
+    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c) {
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+// ── Zelda-Style "Fantasy Colors" Enhancer (Balanced, Rich, RPG Fantasy Aesthetics) ──
+vec3 applyZeldaFantasyColors(vec3 rgb) {
+    vec3 hsv = rgb2hsv(rgb);
+    float h = hsv.x; // [0, 1]
+    float s = hsv.y; // [0, 1]
+    float v = hsv.z; // [0, 1]
+
+    if (s > 0.05) {
+        // 🌿 1. Nature / Grass / Trees / Moss / Plants (Hue 65°..165° -> 0.18..0.46)
+        if (h >= 0.18 && h <= 0.46) {
+            // Fresh, radiant emerald green with pleasant, balanced saturation
+            hsv.x = mix(hsv.x, 0.31, 0.30);
+            hsv.y = clamp(hsv.y * 1.34 + 0.04, 0.0, 1.0);
+            hsv.z = clamp(pow(hsv.z, 0.94) * 1.02, 0.0, 1.0);
+        }
+        // 🌊 2. Water / Oceans / Rivers / Cyan / Crystals (Hue 165°..255° -> 0.46..0.72)
+        else if (h > 0.46 && h <= 0.72) {
+            // Deep tropical turquoise & sapphire blue
+            hsv.x = mix(hsv.x, 0.55, 0.18);
+            hsv.y = clamp(hsv.y * 1.28 + 0.03, 0.0, 1.0);
+            hsv.z = clamp(hsv.z * 1.02, 0.0, 1.0);
+        }
+        // 🏜️ 3. Sand / Beach / Gold / Jungle Paths (Hue 33°..65° -> 0.092..0.18)
+        else if (h >= 0.092 && h < 0.18) {
+            // Warm golden tones
+            hsv.x = mix(hsv.x, 0.125, 0.20);
+            hsv.y = clamp(hsv.y * 1.25 + 0.03, 0.0, 1.0);
+            hsv.z = clamp(hsv.z * 1.01, 0.0, 1.0);
+        }
+        // 🪑 4. Wood / Furniture / Chests / Leather (Hue 15°..33° -> 0.042..0.092, s > 0.12)
+        else if (h >= 0.042 && h < 0.092 && s > 0.12) {
+            // Rich chestnut and mahogany wood tones
+            hsv.x = mix(hsv.x, 0.065, 0.12);
+            hsv.y = clamp(hsv.y * 1.24 + 0.02, 0.0, 1.0);
+            hsv.z = clamp(pow(hsv.z, 0.94) * 1.02, 0.0, 1.0);
+        }
+        // 🔥 5. Fire / Lava / Rubies / Potions / Flowers (Red / Magenta: h < 0.042 or h > 0.92)
+        else if (h < 0.042 || h > 0.92) {
+            // Ruby red and embers
+            hsv.y = clamp(hsv.y * 1.20 + 0.03, 0.0, 1.0);
+            hsv.z = clamp(hsv.z * 1.02, 0.0, 1.0);
+        }
+        // 💜 6. Magic / Purple / Violet (Hue 255°..330° -> 0.72..0.92)
+        else if (h > 0.72 && h <= 0.92) {
+            hsv.y = clamp(hsv.y * 1.22 + 0.03, 0.0, 1.0);
+            hsv.z = clamp(hsv.z * 1.02, 0.0, 1.0);
+        }
+    } else {
+        // 🧱 7. Stone / Walls / Rock (Neutral greys / masonry)
+        float luma = v;
+        hsv.z = clamp((luma - 0.45) * 1.10 + 0.46, 0.0, 1.0);
+    }
+
+    vec3 outRgb = hsv2rgb(hsv);
+
+    // Balanced Contrast and Saturation Lift
+    float luma = dot(outRgb, vec3(0.299, 0.587, 0.114));
+    outRgb = clamp((outRgb - 0.5) * 1.07 + 0.5, 0.0, 1.0);
+    outRgb = clamp(mix(vec3(luma), outRgb, 1.16), 0.0, 1.0);
+    vec3 shadowTone = vec3(0.96, 0.98, 1.03);
+    vec3 highlightTone = vec3(1.04, 1.02, 0.96);
+    outRgb = mix(outRgb * shadowTone, outRgb * highlightTone, smoothstep(0.12, 0.88, luma));
+
+    return clamp(outRgb, 0.0, 1.0);
+}
 
 void main() {
     vec2 uv = vTexCoord;
@@ -191,27 +272,10 @@ void main() {
 
     vec4 texel = raw;
 
-    if (uExpColorGrading == 0) {
-      // Vibrant Fantasy: warmer greens, stronger color separation and a
-      // restrained saturation lift so terrain reads clearly without clipping.
-      texel.rgb = clamp(texel.rgb * vec3(1.10, 1.08, 0.86), 0.0, 1.0);
-      float fantasy_luma = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
-      texel.rgb = clamp(mix(vec3(fantasy_luma), texel.rgb, 1.28), 0.0, 1.0);
-      texel.rgb = clamp((texel.rgb - 0.035) * 1.08 + 0.035, 0.0, 1.0);
-    } else if (uExpColorGrading == 1) {
-      texel.rgb = clamp(texel.rgb * vec3(0.82, 0.84, 0.90), 0.0, 1.0);
-    } else if (uExpColorGrading == 2) {
-      texel.rgb = clamp(texel.rgb * vec3(0.74, 0.84, 1.08), 0.0, 1.0);
-    } else if (uExpColorGrading == 3) {
-      texel.rgb = clamp(texel.rgb * vec3(1.12, 0.98, 0.82), 0.0, 1.0);
-    } else if (uExpColorGrading == 4) {
-      texel.rgb = clamp(texel.rgb * vec3(0.86, 1.04, 1.18), 0.0, 1.0);
-    }
-
+    // ── STEP 1: Spatial Pixel Art Upscaling & Reconstruction (xBRZ / Soft Multi-Tap) ──
+    // Edge reconstruction and spatial smoothing are applied first to the raw texels
+    // so that subsequent color mood grading operates on the enhanced geometry.
     if (uUpscaling == 2) {
-      // Modern top-down pixel art: use a weighted 3x3 reconstruction around
-      // the source sample. This softens staircase edges while retaining the
-      // sprite's broad color masses and avoiding a flat bilinear blur.
       vec2 stepUv = vec2(1.0 / 128.0);
       vec3 soft = texture2D(uTexture, uv).rgb * 4.0;
       soft += texture2D(uTexture, uv + vec2(stepUv.x, 0.0)).rgb * 2.0;
@@ -224,13 +288,37 @@ void main() {
       soft += texture2D(uTexture, uv - vec2(stepUv.x, stepUv.y)).rgb;
       soft /= 16.0;
 
-      // Stronger than the previous 60% cross blur, but retain some source
-      // detail so outlines do not disappear.
       texel.rgb = mix(texel.rgb, soft, 0.78);
       float luma = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
       texel.rgb = clamp(mix(vec3(luma), texel.rgb, 1.16), 0.0, 1.0);
     }
 
+    // ── STEP 2: Biome Color Mood Grading (with auto dungeon adaptation for Floors 8..15) ──
+    int effectiveMood = uExpColorGrading;
+    if (uFloor >= 8 && (uExpColorGrading == 0 || uExpColorGrading == 3)) {
+      effectiveMood = 1; // Auto Dark Dungeon on Floors 8-15
+    }
+
+    if (effectiveMood == 0) {
+      // 0: Fantasy Colors (Vibrant & Rich Zelda-Style)
+      texel.rgb = applyZeldaFantasyColors(texel.rgb);
+    } else if (effectiveMood == 1) {
+      // 1: Dark Dungeon
+      texel.rgb = clamp(texel.rgb * vec3(0.78, 0.80, 0.88), 0.0, 1.0);
+    } else if (effectiveMood == 2) {
+      // 2: Deep Cave / Sapphire
+      texel.rgb = clamp(texel.rgb * vec3(0.70, 0.82, 1.12), 0.0, 1.0);
+    } else if (effectiveMood == 3) {
+      // 3: Warm Sunset
+      texel.rgb = clamp(texel.rgb * vec3(1.18, 0.98, 0.78), 0.0, 1.0);
+    } else if (effectiveMood == 4) {
+      // 4: Frost / Nordic Cold
+      texel.rgb = clamp(texel.rgb * vec3(0.82, 1.05, 1.22), 0.0, 1.0);
+    } else if (effectiveMood == 5) {
+      // 5: Neutral / Classic Vanilla (100% Reset / Unfiltered)
+    }
+
+    // ── STEP 3: Vignette Atmosphere ──
     if (uExpVignette == 1) {
       vec2 norm_pos = gl_FragCoord.xy / vec2(1920.0, 1080.0) - vec2(0.5);
       float vignette = smoothstep(0.35, 0.80, length(norm_pos));

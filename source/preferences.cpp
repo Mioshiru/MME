@@ -590,12 +590,12 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	mood_label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	mood_sizer->Add(mood_label, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 	wxArrayString mood_choices;
-	mood_choices.Add("Vibrant Fantasy RPG (Bright and Natural)");
+	mood_choices.Add("Fantasy Colors (Vibrant & Rich Zelda-Style)");
 	mood_choices.Add("Dark and Dangerous (Dragons, Undead, Blight, Dungeons)");
 	mood_choices.Add("Gloomy Crypt and Cave (Cool Cave Look)");
 	mood_choices.Add("Golden Sunset and Twilight (Warm Evening Light)");
 	mood_choices.Add("Frozen Wastes and Frost (Cool Ice Blue)");
-	mood_choices.Add("Neutral / Classic Vanilla (Unfiltered)");
+	mood_choices.Add("Neutral (Reset: Unfiltered / Original Classic)");
 	exp_color_grading_choice = newd wxChoice(visual_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, mood_choices);
 	exp_color_grading_choice->SetBackgroundColour(wxColour(61, 47, 18));
 	exp_color_grading_choice->SetForegroundColour(wxColour(255, 224, 130));
@@ -607,6 +607,16 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	exp_color_grading_choice->SetToolTip("Choose the atmospheric color mood for different biomes, dungeons, and areas.");
 	mood_sizer->Add(exp_color_grading_choice, 0, wxALIGN_CENTER_VERTICAL);
 	visual_group->Add(mood_sizer, 0, wxALL, 4);
+	wxBoxSizer* info_corner_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	info_corner_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Canvas Info Corner:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	canvas_info_corner_choice = newd wxChoice(visual_panel, wxID_ANY);
+	canvas_info_corner_choice->Append("Top Right");
+	canvas_info_corner_choice->Append("Top Left");
+	canvas_info_corner_choice->Append("Bottom Right");
+	canvas_info_corner_choice->Append("Bottom Left");
+	canvas_info_corner_choice->SetSelection(std::clamp(g_settings.getInteger(Config::CANVAS_INFO_CORNER), 0, 3));
+	info_corner_sizer->Add(canvas_info_corner_choice, 0, wxALIGN_CENTER_VERTICAL);
+	visual_group->Add(info_corner_sizer, 0, wxALL, 4);
 
 	// 2. Cinematic Vignette
 	wxBoxSizer* vig_sizer = newd wxBoxSizer(wxHORIZONTAL);
@@ -848,6 +858,28 @@ wxNotebookPage* PreferencesWindow::CreateUIPage() {
 	toolbar_alignment_choice->SetToolTip("Align the icons inside the current toolbar without moving the toolbar itself.");
 	toolbar_row->Add(toolbar_alignment_choice, 0, wxALIGN_CENTER_VERTICAL);
 	theme_group->Add(toolbar_row, 0, wxALL, 2);
+	wxBoxSizer* overlay_row = new wxBoxSizer(wxHORIZONTAL);
+	overlay_row->Add(new wxStaticText(theme_panel, wxID_ANY, "Toolbar position:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	toolbar_overlay_position_choice = newd wxChoice(theme_panel, wxID_ANY);
+	toolbar_overlay_position_choice->Append("Top");
+	toolbar_overlay_position_choice->Append("Bottom");
+	toolbar_overlay_position_choice->SetSelection(std::clamp(g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION), 0, 1));
+	overlay_row->Add(toolbar_overlay_position_choice, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 12);
+	overlay_row->Add(new wxStaticText(theme_panel, wxID_ANY, "Palette side:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	palette_dock_side_choice = newd wxChoice(theme_panel, wxID_ANY);
+	palette_dock_side_choice->Append("Left");
+	palette_dock_side_choice->Append("Right");
+	palette_dock_side_choice->SetSelection(std::clamp(g_settings.getInteger(Config::PALETTE_DOCK_SIDE), 0, 1));
+	overlay_row->Add(palette_dock_side_choice, 0, wxALIGN_CENTER_VERTICAL);
+	theme_group->Add(overlay_row, 0, wxALL, 2);
+	wxBoxSizer* opacity_row = new wxBoxSizer(wxHORIZONTAL);
+	opacity_row->Add(new wxStaticText(theme_panel, wxID_ANY, "Toolbar opacity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
+	toolbar_opacity_slider = newd wxSlider(theme_panel, wxID_ANY, g_settings.getInteger(Config::TOOLBAR_OPACITY), 20, 100, wxDefaultPosition, wxSize(120, -1));
+	opacity_row->Add(toolbar_opacity_slider, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
+	opacity_row->Add(new wxStaticText(theme_panel, wxID_ANY, "Palette opacity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
+	palette_opacity_slider = newd wxSlider(theme_panel, wxID_ANY, g_settings.getInteger(Config::PALETTE_OPACITY), 20, 100, wxDefaultPosition, wxSize(120, -1));
+	opacity_row->Add(palette_opacity_slider, 0, wxALIGN_CENTER_VERTICAL);
+	theme_group->Add(opacity_row, 0, wxALL, 2);
 	theme_sizer->Add(theme_group, 0, wxEXPAND | wxALL, 3);
 
 	wxStaticBoxSizer* icon_group = new wxStaticBoxSizer(wxVERTICAL, theme_panel, "Icon Sizing");
@@ -1273,6 +1305,41 @@ void PreferencesWindow::Apply() {
 	}
 	if (exp_vignette_slider) {
 		g_settings.setFloat(Config::EXP_VIGNETTE_STRENGTH, float(exp_vignette_slider->GetValue()) / 10.0f);
+	}
+	if (canvas_info_corner_choice) {
+		g_settings.setInteger(Config::CANVAS_INFO_CORNER, canvas_info_corner_choice->GetSelection());
+	}
+	if (toolbar_overlay_position_choice) {
+		int old_pos = g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION);
+		int new_pos = toolbar_overlay_position_choice->GetSelection();
+		g_settings.setInteger(Config::TOOLBAR_OVERLAY_POSITION, new_pos);
+		if (old_pos != new_pos && g_gui.root && g_gui.root->GetAuiToolBar()) {
+			g_gui.root->GetAuiToolBar()->ApplyAlignment();
+		}
+	}
+	if (palette_dock_side_choice) {
+		int old_side = g_settings.getInteger(Config::PALETTE_DOCK_SIDE);
+		int new_side = palette_dock_side_choice->GetSelection();
+		g_settings.setInteger(Config::PALETTE_DOCK_SIDE, new_side);
+		if (old_side != new_side && g_gui.aui_manager) {
+			for (auto* palette : g_gui.GetPalettes()) {
+				wxAuiPaneInfo& pinfo = g_gui.aui_manager->GetPane(palette);
+				if (pinfo.IsOk() && pinfo.IsDocked()) {
+					if (new_side == 0) {
+						pinfo.Left().Layer(1).Position(1);
+					} else {
+						pinfo.Right().Layer(1).Position(1);
+					}
+				}
+			}
+			g_gui.aui_manager->Update();
+		}
+	}
+	if (toolbar_opacity_slider) {
+		g_settings.setInteger(Config::TOOLBAR_OPACITY, toolbar_opacity_slider->GetValue());
+	}
+	if (palette_opacity_slider) {
+		g_settings.setInteger(Config::PALETTE_OPACITY, palette_opacity_slider->GetValue());
 	}
 	if (ui_scale_slider) {
 		int old_scale = g_settings.getInteger(Config::UI_SCALE);

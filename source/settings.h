@@ -177,6 +177,11 @@ namespace Config {
 		TOOLBAR_BRUSHES_LAYOUT,
 		TOOLBAR_POSITION_LAYOUT,
 		TOOLBAR_SIZES_LAYOUT,
+		CANVAS_INFO_CORNER,
+		TOOLBAR_OVERLAY_POSITION,
+		PALETTE_DOCK_SIDE,
+		TOOLBAR_OPACITY,
+		PALETTE_OPACITY,
 
 		// add new settings at the end to make sure nothing gets misread
 		DRAW_LOCKED_DOOR,
@@ -229,6 +234,8 @@ namespace Config {
 		HIDE_STATUSBAR,     // Hide the bottom status bar (0 = shown, 1 = hidden)
 		PALETTE_SELECTED_PAGE,
 		PALETTE_SELECTED_TILESET,
+		SHOW_PALETTE,
+		MINIMAP_CORNER,
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;

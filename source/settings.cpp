@@ -379,6 +379,8 @@ void Settings::IO(IOMode mode) {
 	Int(HIDE_STATUSBAR, 1);      // 0 = shown, 1 = hidden (default)
 	Int(PALETTE_SELECTED_PAGE, 1);
 	String(PALETTE_SELECTED_TILESET, "");
+	Int(SHOW_PALETTE, 1);
+	Int(MINIMAP_CORNER, 0);
 
 	section("Hotkeys");
 	String(NUMERICAL_HOTKEYS, "none:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\nnone:{}\n");
@@ -391,6 +393,11 @@ void Settings::IO(IOMode mode) {
 	String(TOOLBAR_BRUSHES_LAYOUT, "");
 	String(TOOLBAR_POSITION_LAYOUT, "");
 	String(TOOLBAR_SIZES_LAYOUT, "");
+	Int(CANVAS_INFO_CORNER, 0); // 0=top-right, 1=top-left, 2=bottom-right, 3=bottom-left
+	Int(TOOLBAR_OVERLAY_POSITION, 0); // 0=top, 1=bottom
+	Int(PALETTE_DOCK_SIDE, 1); // 0=left, 1=right
+	Int(TOOLBAR_OPACITY, 90);
+	Int(PALETTE_OPACITY, 80);
 
 
 	section("");

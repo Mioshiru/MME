@@ -1,6 +1,6 @@
 # Mio's Map Editor (MME)
 
-[![Version](https://img.shields.io/badge/version-v1.9.4-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
+[![Version](https://img.shields.io/badge/version-v1.9.5-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
 [![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://github.com/Mioshiru/MME)
@@ -10,7 +10,21 @@
 
 ---
 
-## 🌟 Key Highlights & Mapper Features (v1.9.4)
+## 🌟 Key Highlights & Mapper Features (v1.9.5)
+
+### 🎨 macOS-Style Filigree Fantasy Canvas UI & Floating Windows
+* **Frameless Obsidian & Gold Glass Panels:** Full-canvas Toolbar, Tileset Palette, Minimap, and Coordinates Overlay seamlessly floating directly over the OpenGL canvas with zero intrusive Windows borders.
+* **Universal Fantasy Gem Controls:** Circular crystal gems (🟢 Move / Dock, 🟡 Minimize / Expand, 🔴 Close) with instant response and micro-animations.
+* **Locked Corner Minimap & 4-Edge Resizing:** The Minimap stays firmly in its corner with direct mousewheel zoom and navigation dropdown, while the Palette supports fluid 4-edge resizing from top, bottom, and side borders.
+* **Smart Hotkey Suspension:** Shortcuts are automatically suspended while typing in palette search, live chat, or quest notepads.
+* **High-Definition Composite Sprite Caching:** Instant rendering for multi-sprite mountain, cliff, and doodad perspective brushes.
+
+### 👥 Real-Time Multiplayer Collaboration & Teamplay Supercharge
+* **Toolbar Live Presence Indicator:** Real-time host/client status badge (`🟢 Host (N)` / `🟢 Live (N ms)`) with tooltip peer overview.
+* **Collaborator Teleportation (`🎯 Jump`):** 1-Click camera teleport to any connected collaborator with automatic floor alignment.
+* **Multi-Frequency Radar Shockwave Pings:** Concentric golden/cyan pulse waves with diamond cores and author tags broadcast in real time.
+* **1-Click Host IP & Port Copy:** Instant clipboard export of connection credentials.
+* **Magnetic Snapping Edge Glow:** Radiant visual indicator appearing along screen boundaries when docking the Palette.
 
 ### 🔍 Universal Spotlight Search & Command Palette (`Ctrl + F`)
 * **Schlankes Single-Row Design mit Dropdown-Button:** Kompakte Suchzeile mit integriertem Dropdown-Button (`Terrain ▾`, `Doodad ▾`, `Item ▾`, `Creature ▾`, `NPC ▾`, `RAW ▾`), umschaltbar per Klick oder **`Tab`** / **`Shift + Tab`**.

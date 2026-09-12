@@ -22,6 +22,8 @@
 #include "spawn_brush.h"
 #include "creature_brush.h"
 #include "checklist_manager.h"
+#include "tileset.h"
+#include "materials.h"
 #include <cmath>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -214,6 +216,8 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		IMGUI_CHECKVERSION();
 		imgui_context = ImGui::CreateContext();
 		ImGui::SetCurrentContext(imgui_context);
+		ImGuiIO& io_init = ImGui::GetIO();
+		io_init.ConfigWindowsResizeFromEdges = true;
 		// Note: Canvas overlays use free floating windows with magnetic edge snapping instead of intrusive dock nodes
 		ImGui::StyleColorsDark();
 		
@@ -341,6 +345,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	float deltaTime = imgui_elapsed.count();
 	if (deltaTime <= 0.0f) deltaTime = 0.00001f;
 	io.DeltaTime = deltaTime;
+	io.ConfigWindowsResizeFromEdges = true;
 	imgui_last_time = imgui_current_time;
 
 	ImGui_ImplOpenGL3_NewFrame();
@@ -485,34 +490,50 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					if (ImGui::IsItemHovered()) {
 						ImGui::SetTooltip("Copy Host IP & Port to clipboard");
 					}
-					if (ImGui::IsItemHovered() && !server->clients.empty()) {
-						ImGui::BeginTooltip();
-						for (auto& clientEntry : server->clients) {
-							LivePeer* peer = clientEntry.second;
-							uint32_t lat = peer->getLatency();
-							ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-							ImGui::Text("%s:", nstr(peer->getName()).c_str());
-							ImGui::SameLine();
-							if (lat <= 1) {
-								ImGui::TextColored(col, " < 1 ms | %u%% loss | %s", peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
-							} else {
-								ImGui::TextColored(col, " %u ms | %u%% loss | %s", lat, peer->getPacketLoss(), nstr(peer->getConnectionStatus()).c_str());
-							}
-						}
-						ImGui::EndTooltip();
-					}
 				} else {
 					LiveClient* client = editor.GetLiveClient();
-					uint32_t lat = client->getLatency();
+					uint32_t lat = client ? client->getLatency() : 0;
 					ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
 					ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Join Mode | ");
 					ImGui::SameLine();
 					if (lat <= 1) {
-						ImGui::TextColored(col, "%s | < 1 ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), client->getPacketLoss());
+						ImGui::TextColored(col, "%s | < 1 ms | %u%% loss", client ? nstr(client->getConnectionStatus()).c_str() : "Online", client ? client->getPacketLoss() : 0);
 					} else {
-						ImGui::TextColored(col, "%s | %u ms | %u%% loss", nstr(client->getConnectionStatus()).c_str(), lat, client->getPacketLoss());
+						ImGui::TextColored(col, "%s | %u ms | %u%% loss", client ? nstr(client->getConnectionStatus()).c_str() : "Online", lat, client ? client->getPacketLoss() : 0);
 					}
 				}
+
+				// Collaborators & Teleport section
+				if (ImGui::CollapsingHeader("👥 Collaborators & Teleport", ImGuiTreeNodeFlags_None)) {
+					LiveSocket& live = editor.GetLive();
+					std::vector<LiveCursor> cursors = live.getCursorList();
+					if (cursors.empty()) {
+						ImGui::TextDisabled("No other collaborators connected yet.");
+					} else {
+						for (const auto& cur : cursors) {
+							std::string name = wxString::Format("Collaborator #%u", cur.id).ToStdString();
+							if (editor.IsLiveServer() && editor.GetLiveServer()) {
+								auto it = editor.GetLiveServer()->clients.find(cur.id);
+								if (it != editor.GetLiveServer()->clients.end() && it->second) {
+									name = nstr(it->second->getClientName());
+								}
+							}
+							ImGui::TextColored(ImVec4(cur.color.Red()/255.0f, cur.color.Green()/255.0f, cur.color.Blue()/255.0f, 1.0f), "👤 %s", name.c_str());
+							ImGui::SameLine();
+							ImGui::TextDisabled("(%d, %d, %d)", cur.pos.x, cur.pos.y, cur.pos.z);
+							ImGui::SameLine();
+							std::string jump_btn_id = wxString::Format("🎯 Jump##jump_%u", cur.id).ToStdString();
+							if (ImGui::SmallButton(jump_btn_id.c_str())) {
+								if (cur.pos.isValid()) {
+									ChangeFloor(cur.pos.z);
+									g_gui.SetScreenCenterPosition(cur.pos, false);
+									g_gui.SetStatusText(wxString::Format("Teleported to collaborator %s at (%d, %d, %d)", name.c_str(), cur.pos.x, cur.pos.y, cur.pos.z));
+								}
+							}
+						}
+					}
+				}
+
 				ImGui::Separator();
 
 				// Determine own name for highlighting
@@ -955,217 +976,1153 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		}
 	}
 
+struct ToolbarIconCache {
+	GLuint tex_pointer = 0;
+	GLuint tex_pencil = 0;
+	GLuint tex_bucket = 0;
+	GLuint tex_magic_wand = 0;
+	GLuint tex_eraser = 0;
+	GLuint tex_autoborder = 0;
+	GLuint tex_door = 0;
+	GLuint tex_window = 0;
+	GLuint tex_day_night = 0;
+	GLuint tex_rect_brush = 0;
+	GLuint tex_circle_brush = 0;
+	GLuint tex_sizes[7] = {0, 0, 0, 0, 0, 0, 0};
+	bool initialized = false;
+
+	void Init() {
+		if (initialized) return;
+		initialized = true;
+
+		auto load_tex = [](const std::vector<wxString>& candidates, wxSize sz = wxSize(24, 24)) -> GLuint {
+			wxBitmap bmp = LoadBitmapFromCandidatesRadial(sz, candidates);
+			return ConvertBitmapToTexture(bmp);
+		};
+
+		wxString exeDir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH;
+		wxString cwdDir = wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH;
+
+		tex_pointer = load_tex({"icons/pointer.png", "../icons/pointer.png", "Map Editor/icons/pointer.png", exeDir + "pointer.png", cwdDir + "pointer.png"});
+		tex_pencil = load_tex({"icons/pencil.png", "../icons/pencil.png", "Map Editor/icons/pencil.png", exeDir + "pencil.png", cwdDir + "pencil.png"});
+		tex_bucket = load_tex({"icons/bucket.png", "../icons/bucket.png", "Map Editor/icons/bucket.png", exeDir + "bucket.png", cwdDir + "bucket.png"});
+		tex_magic_wand = load_tex({"icons/magic-wand.png", "../icons/magic-wand.png", "Map Editor/icons/magic-wand.png", exeDir + "magic-wand.png", cwdDir + "magic-wand.png"});
+		tex_eraser = load_tex({"icons/eraser.png", "../icons/eraser.png", "Map Editor/icons/eraser.png", exeDir + "eraser.png", cwdDir + "eraser.png"});
+		tex_autoborder = load_tex({"icons/auto_border.png", "../icons/auto_border.png", "Map Editor/icons/auto_border.png", exeDir + "auto_border.png", cwdDir + "auto_border.png"});
+		tex_door = load_tex({"icons/door.png", "../icons/door.png", "Map Editor/icons/door.png", exeDir + "door.png", cwdDir + "door.png"});
+		tex_window = load_tex({"icons/window.png", "../icons/window.png", "Map Editor/icons/window.png", exeDir + "window.png", cwdDir + "window.png"});
+		tex_day_night = load_tex({"icons/day-night.png", "../icons/day-night.png", "Map Editor/icons/day-night.png", exeDir + "day-night.png", cwdDir + "day-night.png"});
+		tex_rect_brush = load_tex({"icons/rectangular_tileset.png", "../icons/rectangular_tileset.png", "Map Editor/icons/rectangular_tileset.png", exeDir + "rectangular_tileset.png", cwdDir + "rectangular_tileset.png"});
+		tex_circle_brush = load_tex({"icons/circular_tileset.png", "../icons/circular_tileset.png", "Map Editor/icons/circular_tileset.png", exeDir + "circular_tileset.png", cwdDir + "circular_tileset.png"});
+
+		for (int i = 0; i < 7; ++i) {
+			wxString f = wxString::Format("rectangular_%d.png", i + 1);
+			tex_sizes[i] = load_tex({"icons/" + f, "../icons/" + f, "Map Editor/icons/" + f, exeDir + f, cwdDir + f}, wxSize(18, 18));
+		}
+	}
+};
+static ToolbarIconCache s_toolbar_icons;
+
+	// macOS Canvas Floating / Docked Toolbar in the exact style of the Canvas Info Overlay
+	if (g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES)) {
+		s_toolbar_icons.Init();
+
+		const float ui_scale = std::clamp((float)g_settings.getInteger(Config::UI_SCALE) / 100.0f, 1.0f, 2.5f);
+		const int dock_pos = std::clamp(g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION), 0, 1);
+		ImVec2 tb_anchor(io.DisplaySize.x * 0.5f, (dock_pos == 1) ? (io.DisplaySize.y - 12.0f) : 10.0f);
+		ImVec2 tb_pivot(0.5f, (dock_pos == 1) ? 1.0f : 0.0f);
+		ImGui::SetNextWindowPos(tb_anchor, ImGuiCond_Always, tb_pivot);
+		ImGui::SetNextWindowBgAlpha(0.88f);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * ui_scale);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f * ui_scale);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f * ui_scale, 5.0f * ui_scale));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(5.0f * ui_scale, 3.0f * ui_scale));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.07f, 0.11f, 0.90f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.55f, 0.45f, 0.25f, 0.65f));
+
+		ImGuiWindowFlags tb_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+			ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove;
+
+		bool toolbar_open = true;
+		if (ImGui::Begin("##CanvasMacOSToolbar", &toolbar_open, tb_flags)) {
+			const float tb_h = 24.0f * ui_scale;
+			const ImVec2 tool_btn_sz(24.0f * ui_scale, tb_h);
+			const ImVec2 tool_icon_sz(18.0f * ui_scale, 18.0f * ui_scale);
+			const ImVec2 size_btn_sz(20.0f * ui_scale, tb_h);
+			const ImVec2 size_icon_sz(14.0f * ui_scale, 14.0f * ui_scale);
+
+			auto draw_icon_btn = [&](const char* id, GLuint tex, const char* fallback, bool active, const char* tooltip, const ImVec2& btn_sz, const ImVec2& icon_sz) -> bool {
+				bool clicked = false;
+				if (active) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.45f, 0.85f, 0.95f));
+					ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.95f, 0.80f, 0.30f, 1.0f));
+					ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f);
+				} else {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12f, 0.15f, 0.22f, 0.75f));
+					ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.35f, 0.38f, 0.48f, 0.50f));
+					ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+				}
+
+				ImVec2 p0 = ImGui::GetCursorScreenPos();
+				if (ImGui::Button(id, btn_sz)) {
+					clicked = true;
+				}
+
+				ImDrawList* dl = ImGui::GetWindowDrawList();
+				if (tex != 0) {
+					ImVec2 img_min(p0.x + (btn_sz.x - icon_sz.x) * 0.5f, p0.y + (btn_sz.y - icon_sz.y) * 0.5f);
+					ImVec2 img_max(img_min.x + icon_sz.x, img_min.y + icon_sz.y);
+					dl->AddImage((ImTextureID)(intptr_t)tex, img_min, img_max);
+				} else if (fallback && fallback[0]) {
+					ImVec2 txt_sz = ImGui::CalcTextSize(fallback);
+					ImVec2 txt_pos(p0.x + (btn_sz.x - txt_sz.x) * 0.5f, p0.y + (btn_sz.y - txt_sz.y) * 0.5f);
+					dl->AddText(txt_pos, IM_COL32(230, 230, 240, 255), fallback);
+				}
+
+				ImGui::PopStyleVar();
+				ImGui::PopStyleColor(2);
+
+				if (ImGui::IsItemHovered() && tooltip) {
+					ImGui::SetTooltip("%s", tooltip);
+				}
+				return clicked;
+			};
+
+			// 1. Selection Tool
+			const bool is_sel = g_gui.IsSelectionMode();
+			if (draw_icon_btn("##tool_sel", s_toolbar_icons.tex_pointer, "Sel", is_sel, "Selection Tool (Pointer)", tool_btn_sz, tool_icon_sz)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SetSelectionMode();
+			}
+
+			ImGui::SameLine();
+			// 2. Pencil Tool
+			const bool is_pencil = (!g_gui.IsSelectionMode() && !g_gui.IsFillBrushMode() && g_gui.GetCurrentBrush() != g_gui.eraser && g_gui.GetCurrentBrush() != g_gui.optional_brush && g_gui.GetCurrentBrush() != g_gui.normal_door_brush && g_gui.GetCurrentBrush() != g_gui.locked_door_brush && g_gui.GetCurrentBrush() != g_gui.magic_door_brush && g_gui.GetCurrentBrush() != g_gui.quest_door_brush && g_gui.GetCurrentBrush() != g_gui.archway_door_brush && g_gui.GetCurrentBrush() != g_gui.window_door_brush && g_gui.GetCurrentBrush() != g_gui.hatch_door_brush);
+			if (draw_icon_btn("##tool_pencil", s_toolbar_icons.tex_pencil, "Pen", is_pencil, "Pencil Drawing Tool", tool_btn_sz, tool_icon_sz)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SetDrawingMode();
+			}
+
+			ImGui::SameLine();
+			// 3. Bucket Fill Tool
+			const bool is_fill = g_gui.IsFillBrushMode();
+			if (draw_icon_btn("##tool_fill", s_toolbar_icons.tex_bucket, "Fill", is_fill, "Bucket Fill Tool", tool_btn_sz, tool_icon_sz)) {
+				g_gui.SetDrawingMode();
+				g_gui.SetFillBrushMode(!is_fill);
+			}
+
+			ImGui::SameLine();
+			// 4. Eraser Tool
+			const bool is_eraser = (g_gui.GetCurrentBrush() == g_gui.eraser);
+			if (draw_icon_btn("##tool_eraser", s_toolbar_icons.tex_eraser, "Era", is_eraser, "Eraser Tool", tool_btn_sz, tool_icon_sz)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SelectBrush(g_gui.eraser);
+			}
+
+			ImGui::SameLine();
+			// 5. Autoborder Tool
+			const bool is_border = (g_gui.GetCurrentBrush() == g_gui.optional_brush);
+			if (draw_icon_btn("##tool_border", s_toolbar_icons.tex_autoborder, "Brd", is_border, "Autoborder Tool", tool_btn_sz, tool_icon_sz)) {
+				g_gui.SetFillBrushMode(false);
+				g_gui.SelectBrush(g_gui.optional_brush);
+			}
+
+			ImGui::SameLine();
+			// 6. Doors Tool (Click to select or choose variant)
+			const bool is_door = (g_gui.GetCurrentBrush() == g_gui.normal_door_brush || g_gui.GetCurrentBrush() == g_gui.locked_door_brush || g_gui.GetCurrentBrush() == g_gui.magic_door_brush || g_gui.GetCurrentBrush() == g_gui.quest_door_brush || g_gui.GetCurrentBrush() == g_gui.archway_door_brush);
+			if (draw_icon_btn("##tool_door", s_toolbar_icons.tex_door, "Dor", is_door, "Doors Tool (Click for Door Options)", tool_btn_sz, tool_icon_sz)) {
+				ImGui::OpenPopup("##DoorSubMenu");
+			}
+
+			if (ImGui::BeginPopup("##DoorSubMenu")) {
+				ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "Select Door Type");
+				ImGui::Separator();
+				if (ImGui::Selectable("Normal Door", g_gui.GetCurrentBrush() == g_gui.normal_door_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.normal_door_brush);
+				}
+				if (ImGui::Selectable("Locked Door", g_gui.GetCurrentBrush() == g_gui.locked_door_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.locked_door_brush);
+				}
+				if (ImGui::Selectable("Magic Door", g_gui.GetCurrentBrush() == g_gui.magic_door_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.magic_door_brush);
+				}
+				if (ImGui::Selectable("Quest Door", g_gui.GetCurrentBrush() == g_gui.quest_door_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.quest_door_brush);
+				}
+				if (ImGui::Selectable("Archway", g_gui.GetCurrentBrush() == g_gui.archway_door_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.archway_door_brush);
+				}
+				ImGui::EndPopup();
+			}
+
+			ImGui::SameLine();
+			// 7. Windows Tool (Click to select or choose variant)
+			const bool is_window = (g_gui.GetCurrentBrush() == g_gui.window_door_brush || g_gui.GetCurrentBrush() == g_gui.hatch_door_brush);
+			if (draw_icon_btn("##tool_window", s_toolbar_icons.tex_window, "Win", is_window, "Windows Tool (Click for Window Options)", tool_btn_sz, tool_icon_sz)) {
+				ImGui::OpenPopup("##WindowSubMenu");
+			}
+
+			if (ImGui::BeginPopup("##WindowSubMenu")) {
+				ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "Select Window Type");
+				ImGui::Separator();
+				if (ImGui::Selectable("Window", g_gui.GetCurrentBrush() == g_gui.window_door_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.window_door_brush);
+				}
+				if (ImGui::Selectable("Hatch Window", g_gui.GetCurrentBrush() == g_gui.hatch_door_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.hatch_door_brush);
+				}
+				ImGui::EndPopup();
+			}
+
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.45f, 0.48f, 0.55f, 1.0f), "|");
+			ImGui::SameLine();
+
+			// 8. Floor Selector (Dropdown matching toolbar height exactly, scrollable with mouse wheel)
+			ImGui::SetNextItemWidth(76.0f * ui_scale);
+			int current_floor = floor;
+			const char* floor_items[] = { "Floor 0", "Floor 1", "Floor 2", "Floor 3", "Floor 4", "Floor 5", "Floor 6", "Floor 7",
+			                              "Floor 8", "Floor 9", "Floor 10", "Floor 11", "Floor 12", "Floor 13", "Floor 14", "Floor 15" };
+			float floor_pad_y = std::max(0.0f, (tb_h - ImGui::GetFontSize()) * 0.5f);
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f * ui_scale, floor_pad_y));
+			if (ImGui::Combo("##FloorCombo", &current_floor, floor_items, IM_ARRAYSIZE(floor_items), 16)) {
+				g_gui.ChangeFloor(current_floor);
+			}
+			ImGui::PopStyleVar();
+
+			if (ImGui::IsItemHovered()) {
+				if (io.MouseWheel != 0.0f) {
+					int new_f = std::clamp(current_floor - (int)io.MouseWheel, 0, 15);
+					if (new_f != current_floor) {
+						g_gui.ChangeFloor(new_f);
+					}
+				}
+				ImGui::SetTooltip("Z-Level / Floor (0-15)\nScroll mouse wheel to change floor");
+			}
+
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.45f, 0.48f, 0.55f, 1.0f), "|");
+			ImGui::SameLine();
+
+			// 9. Brush Shape Toggle (Square / Circle) with matching height
+			const bool is_square = (g_gui.GetBrushShape() == BRUSHSHAPE_SQUARE);
+			ImVec2 btn_pos = ImGui::GetCursorScreenPos();
+
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12f, 0.15f, 0.22f, 0.75f));
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.95f, 0.80f, 0.30f, 0.80f));
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.2f);
+
+			if (ImGui::Button("##ShapeToggleBtn", tool_btn_sz)) {
+				g_gui.SetBrushShape(is_square ? BRUSHSHAPE_CIRCLE : BRUSHSHAPE_SQUARE);
+				Refresh(false);
+			}
+			ImGui::PopStyleVar();
+			ImGui::PopStyleColor(2);
+
+			ImDrawList* tb_dl = ImGui::GetWindowDrawList();
+			ImVec2 shape_center(btn_pos.x + tool_btn_sz.x * 0.5f, btn_pos.y + tool_btn_sz.y * 0.5f);
+			if (is_square) {
+				float half_side = 5.5f * ui_scale;
+				tb_dl->AddRectFilled(ImVec2(shape_center.x - half_side, shape_center.y - half_side), ImVec2(shape_center.x + half_side, shape_center.y + half_side), IM_COL32(255, 215, 60, 220), 1.5f);
+				tb_dl->AddRect(ImVec2(shape_center.x - half_side, shape_center.y - half_side), ImVec2(shape_center.x + half_side, shape_center.y + half_side), IM_COL32(255, 245, 160, 255), 1.5f, 0, 1.2f);
+			} else {
+				float rad = 6.0f * ui_scale;
+				tb_dl->AddCircleFilled(shape_center, rad, IM_COL32(255, 215, 60, 220), 16);
+				tb_dl->AddCircle(shape_center, rad, IM_COL32(255, 245, 160, 255), 16, 1.2f);
+			}
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Brush Shape: %s (Click to toggle)", is_square ? "Square" : "Circular");
+			}
+
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.45f, 0.48f, 0.55f, 1.0f), "|");
+			ImGui::SameLine();
+
+			// 10. Brush Sizes 1..7 with uniform height
+			int current_size = g_gui.GetBrushSize();
+			for (int sz = 1; sz <= 7; ++sz) {
+				char btn_id[16];
+				snprintf(btn_id, sizeof(btn_id), "##sz_%d", sz);
+				char sz_fallback[8];
+				snprintf(sz_fallback, sizeof(sz_fallback), "%d", sz);
+				char tip[32];
+				snprintf(tip, sizeof(tip), "Brush Size %d", sz);
+				const bool is_curr_sz = (current_size == sz);
+				if (draw_icon_btn(btn_id, s_toolbar_icons.tex_sizes[sz - 1], sz_fallback, is_curr_sz, tip, size_btn_sz, size_icon_sz)) {
+					g_gui.SetBrushSize(sz);
+				}
+				if (sz < 7) ImGui::SameLine();
+			}
+
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.45f, 0.48f, 0.55f, 1.0f), "|");
+			ImGui::SameLine();
+
+			// 11. Day/Night switch with uniform height
+			const bool show_lights = g_settings.getBoolean(Config::SHOW_LIGHTS);
+			if (draw_icon_btn("##tool_daynight", s_toolbar_icons.tex_day_night, "D/N", show_lights, "Toggle Day/Night Ambient Light", tool_btn_sz, tool_icon_sz)) {
+				g_settings.setInteger(Config::SHOW_LIGHTS, show_lights ? 0 : 1);
+				Refresh(false);
+			}
+
+			ImGui::SameLine();
+			ImGui::TextColored(ImVec4(0.45f, 0.48f, 0.55f, 1.0f), "|");
+			ImGui::SameLine();
+
+			// Live Multiplayer Indicator Badge in Toolbar
+			if (editor.IsLive()) {
+				ImGui::SameLine(0.0f, 6.0f * ui_scale);
+				bool is_host = editor.IsLiveServer();
+				int peer_count = (is_host && editor.GetLiveServer()) ? (int)editor.GetLiveServer()->clients.size() : 1;
+				
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.08f, 0.22f, 0.16f, 0.85f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.12f, 0.35f, 0.25f, 0.95f));
+				ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.30f, 0.85f, 0.50f, 0.80f));
+				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+				ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f * ui_scale);
+
+				std::string badge_txt = is_host 
+					? wxString::Format("🟢 Host (%d)", peer_count).ToStdString()
+					: "🟢 Live";
+
+				if (ImGui::SmallButton(badge_txt.c_str())) {
+					g_settings.setInteger(Config::SHOW_CHAT, g_settings.getInteger(Config::SHOW_CHAT) ? 0 : 1);
+				}
+				if (ImGui::IsItemHovered()) {
+					if (is_host) {
+						ImGui::SetTooltip("Live Host Active: %d Connected Peer(s)\nClick to toggle Multiplayer Chat & User Hub", peer_count);
+					} else {
+						LiveClient* client = editor.GetLiveClient();
+						uint32_t lat = client ? client->getLatency() : 0;
+						ImGui::SetTooltip("Live Connected (%u ms)\nClick to toggle Multiplayer Chat & User Hub", lat);
+					}
+				}
+
+				ImGui::PopStyleVar(2);
+				ImGui::PopStyleColor(3);
+			}
+
+			ImGui::SameLine(0.0f, 4.0f * ui_scale);
+
+			// 12. Move Toolbar Gem Control (Green circle: "Change Position")
+			{
+				const float gem_radius = 5.0f * ui_scale;
+				const float gem_btn_sz = 14.0f * ui_scale;
+				ImVec2 gpos = ImGui::GetCursorScreenPos();
+				ImGui::InvisibleButton("##tb_pos_toggle", ImVec2(gem_btn_sz, gem_btn_sz));
+				bool ghovered = ImGui::IsItemHovered();
+				bool gactive = ImGui::IsItemActive();
+				if (ImGui::IsItemClicked()) {
+					int cur = g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION);
+					g_settings.setInteger(Config::TOOLBAR_OVERLAY_POSITION, (cur == 0) ? 1 : 0);
+				}
+				if (ghovered) ImGui::SetTooltip("Change Position");
+
+				ImVec2 center(gpos.x + gem_btn_sz * 0.5f, gpos.y + gem_btn_sz * 0.5f);
+				ImU32 col = gactive ? IM_COL32(30, 160, 90, 255) : (ghovered ? IM_COL32(55, 215, 130, 255) : IM_COL32(40, 180, 100, 220));
+				ImDrawList* tbdl = ImGui::GetWindowDrawList();
+				tbdl->AddCircleFilled(center, gem_radius, col, 16);
+				tbdl->AddCircle(center, gem_radius, IM_COL32(200, 255, 220, ghovered ? 220 : 100), 16, 1.0f);
+				if (ghovered) {
+					tbdl->AddCircleFilled(center, gem_radius * 0.45f, IM_COL32(255, 255, 255, 230), 8);
+				}
+			}
+
+			ImGui::SameLine(0.0f, 4.0f * ui_scale);
+
+			// 13. Close Toolbar Gem Control (Red circle: "Close")
+			{
+				const float gem_radius = 5.0f * ui_scale;
+				const float gem_btn_sz = 14.0f * ui_scale;
+				ImVec2 rpos = ImGui::GetCursorScreenPos();
+				ImGui::InvisibleButton("##tb_close", ImVec2(gem_btn_sz, gem_btn_sz));
+				bool rhovered = ImGui::IsItemHovered();
+				bool ractive = ImGui::IsItemActive();
+				if (ImGui::IsItemClicked()) {
+					g_settings.setInteger(Config::SHOW_TOOLBAR_BRUSHES, 0);
+					if (g_gui.root) g_gui.root->UpdateMenubar();
+				}
+				if (rhovered) ImGui::SetTooltip("Close");
+
+				ImVec2 center(rpos.x + gem_btn_sz * 0.5f, rpos.y + gem_btn_sz * 0.5f);
+				ImU32 col = ractive ? IM_COL32(190, 40, 40, 255) : (rhovered ? IM_COL32(255, 80, 80, 255) : IM_COL32(220, 60, 60, 220));
+				ImDrawList* tbdl = ImGui::GetWindowDrawList();
+				tbdl->AddCircleFilled(center, gem_radius, col, 16);
+				tbdl->AddCircle(center, gem_radius, IM_COL32(255, 210, 210, rhovered ? 220 : 100), 16, 1.0f);
+				if (rhovered) {
+					float hw = gem_radius * 0.45f;
+					tbdl->AddLine(ImVec2(center.x - hw, center.y - hw), ImVec2(center.x + hw, center.y + hw), IM_COL32(255, 255, 255, 230), 1.2f);
+					tbdl->AddLine(ImVec2(center.x - hw, center.y + hw), ImVec2(center.x + hw, center.y - hw), IM_COL32(255, 255, 255, 230), 1.2f);
+				}
+			}
+		}
+		ImGui::End();
+		ImGui::PopStyleColor(2);
+		ImGui::PopStyleVar(4);
+	}
+
+	enum class WindowControlAction {
+		None,
+		Dock,
+		Minimize,
+		Close
+	};
+
+	auto RenderFantasyWindowControls = [](const char* prefix, bool allow_minimize = false, bool is_minimized = false, const char* dock_tooltip = "Change Position", bool allow_dock = true) -> WindowControlAction {
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		const float radius = 5.0f;
+		const float btn_size = 13.0f;
+		const float spacing = 4.0f;
+		
+		WindowControlAction action = WindowControlAction::None;
+
+		int count = (allow_dock ? 1 : 0) + (allow_minimize ? 1 : 0) + 1;
+		float total_w = count * btn_size + (count - 1) * spacing;
+		float win_w = ImGui::GetWindowWidth();
+		float start_x = std::max(10.0f, win_w - total_w - 6.0f);
+		ImGui::SameLine(start_x);
+
+		// 1. Emerald / Rune Green Anchor Dot (Move)
+		if (allow_dock) {
+			ImVec2 pos = ImGui::GetCursorScreenPos();
+			ImGui::InvisibleButton(wxString::Format("##%s_dock", prefix).c_str(), ImVec2(btn_size, btn_size));
+			bool hovered = ImGui::IsItemHovered();
+			bool active = ImGui::IsItemActive();
+			if (ImGui::IsItemClicked()) action = WindowControlAction::Dock;
+			if (hovered && dock_tooltip) ImGui::SetTooltip("%s", dock_tooltip);
+
+			ImVec2 center(pos.x + btn_size * 0.5f, pos.y + btn_size * 0.5f);
+			ImU32 col = active ? IM_COL32(30, 160, 90, 255) : (hovered ? IM_COL32(55, 215, 130, 255) : IM_COL32(40, 180, 100, 220));
+			draw_list->AddCircleFilled(center, radius, col, 16);
+			draw_list->AddCircle(center, radius, IM_COL32(200, 255, 220, hovered ? 220 : 100), 16, 1.0f);
+			if (hovered) {
+				draw_list->AddCircleFilled(center, radius * 0.45f, IM_COL32(255, 255, 255, 230), 8);
+			}
+		}
+
+		// 2. Amber / Topaz Gold Minimize Dot (if allowed)
+		if (allow_minimize) {
+			if (allow_dock) ImGui::SameLine(0.0f, spacing);
+			ImVec2 pos = ImGui::GetCursorScreenPos();
+			ImGui::InvisibleButton(wxString::Format("##%s_min", prefix).c_str(), ImVec2(btn_size, btn_size));
+			bool hovered = ImGui::IsItemHovered();
+			bool active = ImGui::IsItemActive();
+			if (ImGui::IsItemClicked()) action = WindowControlAction::Minimize;
+			if (hovered) ImGui::SetTooltip(is_minimized ? "Expand Palette" : "Collapse Palette");
+
+			ImVec2 center(pos.x + btn_size * 0.5f, pos.y + btn_size * 0.5f);
+			ImU32 col = active ? IM_COL32(200, 140, 20, 255) : (hovered ? IM_COL32(255, 205, 55, 255) : IM_COL32(230, 170, 35, 220));
+			draw_list->AddCircleFilled(center, radius, col, 16);
+			draw_list->AddCircle(center, radius, IM_COL32(255, 245, 190, hovered ? 220 : 100), 16, 1.0f);
+			if (hovered || is_minimized) {
+				float hw = radius * 0.55f;
+				draw_list->AddLine(ImVec2(center.x - hw, center.y), ImVec2(center.x + hw, center.y), IM_COL32(255, 255, 255, 230), 1.2f);
+				if (is_minimized) {
+					draw_list->AddLine(ImVec2(center.x, center.y - hw), ImVec2(center.x, center.y + hw), IM_COL32(255, 255, 255, 230), 1.2f);
+				}
+			}
+		}
+
+		// 3. Ruby / Dragon Red Close Dot
+		{
+			if (allow_dock || allow_minimize) ImGui::SameLine(0.0f, spacing);
+			ImVec2 pos = ImGui::GetCursorScreenPos();
+			ImGui::InvisibleButton(wxString::Format("##%s_close", prefix).c_str(), ImVec2(btn_size, btn_size));
+			bool hovered = ImGui::IsItemHovered();
+			bool active = ImGui::IsItemActive();
+			if (ImGui::IsItemClicked()) action = WindowControlAction::Close;
+			if (hovered) ImGui::SetTooltip("Close");
+
+			ImVec2 center(pos.x + btn_size * 0.5f, pos.y + btn_size * 0.5f);
+			ImU32 col = active ? IM_COL32(190, 40, 40, 255) : (hovered ? IM_COL32(255, 80, 80, 255) : IM_COL32(220, 60, 60, 220));
+			draw_list->AddCircleFilled(center, radius, col, 16);
+			draw_list->AddCircle(center, radius, IM_COL32(255, 210, 210, hovered ? 220 : 100), 16, 1.0f);
+			if (hovered) {
+				float hw = radius * 0.45f;
+				draw_list->AddLine(ImVec2(center.x - hw, center.y - hw), ImVec2(center.x + hw, center.y + hw), IM_COL32(255, 255, 255, 230), 1.2f);
+				draw_list->AddLine(ImVec2(center.x - hw, center.y + hw), ImVec2(center.x + hw, center.y - hw), IM_COL32(255, 255, 255, 230), 1.2f);
+			}
+		}
+
+		return action;
+	};
+
+	// macOS Canvas Floating / Docked Tileset Palette in filigree fantasy look
+	static bool pal_minimized = false;
+	static int last_applied_dock_side = -1;
+	const bool tb_active = g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES);
+	const int tb_dock = std::clamp(g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION), 0, 1);
+	const float pal_width = 310.0f;
+
+	if (g_settings.getBoolean(Config::SHOW_PALETTE)) {
+		const int pal_dock = std::clamp(g_settings.getInteger(Config::PALETTE_DOCK_SIDE), 0, 1);
+		const float pal_top = (tb_active && tb_dock == 0) ? 48.0f : 10.0f;
+		const float pal_bottom_margin = (tb_active && tb_dock == 1) ? 52.0f : 10.0f;
+		const float pal_h = std::clamp(io.DisplaySize.y - pal_top - pal_bottom_margin, 260.0f, 900.0f);
+
+		ImVec2 pal_pos = (pal_dock == 0)
+			? ImVec2(8.0f, pal_top)
+			: ImVec2(io.DisplaySize.x - pal_width - 8.0f, pal_top);
+
+		if (pal_minimized) {
+			ImGui::SetNextWindowSize(ImVec2(240.0f, 32.0f), ImGuiCond_Always);
+		} else {
+			ImGui::SetNextWindowSize(ImVec2(pal_width, pal_h), ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSizeConstraints(ImVec2(240.0f, 200.0f), ImVec2(500.0f, std::max(200.0f, io.DisplaySize.y - 35.0f)));
+		}
+
+		if (pal_dock != last_applied_dock_side) {
+			ImGui::SetNextWindowPos(pal_pos, ImGuiCond_Always);
+			last_applied_dock_side = pal_dock;
+		} else {
+			ImGui::SetNextWindowPos(pal_pos, ImGuiCond_FirstUseEver);
+		}
+
+		ImGui::SetNextWindowBgAlpha(0.88f);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 4.0f));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.07f, 0.11f, 0.90f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.55f, 0.45f, 0.25f, 0.65f));
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.18f, 0.23f, 0.35f, 0.85f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.25f, 0.35f, 0.55f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.30f, 0.45f, 0.70f, 1.00f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.10f, 0.13f, 0.20f, 0.85f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.16f, 0.20f, 0.30f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.22f, 0.28f, 0.40f, 1.00f));
+		ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.10f, 0.13f, 0.20f, 0.85f));
+		ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.25f, 0.35f, 0.55f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_TabActive, ImVec4(0.20f, 0.30f, 0.48f, 1.00f));
+
+		ImGuiWindowFlags pal_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
+		if (pal_minimized) pal_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
+		bool pal_open = true;
+
+		if (ImGui::Begin("##CanvasPaletteFiligree", &pal_open, pal_flags)) {
+			// Magnetic side snapping to left and right canvas edge:
+			ImVec2 pal_curr_pos = ImGui::GetWindowPos();
+			ImVec2 pal_curr_sz = ImGui::GetWindowSize();
+			const float snapThreshold = 35.0f;
+			const float snapMargin = 8.0f;
+			if (pal_curr_pos.x < snapThreshold) {
+				if (!ImGui::IsMouseDown(0)) {
+					ImGui::SetWindowPos(ImVec2(snapMargin, pal_curr_pos.y), ImGuiCond_Always);
+					g_settings.setInteger(Config::PALETTE_DOCK_SIDE, 0);
+				} else {
+					ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(5.0f, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
+				}
+			} else if (io.DisplaySize.x - (pal_curr_pos.x + pal_curr_sz.x) < snapThreshold) {
+				if (!ImGui::IsMouseDown(0)) {
+					ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - pal_curr_sz.x - snapMargin, pal_curr_pos.y), ImGuiCond_Always);
+					g_settings.setInteger(Config::PALETTE_DOCK_SIDE, 1);
+				} else {
+					ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(io.DisplaySize.x - 5.0f, 0), ImVec2(io.DisplaySize.x, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
+				}
+			}
+
+			// Header Title & Fantasy Gem Controls (Amber Minimize, Red Close)
+			ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "Tileset Palette");
+
+			WindowControlAction ctrl_act = RenderFantasyWindowControls("pal", true, pal_minimized, "Change Position", false);
+			if (ctrl_act == WindowControlAction::Minimize) {
+				pal_minimized = !pal_minimized;
+			} else if (ctrl_act == WindowControlAction::Close) {
+				g_settings.setInteger(Config::SHOW_PALETTE, 0);
+				if (g_gui.root) g_gui.root->UpdateMenubar();
+			}
+
+			if (!pal_minimized) {
+				ImGui::Separator();
+
+				// Category Switcher (Favorites first, then classic order)
+				static int current_cat_idx = 1; // Default to Terrain
+				static int last_seen_cat_idx = -1;
+				const char* categories[] = {
+					"Favorites", "Terrain", "Doodads", "Items", "RAW", "Creatures", "Houses", "Waypoints", "Prefabs"
+				};
+				const TilesetCategoryType cat_types[] = {
+					TILESET_FAVORITE, TILESET_TERRAIN, TILESET_DOODAD, TILESET_ITEM, TILESET_RAW, TILESET_CREATURE, TILESET_HOUSE, TILESET_WAYPOINT, TILESET_PREFAB
+				};
+
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::Combo("##PalCategory", &current_cat_idx, categories, IM_ARRAYSIZE(categories));
+
+				TilesetCategoryType active_cat_type = cat_types[current_cat_idx];
+
+				// Subcategory / Tileset Selector exactly matching classic palette (NO "All Tilesets")
+				std::vector<std::pair<std::string, const TilesetCategory*>> available_tilesets;
+
+				if (active_cat_type == TILESET_FAVORITE) {
+					Tileset* favs = nullptr;
+					auto fit = g_materials.tilesets.find("Favorites");
+					if (fit != g_materials.tilesets.end()) favs = fit->second;
+
+					if (favs) {
+						struct FavCatDef {
+							TilesetCategoryType type;
+							const char* name;
+						} fav_subcats[] = {
+							{ TILESET_FAVORITE, "All Favorites" },
+							{ TILESET_TERRAIN, "Terrain" },
+							{ TILESET_DOODAD, "Doodads" },
+							{ TILESET_ITEM, "Items" },
+							{ TILESET_CREATURE, "Monsters" },
+							{ TILESET_NPC, "NPCs" }
+						};
+						for (const auto& sc : fav_subcats) {
+							if (const TilesetCategory* tcg = favs->getCategory(sc.type)) {
+								if (tcg->size() > 0 || sc.type == TILESET_FAVORITE) {
+									available_tilesets.push_back({sc.name, tcg});
+								}
+							}
+						}
+					}
+
+					auto hfit = g_materials.tilesets.find("Host-Favorites");
+					if (hfit != g_materials.tilesets.end() && hfit->second) {
+						if (const TilesetCategory* htcg = hfit->second->getCategory(TILESET_FAVORITE)) {
+							if (htcg->size() > 0) {
+								available_tilesets.push_back({"Host-Favorites (All)", htcg});
+							}
+						}
+					}
+				} else {
+					std::vector<Tileset*> sorted_tilesets;
+					for (auto& pair : g_materials.tilesets) {
+						if (!pair.second) continue;
+						if (pair.second->name == "Favorites" || pair.second->name == "Host-Favorites") continue;
+						sorted_tilesets.push_back(pair.second);
+					}
+
+					auto getTilesetRank = [](const std::string& name) -> int {
+						if (name == "Nature") return 0;
+						if (name == "City Grounds") return 1;
+						return 10;
+					};
+
+					std::sort(sorted_tilesets.begin(), sorted_tilesets.end(), [&getTilesetRank](Tileset* a, Tileset* b) {
+						if (!a && !b) return false;
+						if (!a) return false;
+						if (!b) return true;
+						int rankA = getTilesetRank(a->name);
+						int rankB = getTilesetRank(b->name);
+						if (rankA != rankB) return rankA < rankB;
+						return a->name < b->name;
+					});
+
+					for (Tileset* ts : sorted_tilesets) {
+						if (const TilesetCategory* cat = ts->getCategory(active_cat_type)) {
+							if (cat->size() > 0) {
+								available_tilesets.push_back({ts->name, cat});
+							}
+						}
+					}
+				}
+
+				static int selected_tileset_idx = 0;
+				if (current_cat_idx != last_seen_cat_idx) {
+					selected_tileset_idx = 0;
+					last_seen_cat_idx = current_cat_idx;
+				}
+				if (selected_tileset_idx >= (int)available_tilesets.size()) {
+					selected_tileset_idx = 0;
+				}
+
+				std::vector<const char*> tileset_names;
+				for (const auto& entry : available_tilesets) {
+					tileset_names.push_back(entry.first.c_str());
+				}
+
+				if (!tileset_names.empty()) {
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					ImGui::Combo("##PalTileset", &selected_tileset_idx, tileset_names.data(), (int)tileset_names.size());
+				}
+
+				// Search Box with complete keyboard input support
+				static char search_buf[128] = "";
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::InputTextWithHint("##PalSearch", "Search by name or ID...", search_buf, sizeof(search_buf));
+
+				std::string search_str = search_buf;
+				for (auto& c : search_str) c = (char)tolower(c);
+
+				// Scrollable Brush Grid / List with Collapsible Section Headers and Large Perspective Previews
+				ImGui::BeginChild("##PalBrushList", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+				if (!available_tilesets.empty() && (size_t)selected_tileset_idx < available_tilesets.size()) {
+					const auto& brushlist = available_tilesets[selected_tileset_idx].second->brushlist;
+
+					bool current_section_collapsed = false;
+					std::vector<Brush*> section_brushes;
+					SeparatorBrush* current_sep = nullptr;
+
+					// Composite texture cache for mountain assets, large doodads, roofs, walls, and items
+					static std::unordered_map<uint32_t, GLuint> s_brush_composite_cache;
+
+					auto get_brush_preview_tex = [](Brush* b) -> GLuint {
+						if (!b) return 0;
+						if (b->isCreature()) {
+							CreatureBrush* cb = b->asCreature();
+							CreatureType* ct = cb ? cb->getType() : nullptr;
+							if (ct) {
+								GameSprite* spr = g_gui.gfx.getCreatureSprite(ct->outfit.lookType);
+								if (spr) {
+									return spr->getHardwareID(0, 0, 2, ct->outfit.lookAddon, 0, ct->outfit, 0);
+								}
+							}
+							return 0;
+						}
+
+						int look_id = b->getLookID();
+						if (look_id == 0 && b->isWall()) {
+							WallBrush* wb = b->asWall();
+							look_id = wb->getWallItem(WALL_HORIZONTAL);
+							if (look_id == 0) look_id = wb->getWallItem(WALL_VERTICAL);
+						}
+
+						if (look_id > 0) {
+							auto it = s_brush_composite_cache.find((uint32_t)look_id);
+							if (it != s_brush_composite_cache.end()) {
+								return it->second;
+							}
+
+							GameSprite* gspr = nullptr;
+							if (g_items.typeExists(look_id)) {
+								gspr = g_items[look_id].sprite ? g_items[look_id].sprite : dynamic_cast<GameSprite*>(g_gui.gfx.getSprite(g_items[look_id].clientID));
+							} else {
+								gspr = dynamic_cast<GameSprite*>(g_gui.gfx.getSprite(look_id));
+							}
+
+							if (gspr) {
+								wxBitmap* bmp = gspr->getBitmap(SPRITE_SIZE_32x32, false);
+								if (bmp && bmp->IsOk()) {
+									GLuint tex = ConvertBitmapToTexture(*bmp);
+									if (tex != 0) {
+										s_brush_composite_cache[(uint32_t)look_id] = tex;
+										return tex;
+									}
+								}
+								GLuint tex = gspr->getHardwareID(0, 0, 0, -1, 0, 0, 0, 0);
+								if (tex != 0) {
+									s_brush_composite_cache[(uint32_t)look_id] = tex;
+									return tex;
+								}
+							}
+						}
+						return 0;
+					};
+
+					auto flush_section_tiles = [&](const std::vector<Brush*>& brushes) {
+						if (brushes.empty()) return;
+						float avail_w = ImGui::GetContentRegionAvail().x;
+						float btn_dim = 48.0f;
+						float btn_spacing = 4.0f;
+						int cols = std::max(1, (int)((avail_w + btn_spacing) / (btn_dim + btn_spacing)));
+
+						Brush* cur_active_brush = g_gui.GetCurrentBrush();
+
+						for (size_t i = 0; i < brushes.size(); ++i) {
+							Brush* b = brushes[i];
+							if (!b || b->isSeparator()) continue;
+
+							ImGui::PushID(b);
+
+							bool is_sel = (cur_active_brush == b);
+							if (is_sel) {
+								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.45f, 0.85f, 0.95f));
+								ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.95f, 0.80f, 0.30f, 1.0f));
+								ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f);
+							} else {
+								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.13f, 0.20f, 0.80f));
+								ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.35f, 0.38f, 0.48f, 0.50f));
+								ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+							}
+
+							GLuint spr_tex = get_brush_preview_tex(b);
+
+							if (spr_tex != 0) {
+								if (ImGui::ImageButton("##tile_btn", (ImTextureID)(intptr_t)spr_tex, ImVec2(btn_dim - 6.0f, btn_dim - 6.0f))) {
+									g_gui.SelectBrush(b, active_cat_type);
+									g_gui.SelectBrushInternal(b);
+								}
+							} else {
+								std::string short_label = b->getName().substr(0, std::min<size_t>(4, b->getName().size()));
+								if (ImGui::Button(short_label.c_str(), ImVec2(btn_dim, btn_dim))) {
+									g_gui.SelectBrush(b, active_cat_type);
+									g_gui.SelectBrushInternal(b);
+								}
+							}
+
+							ImGui::PopStyleVar();
+							ImGui::PopStyleColor(2);
+
+							if (ImGui::IsItemHovered()) {
+								ImGui::SetTooltip("%s (ID: %d)", b->getName().c_str(), b->getLookID());
+							}
+
+							if ((i + 1) % cols != 0 && (i + 1) < brushes.size()) {
+								ImGui::SameLine();
+							}
+
+							ImGui::PopID();
+						}
+					};
+
+					if (!search_str.empty()) {
+						bool any_found = false;
+						for (const auto& ts_entry : available_tilesets) {
+							std::vector<Brush*> matched;
+							for (Brush* b : ts_entry.second->brushlist) {
+								if (!b || b->isSeparator()) continue;
+								std::string bname = b->getName();
+								for (auto& c : bname) c = (char)tolower(c);
+								std::string id_str = std::to_string(b->getLookID());
+								if (bname.find(search_str) != std::string::npos || id_str.find(search_str) != std::string::npos) {
+									matched.push_back(b);
+								}
+							}
+							if (!matched.empty()) {
+								any_found = true;
+								ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "v %s", ts_entry.first.c_str());
+								flush_section_tiles(matched);
+							}
+						}
+						if (!any_found) {
+							ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.7f, 0.8f), "No matching tiles found in this category.");
+						}
+					} else {
+						for (Brush* b : brushlist) {
+							if (!b) continue;
+							if (b->isSeparator()) {
+								if (!current_section_collapsed && !section_brushes.empty()) {
+									flush_section_tiles(section_brushes);
+									section_brushes.clear();
+								} else {
+									section_brushes.clear();
+								}
+
+								current_sep = b->asSeparator();
+								current_section_collapsed = current_sep ? current_sep->isCollapsed() : false;
+
+								std::string header_label = (current_sep && !current_sep->getName().empty()) ? current_sep->getName() : "Section";
+								std::string arrow = current_section_collapsed ? "> " : "v ";
+								std::string full_title = arrow + header_label;
+
+								ImGui::PushID(b);
+								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12f, 0.16f, 0.24f, 0.80f));
+								ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.28f, 0.42f, 0.95f));
+								ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.82f, 0.35f, 1.0f));
+								ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
+
+								if (ImGui::Button(full_title.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 22.0f))) {
+									if (current_sep) {
+										current_sep->toggleCollapsed();
+									}
+								}
+
+								ImGui::PopStyleVar();
+								ImGui::PopStyleColor(3);
+								ImGui::PopID();
+							} else {
+								if (!current_section_collapsed) {
+									section_brushes.push_back(b);
+								}
+							}
+						}
+						if (!current_section_collapsed && !section_brushes.empty()) {
+							flush_section_tiles(section_brushes);
+						}
+					}
+				}
+				ImGui::EndChild();
+			}
+		}
+		ImGui::End();
+
+		ImGui::PopStyleColor(11);
+		ImGui::PopStyleVar(4);
+	}
+
 	if (ui_toolbar && ui_toolbar->isVisible() && drawer->GetNanoVGContext()) {
 		nvgBeginFrame(drawer->GetNanoVGContext(), (float)w, (float)h, (float)GetContentScaleFactor());
 		ui_toolbar->render(drawer->GetNanoVGContext());
 		nvgEndFrame(drawer->GetNanoVGContext());
 	}
 
-	// Movable minimap window
-	if (g_settings.getBoolean(Config::MINIMAP_VISIBLE) && g_settings.getInteger(Config::MINIMAP_DOCK_STYLE) == 0) {
-		bool minimap_open = true;
+	// macOS-Style Floating / Docked Minimap Panel with Magnetic Snapping & Fantasy Look
+	static bool mm_minimized = false;
+	static int mm_last_applied_dock_corner = -1;
 
+	if (g_settings.getBoolean(Config::MINIMAP_VISIBLE)) {
 		UpdateMinimapTexture();
-		ImGui::SetNextWindowSize(ImVec2(200.0f, 260.0f), ImGuiCond_Always);
-		ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 210.0f, 10.0f), ImGuiCond_Always);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 5.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 4.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImVec4(10.0f / 255.0f, 15.0f / 255.0f, 25.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(180.0f / 255.0f, 140.0f / 255.0f, 50.0f / 255.0f, 1.0f));
-		ImGuiWindowFlags minimap_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
-		const bool minimap_visible = ImGui::Begin("Minimap", &minimap_open, minimap_flags);
-		if (!minimap_open) {
-			g_settings.setInteger(Config::MINIMAP_VISIBLE, 0);
-			g_gui.RefreshPalettes();
-			g_gui.UpdateMenus();
+
+		const int minimap_corner = std::clamp(g_settings.getInteger(Config::MINIMAP_CORNER), 0, 3);
+		const float margin = 10.0f;
+		const float mm_top_y = (tb_active && tb_dock == 0) ? 48.0f : margin;
+		const float mm_bot_y = (tb_active && tb_dock == 1) ? (io.DisplaySize.y - 50.0f) : (io.DisplaySize.y - margin);
+
+		ImVec2 mm_anchor;
+		ImVec2 mm_pivot(0.0f, 0.0f);
+
+		if (minimap_corner == 0) { // Top-Right
+			mm_anchor = ImVec2(io.DisplaySize.x - 176.0f - margin, mm_top_y);
+		} else if (minimap_corner == 1) { // Top-Left
+			mm_anchor = ImVec2(margin, mm_top_y);
+		} else if (minimap_corner == 2) { // Bottom-Right
+			mm_anchor = ImVec2(io.DisplaySize.x - 176.0f - margin, mm_bot_y - (mm_minimized ? 32.0f : 218.0f));
+		} else { // Bottom-Left (3)
+			mm_anchor = ImVec2(margin, mm_bot_y - (mm_minimized ? 32.0f : 218.0f));
 		}
 
-		if (minimap_visible && minimap_tex_id != 0) {
-			ImVec2 avail = ImVec2(180.0f, 180.0f);
+		if (minimap_corner != mm_last_applied_dock_corner) {
+			ImGui::SetNextWindowPos(mm_anchor, ImGuiCond_Always);
+			mm_last_applied_dock_corner = minimap_corner;
+		} else {
+			ImGui::SetNextWindowPos(mm_anchor, ImGuiCond_FirstUseEver);
+		}
 
-			ImVec2 pos = ImGui::GetCursorScreenPos();
-			ImGui::Image((void*)(intptr_t)minimap_tex_id, avail);
+		ImGui::SetNextWindowSize(mm_minimized ? ImVec2(176.0f, 32.0f) : ImVec2(176.0f, 218.0f), ImGuiCond_Always);
+		ImGui::SetNextWindowBgAlpha(0.88f);
 
-			// Draw compass, zoom, and floor overlay buttons on top of the minimap image
-			int center_map_x, center_map_y;
-			GetScreenCenter(&center_map_x, &center_map_y);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 6.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 4.0f));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.07f, 0.11f, 0.90f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.55f, 0.45f, 0.25f, 0.65f));
 
-			auto draw_button = [&](ImVec2 b_pos, const char* label, std::function<void()> action) {
-				ImGui::SetCursorScreenPos(b_pos);
-				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(20.0f/255.0f, 22.0f/255.0f, 28.0f/255.0f, 0.85f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(180.0f/255.0f, 140.0f/255.0f, 50.0f/255.0f, 0.85f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(180.0f/255.0f, 140.0f/255.0f, 50.0f/255.0f, 1.0f));
-				ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(180.0f/255.0f, 140.0f/255.0f, 50.0f/255.0f, 0.85f));
-				ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+		ImGuiWindowFlags mm_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
+		if (mm_minimized) mm_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
 
-				if (ImGui::Button(label, ImVec2(20, 20))) {
-					action();
-					last_minimap_update_time = 0;
-					Refresh();
-				}
+		bool mm_open = true;
+		if (ImGui::Begin("##CanvasMacOSMinimapFiligree", &mm_open, mm_flags)) {
+			// Magnetic Edge Snapping for Minimap (all 4 edges)
+			ImVec2 mm_curr_pos = ImGui::GetWindowPos();
+			ImVec2 mm_curr_sz = ImGui::GetWindowSize();
+			const float snapThreshold = 35.0f;
+			const float snapMargin = 8.0f;
 
-				ImGui::PopStyleVar(2);
-				ImGui::PopStyleColor(4);
-			};
+			bool near_left = (mm_curr_pos.x < snapThreshold);
+			bool near_right = (io.DisplaySize.x - (mm_curr_pos.x + mm_curr_sz.x) < snapThreshold);
+			bool near_top = (mm_curr_pos.y < snapThreshold);
+			bool near_bottom = (io.DisplaySize.y - (mm_curr_pos.y + mm_curr_sz.y) < snapThreshold);
 
-			// North
-			draw_button(ImVec2(pos.x + 90 - 10, pos.y + 4), "N", [&](){
-				g_gui.SetScreenCenterPosition(Position(center_map_x, center_map_y - 10, floor));
-			});
-			// South
-			draw_button(ImVec2(pos.x + 90 - 10, pos.y + 180 - 24), "S", [&](){
-				g_gui.SetScreenCenterPosition(Position(center_map_x, center_map_y + 10, floor));
-			});
-			// West
-			draw_button(ImVec2(pos.x + 4, pos.y + 90 - 10), "W", [&](){
-				g_gui.SetScreenCenterPosition(Position(center_map_x - 10, center_map_y, floor));
-			});
-			// East
-			draw_button(ImVec2(pos.x + 180 - 24, pos.y + 90 - 10), "E", [&](){
-				g_gui.SetScreenCenterPosition(Position(center_map_x + 10, center_map_y, floor));
-			});
-
-			// Zoom In (+)
-			draw_button(ImVec2(pos.x + 180 - 46, pos.y + 180 - 24), "+", [&](){
-				minimap_zoom /= 1.2f;
-				float max_zoom = std::max(4.0f, (float)std::max(editor.map.getWidth(), editor.map.getHeight()) / 180.0f);
-				minimap_zoom = std::clamp(minimap_zoom, 0.25f, max_zoom);
-				minimap_span_w = (int)(180.0f * minimap_zoom);
-				minimap_span_h = (int)(180.0f * minimap_zoom);
-			});
-			// Zoom Out (-)
-			draw_button(ImVec2(pos.x + 180 - 24, pos.y + 180 - 24), "-", [&](){
-				minimap_zoom *= 1.2f;
-				float max_zoom = std::max(4.0f, (float)std::max(editor.map.getWidth(), editor.map.getHeight()) / 180.0f);
-				minimap_zoom = std::clamp(minimap_zoom, 0.25f, max_zoom);
-				minimap_span_w = (int)(180.0f * minimap_zoom);
-				minimap_span_h = (int)(180.0f * minimap_zoom);
-			});
-
-			// Floor Up (U)
-			draw_button(ImVec2(pos.x + 4, pos.y + 180 - 46), "U", [&](){
-				if (floor > 0) {
-					floor--;
-				}
-			});
-			// Floor Down (D)
-			draw_button(ImVec2(pos.x + 4, pos.y + 180 - 24), "D", [&](){
-				if (floor < 15) {
-					floor++;
-				}
-			});
-
-			// Reset cursor position below minimap image for coordinates/controls
-			ImGui::SetCursorScreenPos(ImVec2(pos.x, pos.y + 184));
-			ImGui::Text("X: %d Y: %d Z: %d", center_map_x, center_map_y, floor);
-
-			// Handle mouse click and drag to reposition viewport on the main minimap area
-			ImGui::SetCursorScreenPos(pos);
-			ImGui::Dummy(avail);
-			if (ImGui::IsItemHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-				ImVec2 mouse_pos = ImGui::GetMousePos();
-				float rel_x = (mouse_pos.x - pos.x) / avail.x;
-				float rel_y = (mouse_pos.y - pos.y) / avail.y;
-				rel_x = std::clamp(rel_x, 0.0f, 1.0f);
-				rel_y = std::clamp(rel_y, 0.0f, 1.0f);
-				int click_map_x = minimap_start_x + (int)(rel_x * (float)std::max(1, minimap_span_w - 1));
-				int click_map_y = minimap_start_y + (int)(rel_y * (float)std::max(1, minimap_span_h - 1));
-				g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, floor));
-				last_minimap_update_time = 0; // immediate update
-				Refresh();
-			}
-
-			// Handle mouse wheel zoom
-			if (ImGui::IsItemHovered()) {
-				float wheel = ImGui::GetIO().MouseWheel;
-				if (wheel != 0.0f) {
-					if (wheel > 0.0f) minimap_zoom /= 1.2f;
-					else minimap_zoom *= 1.2f;
-					float max_zoom = std::max(4.0f, (float)std::max(editor.map.getWidth(), editor.map.getHeight()) / 180.0f);
-					minimap_zoom = std::clamp(minimap_zoom, 0.25f, max_zoom);
-					minimap_span_w = (int)(180.0f * minimap_zoom);
-					minimap_span_h = (int)(180.0f * minimap_zoom);
-					last_minimap_update_time = 0;
-					Refresh();
+			if (near_left || near_right || near_top || near_bottom) {
+				if (ImGui::IsMouseDown(0)) {
+					// Visual glowing snapping guide line
+					if (near_left) ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(4.0f, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
+					if (near_right) ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(io.DisplaySize.x - 4.0f, 0), ImVec2(io.DisplaySize.x, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
+					if (near_top) ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(io.DisplaySize.x, 4.0f), IM_COL32(80, 200, 255, 180));
+					if (near_bottom) ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, io.DisplaySize.y - 4.0f), ImVec2(io.DisplaySize.x, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
+				} else {
+					// Magnetic Snap on release
+					float target_x = mm_curr_pos.x;
+					float target_y = mm_curr_pos.y;
+					if (near_left) target_x = snapMargin;
+					if (near_right) target_x = io.DisplaySize.x - mm_curr_sz.x - snapMargin;
+					if (near_top) target_y = snapMargin;
+					if (near_bottom) target_y = io.DisplaySize.y - mm_curr_sz.y - snapMargin;
+					ImGui::SetWindowPos(ImVec2(target_x, target_y), ImGuiCond_Always);
 				}
 			}
 
-			if (g_settings.getInteger(Config::MINIMAP_VIEW_BOX)) {
-				int screensize_x, screensize_y;
-				int view_scroll_x, view_scroll_y;
-				GetViewBox(&view_scroll_x, &view_scroll_y, &screensize_x, &screensize_y);
+			// Header with Title & Fantasy Gem Controls (without Change Position button)
+			ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "Minimap");
 
-				int tile_size = int(TileSize / GetZoom());
-				int floor_offset = (floor > GROUND_LAYER ? 0 : (GROUND_LAYER - floor));
-
-				int view_start_x = view_scroll_x / TileSize + floor_offset;
-				int view_start_y = view_scroll_y / TileSize + floor_offset;
-				int view_end_x = view_start_x + screensize_x / tile_size + 1;
-				int view_end_y = view_start_y + screensize_y / tile_size + 1;
-
-				const float sx = avail.x / (float)std::max(1, minimap_span_w);
-				const float sy = avail.y / (float)std::max(1, minimap_span_h);
-				float p_start_x = pos.x + (view_start_x - minimap_start_x) * sx;
-				float p_start_y = pos.y + (view_start_y - minimap_start_y) * sy;
-				float p_end_x = pos.x + (view_end_x - minimap_start_x) * sx;
-				float p_end_y = pos.y + (view_end_y - minimap_start_y) * sy;
-
-				p_start_x = std::max(p_start_x, pos.x);
-				p_start_y = std::max(p_start_y, pos.y);
-				p_end_x = std::min(p_end_x, pos.x + avail.x);
-				p_end_y = std::min(p_end_y, pos.y + avail.y);
-
-				if (p_start_x < p_end_x && p_start_y < p_end_y) {
-					ImDrawList* draw_list = ImGui::GetWindowDrawList();
-					draw_list->AddRect(ImVec2(p_start_x, p_start_y), ImVec2(p_end_x, p_end_y), IM_COL32(255, 255, 255, 255), 0.0f, 0, 1.5f);
-				}
+			WindowControlAction mm_act = RenderFantasyWindowControls("mm", true, mm_minimized, "Change Position", false);
+			if (mm_act == WindowControlAction::Minimize) {
+				mm_minimized = !mm_minimized;
+			} else if (mm_act == WindowControlAction::Close) {
+				g_settings.setInteger(Config::MINIMAP_VISIBLE, 0);
+				if (g_gui.root) g_gui.root->UpdateMenubar();
 			}
 
-			// Jump to Town dropdown
-			ImGui::SetNextItemWidth(180.0f);
-			if (ImGui::BeginCombo("##JumpTown", "Go to...")) {
-				// Map Center option
-				if (ImGui::Selectable("Map Center")) {
-					int map_w = editor.map.getWidth();
-					int map_h = editor.map.getHeight();
-					g_gui.SetScreenCenterPosition(Position(map_w / 2, map_h / 2, floor));
-					last_minimap_update_time = 0;
-					Refresh();
+			if (!mm_minimized) {
+				ImGui::Separator();
+
+				// "Go to..." Dropdown (Map Center and Towns)
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+				if (ImGui::BeginCombo("##MMGotoCombo", "Go to...", ImGuiComboFlags_HeightRegular)) {
+					if (ImGui::Selectable("Map Center")) {
+						int map_w = editor.map.getWidth();
+						int map_h = editor.map.getHeight();
+						g_gui.SetScreenCenterPosition(Position(map_w / 2, map_h / 2, floor), false);
+						last_minimap_update_time = 0;
+						Refresh(false);
+					}
+					const Towns& towns = editor.map.towns;
+					for (auto it = towns.begin(); it != towns.end(); ++it) {
+						Town* town = it->second;
+						if (town && !town->getName().empty()) {
+							if (ImGui::Selectable(town->getName().c_str())) {
+								g_gui.SetScreenCenterPosition(town->getTemplePosition(), false);
+								last_minimap_update_time = 0;
+								Refresh(false);
+							}
+						}
+					}
+					ImGui::EndCombo();
 				}
 
-				// Towns
-				const Towns& towns = editor.map.towns;
-				for (TownMap::const_iterator it = towns.begin(); it != towns.end(); ++it) {
-					Town* town = it->second;
-					if (town && !town->getName().empty()) {
-						if (ImGui::Selectable(town->getName().c_str())) {
-							g_gui.SetScreenCenterPosition(town->getTemplePosition());
+				if (minimap_tex_id != 0) {
+					float avail_w = ImGui::GetContentRegionAvail().x;
+					float mm_dim = (avail_w > 80.0f) ? avail_w : 160.0f;
+					ImVec2 img_sz = ImVec2(mm_dim, mm_dim);
+					ImVec2 pos = ImGui::GetCursorScreenPos();
+
+					// Capture clicks/drags specifically so the window itself DOES NOT move when clicking the map!
+					ImGui::InvisibleButton("##minimap_viewport_click", img_sz);
+					bool mm_hovered = ImGui::IsItemHovered();
+					bool mm_active = ImGui::IsItemActive();
+
+					// Draw Minimap Texture
+					ImDrawList* dl = ImGui::GetWindowDrawList();
+					dl->AddImage((ImTextureID)(intptr_t)minimap_tex_id, pos, ImVec2(pos.x + img_sz.x, pos.y + img_sz.y));
+
+					// Mouse wheel zoom directly on the minimap (smooth minimap scale)
+					if (mm_hovered) {
+						if (io.MouseWheel != 0.0f) {
+							float cur_mzoom = minimap_zoom;
+							if (io.MouseWheel > 0.0f) {
+								cur_mzoom /= 1.25f;
+							} else {
+								cur_mzoom *= 1.25f;
+							}
+							float max_mzoom = std::max(4.0f, (float)std::max(editor.map.getWidth(), editor.map.getHeight()) / 180.0f);
+							minimap_zoom = std::clamp(cur_mzoom, 0.20f, max_mzoom);
+							minimap_span_w = (int)(180.0f * minimap_zoom);
+							minimap_span_h = (int)(180.0f * minimap_zoom);
 							last_minimap_update_time = 0;
-							Refresh();
+							UpdateMinimapTexture();
+							Refresh(false);
+						}
+					}
+
+					// Panning via click/drag on minimap (accurate map coordinates)
+					if (mm_active || (mm_hovered && ImGui::IsMouseDown(0))) {
+						ImVec2 mouse_pos = ImGui::GetMousePos();
+						float rel_x = std::clamp((mouse_pos.x - pos.x) / img_sz.x, 0.0f, 1.0f);
+						float rel_y = std::clamp((mouse_pos.y - pos.y) / img_sz.y, 0.0f, 1.0f);
+						int map_w = std::max(1, editor.map.getWidth());
+						int map_h = std::max(1, editor.map.getHeight());
+						int click_map_x = std::clamp(minimap_start_x + (int)(rel_x * (float)minimap_span_w), 0, map_w - 1);
+						int click_map_y = std::clamp(minimap_start_y + (int)(rel_y * (float)minimap_span_h), 0, map_h - 1);
+						g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, floor), false);
+						last_minimap_update_time = 0;
+						Refresh(false);
+					}
+
+					// Draw Viewport Box Rectangle
+					if (g_settings.getInteger(Config::MINIMAP_VIEW_BOX)) {
+						int screensize_x, screensize_y;
+						int view_scroll_x, view_scroll_y;
+						if (MapWindow* mw = static_cast<MapWindow*>(GetParent())) {
+							mw->GetViewStart(&view_scroll_x, &view_scroll_y);
+							mw->GetClientSize(&screensize_x, &screensize_y);
+
+							int start_mx = minimap_start_x;
+							int start_my = minimap_start_y;
+							int span_w = std::max(1, minimap_span_w);
+							int span_h = std::max(1, minimap_span_h);
+
+							float vx1 = (float)(view_scroll_x / TileSize - start_mx) / (float)span_w;
+							float vy1 = (float)(view_scroll_y / TileSize - start_my) / (float)span_h;
+							float vx2 = (float)((view_scroll_x + (int)(screensize_x * zoom)) / TileSize - start_mx) / (float)span_w;
+							float vy2 = (float)((view_scroll_y + (int)(screensize_y * zoom)) / TileSize - start_my) / (float)span_h;
+
+							vx1 = std::clamp(vx1, 0.0f, 1.0f);
+							vy1 = std::clamp(vy1, 0.0f, 1.0f);
+							vx2 = std::clamp(vx2, 0.0f, 1.0f);
+							vy2 = std::clamp(vy2, 0.0f, 1.0f);
+
+							ImVec2 p_min(pos.x + vx1 * img_sz.x, pos.y + vy1 * img_sz.y);
+							ImVec2 p_max(pos.x + vx2 * img_sz.x, pos.y + vy2 * img_sz.y);
+							dl->AddRect(p_min, p_max, IM_COL32(255, 220, 50, 220), 0.0f, 0, 1.5f);
 						}
 					}
 				}
-				ImGui::EndCombo();
-			}
-
-			// Dock button: show "Palette" when on canvas
-			if (ImGui::Button("Palette", ImVec2(180.0f, 0.0f))) {
-				g_settings.setInteger(Config::MINIMAP_DOCK_STYLE, 1);
-				g_gui.RefreshPalettes();
 			}
 		}
 		ImGui::End();
-		ImGui::PopStyleColor(6);
-		ImGui::PopStyleVar(6);
+		ImGui::PopStyleColor(2);
+		ImGui::PopStyleVar(4);
+	}
+
+	// Keep coordinates and hovered item information parallel and exactly 5px above the bottom editor edge
+	if (g_settings.getInteger(Config::CANVAS_INFO_CORNER) >= 0) {
+		const Position info_pos = GetCursorPosition();
+		wxString info_text = wxString::Format("X: %d  Y: %d  Z: %d", info_pos.x, info_pos.y, info_pos.z);
+		wxString item_text = "Item ID: -";
+		if (Tile* info_tile = editor.map.getTile(info_pos)) {
+			if (Item* info_item = info_tile->getTopItem()) {
+				if (!info_item->getName().empty()) {
+					item_text = wxString::Format("Item ID: %d (%s)", info_item->getID(), wxstr(info_item->getName()));
+				} else {
+					item_text = wxString::Format("Item ID: %d", info_item->getID());
+				}
+			}
+		}
+
+		int corner = std::clamp(g_settings.getInteger(Config::CANVAS_INFO_CORNER), 0, 3);
+		const bool minimap_on = g_settings.getBoolean(Config::MINIMAP_VISIBLE);
+		const int minimap_corner = std::clamp(g_settings.getInteger(Config::MINIMAP_CORNER), 0, 3);
+
+		// Guarantee Minimap and Coordinates NEVER share the same corner
+		if (minimap_on && corner == minimap_corner) {
+			corner = (minimap_corner == 0) ? 3 : ((minimap_corner + 2) % 4);
+		}
+
+		const float margin_x = 10.0f;
+		const float margin_bottom = 5.0f; // Exactly 5px distance to bottom editor edge
+		const float margin_top = (tb_active && tb_dock == 0) ? 48.0f : 10.0f;
+
+		ImVec2 pivot(1.0f, 0.0f);
+		ImVec2 anchor(io.DisplaySize.x - margin_x, margin_top);
+
+		if (corner == 0) { // Top-Right
+			anchor = ImVec2(io.DisplaySize.x - margin_x, margin_top);
+			pivot = ImVec2(1.0f, 0.0f);
+		} else if (corner == 1) { // Top-Left
+			anchor = ImVec2(margin_x, margin_top);
+			pivot = ImVec2(0.0f, 0.0f);
+		} else if (corner == 2) { // Bottom-Right (parallel 5px from bottom)
+			anchor = ImVec2(io.DisplaySize.x - margin_x, io.DisplaySize.y - margin_bottom);
+			pivot = ImVec2(1.0f, 1.0f);
+		} else if (corner == 3) { // Bottom-Left (parallel 5px from bottom)
+			anchor = ImVec2(margin_x, io.DisplaySize.y - margin_bottom);
+			pivot = ImVec2(0.0f, 1.0f);
+		}
+
+		ImGui::SetNextWindowBgAlpha(0.85f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 6.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 2.0f));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.07f, 0.11f, 0.92f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.55f, 0.45f, 0.25f, 0.65f));
+
+		ImGuiWindowFlags info_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+			ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoInputs;
+
+		ImGui::SetNextWindowPos(anchor, ImGuiCond_Always, pivot);
+		if (ImGui::Begin("##CanvasInfoOverlay", nullptr, info_flags)) {
+			ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "%s", info_text.ToUTF8().data());
+			ImGui::TextColored(ImVec4(0.75f, 0.85f, 0.98f, 1.0f), "%s", item_text.ToUTF8().data());
+		}
+		ImGui::End();
+		ImGui::PopStyleColor(2);
+		ImGui::PopStyleVar(4);
 	}
 
 	// [UI] Old ImGui Tool Wheel replaced with premium ImGui circular selection wheel.
@@ -1656,10 +2613,10 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			int offset = (floor <= 7) ? (7 - floor) * TileSize : 0;
 			uint32_t now_ms = wxGetLocalTimeMillis().GetValue();
 
-			// 1. Render Animated Pings
+			// 1. Render Animated Radar Pings (Local & Network)
 			for (auto it = active_pings.begin(); it != active_pings.end();) {
 				float dt = (now_ms - it->start_time_ms) / 1000.0f;
-				if (dt > 2.5f) {
+				if (dt > 2.8f) {
 					it = active_pings.erase(it);
 					continue;
 				}
@@ -1668,18 +2625,60 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					float px = (((it->pos.x * TileSize - scroll_x) - offset) / zoom) + (TileSize * 0.5f / zoom);
 					float py = (((it->pos.y * TileSize - scroll_y) - offset) / zoom) + (TileSize * 0.5f / zoom);
 
-					float progress = dt / 2.5f;
-					float r1 = 8.0f + 45.0f * progress;
-					float r2 = 14.0f + 70.0f * progress;
-					int alpha1 = static_cast<int>(255 * (1.0f - progress));
-					int alpha2 = static_cast<int>(180 * (1.0f - progress));
+					float progress = dt / 2.8f;
+					float r1 = 6.0f + 45.0f * progress;
+					float r2 = 12.0f + 75.0f * progress;
+					float r3 = 18.0f + 105.0f * progress;
+					int a1 = static_cast<int>(255 * (1.0f - progress));
+					int a2 = static_cast<int>(190 * (1.0f - progress));
+					int a3 = static_cast<int>(120 * (1.0f - progress));
 
-					draw_list->AddCircle(ImVec2(px, py), r1, IM_COL32(0, 230, 255, alpha1), 32, 2.5f);
-					draw_list->AddCircle(ImVec2(px, py), r2, IM_COL32(255, 215, 0, alpha2), 32, 1.8f);
-					draw_list->AddCircleFilled(ImVec2(px, py), 5.0f, IM_COL32(255, 255, 255, alpha1));
-					draw_list->AddText(ImVec2(px + 8.0f, py - 8.0f), IM_COL32(0, 255, 200, alpha1), "PING");
+					// Concentric radar waves
+					draw_list->AddCircle(ImVec2(px, py), r1, IM_COL32(0, 240, 255, a1), 36, 2.5f);
+					draw_list->AddCircle(ImVec2(px, py), r2, IM_COL32(255, 215, 50, a2), 36, 2.0f);
+					draw_list->AddCircle(ImVec2(px, py), r3, IM_COL32(0, 200, 255, a3), 36, 1.2f);
+
+					// Diamond center
+					const float dsz = 5.0f;
+					draw_list->AddQuadFilled(ImVec2(px, py - dsz), ImVec2(px + dsz, py), ImVec2(px, py + dsz), ImVec2(px - dsz, py), IM_COL32(255, 255, 255, a1));
+					draw_list->AddText(ImVec2(px + 10.0f, py - 10.0f), IM_COL32(0, 255, 200, a1), "PING");
 				}
 				++it;
+			}
+
+			if (editor.IsLive()) {
+				LiveSocket& live = editor.GetLive();
+				for (auto it = live.activePings.begin(); it != live.activePings.end();) {
+					float dt = (now_ms - it->timestamp) / 1000.0f;
+					if (dt > 2.8f) {
+						it = live.activePings.erase(it);
+						continue;
+					}
+
+					if (it->pos.z == floor) {
+						float px = (((it->pos.x * TileSize - scroll_x) - offset) / zoom) + (TileSize * 0.5f / zoom);
+						float py = (((it->pos.y * TileSize - scroll_y) - offset) / zoom) + (TileSize * 0.5f / zoom);
+
+						float progress = dt / 2.8f;
+						float r1 = 6.0f + 45.0f * progress;
+						float r2 = 12.0f + 75.0f * progress;
+						float r3 = 18.0f + 105.0f * progress;
+						int a1 = static_cast<int>(255 * (1.0f - progress));
+						int a2 = static_cast<int>(190 * (1.0f - progress));
+						int a3 = static_cast<int>(120 * (1.0f - progress));
+
+						draw_list->AddCircle(ImVec2(px, py), r1, IM_COL32(0, 240, 255, a1), 36, 2.5f);
+						draw_list->AddCircle(ImVec2(px, py), r2, IM_COL32(255, 215, 50, a2), 36, 2.0f);
+						draw_list->AddCircle(ImVec2(px, py), r3, IM_COL32(0, 200, 255, a3), 36, 1.2f);
+
+						const float dsz = 5.0f;
+						draw_list->AddQuadFilled(ImVec2(px, py - dsz), ImVec2(px + dsz, py), ImVec2(px, py + dsz), ImVec2(px - dsz, py), IM_COL32(255, 255, 255, a1));
+
+						std::string sender = it->senderName.empty() ? "PING" : ("PING: " + nstr(it->senderName));
+						draw_list->AddText(ImVec2(px + 10.0f, py - 10.0f), IM_COL32(255, 230, 100, a1), sender.c_str());
+					}
+					++it;
+				}
 			}
 
 			// 2. Render Map Notes with '!' symbol

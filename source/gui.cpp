@@ -226,22 +226,31 @@ PaletteWindow *GUI::CreatePalette() {
   bool is_first_palette = palettes.empty();
   auto *palette = newd PaletteWindow(root, g_materials.tilesets, is_first_palette);
   if (is_first_palette) {
-    aui_manager->AddPane(palette, wxAuiPaneInfo()
-                                      .Name(wxstr(p_name))
-                                      .Caption("Tileset Palette")
-                                      .Right()
-                                      .Layer(1)
-                                      .Position(1)
-                                      .CloseButton(true)
-                                      .Floatable(true)
-                                      .Dockable(true)
-                                      .LeftDockable(true)
-                                      .RightDockable(true)
-                                      .TopDockable(false)
-                                      .BottomDockable(false)
-                                      .BestSize(270, 560)
-                                      .MinSize(wxSize(palette->FromDIP(160), 100))
-                                      .Show(true));
+    const bool dock_left = g_settings.getInteger(Config::PALETTE_DOCK_SIDE) == 0;
+    wxAuiPaneInfo info;
+    info.Name(wxstr(p_name))
+        .Caption("Tileset Palette")
+        .Layer(1)
+        .Position(1)
+        .CloseButton(false)
+        .Floatable(false)
+        .Dockable(true)
+        .LeftDockable(true)
+        .RightDockable(true)
+        .TopDockable(false)
+        .BottomDockable(false)
+        .CaptionVisible(false)
+        .PaneBorder(false)
+        .Gripper(false)
+        .BestSize(270, 560)
+        .MinSize(wxSize(palette->FromDIP(160), 100))
+        .Show(false);
+    if (dock_left) {
+      info.Left();
+    } else {
+      info.Right();
+    }
+    aui_manager->AddPane(palette, info);
   } else {
     wxPoint float_pos;
     if (root && root->IsShown()) {
@@ -261,8 +270,11 @@ PaletteWindow *GUI::CreatePalette() {
                                       .Dockable(true)
                                       .LeftDockable(true)
                                       .RightDockable(true)
-                                      .TopDockable(false)
-                                      .BottomDockable(false)
+                                      .TopDockable(true)
+                                      .BottomDockable(true)
+                                      .CaptionVisible(false)
+                                      .PaneBorder(false)
+                                      .Gripper(true)
                                       .BestSize(270, 520)
                                       .MinSize(wxSize(palette->FromDIP(160), 100))
                                       .Show(true));
@@ -374,38 +386,28 @@ void GUI::RebuildPalettes() {
 }
 
 void GUI::ShowPalette() {
-  if (palettes.empty()) {
-    return;
+  g_settings.setInteger(Config::SHOW_PALETTE, 1);
+  if (root) {
+    root->UpdateMenubar();
   }
-
-  for (auto &palette : palettes) {
-    if (aui_manager->GetPane(palette).IsShown()) {
-      return;
-    }
-  }
-
-  aui_manager->GetPane(palettes.front()).Show(true);
-  aui_manager->Update();
 }
 
 void GUI::SelectPalettePage(PaletteType pt) {
-  if (palettes.empty()) {
-    CreatePalette();
+  g_settings.setInteger(Config::SHOW_PALETTE, 1);
+  g_settings.setInteger(Config::PALETTE_SELECTED_PAGE, static_cast<int>(pt));
+  if (root) {
+    root->UpdateMenubar();
   }
-  PaletteWindow *p = GetPalette();
-  if (!p) {
-    return;
-  }
-
-  ShowPalette();
-  p->SelectPage(pt);
   
   if (pt != TILESET_TERRAIN) {
     SetBrushSize(0);
   }
   
-  aui_manager->Update();
-  SelectBrushInternal(p->GetSelectedBrush());
+  PaletteWindow *p = GetPalette();
+  if (p) {
+    p->SelectPage(pt);
+    SelectBrushInternal(p->GetSelectedBrush());
+  }
 }
 
 //=============================================================================
@@ -541,6 +543,16 @@ void GUI::ShowWelcomeDialog(const wxBitmap &icon) {
     wxTheApp->ScheduleForDestruction(welcomeDialog);
     welcomeDialog = nullptr;
   }
+  // Ensure no toolbars or palettes or canvas elements are visible during slot selection
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->GetPane(TOOLBAR_BRUSHES).Show(false);
+    root->GetAuiToolBar()->GetPane(TOOLBAR_POSITION).Show(false);
+  }
+  for (auto* pal : palettes) {
+    if (aui_manager) aui_manager->GetPane(pal).Show(false);
+  }
+  if (aui_manager) aui_manager->Update();
+
   std::vector<wxString> recent_files = root->GetRecentFiles();
   // Clear the sub-title version description text as requested by the user, and
   // use wider dialog size to fit sizer cleanly
@@ -562,6 +574,15 @@ void GUI::FinishWelcomeDialog() {
     wxTheApp->ScheduleForDestruction(welcomeDialog);
     welcomeDialog = nullptr;
   }
+  // Restore toolbar and palette after slot selection
+  if (root && root->GetAuiToolBar()) {
+    root->GetAuiToolBar()->GetPane(TOOLBAR_BRUSHES).Show(true);
+    root->GetAuiToolBar()->ApplyAlignment();
+  }
+  for (auto* pal : palettes) {
+    if (aui_manager) aui_manager->GetPane(pal).Show(true);
+  }
+  if (aui_manager) aui_manager->Update();
   UpdateMenubar();
 }
 

@@ -38,7 +38,10 @@
 #include "lua/lua_script_manager.h"
 #include "lua/lua_scripts_window.h"
 #include "map.h"
+#include "map_tab.h"
+#include "map_display.h"
 #include "materials.h"
+#include "imgui.h"
 
 
 #include <wx/snglinst.h>
@@ -841,6 +844,30 @@ MainFrame::~MainFrame() {
 }
 
 void MainFrame::OnIdle(wxIdleEvent &event) {
+  if (g_gui.aui_manager) {
+    const wxRect client_rect = GetClientRect();
+    const wxPoint client_origin = ClientToScreen(client_rect.GetTopLeft());
+    const int min_x = client_origin.x;
+    const int min_y = client_origin.y;
+    const int max_x = client_origin.x + client_rect.width;
+    const int max_y = client_origin.y + client_rect.height;
+
+    for (wxAuiPaneInfo& pane : g_gui.aui_manager->GetAllPanes()) {
+      if (!pane.IsOk() || !pane.IsFloating()) {
+        continue;
+      }
+
+      wxPoint position = pane.floating_pos;
+      const wxSize size = pane.floating_size;
+      position.x = std::clamp(position.x, min_x, std::max(min_x, max_x - size.x));
+      position.y = std::clamp(position.y, min_y, std::max(min_y, max_y - size.y));
+      if (position != pane.floating_pos) {
+        pane.FloatingPosition(position);
+        g_gui.aui_manager->Update();
+      }
+    }
+  }
+
   if (g_gui.async_loader) {
     g_gui.async_loader->update();
   }
@@ -955,6 +982,9 @@ void MainFrame::OnUpdateMenus(wxCommandEvent &) {
 #ifdef __WINDOWS__
 namespace {
 bool IsTextInputFocused() {
+  if (ImGui::GetCurrentContext() && (ImGui::GetIO().WantTextInput || ImGui::GetIO().WantCaptureKeyboard || ImGui::IsAnyItemActive())) {
+    return true;
+  }
   wxWindow *focus = wxWindow::FindFocus();
   while (focus) {
     if (dynamic_cast<wxTextCtrlBase *>(focus) ||

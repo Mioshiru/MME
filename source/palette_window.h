@@ -76,6 +76,8 @@ private:
 	DECLARE_EVENT_TABLE()
 };
 
+class MacOSTrafficLightButton;
+
 class PaletteModuleCard : public wxPanel {
 public:
 	PaletteModuleCard(wxWindow* parent, const wxString& title, bool canClose = true);
@@ -96,8 +98,8 @@ private:
 
 	wxPanel* header_panel = nullptr;
 	wxStaticText* title_text = nullptr;
-	wxButton* btn_collapse = nullptr;
-	wxButton* btn_close = nullptr;
+	MacOSTrafficLightButton* btn_collapse = nullptr;
+	MacOSTrafficLightButton* btn_close = nullptr;
 	wxWindow* content_window = nullptr;
 	wxBoxSizer* main_sizer = nullptr;
 	bool is_collapsed = false;

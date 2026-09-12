@@ -19,23 +19,25 @@ public:
     void render(NVGcontext* vg) override {
         if (!visible) return;
 
-        // Einheitlicher Button-Hintergrund fuer alle Icon-Typen
+        const float btnRadius = std::min(width, height) * 0.22f;
+
+        // Einheitlicher macOS Button-Hintergrund
         nvgBeginPath(vg);
-        nvgRoundedRect(vg, x, y, width, height, Theme::CornerRadius);
-        nvgFillColor(vg, Theme::Button);
+        nvgRoundedRect(vg, x, y, width, height, btnRadius);
+        nvgFillColor(vg, hovered ? nvgRGBA(52, 64, 84, 230) : Theme::Button);
         nvgFill(vg);
 
-        // Rahmen inkl. einheitlichem Hover-Ring
+        // Rahmen inkl. macOS Highlight
         nvgBeginPath(vg);
-        nvgRoundedRect(vg, x, y, width, height, Theme::CornerRadius);
-        nvgStrokeColor(vg, hovered ? Theme::Accent : nvgRGBA(100, 100, 100, 255));
-        nvgStrokeWidth(vg, hovered ? 2.0f : 1.0f);
+        nvgRoundedRect(vg, x, y, width, height, btnRadius);
+        nvgStrokeColor(vg, hovered ? Theme::Accent : nvgRGBA(70, 85, 110, 180));
+        nvgStrokeWidth(vg, hovered ? 1.5f : 1.0f);
         nvgStroke(vg);
 
         if (hovered) {
             nvgBeginPath(vg);
-            nvgRoundedRect(vg, x, y, width, height, Theme::CornerRadius);
-            nvgFillColor(vg, nvgRGBA(255, 255, 255, 18));
+            nvgRoundedRect(vg, x, y, width, height, btnRadius);
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 22));
             nvgFill(vg);
         }
 

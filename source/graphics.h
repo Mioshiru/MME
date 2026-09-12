@@ -104,13 +104,13 @@ public:
 	const SpriteLight& getLight() const noexcept {
 		return light;
 	}
+	wxBitmap* getBitmap(SpriteSize size, bool count100 = false);
 
 protected:
 	class Image;
 	class NormalImage;
 	class TemplateImage;
 
-	wxBitmap* getBitmap(SpriteSize size, bool count100 = false);
 	TemplateImage* getTemplateImage(int sprite_index, const Outfit& outfit);
 
 	class Image {

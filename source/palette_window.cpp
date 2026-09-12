@@ -54,12 +54,12 @@ public:
 	MinimapPanel(wxWindow* parent) :
 		wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize) {
 		SetMinSize(wxSize(60, 40));
-		SetBackgroundColour(wxColor(13, 17, 23));
+		SetBackgroundColour(wxColour(18, 22, 30));
 		
 		// Dropdown for jumping to towns
 		town_choice = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-		town_choice->SetBackgroundColour(wxColour(13, 17, 23));
-		town_choice->SetForegroundColour(wxColour(229, 193, 88));
+		town_choice->SetBackgroundColour(wxColour(28, 34, 46));
+		town_choice->SetForegroundColour(wxColour(240, 244, 250));
 		town_choice->Bind(wxEVT_CHOICE, &MinimapPanel::OnTownSelected, this);
 
 		Bind(wxEVT_PAINT, &MinimapPanel::OnPaint, this);
@@ -472,43 +472,133 @@ END_EVENT_TABLE()
 
 
 
+class MacOSTrafficLightButton : public wxPanel {
+public:
+	MacOSTrafficLightButton(wxWindow* parent, const wxColour& normalColor, const wxColour& hoverColor, const wxString& symbol)
+		: wxPanel(parent, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(14, 14)), wxNO_BORDER),
+		  normal_color(normalColor), hover_color(hoverColor), symbol_char(symbol), is_hovered(false) {
+		SetBackgroundStyle(wxBG_STYLE_PAINT);
+		Bind(wxEVT_PAINT, &MacOSTrafficLightButton::OnPaint, this);
+		Bind(wxEVT_ENTER_WINDOW, [this](wxMouseEvent&) { is_hovered = true; Refresh(); });
+		Bind(wxEVT_LEAVE_WINDOW, [this](wxMouseEvent&) { is_hovered = false; Refresh(); });
+		Bind(wxEVT_LEFT_UP, [this](wxMouseEvent& ev) {
+			wxCommandEvent clickEvent(wxEVT_BUTTON, GetId());
+			clickEvent.SetEventObject(this);
+			ProcessWindowEvent(clickEvent);
+		});
+	}
+
+	void SetSymbol(const wxString& symbol) {
+		symbol_char = symbol;
+		Refresh();
+	}
+
+private:
+	void OnPaint(wxPaintEvent&) {
+		wxAutoBufferedPaintDC dc(this);
+		dc.SetBackground(GetParent()->GetBackgroundColour());
+		dc.Clear();
+
+		wxRect r = GetClientRect();
+		int diameter = std::min(r.width, r.height) - 2;
+		if (diameter < 8) diameter = 8;
+		int cx = r.x + (r.width - diameter) / 2;
+		int cy = r.y + (r.height - diameter) / 2;
+
+		// Circular macOS Traffic Light
+		dc.SetPen(wxPen(is_hovered ? hover_color.ChangeLightness(85) : normal_color.ChangeLightness(90), 1));
+		dc.SetBrush(wxBrush(is_hovered ? hover_color : normal_color));
+		dc.DrawEllipse(cx, cy, diameter, diameter);
+
+		// Show subtle macOS glyph on hover
+		if (is_hovered && !symbol_char.empty()) {
+			dc.SetFont(wxFont(wxFontInfo(7).Family(wxFONTFAMILY_DEFAULT).Bold()));
+			dc.SetTextForeground(wxColour(40, 20, 20));
+			wxSize textSize = dc.GetTextExtent(symbol_char);
+			dc.DrawText(symbol_char, cx + (diameter - textSize.x) / 2, cy + (diameter - textSize.y) / 2 - 1);
+		}
+	}
+
+	wxColour normal_color;
+	wxColour hover_color;
+	wxString symbol_char;
+	bool is_hovered;
+};
+
 PaletteModuleCard::PaletteModuleCard(wxWindow* parent, const wxString& title, bool canClose)
-	: wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_STATIC), can_close(canClose) {
-	SetBackgroundColour(wxColor(13, 17, 23));
+	: wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE), can_close(canClose) {
+	SetBackgroundColour(wxColour(20, 24, 32));
 
 	main_sizer = new wxBoxSizer(wxVERTICAL);
 
 	header_panel = new wxPanel(this, wxID_ANY);
-	header_panel->SetBackgroundColour(wxColor(21, 27, 36));
+	header_panel->SetBackgroundColour(wxColour(28, 34, 46));
 
 	wxBoxSizer* header_sizer = new wxBoxSizer(wxHORIZONTAL);
+	
+	// macOS Window Header Title
 	title_text = new wxStaticText(header_panel, wxID_ANY, title);
-	title_text->SetForegroundColour(wxColor(229, 193, 88));
+	title_text->SetForegroundColour(wxColour(220, 228, 240));
 	wxFont font = title_text->GetFont();
-	font.SetWeight(wxFONTWEIGHT_BOLD);
+	font.SetWeight(wxFONTWEIGHT_SEMIBOLD);
 	font.SetPointSize(8);
 	title_text->SetFont(font);
-	header_sizer->Add(title_text, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, 6);
+	header_sizer->Add(title_text, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, 8);
 
-	btn_collapse = new wxButton(header_panel, wxID_ANY, "-", wxDefaultPosition, wxSize(20, 18), wxNO_BORDER);
-	btn_collapse->SetBackgroundColour(wxColor(28, 36, 48));
-	btn_collapse->SetForegroundColour(wxColor(240, 244, 248));
-	btn_collapse->SetToolTip("Minimize / Expand Module");
-	btn_collapse->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { OnToggleCollapse(); });
-	header_sizer->Add(btn_collapse, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 2);
+	// macOS Traffic Light Buttons: Yellow Move / Dock Toggle Dot (•), Red Close (×)
+	btn_collapse = new MacOSTrafficLightButton(header_panel, wxColour(255, 189, 46), wxColour(255, 205, 80), wxString::FromUTF8("•"));
+	btn_collapse->SetToolTip("Move Palette: Toggle Left / Right Dock");
+	btn_collapse->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		int cur_side = g_settings.getInteger(Config::PALETTE_DOCK_SIDE);
+		int new_side = (cur_side == 0) ? 1 : 0;
+		g_settings.setInteger(Config::PALETTE_DOCK_SIDE, new_side);
+		if (g_gui.aui_manager) {
+			for (auto* pal : g_gui.GetPalettes()) {
+				wxAuiPaneInfo& pinfo = g_gui.aui_manager->GetPane(pal);
+				if (pinfo.IsOk() && pinfo.IsDocked()) {
+					if (new_side == 0) {
+						pinfo.Left().Layer(1).Position(1);
+					} else {
+						pinfo.Right().Layer(1).Position(1);
+					}
+				}
+			}
+			g_gui.aui_manager->Update();
+		}
+	});
+	header_sizer->Add(btn_collapse, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
 
 	if (can_close) {
-		btn_close = new wxButton(header_panel, wxID_ANY, "x", wxDefaultPosition, wxSize(20, 18), wxNO_BORDER);
-		btn_close->SetBackgroundColour(wxColor(48, 20, 24));
-		btn_close->SetForegroundColour(wxColor(255, 180, 180));
-		btn_close->SetToolTip("Remove / Hide Module");
-		btn_close->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { OnCloseModule(); });
-		header_sizer->Add(btn_close, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
+		btn_close = new MacOSTrafficLightButton(header_panel, wxColour(255, 95, 86), wxColour(255, 125, 115), wxString::FromUTF8("×"));
+		btn_close->SetToolTip("Close / Hide Palette");
+		btn_close->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+			wxWindow* p = this;
+			while (p && dynamic_cast<PaletteWindow*>(p) == nullptr) {
+				p = p->GetParent();
+			}
+			if (p && g_gui.aui_manager) {
+				g_gui.aui_manager->GetPane(p).Hide();
+				g_gui.aui_manager->Update();
+			}
+		});
+		header_sizer->Add(btn_close, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
 	}
 
 	header_panel->SetSizer(header_sizer);
-	main_sizer->Add(header_panel, 0, wxEXPAND);
+	header_panel->Bind(wxEVT_PAINT, [this](wxPaintEvent&) {
+		wxAutoBufferedPaintDC dc(header_panel);
+		wxRect rect = header_panel->GetClientRect();
+		// macOS Header subtle gradient
+		dc.GradientFillLinear(rect, wxColour(34, 40, 52), wxColour(24, 28, 38), wxSOUTH);
+		// 1px Top specular line
+		dc.SetPen(wxPen(wxColour(65, 78, 100), 1));
+		dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetRight() + 1, rect.GetTop());
+		// 1px Bottom line
+		dc.SetPen(wxPen(wxColour(14, 17, 24), 1));
+		dc.DrawLine(rect.GetLeft(), rect.GetBottom(), rect.GetRight() + 1, rect.GetBottom());
+	});
 
+	main_sizer->Add(header_panel, 0, wxEXPAND);
 	SetSizer(main_sizer);
 }
 
@@ -529,7 +619,7 @@ void PaletteModuleCard::SetCollapsed(bool collapsed) {
 		content_window->Show(!is_collapsed);
 	}
 	if (btn_collapse) {
-		btn_collapse->SetLabel(is_collapsed ? "+" : "-");
+		btn_collapse->SetSymbol(is_collapsed ? "+" : "-");
 	}
 	Layout();
 	if (GetParent()) {
@@ -583,7 +673,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets,
 	card_checklist(nullptr),
 	allow_minimap(initial_allow_minimap) {
 	SetMinSize(wxSize(100, 150));
-	SetBackgroundColour(wxColor(13, 17, 23));
+	SetBackgroundColour(wxColour(18, 22, 30));
 
 	// Context menu binding to restore modules
 	Bind(wxEVT_RIGHT_DOWN, [this](wxMouseEvent& event) {
@@ -592,7 +682,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets,
 
 	// Splitter Window to allow interactive height adjustment between Asset Palette and Minimap
 	splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_LIVE_UPDATE | wxSP_3D);
-	splitter->SetBackgroundColour(wxColor(13, 17, 23));
+	splitter->SetBackgroundColour(wxColour(18, 22, 30));
 	splitter->SetMinimumPaneSize(35);
 	splitter->SetSashGravity(0.0); // Top pane (Minimap) stays compact, all vertical expansion goes to Asset Palette!
 
@@ -607,13 +697,16 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets,
 	// Module 1: Asset Browser Card
 	card_assets = new PaletteModuleCard(splitter, "Asset Palette", false);
 	wxPanel* asset_container = new wxPanel(card_assets, wxID_ANY);
-	asset_container->SetBackgroundColour(wxColor(13, 17, 23));
+	asset_container->SetBackgroundColour(wxColour(20, 24, 32));
 	wxBoxSizer* asset_sizer = new wxBoxSizer(wxVERTICAL);
 
 	palette_choice = newd wxChoice(asset_container, wxID_ANY);
-	palette_choice->SetBackgroundColour(wxColour(13, 17, 23));
+	palette_choice->SetBackgroundColour(wxColour(28, 34, 46));
+	palette_choice->SetForegroundColour(wxColour(240, 244, 250));
 	search_box = newd wxTextCtrl(asset_container, PALETTE_SEARCH_BOX, "", wxDefaultPosition, wxDefaultSize, 0);
 	search_box->SetHint("Search");
+	search_box->SetBackgroundColour(wxColour(26, 32, 44));
+	search_box->SetForegroundColour(wxColour(240, 244, 250));
 	search_box->Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& event) {
 		int code = event.GetKeyCode();
 		if (code == WXK_ESCAPE) {
@@ -629,47 +722,47 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets,
 	});
 
 	choicebook = newd wxChoicebook(asset_container, PALETTE_CHOICEBOOK, wxDefaultPosition, wxDefaultSize);
-	choicebook->SetBackgroundColour(wxColor(13, 17, 23));
+	choicebook->SetBackgroundColour(wxColour(20, 24, 32));
 	if (auto* choice_ctrl = choicebook->GetChoiceCtrl()) {
 		choice_ctrl->Hide();
 	}
 
 	favorites_palette = static_cast<BrushPalettePanel*>(CreateFavoritesPalette(choicebook, tilesets));
-	favorites_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	favorites_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(favorites_palette, favorites_palette->GetName());
 
 	terrain_palette = static_cast<BrushPalettePanel*>(CreateTerrainPalette(choicebook, tilesets));
-	terrain_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	terrain_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(terrain_palette, terrain_palette->GetName());
 
 	doodad_palette = static_cast<BrushPalettePanel*>(CreateDoodadPalette(choicebook, tilesets));
-	doodad_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	doodad_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(doodad_palette, doodad_palette->GetName());
 
 	collection_palette = nullptr;
 
 	item_palette = static_cast<BrushPalettePanel*>(CreateItemPalette(choicebook, tilesets));
-	item_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	item_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(item_palette, item_palette->GetName());
 
 	house_palette = static_cast<HousePalettePanel*>(CreateHousePalette(choicebook, tilesets));
-	house_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	house_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(house_palette, house_palette->GetName());
 
 	waypoint_palette = static_cast<WaypointPalettePanel*>(CreateWaypointPalette(choicebook, tilesets));
-	waypoint_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	waypoint_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(waypoint_palette, waypoint_palette->GetName());
 
 	creature_palette = static_cast<CreaturePalettePanel*>(CreateCreaturePalette(choicebook, tilesets));
-	creature_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	creature_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(creature_palette, creature_palette->GetName());
 
 	raw_palette = static_cast<BrushPalettePanel*>(CreateRAWPalette(choicebook, tilesets));
-	raw_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	raw_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(raw_palette, raw_palette->GetName());
 
 	prefab_palette = static_cast<PrefabPalettePanel*>(CreatePrefabPalette(choicebook));
-	prefab_palette->SetBackgroundColour(wxColor(13, 17, 23));
+	prefab_palette->SetBackgroundColour(wxColour(20, 24, 32));
 	choicebook->AddPage(prefab_palette, prefab_palette->GetName());
 
 	for (size_t i = 0; i < choicebook->GetPageCount(); ++i) {
@@ -1154,7 +1247,7 @@ void PaletteWindow::SelectPage(PaletteType id) {
 
 	for (size_t iz = 0; iz < choicebook->GetPageCount(); ++iz) {
 		PalettePanel* panel = dynamic_cast<PalettePanel*>(choicebook->GetPage(iz));
-		if (panel->GetType() == id) {
+		if (panel && panel->GetType() == id) {
 			choicebook->SetSelection(iz);
 			g_settings.setInteger(Config::PALETTE_SELECTED_PAGE, static_cast<int>(id));
 			g_settings.save();
@@ -1169,7 +1262,7 @@ Brush* PaletteWindow::GetSelectedBrush() const {
 		return nullptr;
 	}
 	PalettePanel* panel = dynamic_cast<PalettePanel*>(choicebook->GetCurrentPage());
-	return panel->GetSelectedBrush();
+	return panel ? panel->GetSelectedBrush() : nullptr;
 }
 
 int PaletteWindow::GetSelectedBrushSize() const {
@@ -1177,7 +1270,7 @@ int PaletteWindow::GetSelectedBrushSize() const {
 		return 0;
 	}
 	PalettePanel* panel = dynamic_cast<PalettePanel*>(choicebook->GetCurrentPage());
-	return panel->GetSelectedBrushSize();
+	return panel ? panel->GetSelectedBrushSize() : 0;
 }
 
 PaletteType PaletteWindow::GetSelectedPage() const {
@@ -1185,8 +1278,7 @@ PaletteType PaletteWindow::GetSelectedPage() const {
 		return TILESET_UNKNOWN;
 	}
 	PalettePanel* panel = dynamic_cast<PalettePanel*>(choicebook->GetCurrentPage());
-	ASSERT(panel);
-	return panel->GetType();
+	return panel ? panel->GetType() : TILESET_UNKNOWN;
 }
 
 bool PaletteWindow::OnSelectBrush(const Brush* whatbrush, PaletteType primary) {

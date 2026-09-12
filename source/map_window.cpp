@@ -155,7 +155,7 @@ void MapWindow::SetScreenCenterPosition(const Position &position, bool smooth) {
 
   Scroll(x, y, true);
   canvas->ChangeFloor(position.z);
-  canvas->Update();
+  canvas->Refresh(false);
 }
 
 void MapWindow::UpdateSmoothScroll() {

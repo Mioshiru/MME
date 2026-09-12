@@ -74,6 +74,7 @@ bool GUI::NewMap(const wxString& target_dir) {
 	propWindow->Destroy();
 
 	editor->map.clearChanges();
+	ShowPalette();
 	UpdateTitle(); RefreshPalettes();
 	root->UpdateMenubar(); root->Refresh();
 	return true;
@@ -106,6 +107,7 @@ bool GUI::LoadMap(const FileName& fileName) {
 	mapTab->OnSwitchEditorMode(mode);
 	root->AddRecentFile(fileName);
 	mapTab->GetView()->FitToMap();
+	ShowPalette();
 	UpdateTitle();
 	ListDialog("Map loader errors", mapTab->GetMap()->getWarnings());
 	root->DoQueryImportCreatures();

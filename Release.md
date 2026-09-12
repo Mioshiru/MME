@@ -8,6 +8,26 @@
 
 ### 🌟 Major Highlights & New Features in v1.9.5
 
+* **🎨 macOS-Style Filigree Fantasy Canvas UI & Floating Windows:**
+  * **Full-Canvas Frameless Overlay Windows:** Redesigned Toolbar, Tileset Palette, Minimap, and Coordinate/Item overlays as lightweight, transparent, frameless canvas panels styled in deep runic obsidian (`#0D1117`) and mystic gold (`#D4AF37`).
+  * **Pixel-Perfect Unified Toolbar:** All toolbar elements (Tool buttons, Floor dropdown, Brush shape toggle, Size buttons, and Day/Night toggle) share a unified, exact height, identical padding, and vertical centering across all UI scaling factors.
+  * **Magnetic Docking Minimap:** Minimap supports free dragging across the canvas and magnetic edge snapping to all 4 screen edges with glowing cyan guides, mousewheel zoom scaling, and direct tile jump navigation on click/drag.
+  * **Two-Line Bottom Coordinates & Item Info Overlay:** Positioned parallel with exactly 5px bottom-margin spacing, displaying map coordinates (X, Y, Z) and hovered Top Item / Item ID on clean dedicated lines.
+  * **Fantasy Gem Window Controls:** Universal macOS-inspired circular gem controls with crystal sheen and hover micro-animations:
+    * **🟡 Topaz Amber (Minimize / Expand):** Collapses window into a sleek compact header pill.
+    * **🔴 Dragon Ruby (Close):** Gracefully hides the window and updates the View menu state.
+  * **4-Edge Free Window Resizing:** Palette and canvas windows support fluid resize from all 4 borders (including top edge) via `ConfigWindowsResizeFromEdges`.
+  * **Smart Hotkey Suspension during Text Input:** Shortcuts and map navigation keys are seamlessly suspended while typing inside palette search, live chat, quest notepad, or map note inputs.
+  * **🌈 Intelligent Asset & Material Color Style Recognition Shader:** Real-time GPU GLSL shader analyzing per-pixel HSV color spectrums to dynamically enhance and balance distinct material tones (lush emerald nature, deep crystalline water, golden sunlit sand, rich polished wood/furniture, fiery lava, and high-relief masonry) with 100% portability to custom game clients.
+  * **High-Definition Mountain & Cliff Composite Preview Cache:** Palette preview cards now render complex multi-sprite composites (mountains, cliffs, doodads) with automatic scaling and texture caching.
+
+* **👥 Multiplayer Live Collaboration & Teamplay Supercharge:**
+  * **Toolbar Live Presence Badge:** Real-time host/peer indicator (`🟢 Host (N)` / `🟢 Live (N ms)`) with tooltip peer overview and 1-click chat/user panel toggle.
+  * **Collaborator Teleportation (1-Click Jump):** Teleport camera and active floor instantly to any connected collaborator directly from the live chat / peer list (`🎯 Jump`).
+  * **High-Impact Animated Radar Pings:** Multi-frequency concentric pulse waves with golden/cyan shockwaves, diamond core, and sender tags broadcast across local and network peers.
+  * **1-Click Host IP & Port Copy:** Instant clipboard export of connection details for effortless party invites.
+  * **Magnetic Dock-Snapping Visual Feedback:** Smooth glowing edge guide appearing along screen edges when dragging the Palette within snapping distance.
+
 * **🛡️ Stability, Recovery & Collaboration Hardening:**
   * **Malformed Network Packet Protection:** `NetworkMessage` now latches truncated reads and invalid string lengths. The live client logs the offending packet type and closes the session cleanly instead of continuing with default or partial values.
   * **Reliable Undo Memory Budget:** Existing `UNDO_MEM_SIZE` limits are enforced after inserting or merging the newest action, including oversized single operations. The configured minimum is clamped to a safe positive value.
@@ -20,15 +40,21 @@
   * **Ocean & Landmass Generator:** Added an undoable procedural ocean mode with configurable grass, sand, water, snow, and shoreline ground IDs. The generator creates smoothed island/landmass distributions, places sand along coasts, adds cold snow regions, applies shoreline walls, supports deterministic seeds and live preview, and protects houses, spawns, creatures, containers, doors, walls, and protection zones.
   * **Palette Card Redesign:** Brush and item tiles now use larger Obsidian cards with restrained blue-gray borders, centered sprites, a dedicated item-ID footer, and a clear Mystic Gold selection frame while preserving the existing MME color language.
   * **Compact Palette Layout:** Tile preview cards are reduced to 75% of their previous redesign size, while the palette docking logic now permits a two-column compact width instead of enforcing three columns.
-  * **Toolbar Lighting Control:** The Day/Night control was removed from the canvas overlay and placed at the far right of the position toolbar, keeping the map viewport clear while retaining quick access to lighting.
+  * **Toolbar Lighting Control:** The Day/Night switch was removed from the canvas overlay and placed at the far right of the upper tools toolbar, keeping the map viewport clear while retaining quick access to lighting.
   * **Biome Color Mood Rendering Fix:** Color-grading and vignette preferences are now applied in the actual per-floor VBO shader path, so changing Biome Color Mood visibly affects the map canvas again.
   * **Correct Mood Mapping:** The six Graphics mood choices now map to distinct shader states, including the previously unhandled `Vibrant Fantasy RPG` index and explicit neutral behavior.
-  * **PNG Day/Night Toolbar Control:** The day/night PNG control now lives at the far right of the upper tools and brushes toolbar; it is no longer placed in the lower coordinate/item status toolbar or over the canvas.
   * **Stronger Fantasy Color Mood:** Vibrant Fantasy now uses warmer biome colors, stronger saturation separation, and a controlled contrast lift so it is visibly distinct from Neutral / Classic Vanilla.
   * **Softer Modern Pixel-Art Upscaling:** The xBRZ visual mode now uses weighted 3x3 reconstruction with stronger softening and restrained detail preservation for a smoother top-down pixel-art presentation.
-  * **Centered Tool Group & Pinned Day/Night Icon:** The upper tools/brushes toolbar now centers its complete tool group, while the day/night PNG control remains attached as the final right-edge control instead of drifting with the group.
+  * **Centered Tool Group & Pinned Day/Night Switch:** The upper tools/brushes toolbar now centers its complete tool group, while the Day/Night switch remains attached as the final right-edge control instead of drifting with the group.
   * **Mood Switch Refresh Stability:** Removed the redundant intermediate canvas refresh during Graphics Apply, preventing visible flicker while switching Biome Color Mood settings.
   * **Accessible Toolbar Scaling:** UI Scaling now reapplies the configured size to all toolbar tool bitmaps, brush-size icons, and the Day/Night PNG immediately, preserving toolbar state and improving readability for users with visual impairments.
+  * **Integrated Glass Styling:** Toolbar and palette surfaces now use a lighter, frameless Obsidian treatment, while wxAUI transparent hints and fade behavior keep docked and floating panes visually integrated with the canvas.
+  * **Canvas Overlay Layout:** Toolbars remain dockable/floating at the top and bottom, palettes can dock left, right, top, or bottom, and coordinate/item information is shown in a configurable canvas corner.
+  * **Active Tool Highlight:** The selected toolbar tool receives a stronger double gold frame and dark contrast backing, matching the selected-tile treatment.
+  * **Mac-Style Floating Panes:** Floating toolbars and palettes now use hidden native captions and pane borders with AUI grip handling, keeping the editor chrome visually integrated instead of presenting standard Windows dialog frames.
+  * **Editor-Bounded Movement:** Floating toolbars and palettes are clamped to the editor client area and cannot be dragged outside the MME window.
+  * **Single-Line Canvas Info:** Coordinates and item/ID information are displayed horizontally with a Mystic Gold separator and remain configurable to one of four canvas corners.
+  * **Persistent Overlay Layout Controls:** Graphics/UI settings now include toolbar overlay position, palette dock side, toolbar opacity, and palette opacity. The hidden lower coordinate toolbar is no longer shown; coordinate/item information remains on the canvas.
 
 * **🔮 Dark Runic Obsidian & Mystic Gold Fantasy RPG UI Overhaul:**
   * **Complete Theme Transformation:** Entire editor user interface transformed into an immersive AAA Dark Fantasy aesthetic with deep basalt/obsidian panels (`#0D1117`, `#161B22`), mystic gold framing (`#E5C158`, `#D4AF37`), and subtle amber/sapphire glowing accents.

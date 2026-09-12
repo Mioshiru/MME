@@ -159,6 +159,9 @@ namespace MenuBar {
 		TOOLS_RADIO_PLAYER,
 		TOOLS_TILESET_MANAGER,
 		SHOW_MINIMAP_HUD, // New item for toggling canvas-based minimap
+		VIEW_PALETTE_TOGGLE,
+		VIEW_TOOLBAR_TOGGLE,
+		SHOW_CANVAS_INFO,
 		SHOW_HOTKEYS,
 		COMMAND_PALETTE,
 		PRESET_VIEW_MAPPER_FOCUS,
@@ -320,6 +323,9 @@ public:
 
 	// View Menu
 	void OnToolbars(wxCommandEvent& event);
+	void OnTogglePalette(wxCommandEvent& event);
+	void OnToggleToolbar(wxCommandEvent& event);
+	void OnToggleCanvasInfo(wxCommandEvent& event);
 	void OnNewView(wxCommandEvent& event);
 	void OnToggleFullscreen(wxCommandEvent& event);
 	void OnZoomIn(wxCommandEvent& event);

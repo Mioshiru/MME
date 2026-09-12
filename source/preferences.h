@@ -108,6 +108,11 @@ public:
 	wxSlider* water_anim_slider = nullptr;
 	wxChoice* bg_color_choice = nullptr;
 	wxSlider* grid_opacity_slider = nullptr;
+	wxChoice* canvas_info_corner_choice = nullptr;
+	wxChoice* toolbar_overlay_position_choice = nullptr;
+	wxChoice* palette_dock_side_choice = nullptr;
+	wxSlider* toolbar_opacity_slider = nullptr;
+	wxSlider* palette_opacity_slider = nullptr;
 	wxCheckBox* multi_monitor_workspace_chkbox = nullptr;
 
 	// Biome & Post-Processing Graphics

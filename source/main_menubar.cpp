@@ -229,6 +229,9 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(VIEW_TOOLBARS_BRUSHES, wxITEM_CHECK, OnToolbars);
 	MAKE_ACTION(VIEW_TOOLBARS_POSITION, wxITEM_CHECK, OnToolbars);
 	MAKE_ACTION(VIEW_TOOLBARS_SIZES, wxITEM_CHECK, OnToolbars);
+	MAKE_ACTION(VIEW_PALETTE_TOGGLE, wxITEM_CHECK, OnTogglePalette);
+	MAKE_ACTION(VIEW_TOOLBAR_TOGGLE, wxITEM_CHECK, OnToggleToolbar);
+	MAKE_ACTION(SHOW_CANVAS_INFO, wxITEM_CHECK, OnToggleCanvasInfo);
 	MAKE_ACTION(NEW_VIEW, wxITEM_NORMAL, OnNewView);
 	MAKE_ACTION(TOGGLE_FULLSCREEN, wxITEM_NORMAL, OnToggleFullscreen);
 
@@ -597,10 +600,15 @@ void MainMenuBar::Update() {
 	EnableItem(LIVE_HELP, true);
 
 	UpdateFloorMenu();
+	LoadValues();
 }
 
 void MainMenuBar::LoadValues() {
 	using namespace MenuBar;
+
+	CheckItem(VIEW_PALETTE_TOGGLE, g_settings.getBoolean(Config::SHOW_PALETTE));
+	CheckItem(VIEW_TOOLBAR_TOGGLE, g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES));
+	CheckItem(SHOW_CANVAS_INFO, g_settings.getInteger(Config::CANVAS_INFO_CORNER) >= 0);
 
 	CheckItem(VIEW_TOOLBARS_BRUSHES, g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES));
 	CheckItem(VIEW_TOOLBARS_POSITION, g_settings.getBoolean(Config::SHOW_TOOLBAR_POSITION));
@@ -1260,6 +1268,31 @@ void MainMenuBar::OnToolbars(wxCommandEvent& event) {
 		default:
 			break;
 	}
+}
+
+void MainMenuBar::OnTogglePalette(wxCommandEvent& WXUNUSED(event)) {
+	bool current = g_settings.getBoolean(Config::SHOW_PALETTE);
+	g_settings.setInteger(Config::SHOW_PALETTE, current ? 0 : 1);
+	g_gui.RefreshView();
+	Update();
+}
+
+void MainMenuBar::OnToggleToolbar(wxCommandEvent& WXUNUSED(event)) {
+	bool current = g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES);
+	g_settings.setInteger(Config::SHOW_TOOLBAR_BRUSHES, current ? 0 : 1);
+	g_gui.RefreshView();
+	Update();
+}
+
+void MainMenuBar::OnToggleCanvasInfo(wxCommandEvent& WXUNUSED(event)) {
+	int current = g_settings.getInteger(Config::CANVAS_INFO_CORNER);
+	if (current >= 0) {
+		g_settings.setInteger(Config::CANVAS_INFO_CORNER, -1);
+	} else {
+		g_settings.setInteger(Config::CANVAS_INFO_CORNER, 0);
+	}
+	g_gui.RefreshView();
+	Update();
 }
 
 void MainMenuBar::OnNewView(wxCommandEvent& WXUNUSED(event)) {

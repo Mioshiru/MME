@@ -40,11 +40,27 @@ public:
 
         relayoutButtons();
 
-        // Hintergrund-Panel zeichnen (#333333)
+        // macOS Floating Dock: Frosted Glass Panel mit weichem Schatten & Glanzkante
+        const float radius = 10.0f * uiScale;
+
+        // Subtiler dunkler Schatten
         nvgBeginPath(vg);
-        nvgRoundedRect(vg, x, y, width, height, Theme::CornerRadius); // Annahme: Theme::CornerRadius ist definiert
+        nvgRoundedRect(vg, x, y + 2.0f, width, height, radius);
+        nvgFillColor(vg, nvgRGBA(0, 0, 0, 80));
+        nvgFill(vg);
+
+        // Frosted Glass Panel Hintergrund
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, x, y, width, height, radius);
         nvgFillColor(vg, Theme::Panel);
         nvgFill(vg);
+
+        // Feine 1px Lichtreflexkante oben/rundherum
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, x, y, width, height, radius);
+        nvgStrokeColor(vg, nvgRGBA(255, 255, 255, 38));
+        nvgStrokeWidth(vg, 1.0f);
+        nvgStroke(vg);
 
         // Buttons rendern
         for (auto& btn : buttons) {

@@ -266,24 +266,25 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
 		io.AddKeyEvent(ImGuiMod_Alt, event.AltDown());
 
 		int key = event.GetKeyCode();
-		if (key == WXK_BACK) { io.AddKeyEvent(ImGuiKey_Backspace, true); io.AddKeyEvent(ImGuiKey_Backspace, false); }
-		else if (key == WXK_RETURN || key == WXK_NUMPAD_ENTER) { io.AddKeyEvent(ImGuiKey_Enter, true); io.AddKeyEvent(ImGuiKey_Enter, false); }
-		else if (key == WXK_LEFT) { io.AddKeyEvent(ImGuiKey_LeftArrow, true); io.AddKeyEvent(ImGuiKey_LeftArrow, false); }
-		else if (key == WXK_RIGHT) { io.AddKeyEvent(ImGuiKey_RightArrow, true); io.AddKeyEvent(ImGuiKey_RightArrow, false); }
-		else if (key == WXK_HOME) { io.AddKeyEvent(ImGuiKey_Home, true); io.AddKeyEvent(ImGuiKey_Home, false); }
-		else if (key == WXK_END) { io.AddKeyEvent(ImGuiKey_End, true); io.AddKeyEvent(ImGuiKey_End, false); }
-		else if (key == WXK_DELETE) { io.AddKeyEvent(ImGuiKey_Delete, true); io.AddKeyEvent(ImGuiKey_Delete, false); }
-		else if (key == WXK_ESCAPE) { ImGui::SetWindowFocus(nullptr); }
+		if (key == WXK_BACK) { io.AddKeyEvent(ImGuiKey_Backspace, true); io.AddKeyEvent(ImGuiKey_Backspace, false); Refresh(); return; }
+		else if (key == WXK_RETURN || key == WXK_NUMPAD_ENTER) { io.AddKeyEvent(ImGuiKey_Enter, true); io.AddKeyEvent(ImGuiKey_Enter, false); Refresh(); return; }
+		else if (key == WXK_LEFT) { io.AddKeyEvent(ImGuiKey_LeftArrow, true); io.AddKeyEvent(ImGuiKey_LeftArrow, false); Refresh(); return; }
+		else if (key == WXK_RIGHT) { io.AddKeyEvent(ImGuiKey_RightArrow, true); io.AddKeyEvent(ImGuiKey_RightArrow, false); Refresh(); return; }
+		else if (key == WXK_UP) { io.AddKeyEvent(ImGuiKey_UpArrow, true); io.AddKeyEvent(ImGuiKey_UpArrow, false); Refresh(); return; }
+		else if (key == WXK_DOWN) { io.AddKeyEvent(ImGuiKey_DownArrow, true); io.AddKeyEvent(ImGuiKey_DownArrow, false); Refresh(); return; }
+		else if (key == WXK_HOME) { io.AddKeyEvent(ImGuiKey_Home, true); io.AddKeyEvent(ImGuiKey_Home, false); Refresh(); return; }
+		else if (key == WXK_END) { io.AddKeyEvent(ImGuiKey_End, true); io.AddKeyEvent(ImGuiKey_End, false); Refresh(); return; }
+		else if (key == WXK_DELETE) { io.AddKeyEvent(ImGuiKey_Delete, true); io.AddKeyEvent(ImGuiKey_Delete, false); Refresh(); return; }
+		else if (key == WXK_ESCAPE) { ImGui::SetWindowFocus(nullptr); Refresh(); return; }
 		else if (event.ControlDown()) {
-			if (key == 'A' || key == 'a') { io.AddKeyEvent(ImGuiKey_A, true); io.AddKeyEvent(ImGuiKey_A, false); }
-			else if (key == 'C' || key == 'c') { io.AddKeyEvent(ImGuiKey_C, true); io.AddKeyEvent(ImGuiKey_C, false); }
-			else if (key == 'V' || key == 'v') { io.AddKeyEvent(ImGuiKey_V, true); io.AddKeyEvent(ImGuiKey_V, false); }
-			else if (key == 'X' || key == 'x') { io.AddKeyEvent(ImGuiKey_X, true); io.AddKeyEvent(ImGuiKey_X, false); }
-			else if (key == 'Z' || key == 'z') { io.AddKeyEvent(ImGuiKey_Z, true); io.AddKeyEvent(ImGuiKey_Z, false); }
-			else if (key == 'Y' || key == 'y') { io.AddKeyEvent(ImGuiKey_Y, true); io.AddKeyEvent(ImGuiKey_Y, false); }
+			if (key == 'A' || key == 'a') { io.AddKeyEvent(ImGuiKey_A, true); io.AddKeyEvent(ImGuiKey_A, false); Refresh(); return; }
+			else if (key == 'C' || key == 'c') { io.AddKeyEvent(ImGuiKey_C, true); io.AddKeyEvent(ImGuiKey_C, false); Refresh(); return; }
+			else if (key == 'V' || key == 'v') { io.AddKeyEvent(ImGuiKey_V, true); io.AddKeyEvent(ImGuiKey_V, false); Refresh(); return; }
+			else if (key == 'X' || key == 'x') { io.AddKeyEvent(ImGuiKey_X, true); io.AddKeyEvent(ImGuiKey_X, false); Refresh(); return; }
+			else if (key == 'Z' || key == 'z') { io.AddKeyEvent(ImGuiKey_Z, true); io.AddKeyEvent(ImGuiKey_Z, false); Refresh(); return; }
+			else if (key == 'Y' || key == 'y') { io.AddKeyEvent(ImGuiKey_Y, true); io.AddKeyEvent(ImGuiKey_Y, false); Refresh(); return; }
 		}
 		event.Skip();
-		Refresh();
 		return;
 	}
 
@@ -636,6 +637,9 @@ void MapCanvas::OnChar(wxKeyEvent& event) {
   if (ImGui::GetCurrentContext() && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantTextInput)) {
     ImGuiIO& io = ImGui::GetIO();
     wxChar uc = event.GetUnicodeKey();
+    if (uc == WXK_NONE || uc == 0) {
+      uc = (wxChar)event.GetKeyCode();
+    }
     if (uc >= 32 && uc < 0x10FFFF) {
       io.AddInputCharacter((unsigned int)uc);
     }
@@ -648,6 +652,7 @@ void MapCanvas::OnChar(wxKeyEvent& event) {
 void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 	cursor_x = event.GetX();
 	cursor_y = event.GetY();
+	SetFocus();
 	SyncImGuiMouseState(event);
   if (IsImGuiCapturingMouse()) {
     Refresh();
@@ -1465,6 +1470,7 @@ void MapCanvas::OnWheel(wxMouseEvent& event) {
   }
 
   if (IsImGuiCapturingMouse()) {
+    Refresh();
     return;
   }
 

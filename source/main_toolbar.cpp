@@ -52,57 +52,58 @@ wxBitmap LoadBitmapFromFileCandidates(const wxSize& icon_size, const std::vector
 	return wxNullBitmap;
 }
 
-class CorporateToolBarArt : public wxAuiDefaultToolBarArt {
+class MacOSToolBarArt : public wxAuiDefaultToolBarArt {
 public:
-	CorporateToolBarArt() : wxAuiDefaultToolBarArt() {
-		m_baseColour = wxColour(13, 17, 23);
+	MacOSToolBarArt() : wxAuiDefaultToolBarArt() {
+		m_baseColour = wxColour(14, 18, 26);
 		m_highlightColour = wxColour(229, 193, 88);
 	}
 
 	wxAuiToolBarArt* Clone() wxOVERRIDE {
-		return new CorporateToolBarArt(*this);
+		return new MacOSToolBarArt(*this);
 	}
 
 	void DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE {
-		dc.GradientFillLinear(rect, wxColour(22, 28, 38), wxColour(13, 17, 23), wxSOUTH);
-		dc.SetPen(wxPen(wxColour(28, 35, 48), 1));
+		// Semi-transparent dark overlay look matching Canvas Coordinates & Item ID Panel
+		dc.GradientFillLinear(rect, wxColour(20, 26, 36), wxColour(12, 16, 22), wxSOUTH);
+		// 1px Specular Border
+		dc.SetPen(wxPen(wxColour(55, 68, 88), 1));
+		dc.DrawLine(rect.GetLeft(), rect.GetTop(), rect.GetRight() + 1, rect.GetTop());
+		dc.SetPen(wxPen(wxColour(8, 12, 16), 1));
 		dc.DrawLine(rect.GetLeft(), rect.GetBottom(), rect.GetRight() + 1, rect.GetBottom());
 	}
 
 	void DrawGripper(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE {
-		// Fantasy RPG drag handle (solid gold rounded rectangle)
-		dc.SetPen(wxPen(wxColour(197, 160, 89), 1));
-		dc.SetBrush(wxBrush(wxColour(229, 193, 88)));
-		if (m_flags & wxAUI_TB_VERTICAL) {
-			int bar_h = 4;
-			int y = rect.y + (rect.height - bar_h) / 2;
-			dc.DrawRoundedRectangle(rect.x + 6, y, rect.width - 12, bar_h, 1);
-		} else {
-			int bar_w = 4;
-			int x = rect.x + (rect.width - bar_w) / 2;
-			dc.DrawRoundedRectangle(x, rect.y + 4, bar_w, rect.height - 8, 1);
-		}
+		// Invisible gripper to keep clean seamless panel look
 	}
 
 	void DrawSeparator(wxDC& dc, wxWindow* wnd, const wxRect& rect) wxOVERRIDE {
+		// Sleek hairline divider
 		if (m_flags & wxAUI_TB_VERTICAL) {
-			dc.SetPen(wxPen(wxColour(35, 45, 60)));
-			dc.DrawLine(rect.x + 2, rect.y + rect.height / 2, rect.x + rect.width - 2, rect.y + rect.height / 2);
+			dc.SetPen(wxPen(wxColour(45, 55, 72), 1));
+			dc.DrawLine(rect.x + 4, rect.y + rect.height / 2, rect.x + rect.width - 4, rect.y + rect.height / 2);
 		} else {
-			dc.SetPen(wxPen(wxColour(35, 45, 60)));
-			dc.DrawLine(rect.x + rect.width / 2, rect.y + 2, rect.x + rect.width / 2, rect.y + rect.height - 2);
+			dc.SetPen(wxPen(wxColour(45, 55, 72), 1));
+			dc.DrawLine(rect.x + rect.width / 2, rect.y + 5, rect.x + rect.width / 2, rect.y + rect.height - 5);
 		}
 	}
 
 	void DrawButton(wxDC& dc, wxWindow* wnd, const wxAuiToolBarItem& item, const wxRect& rect) wxOVERRIDE {
+		wxRect btn_rect = rect;
+		btn_rect.Deflate(2, 2);
 		if (item.GetState() & wxAUI_BUTTON_STATE_CHECKED) {
+			// Gold/Blue Accent Glow matching Coordinates/Item ID panel
 			dc.SetPen(wxPen(wxColour(229, 193, 88), 1));
-			dc.SetBrush(wxBrush(wxColour(28, 48, 76)));
-			dc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2);
+			dc.SetBrush(wxBrush(wxColour(36, 44, 60)));
+			dc.DrawRoundedRectangle(btn_rect.x, btn_rect.y, btn_rect.width, btn_rect.height, 5);
+		} else if (item.GetState() & wxAUI_BUTTON_STATE_PRESSED) {
+			dc.SetPen(wxPen(wxColour(180, 150, 60), 1));
+			dc.SetBrush(wxBrush(wxColour(24, 30, 42)));
+			dc.DrawRoundedRectangle(btn_rect.x, btn_rect.y, btn_rect.width, btn_rect.height, 5);
 		} else if (item.GetState() & wxAUI_BUTTON_STATE_HOVER) {
-			dc.SetPen(wxPen(wxColour(70, 95, 135), 1));
-			dc.SetBrush(wxBrush(wxColour(35, 48, 68)));
-			dc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2);
+			dc.SetPen(wxPen(wxColour(75, 92, 120), 1));
+			dc.SetBrush(wxBrush(wxColour(32, 40, 54)));
+			dc.DrawRoundedRectangle(btn_rect.x, btn_rect.y, btn_rect.width, btn_rect.height, 5);
 		}
 		wxAuiDefaultToolBarArt::DrawButton(dc, wnd, item, rect);
 	}
@@ -226,16 +227,16 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	}
 
 	// --- Tools & Brushes Toolbar (Pencil, Bucket, Eraser, Doors, Windows, Floors, etc.) ---
-	brushes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_BRUSHES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT | wxAUI_TB_GRIPPER);
-	brushes_toolbar->SetArtProvider(new CorporateToolBarArt());
-	brushes_toolbar->SetBackgroundColour(wxColour(13, 17, 23));
+	brushes_toolbar = newd wxAuiToolBar(parent, TOOLBAR_BRUSHES, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT);
+	brushes_toolbar->SetArtProvider(new MacOSToolBarArt());
+	brushes_toolbar->SetBackgroundColour(wxColour(14, 18, 26));
 	brushes_toolbar->SetToolBitmapSize(icon_size);
 	toolbar_left_spacer = new wxStaticText(brushes_toolbar, wxID_ANY, wxEmptyString,
 		wxDefaultPosition, wxSize(0, -1));
 	toolbar_right_spacer = new wxStaticText(brushes_toolbar, wxID_ANY, wxEmptyString,
 		wxDefaultPosition, wxSize(0, -1));
-	toolbar_left_spacer->SetBackgroundColour(wxColour(13, 17, 23));
-	toolbar_right_spacer->SetBackgroundColour(wxColour(13, 17, 23));
+	toolbar_left_spacer->SetBackgroundColour(wxColour(14, 18, 26));
+	toolbar_right_spacer->SetBackgroundColour(wxColour(14, 18, 26));
 	// Keep the complete tool group centered in the available toolbar width.
 	brushes_toolbar->AddStretchSpacer();
 	if (pointer_bitmap.IsOk()) {
@@ -265,9 +266,9 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	for (int i = 0; i <= MAP_MAX_LAYER; ++i) {
 		z_levels.Add(wxString::Format("Floor %d", i));
 	}
-	z_choice = newd wxChoice(brushes_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(75, -1)), z_levels);
+	z_choice = newd wxChoice(brushes_toolbar, wxID_ANY, wxDefaultPosition, FROM_DIP(parent, wxSize(78, -1)), z_levels);
 	z_choice->SetToolTip("Select Z-Level (Floor)");
-	z_choice->SetBackgroundColour(wxColour(13, 17, 23));
+	z_choice->SetBackgroundColour(wxColour(24, 30, 42));
 	z_choice->SetForegroundColour(wxColour(229, 193, 88));
 	brushes_toolbar->AddControl(z_choice);
 
@@ -283,10 +284,10 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	wxBitmap size7_bitmap = wxArtProvider::GetBitmap(ART_RECTANGULAR_7, wxART_TOOLBAR, icon_size);
 
 	wxStaticText* size_gap_before = new wxStaticText(brushes_toolbar, wxID_ANY, wxEmptyString, wxDefaultPosition, FROM_DIP(parent, wxSize(3, 24)));
-	size_gap_before->SetBackgroundColour(wxColour(13, 17, 23));
+	size_gap_before->SetBackgroundColour(wxColour(14, 18, 26));
 	brushes_toolbar->AddControl(size_gap_before);
 	wxStaticText* size_gap_after = new wxStaticText(brushes_toolbar, wxID_ANY, wxEmptyString, wxDefaultPosition, FROM_DIP(parent, wxSize(3, 24)));
-	size_gap_after->SetBackgroundColour(wxColour(13, 17, 23));
+	size_gap_after->SetBackgroundColour(wxColour(14, 18, 26));
 	brushes_toolbar->AddControl(size_gap_after);
 	brushes_toolbar->AddTool(TOOLBAR_SIZES_RECTANGULAR, wxEmptyString, rectangular_bitmap, wxNullBitmap, wxITEM_CHECK, "Rectangular Brush", wxEmptyString, NULL);
 	brushes_toolbar->AddTool(TOOLBAR_SIZES_CIRCULAR, wxEmptyString, circular_bitmap, wxNullBitmap, wxITEM_CHECK, "Circular Brush", wxEmptyString, NULL);
@@ -308,7 +309,7 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	});
 	day_night_button = new wxBitmapButton(brushes_toolbar, wxID_ANY, day_night_bitmap,
 		wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
-	day_night_button->SetBackgroundColour(wxColour(22, 27, 36));
+	day_night_button->SetBackgroundColour(wxColour(24, 30, 42));
 	day_night_button->SetToolTip("Day/Night switch");
 	brushes_toolbar->AddControl(day_night_button);
 	day_night_button->Bind(wxEVT_BUTTON, [](wxCommandEvent&) {
@@ -318,6 +319,31 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 			g_gui.GetCurrentMapTab()->GetCanvas()->Refresh();
 		}
 	});
+
+	brushes_toolbar->AddSeparator();
+
+	// Move / Toggle Dock Dot Button ("•") and Close Button ("×")
+	auto* move_btn = new wxButton(brushes_toolbar, wxID_ANY, wxString::FromUTF8("•"), wxDefaultPosition, FROM_DIP(parent, wxSize(20, 22)), wxNO_BORDER);
+	move_btn->SetBackgroundColour(wxColour(28, 36, 50));
+	move_btn->SetForegroundColour(wxColour(229, 193, 88));
+	move_btn->SetToolTip("Move Toolbar (Toggle Top / Bottom Dock)");
+	move_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		int current_pos = g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION);
+		g_settings.setInteger(Config::TOOLBAR_OVERLAY_POSITION, current_pos == 0 ? 1 : 0);
+		ApplyAlignment();
+	});
+	brushes_toolbar->AddControl(move_btn);
+
+	auto* close_btn = new wxButton(brushes_toolbar, wxID_ANY, wxString::FromUTF8("×"), wxDefaultPosition, FROM_DIP(parent, wxSize(20, 22)), wxNO_BORDER);
+	close_btn->SetBackgroundColour(wxColour(48, 20, 24));
+	close_btn->SetForegroundColour(wxColour(255, 140, 140));
+	close_btn->SetToolTip("Close / Hide Toolbar");
+	close_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+		GetPane(TOOLBAR_BRUSHES).Hide();
+		if (g_gui.GetAuiManager()) g_gui.GetAuiManager()->Update();
+	});
+	brushes_toolbar->AddControl(close_btn);
+
 	sizes_toolbar = brushes_toolbar;
 	brushes_toolbar->Realize();
 	toolbar_content_width = brushes_toolbar->GetBestSize().GetWidth();
@@ -327,9 +353,9 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	if (brush_best.x < 560) brush_best.x = FROM_DIP(parent, wxSize(560, -1)).x;
 
 	// --- Status & Settings Toolbar (Coordinates and Item ID) ---
-	position_toolbar = newd wxAuiToolBar(parent, TOOLBAR_POSITION, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT | wxAUI_TB_GRIPPER);
-	position_toolbar->SetArtProvider(new CorporateToolBarArt());
-	position_toolbar->SetBackgroundColour(wxColour(13, 17, 23));
+	position_toolbar = newd wxAuiToolBar(parent, TOOLBAR_POSITION, wxDefaultPosition, wxDefaultSize, wxAUI_TB_HORZ_TEXT);
+	position_toolbar->SetArtProvider(new MacOSToolBarArt());
+	position_toolbar->SetBackgroundColour(wxColour(14, 18, 26));
 	position_toolbar->SetToolBitmapSize(icon_size);
 
 	// Keep position and item information together in the lower status toolbar.
@@ -354,8 +380,8 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 	// Dock toolbars in the top row (Row 0):
 	// Tools and brush sizes are centered in the upper toolbar; coordinates and item information remain below.
 	int toolbar_width = std::max(brush_best.x, parent->GetClientSize().GetWidth());
-	manager->AddPane(brushes_toolbar,  wxAuiPaneInfo().Name(BRUSHES_BAR_NAME).Caption("Tools & Brush Sizes").ToolbarPane().Top().Row(0).Position(0).Gripper(false).Dockable(false).Floatable(false).Movable(false).CloseButton(false).Resizable(true).BestSize(wxSize(toolbar_width, brush_best.y)).MinSize(wxSize(brush_best.x, brush_best.y)));
-	manager->AddPane(position_toolbar, wxAuiPaneInfo().Name(POSITION_BAR_NAME).ToolbarPane().Bottom().Row(0).Position(0).Gripper(false).Dockable(false).Floatable(false).Movable(false).CloseButton(false).Resizable(false).BestSize(pos_best).MinSize(pos_best));
+	manager->AddPane(brushes_toolbar, wxAuiPaneInfo().Name(BRUSHES_BAR_NAME).CaptionVisible(false).PaneBorder(false).ToolbarPane().Top().Row(0).Position(0).Gripper(false).Dockable(true).TopDockable(true).BottomDockable(true).Floatable(false).Movable(false).CloseButton(false).Resizable(true).BestSize(wxSize(toolbar_width, brush_best.y)).MinSize(wxSize(brush_best.x, brush_best.y)).Hide());
+	manager->AddPane(position_toolbar, wxAuiPaneInfo().Name(POSITION_BAR_NAME).CaptionVisible(false).PaneBorder(false).ToolbarPane().Bottom().Row(0).Position(0).Gripper(false).Dockable(false).Floatable(false).Movable(false).CloseButton(false).Resizable(false).Hide().BestSize(pos_best).MinSize(pos_best));
 
 	// Apply saved alignment on construction
 	ApplyAlignment();
@@ -593,10 +619,18 @@ void MainToolBar::LoadPerspective() {
 	wxAuiManager* manager = g_gui.GetAuiManager();
 	if (!manager) return;
 
-	// Fixed two-sector layout: tools on the left, status controls on the right.
-	GetPane(TOOLBAR_BRUSHES).Show(true).Top().Row(0).Position(0).Gripper(false).Dockable(false).Floatable(false).Movable(false);
-	GetPane(TOOLBAR_POSITION).Show(true).Bottom().Row(0).Position(0).Gripper(false).Dockable(false).Floatable(false).Movable(false);
+	if (!g_gui.IsEditorOpen()) {
+		GetPane(TOOLBAR_BRUSHES).Hide();
+		GetPane(TOOLBAR_POSITION).Hide();
+		manager->Update();
+		return;
+	}
 
+	GetPane(TOOLBAR_BRUSHES).Show(true);
+	brushes_toolbar->SetTransparent(static_cast<wxByte>(std::clamp(g_settings.getInteger(Config::TOOLBAR_OPACITY), 20, 100) * 255 / 100));
+	GetPane(TOOLBAR_POSITION).Hide();
+
+	ApplyAlignment();
 	manager->Update();
 }
 
@@ -831,8 +865,20 @@ void MainToolBar::ApplyAlignment() {
 	wxAuiManager* manager = g_gui.GetAuiManager();
 	if (!manager) return;
 
-	manager->GetPane(brushes_toolbar).Top().Row(0).Position(0).Gripper(false).Dockable(false).Floatable(false).Movable(false);
-	manager->GetPane(position_toolbar).Bottom().Row(0).Position(0).Gripper(false).Dockable(false).Floatable(false).Movable(false);
+	if (!g_gui.IsEditorOpen()) {
+		GetPane(TOOLBAR_BRUSHES).Hide();
+		GetPane(TOOLBAR_POSITION).Hide();
+		manager->Update();
+		return;
+	}
+
+	const bool is_bottom = g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION) == 1;
+	if (is_bottom) {
+		manager->GetPane(brushes_toolbar).Bottom().Row(0).Position(0).CaptionVisible(false).PaneBorder(false).Gripper(false).Dockable(true).TopDockable(true).BottomDockable(true).Floatable(false).Movable(false);
+	} else {
+		manager->GetPane(brushes_toolbar).Top().Row(0).Position(0).CaptionVisible(false).PaneBorder(false).Gripper(false).Dockable(true).TopDockable(true).BottomDockable(true).Floatable(false).Movable(false);
+	}
+	manager->GetPane(position_toolbar).Bottom().Row(1).Position(0).CaptionVisible(false).PaneBorder(false).Gripper(false).Hide();
 	if (toolbar_left_spacer && toolbar_right_spacer) {
 		// wxAuiToolBar measures control items by their current window size, not
 		// their min-size hint, so the spacers must be resized directly to have
