@@ -10,12 +10,21 @@
 using json = nlohmann::json;
 
 static std::string GetFallbackChecklistPath() {
-	wxStandardPaths& paths = wxStandardPaths::Get();
-	wxString dir = paths.GetUserConfigDir() + wxFILE_SEP_PATH + "Remere's Map Editor";
-	if (!wxDirExists(dir)) {
-		wxMkdir(dir);
+	static std::string s_cachedPath;
+	if (!s_cachedPath.empty()) {
+		return s_cachedPath;
 	}
-	return (dir + wxFILE_SEP_PATH + "checklist_autosave.json").ToStdString();
+	try {
+		wxStandardPaths& paths = wxStandardPaths::Get();
+		wxString dir = paths.GetUserConfigDir() + wxFILE_SEP_PATH + "Remere's Map Editor";
+		if (!wxDirExists(dir)) {
+			wxMkdir(dir);
+		}
+		s_cachedPath = (dir + wxFILE_SEP_PATH + "checklist_autosave.json").ToStdString();
+	} catch (...) {
+		s_cachedPath = "checklist_autosave.json";
+	}
+	return s_cachedPath;
 }
 
 ChecklistManager& ChecklistManager::getInstance() {
@@ -159,7 +168,7 @@ size_t ChecklistManager::getTotalCount() const {
 	return items.size();
 }
 
-void ChecklistManager::setAllItems(const std::vector<ChecklistItem>& newItems) {
+void ChecklistManager::setAllItems(const std::vector<ChecklistItem>& newItems, bool saveToDisk) {
 	{
 		std::lock_guard<std::mutex> lock(itemsMutex);
 		items = newItems;
@@ -169,27 +178,31 @@ void ChecklistManager::setAllItems(const std::vector<ChecklistItem>& newItems) {
 		}
 		nextId = maxId + 1;
 	}
-	notifyChanged();
+	notifyChanged(saveToDisk);
 }
 
 void ChecklistManager::saveToFile(const std::string& filepath) {
 	std::lock_guard<std::mutex> lock(itemsMutex);
-	json j = json::array();
-	for (const auto& item : items) {
-		json itemJson;
-		itemJson["id"] = item.id;
-		itemJson["text"] = item.text;
-		itemJson["author"] = item.author;
-		itemJson["completed"] = item.completed;
-		itemJson["timestamp"] = item.timestamp;
-		j.push_back(itemJson);
-	}
+	try {
+		json j = json::array();
+		for (const auto& item : items) {
+			json itemJson;
+			itemJson["id"] = item.id;
+			itemJson["text"] = item.text;
+			itemJson["author"] = item.author;
+			itemJson["completed"] = item.completed;
+			itemJson["timestamp"] = item.timestamp;
+			j.push_back(itemJson);
+		}
 
-	std::string savePath = filepath.empty() ? GetFallbackChecklistPath() : filepath;
-	std::ofstream file(savePath);
-	if (file.is_open()) {
-		file << j.dump(2);
-		file.close();
+		std::string savePath = filepath.empty() ? GetFallbackChecklistPath() : filepath;
+		std::ofstream file(savePath);
+		if (file.is_open()) {
+			file << j.dump(2);
+			file.close();
+		}
+	} catch (...) {
+		// Ignore disk save errors
 	}
 }
 
@@ -231,8 +244,10 @@ void ChecklistManager::loadFromFile(const std::string& filepath) {
 	}
 }
 
-void ChecklistManager::notifyChanged() {
-	save();
+void ChecklistManager::notifyChanged(bool saveToDisk) {
+	if (saveToDisk) {
+		save();
+	}
 	if (onChangeCallback) {
 		onChangeCallback();
 	}

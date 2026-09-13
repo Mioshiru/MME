@@ -38,7 +38,7 @@ public:
 	size_t getTotalCount() const;
 
 	// Bulk replace (e.g. from network full sync or load)
-	void setAllItems(const std::vector<ChecklistItem>& items);
+	void setAllItems(const std::vector<ChecklistItem>& items, bool saveToDisk = true);
 
 	// Persistence to file (.notes or config)
 	void setFilePath(const std::string& filepath);
@@ -51,7 +51,7 @@ public:
 	void setChangeCallback(std::function<void()> cb) { onChangeCallback = cb; }
 
 private:
-	void notifyChanged();
+	void notifyChanged(bool saveToDisk = true);
 
 	mutable std::mutex itemsMutex;
 	std::vector<ChecklistItem> items;

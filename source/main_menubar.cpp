@@ -1478,8 +1478,7 @@ void MainMenuBar::OnChangeFloor(wxCommandEvent& event) {
 }
 
 void MainMenuBar::OnNewPalette(wxCommandEvent& event) {
-	g_settings.setInteger(Config::SHOW_PALETTE, 1);
-	g_gui.RefreshView();
+	g_gui.NewPalette();
 	Update();
 }
 
@@ -2100,6 +2099,9 @@ void MainMenuBar::OnRotateItem(wxCommandEvent& event) {
 
 void MainMenuBar::OnRadioPlayer(wxCommandEvent& WXUNUSED(event)) {
 	bool cur = g_settings.getBoolean(Config::SHOW_RADIO);
+	if (cur) {
+		RadioManager::Get().Stop();
+	}
 	g_settings.setInteger(Config::SHOW_RADIO, cur ? 0 : 1);
 	g_gui.RefreshView();
 }

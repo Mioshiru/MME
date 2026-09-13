@@ -692,7 +692,7 @@ void LiveClient::parsePacket(NetworkMessage message) {
 		}
 	}
 
-	if (needsRefresh) {
+	if (needsRefresh && hasCreatedEditorTab && g_gui.IsEditorOpen()) {
 		g_gui.RefreshView();
 		g_gui.UpdateMinimap();
 	}
@@ -1002,7 +1002,9 @@ void LiveClient::parseTownList(NetworkMessage& message) {
 		t->setTemplePosition(tpos);
 		map.towns.addTown(t);
 	}
-	g_gui.RefreshMinimapPanel();
+	if (hasCreatedEditorTab && g_gui.IsEditorOpen()) {
+		g_gui.RefreshMinimapPanel();
+	}
 }
 
 void LiveClient::parseWorldPalette(NetworkMessage& message) {
@@ -1272,8 +1274,10 @@ void LiveClient::parseChecklistSync(NetworkMessage& message) {
 		item.completed = message.read<uint8_t>() != 0;
 		items.push_back(item);
 	}
-	ChecklistManager::getInstance().setAllItems(items);
-	g_gui.RefreshView();
+	ChecklistManager::getInstance().setAllItems(items, false);
+	if (hasCreatedEditorTab && g_gui.IsEditorOpen()) {
+		g_gui.RefreshView();
+	}
 }
 
 void LiveClient::parseChecklistAdd(NetworkMessage& message) {
@@ -1283,7 +1287,9 @@ void LiveClient::parseChecklistAdd(NetworkMessage& message) {
 	bool completed = message.read<uint8_t>() != 0;
 
 	ChecklistManager::getInstance().addItem(text, author, completed, id);
-	g_gui.RefreshView();
+	if (hasCreatedEditorTab && g_gui.IsEditorOpen()) {
+		g_gui.RefreshView();
+	}
 }
 
 void LiveClient::parseChecklistToggle(NetworkMessage& message) {
@@ -1291,18 +1297,24 @@ void LiveClient::parseChecklistToggle(NetworkMessage& message) {
 	bool completed = message.read<uint8_t>() != 0;
 
 	ChecklistManager::getInstance().toggleItem(id, completed);
-	g_gui.RefreshView();
+	if (hasCreatedEditorTab && g_gui.IsEditorOpen()) {
+		g_gui.RefreshView();
+	}
 }
 
 void LiveClient::parseChecklistDelete(NetworkMessage& message) {
 	uint32_t id = message.read<uint32_t>();
 
 	ChecklistManager::getInstance().deleteItem(id);
-	g_gui.RefreshView();
+	if (hasCreatedEditorTab && g_gui.IsEditorOpen()) {
+		g_gui.RefreshView();
+	}
 }
 
 void LiveClient::parseChecklistClearCompleted(NetworkMessage& message) {
 	ChecklistManager::getInstance().clearCompleted();
-	g_gui.RefreshView();
+	if (hasCreatedEditorTab && g_gui.IsEditorOpen()) {
+		g_gui.RefreshView();
+	}
 }
 

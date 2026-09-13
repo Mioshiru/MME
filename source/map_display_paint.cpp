@@ -1145,7 +1145,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			ImGui::PopStyleColor(2);
 		} else {
 			if (radio_docked_to_palette) {
-				ImGui::SetNextWindowPos(ImVec2(std::max(10.0f, io.DisplaySize.x - 340.0f), 60.0f), ImGuiCond_Always);
+				ImGui::SetNextWindowPos(ImVec2(std::max(10.0f, io.DisplaySize.x - 340.0f), std::max(10.0f, io.DisplaySize.y - 170.0f)), ImGuiCond_Always);
 				ImGui::SetNextWindowSize(ImVec2(330, 160), ImGuiCond_Always);
 			} else {
 				ImGui::SetNextWindowPos(ImVec2(18.0f, io.DisplaySize.y - 440.0f), ImGuiCond_FirstUseEver);
@@ -1294,6 +1294,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			ImGui::PopStyleColor(17);
 
 			if (!radio_open) {
+				RadioManager::Get().Stop();
 				g_settings.setInteger(Config::SHOW_RADIO, 0);
 				if (g_gui.root) {
 					g_gui.root->UpdateMenubar();

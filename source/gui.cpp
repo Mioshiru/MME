@@ -261,23 +261,19 @@ PaletteWindow *GUI::CreatePalette() {
     }
     aui_manager->AddPane(palette, wxAuiPaneInfo()
                                       .Name(wxstr(p_name))
-                                      .Caption("Tileset Palette")
+                                      .Caption(wxString::Format("Palette %d", static_cast<int>(palettes.size() + 1)))
                                       .Float()
                                       .FloatingPosition(float_pos)
                                       .FloatingSize(wxSize(270, 520))
-                                      .CloseButton(false)
-                                      .Floatable(false)
-                                      .Dockable(false)
-                                      .LeftDockable(false)
-                                      .RightDockable(false)
-                                      .TopDockable(false)
-                                      .BottomDockable(false)
-                                      .CaptionVisible(false)
-                                      .PaneBorder(false)
-                                      .Gripper(false)
+                                      .CloseButton(true)
+                                      .Floatable(true)
+                                      .Dockable(true)
+                                      .CaptionVisible(true)
+                                      .PaneBorder(true)
+                                      .Gripper(true)
                                       .BestSize(270, 520)
                                       .MinSize(wxSize(palette->FromDIP(160), 100))
-                                      .Show(false));
+                                      .Show(true));
   }
 
   // NOTE: Collections Palette / Tileset panel intentionally removed.
