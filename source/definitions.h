@@ -23,9 +23,9 @@
 
 // Version info
 // xxyyzzt (major, minor, subversion)
-#define __RME_VERSION_MAJOR__ 1
-#define __RME_VERSION_MINOR__ 9
-#define __RME_SUBVERSION__ 5
+#define __RME_VERSION_MAJOR__ 2
+#define __RME_VERSION_MINOR__ 0
+#define __RME_SUBVERSION__ 0
 
 #define __LIVE_NET_VERSION__ 7
 
@@ -52,8 +52,8 @@
 	#define __RME_VERSION__ std::string(i2s(__RME_VERSION_MAJOR__) + "." + i2s(__RME_VERSION_MINOR__) + "." + i2s(__RME_SUBVERSION__) + " (Pre-release)")
 	#define __W_RME_VERSION__ (wxString() << __RME_VERSION_MAJOR__ << "." << __RME_VERSION_MINOR__ << "." << __RME_SUBVERSION__ << " (Pre-release)")
 #else
-	#define __RME_VERSION__ std::string("1.9.5 (by Mioshiro)")
-	#define __W_RME_VERSION__ wxString("1.9.5 (by Mioshiro)")
+	#define __RME_VERSION__ std::string("2.0 Beta (by Mioshiro)")
+	#define __W_RME_VERSION__ wxString("2.0 Beta (by Mioshiro)")
 #endif
 // OS
 

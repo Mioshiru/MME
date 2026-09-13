@@ -1,6 +1,6 @@
 # Mio's Map Editor (MME)
 
-[![Version](https://img.shields.io/badge/version-v1.9.5-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
+[![Version](https://img.shields.io/badge/version-v2.0--Beta-gold?style=flat-square)](https://github.com/Mioshiru/MME/releases)
 [![License](https://img.shields.io/badge/license-GPLv2%20%2F%20Custom-blue?style=flat-square)](LICENSE.rtf)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/Mioshiru/MME)
 [![Discord / OTLand](https://img.shields.io/badge/Community-OTLand%20Thread-orange?style=flat-square)](https://github.com/Mioshiru/MME)
@@ -10,7 +10,7 @@
 
 ---
 
-## 🌟 Key Highlights & Mapper Features (v1.9.5)
+## 🌟 Key Highlights & Mapper Features (v2.0 Beta)
 
 ### 🎨 macOS-Style Filigree Fantasy Canvas UI & Floating Windows
 * **Frameless Obsidian & Gold Glass Panels:** Full-canvas Toolbar, Tileset Palette, Minimap, and Coordinates Overlay seamlessly floating directly over the OpenGL canvas with zero intrusive Windows borders.

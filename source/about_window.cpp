@@ -189,18 +189,18 @@ AboutWindow::AboutWindow(wxWindow* parent) :
 	contentPanel->SetBackgroundColour(wxColour(18, 32, 54));
 	wxBoxSizer* contentSizer = new wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* featsTitle = new wxStaticText(contentPanel, wxID_ANY, "Features & Changelog Highlights (v1.9.0):");
+	wxStaticText* featsTitle = new wxStaticText(contentPanel, wxID_ANY, "Features & Changelog Highlights (v2.0 Beta):");
 	featsTitle->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	featsTitle->SetForegroundColour(wxColour(240, 210, 120));
 	contentSizer->Add(featsTitle, 0, wxBOTTOM, 4);
 
 	wxString feats;
-	feats << "- Integrated Interactive Map Playtester with Real-Time Avatar & Weather (F6)\n";
-	feats << "- Super-Smooth Dynamic HD Asset Upscaling & Clean Pixel Edge Filtering\n";
-	feats << "- Realistic 2D Raycasted Light Wall Collision & Directional Wall Torches\n";
-	feats << "- Fully Synchronized Animated Grounds & Shore/Lava Border Cascades\n";
-	feats << "- Smart Zoom Performance Throttling (Automatic Idle/Anim Pause from 50% to 1% Zoom)\n";
-	feats << "- Monster Creator, NPC Generator & Procedural Map Generation Suite\n";
+	feats << "- Dark Runic Obsidian & Mystic Gold Fantasy RPG Canvas & macOS Gem Controls\n";
+	feats << "- Pixel-Perfect Unified Frameless Toolbar, Day/Night Toggle & Minimap Snapping\n";
+	feats << "- Real-Time Multiplayer Collaboration Suite, Live Ping HUD & Teleportation (Jump)\n";
+	feats << "- Intelligent HSV Material Color Style Recognition GPU Shader & xBRZ Upscaling\n";
+	feats << "- Universal Spotlight Search (Ctrl+F) & Tibia Creature Wiki Bestiary (F7)\n";
+	feats << "- Interactive Map Playtester with Avatar (F6) & Procedural World Generator\n";
 
 	wxStaticText* featsText = new wxStaticText(contentPanel, wxID_ANY, feats);
 	featsText->SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL));

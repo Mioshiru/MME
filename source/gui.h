@@ -433,6 +433,9 @@ public:
 		char search_buf[128] = { 0 };
 		float custom_x = -1.0f;
 		float custom_y = -1.0f;
+		// Per-palette independent selection — does NOT mirror g_gui.current_brush globally.
+		// Painting always uses g_gui.current_brush; this is for visual highlight only.
+		std::string selected_brush_name;
 	};
 
 	std::vector<CanvasPaletteState> canvas_palettes;

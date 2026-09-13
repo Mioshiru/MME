@@ -1,12 +1,12 @@
-# Mio's Map Editor (MME) – Release History & Changelog
+﻿# Mio's Map Editor (MME) – Release History & Changelog
 
 ![MME Editor Overview](docs/mme_editor_overview.png)
 
 ---
 
-## 🚀 Release v1.9.5 (Dark Runic Obsidian & Mystic Gold Fantasy RPG Redesign)
+## 🚀 Release v2.0 Beta (Dark Runic Obsidian & Mystic Gold Fantasy RPG Redesign)
 
-### 🌟 Major Highlights & New Features in v1.9.5
+### 🌟 Major Highlights & New Features in v2.0 Beta
 
 * **🎨 macOS-Style Filigree Fantasy Canvas UI & Floating Windows:**
   * **Full-Canvas Frameless Overlay Windows:** Redesigned Toolbar, Tileset Palette, Minimap, and Coordinate/Item overlays as lightweight, transparent, frameless canvas panels styled in deep runic obsidian (`#0D1117`) and mystic gold (`#D4AF37`).
@@ -64,9 +64,12 @@
 
 ---
 
-## 🚀 Release v1.9.4 (Universal Spotlight Search, Ultra-Zoom 10x, 3D Multi-Floor Selection & View Presets)
+> [!NOTE]
+> **Beta Development History** — The subsections below document the incremental beta iterations (v1.9.0 → v1.9.4) that led to the v2.0 Beta release. All these changes are included in v2.0 Beta.
 
-### 🌟 Major Highlights & New Features in v1.9.4
+### 📦 v1.9.4 (Universal Spotlight Search, Ultra-Zoom 10x, 3D Multi-Floor Selection & View Presets)
+
+#### Highlights in v1.9.4
 
 * **📜 Medieval Collaborative Checklist & Quest Notepad (`Ctrl+Shift+T` / `View -> Collaborative Notepad`):**
   * **Authentic Medieval Parchment Aesthetic:** Stylized parchment paper backdrop with worn antique stains, dark aged oak framing, and polished gold ornaments (`#D4AF37`).
@@ -116,11 +119,9 @@
   * **Native Archive Unpacking:** Fast extraction via native `tar -xf` with PowerShell fallback and UAC `runas` elevation.
   * **Codebase Refactoring:** Removed obsolete legacy updater files (`updater.h`) and unreferenced includes.
 
----
+### 📦 v1.9.3 (Tibia Creature Wiki, Official Bestiary Stats, Sorting & Favorites)
 
-## 🚀 Release v1.9.3 (Tibia Creature Wiki, Official Bestiary Stats, Sorting & Favorites)
-
-### 🌟 Major Highlights & New Features in v1.9.3
+#### Highlights in v1.9.3
 
 * **📖 Tibia Creature Wiki & Bestiary Knowledge Base (`F7` / `View -> Creature Wiki...`):**
   * **560+ Creatures with Official TibiaWiki Stats:** Direct data ingestion from the official [TibiaWiki](https://tibia.fandom.com/wiki/List_of_Creatures) API (`{{Infobox Creature}}`) covering 563 creatures with verified **Hit Points (HP)**, **Experience (EXP)**, **Armor**, **Speed**, and **Bestiary Categories**.
@@ -142,11 +143,9 @@
     * Dedicated **"Online Wiki"** button beside "Place on Map" and "In Palette" to launch the page in the default system browser.
   * **1-Click Mapping Actions:** Direct **"Place on Map"** (auto-selects brush and closes dialog) and **"In Palette"** (focuses creature in sidebar palette).
 
----
+### 📦 v1.9.2 (Collaborative Multiplayer Suite, Data Packaging & Hardened Netcode)
 
-## 🚀 Release v1.9.2 (Collaborative Multiplayer Suite, Data Packaging & Hardened Netcode)
-
-### 🌟 Major Highlights & New Features in v1.9.2
+#### Highlights in v1.9.2
 
 * **🛡️ Multiplayer Host Approval & Entity Management Suite (`Multiplayer -> Approvals & Reviews...`):**
   * **Centralized Host Review Dialog:** Hosts receive a dedicated live window listing all pending client creation and ID requests.
@@ -184,11 +183,9 @@
   * **Dockable & Floating Chat Window:** Minimize chat to a compact status bar pill (`💬 Team Chat (X new)`) or toggle dock/float anchoring.
   * **Audio Lifecycle:** Built-in fantasy web radio automatically halts audio playback upon dialog closure.
 
----
+### 📦 v1.9.1 (Maintenance & Quality of Life)
 
-## 📦 Release v1.9.1 (Maintenance & Quality of Life)
-
-### 🌟 Major Highlights & New Features in v1.9.1
+#### Highlights in v1.9.1
 * **Next-Gen Modern Pixel Art HD Super-Resolution Engine:**
   * **16-Tap Catmull-Rom Bicubic Spline + Directional Sub-Pixel Edge AA:** Reconstructs smooth $45^\circ$, $30^\circ$, and $60^\circ$ diagonal curves across all sprites and tiles, eliminating pixel crawl and jagged staircasing without losing pixel-art charm.
   * **AMD Contrast Adaptive Sharpening (CAS):** Crystal-clear micro-contrast for stone cracks, wood grain, foliage, and armor highlights without halo artifacts.
@@ -201,11 +198,9 @@
   * **Map Notes & Ping Feedback:** Renamed *"Annotation"* to *"Note"* with multiplayer visual feedback icon and ping notifications.
   * **Smart Wall Bucket Fill:** Perimeter boundary wall placement stops cleanly at existing wall structures.
 
----
+### 📦 v1.9.0 (Stable Foundation Release)
 
-## 📦 Release v1.9.0 (Stable Release)
-
-### 🌟 Major Highlights & New Features in v1.9.0
+#### Highlights in v1.9.0
 * **Integrated Interactive Map Playtester (`File -> Test` / `F6`):**
   * Instant, in-process playtest window with shared OpenGL sprite renderer and zero overhead.
   * Real-time controllable character (WASD / Arrows), directional sprites, health/mana HUD.

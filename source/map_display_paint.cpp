@@ -416,6 +416,9 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		}
 	}
 
+	const bool tb_active = g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES);
+	const int tb_dock = std::clamp(g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION), 0, 1);
+
 	// Universal In-Canvas Overlay Window Snapping System
 	struct OverlayWindowRect {
 		std::string name;
@@ -585,8 +588,13 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			last_seen_msg_count = total_msgs;
 
 			if (chat_docked_to_palette) {
-				ImGui::SetNextWindowPos(ImVec2(std::max(10.0f, io.DisplaySize.x - 340.0f), std::max(10.0f, io.DisplaySize.y - 270.0f)), ImGuiCond_Always);
-				ImGui::SetNextWindowSize(ImVec2(330, 260), ImGuiCond_Always);
+				// Dock to left canvas edge, below the palette (same column as palette).
+				const float c_pal_top = (tb_active && tb_dock == 0) ? 48.0f : 10.0f;
+				const float c_pal_bottom_margin = (tb_active && tb_dock == 1) ? 52.0f : 10.0f;
+				const float c_pal_h = std::clamp(io.DisplaySize.y - c_pal_top - c_pal_bottom_margin, 260.0f, 900.0f);
+				const float c_below_palette = c_pal_top + c_pal_h + 8.0f; // 8px gap after palette
+				ImGui::SetNextWindowPos(ImVec2(8.0f, c_below_palette), ImGuiCond_Always);
+				ImGui::SetNextWindowSize(ImVec2(310, 262), ImGuiCond_Always);
 			} else {
 				ImGui::SetNextWindowPos(ImVec2(18, io.DisplaySize.y - 270), ImGuiCond_FirstUseEver);
 				ImGui::SetNextWindowSize(ImVec2(330, 260), ImGuiCond_FirstUseEver);
@@ -632,7 +640,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					chat_docked_to_palette = !chat_docked_to_palette;
 				}
 				if (ImGui::IsItemHovered()) {
-					ImGui::SetTooltip(chat_docked_to_palette ? "Switch to free-floating window" : "Dock to right palette area");
+					ImGui::SetTooltip(chat_docked_to_palette ? "Switch to free-floating window" : "Dock to left edge (below palette)");
 				}
 				ImGui::SameLine();
 				if (ImGui::SmallButton("[-]")) {
@@ -1127,8 +1135,14 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			ImGui::PopStyleColor(2);
 		} else {
 			if (radio_docked_to_palette) {
-				ImGui::SetNextWindowPos(ImVec2(std::max(10.0f, io.DisplaySize.x - 340.0f), std::max(10.0f, io.DisplaySize.y - 170.0f)), ImGuiCond_Always);
-				ImGui::SetNextWindowSize(ImVec2(330, 160), ImGuiCond_Always);
+				// Dock to left canvas edge, below the palette (same column as palette).
+				// pal_top is either 48 (toolbar at top) or 10, pal_h is the palette height.
+				const float r_pal_top = (tb_active && tb_dock == 0) ? 48.0f : 10.0f;
+				const float r_pal_bottom_margin = (tb_active && tb_dock == 1) ? 52.0f : 10.0f;
+				const float r_pal_h = std::clamp(io.DisplaySize.y - r_pal_top - r_pal_bottom_margin, 260.0f, 900.0f);
+				const float r_below_palette = r_pal_top + r_pal_h + 8.0f; // 8px gap after palette
+				ImGui::SetNextWindowPos(ImVec2(8.0f, r_below_palette), ImGuiCond_Always);
+				ImGui::SetNextWindowSize(ImVec2(310, 162), ImGuiCond_Always);
 			} else {
 				ImGui::SetNextWindowPos(ImVec2(18.0f, io.DisplaySize.y - 440.0f), ImGuiCond_FirstUseEver);
 				ImGui::SetNextWindowSize(ImVec2(330, 160), ImGuiCond_FirstUseEver);
@@ -1176,7 +1190,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					radio_docked_to_palette = !radio_docked_to_palette;
 				}
 				if (ImGui::IsItemHovered()) {
-					ImGui::SetTooltip(radio_docked_to_palette ? "Switch to free-floating window" : "Dock to right palette area");
+					ImGui::SetTooltip(radio_docked_to_palette ? "Switch to free-floating window" : "Dock to left edge (below palette)");
 				}
 				ImGui::SameLine();
 				if (ImGui::SmallButton("[-]")) {
@@ -1185,6 +1199,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				if (ImGui::IsItemHovered()) {
 					ImGui::SetTooltip("Minimize to bottom status bar");
 				}
+
 
 				// Status sub-bar
 				if (rm.IsPlaying()) {
@@ -1789,8 +1804,6 @@ static ToolbarIconCache s_toolbar_icons;
 
 	// macOS Canvas Floating / Docked Tileset Palette in filigree fantasy look
 	static int last_applied_dock_side = -1;
-	const bool tb_active = g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES);
-	const int tb_dock = std::clamp(g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION), 0, 1);
 	const float pal_width = 310.0f;
 
 	if (g_gui.canvas_palettes.empty()) {
@@ -2153,7 +2166,16 @@ static ToolbarIconCache s_toolbar_icons;
 						float btn_spacing = 4.0f;
 						int cols = std::max(1, (int)((avail_w + btn_spacing) / (btn_dim + btn_spacing)));
 
-						Brush* cur_active_brush = g_gui.GetCurrentBrush();
+						// Use per-palette selected_brush_name for visual highlight, NOT the global brush.
+						// This keeps each palette's selection independent from other palettes.
+						Brush* cur_active_brush = nullptr;
+						{
+							Brush* global_brush = g_gui.GetCurrentBrush();
+							if (global_brush && !pal_state.selected_brush_name.empty() &&
+								global_brush->getName() == pal_state.selected_brush_name) {
+								cur_active_brush = global_brush; // Only highlight if this palette selected it
+							}
+						}
 
 						for (size_t i = 0; i < brushes.size(); ++i) {
 							Brush* b = brushes[i];
@@ -2181,12 +2203,14 @@ static ToolbarIconCache s_toolbar_icons;
 
 							if (spr_tex != 0) {
 								if (ImGui::ImageButton("##tile_btn", (ImTextureID)(intptr_t)spr_tex, ImVec2(btn_dim - 6.0f, btn_dim - 6.0f))) {
+									pal_state.selected_brush_name = b->getName();
 									g_gui.SelectBrush(b, active_cat_type);
 									g_gui.SelectBrushInternal(b);
 								}
 							} else {
 								std::string short_label = b->getName().substr(0, std::min<size_t>(4, b->getName().size()));
 								if (ImGui::Button(short_label.c_str(), ImVec2(btn_dim, btn_dim))) {
+									pal_state.selected_brush_name = b->getName();
 									g_gui.SelectBrush(b, active_cat_type);
 									g_gui.SelectBrushInternal(b);
 								}
