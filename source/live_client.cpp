@@ -962,9 +962,17 @@ void LiveClient::parseWorldPalette(NetworkMessage& message) {
 	std::string tsName = message.read<std::string>();
 	uint32_t brushCount = message.read<uint32_t>();
 
+	if (tsName.empty()) {
+		for (uint32_t i = 0; i < brushCount; ++i) {
+			message.read<std::string>();
+			message.read<uint32_t>();
+		}
+		return;
+	}
+
 	Tileset* tileset = nullptr;
 	auto it = g_materials.tilesets.find(tsName);
-	if (it != g_materials.tilesets.end()) {
+	if (it != g_materials.tilesets.end() && it->second) {
 		tileset = it->second;
 		tileset->clear();
 	} else {
@@ -972,41 +980,50 @@ void LiveClient::parseWorldPalette(NetworkMessage& message) {
 		g_materials.tilesets[tsName] = tileset;
 	}
 
+	if (!tileset) {
+		for (uint32_t i = 0; i < brushCount; ++i) {
+			message.read<std::string>();
+			message.read<uint32_t>();
+		}
+		return;
+	}
+
+	auto addBrushSafe = [](TilesetCategory* cat, Brush* b) {
+		if (!cat || !b) return;
+		for (Brush* existing : cat->brushlist) {
+			if (existing == b) return;
+		}
+		cat->brushlist.push_back(b);
+	};
+
 	for (uint32_t i = 0; i < brushCount; ++i) {
 		std::string brushName = message.read<std::string>();
 		uint32_t brushId = message.read<uint32_t>();
+		if (brushName.empty()) continue;
+
 		Brush* b = g_brushes.getBrush(brushName);
 		if (b && !b->isSeparator()) {
 			// Always add to overall TILESET_FAVORITE category of this tileset
 			TilesetCategory* catAll = tileset->getCategory(TILESET_FAVORITE);
-			if (catAll && !catAll->containsBrush(b)) {
-				catAll->brushlist.push_back(b);
-			}
+			addBrushSafe(catAll, b);
 
 			// Also categorize into specific palette types
 			if (b->isCreature()) {
-				CreatureBrush* cb = static_cast<CreatureBrush*>(b);
+				CreatureBrush* cb = dynamic_cast<CreatureBrush*>(b);
 				if (cb && cb->getType() && cb->getType()->isNpc) {
-					TilesetCategory* catNpc = tileset->getCategory(TILESET_NPC);
-					if (catNpc && !catNpc->containsBrush(b)) catNpc->brushlist.push_back(b);
+					addBrushSafe(tileset->getCategory(TILESET_NPC), b);
 				} else {
-					TilesetCategory* catCr = tileset->getCategory(TILESET_CREATURE);
-					if (catCr && !catCr->containsBrush(b)) catCr->brushlist.push_back(b);
+					addBrushSafe(tileset->getCategory(TILESET_CREATURE), b);
 				}
 			} else if (b->isWall() || b->isGround() || b->isTerrain() || b->isOptionalBorder()) {
-				TilesetCategory* catTer = tileset->getCategory(TILESET_TERRAIN);
-				if (catTer && !catTer->containsBrush(b)) catTer->brushlist.push_back(b);
+				addBrushSafe(tileset->getCategory(TILESET_TERRAIN), b);
 			} else if (b->isDoodad() || b->isTable() || b->isCarpet() || wxstr(b->getName()).Lower().Contains("ladder")) {
-				TilesetCategory* catDoo = tileset->getCategory(TILESET_DOODAD);
-				if (catDoo && !catDoo->containsBrush(b)) catDoo->brushlist.push_back(b);
+				addBrushSafe(tileset->getCategory(TILESET_DOODAD), b);
 			} else if (b->isHouse()) {
-				TilesetCategory* catHse = tileset->getCategory(TILESET_HOUSE);
-				if (catHse && !catHse->containsBrush(b)) catHse->brushlist.push_back(b);
+				addBrushSafe(tileset->getCategory(TILESET_HOUSE), b);
 			} else if (b->isRaw()) {
-				TilesetCategory* catRaw = tileset->getCategory(TILESET_RAW);
-				if (catRaw && !catRaw->containsBrush(b)) catRaw->brushlist.push_back(b);
-				TilesetCategory* catItem = tileset->getCategory(TILESET_ITEM);
-				if (catItem && !catItem->containsBrush(b)) catItem->brushlist.push_back(b);
+				addBrushSafe(tileset->getCategory(TILESET_RAW), b);
+				addBrushSafe(tileset->getCategory(TILESET_ITEM), b);
 			}
 		}
 	}
