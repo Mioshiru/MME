@@ -62,10 +62,6 @@
   * **Spotlight & Dialog Refresh:** Universal Command Palette, Welcome Landing Hub, and dialog windows unified with dark runic stone aesthetics, golden focus indicators, and crisp typography.
   * **Enhanced Live Minimap & Controls:** Obsidian-framed minimap viewport and styled toolbar controls matching the dark fantasy theme.
 
-* **🛠️ Project Manager & Process Stability:**
-  * **Zero-Crash Async Process Execution:** Replaced runspace delegate pipes with a rock-solid thread-safe `ConcurrentQueue` and background reader threads.
-  * **Clean UTF-8 Umlaut Encoding:** Full German character set support across the live console, batch builders, and release workflows.
-
 ---
 
 ## 🚀 Release v1.9.4 (Universal Spotlight Search, Ultra-Zoom 10x, 3D Multi-Floor Selection & View Presets)

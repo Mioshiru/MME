@@ -140,7 +140,7 @@ void LiveSocket::sendNode(uint32_t clientId, QTreeNode* node, int32_t ndx, int32
 	message.write<uint32_t>((ndx << 18) | (ndy << 4) | ((floorMask & 0xFF00) ? 1 : 0));
 
 	if (!node) {
-		message.write<uint8_t>(0x00);
+		message.write<uint16_t>(0x0000);
 	} else {
 		Floor** floors = node->getFloors();
 
@@ -479,12 +479,16 @@ void LiveSocket::sendTile(MemoryNodeFileWriteHandle& writer, Tile* tile, const P
 }
 
 Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* position) {
-	ASSERT(node != nullptr);
+	if (!node) {
+		return nullptr;
+	}
 
 	Map& map = editor.map;
 
-	uint8_t tileType;
-	node->getByte(tileType);
+	uint8_t tileType = 0;
+	if (!node->getByte(tileType)) {
+		return nullptr;
+	}
 
 	if (tileType != OTBM_TILE && tileType != OTBM_HOUSETILE) {
 		return nullptr;
@@ -494,24 +498,26 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 	if (position) {
 		pos = *position;
 	} else {
-		uint16_t x;
-		node->getU16(x);
+		uint16_t x = 0;
+		if (!node->getU16(x)) return nullptr;
 		pos.x = x;
-		uint16_t y;
-		node->getU16(y);
+		uint16_t y = 0;
+		if (!node->getU16(y)) return nullptr;
 		pos.y = y;
-		uint8_t z;
-		node->getU8(z);
+		uint8_t z = 0;
+		if (!node->getU8(z)) return nullptr;
 		pos.z = z;
 	}
 
 	TileLocation* location = map.createTileL(pos.x, pos.y, pos.z);
+	if (!location) {
+		return nullptr;
+	}
 	Tile* tile = newd Tile(*location);
 
 	if (tileType == OTBM_HOUSETILE) {
-		uint32_t houseId;
+		uint32_t houseId = 0;
 		if (!node->getU32(houseId)) {
-			// warning("House tile without house data, discarding tile");
 			delete tile;
 			return nullptr;
 		}
@@ -521,38 +527,33 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 			if (house) {
 				tile->setHouse(house);
 			}
-		} else {
-			// warning("Invalid house id from tile %d:%d:%d", pos.x, pos.y, pos.z);
 		}
 	}
 
-	uint8_t attribute;
+	uint8_t attribute = 0;
 	while (node->getU8(attribute)) {
 		switch (attribute) {
 			case OTBM_ATTR_TILE_FLAGS: {
 				uint32_t flags = 0;
-				if (!node->getU32(flags)) {
-					// warning("Invalid tile flags of tile on %d:%d:%d", pos.x, pos.y, pos.z);
+				if (node->getU32(flags)) {
+					tile->setMapFlags(flags);
 				}
-				tile->setMapFlags(flags);
 				break;
 			}
 			case OTBM_ATTR_ITEM: {
 				Item* item = Item::Create_OTBM(mapVersion, node);
-				if (!item) {
-					// warning("Invalid item at tile %d:%d:%d", pos.x, pos.y, pos.z);
+				if (item) {
+					tile->addItem(item);
 				}
-				tile->addItem(item);
 				break;
 			}
 			default:
-				// warning("Unknown tile attribute at %d:%d:%d", pos.x, pos.y, pos.z);
 				break;
 		}
 	}
 
 	for (BinaryNode* itemNode = node->getChild(); itemNode != nullptr; itemNode = itemNode->advance()) {
-		uint8_t itemType;
+		uint8_t itemType = 0;
 		if (!itemNode->getByte(itemType)) {
 			delete tile;
 			return nullptr;
@@ -561,9 +562,7 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 		if (itemType == OTBM_ITEM) {
 			Item* item = Item::Create_OTBM(mapVersion, itemNode);
 			if (item) {
-				if (!item->unserializeItemNode_OTBM(mapVersion, itemNode)) {
-					// warning("Couldn't unserialize item attributes at %d:%d:%d", pos.x, pos.y, pos.z);
-				}
+				item->unserializeItemNode_OTBM(mapVersion, itemNode);
 				tile->addItem(item);
 			}
 		}

@@ -1788,34 +1788,63 @@ static ToolbarIconCache s_toolbar_icons;
 	};
 
 	// macOS Canvas Floating / Docked Tileset Palette in filigree fantasy look
-	static bool pal_minimized = false;
 	static int last_applied_dock_side = -1;
 	const bool tb_active = g_settings.getBoolean(Config::SHOW_TOOLBAR_BRUSHES);
 	const int tb_dock = std::clamp(g_settings.getInteger(Config::TOOLBAR_OVERLAY_POSITION), 0, 1);
 	const float pal_width = 310.0f;
 
-	if (g_settings.getBoolean(Config::SHOW_PALETTE)) {
+	if (g_gui.canvas_palettes.empty()) {
+		GUI::CanvasPaletteState main_pal;
+		main_pal.id = 1;
+		main_pal.open = true;
+		main_pal.minimized = false;
+		main_pal.current_cat_idx = 1;
+		main_pal.last_seen_cat_idx = -1;
+		main_pal.selected_tileset_idx = 0;
+		g_gui.canvas_palettes.push_back(main_pal);
+	}
+
+	for (size_t pal_loop_i = 0; pal_loop_i < g_gui.canvas_palettes.size(); ++pal_loop_i) {
+		auto& pal_state = g_gui.canvas_palettes[pal_loop_i];
+		bool is_main_palette = (pal_state.id == 1);
+
+		if (is_main_palette) {
+			if (!g_settings.getBoolean(Config::SHOW_PALETTE) || !pal_state.open) {
+				continue;
+			}
+		} else {
+			if (!pal_state.open) {
+				continue;
+			}
+		}
+
 		const int pal_dock = std::clamp(g_settings.getInteger(Config::PALETTE_DOCK_SIDE), 0, 1);
 		const float pal_top = (tb_active && tb_dock == 0) ? 48.0f : 10.0f;
 		const float pal_bottom_margin = (tb_active && tb_dock == 1) ? 52.0f : 10.0f;
 		const float pal_h = std::clamp(io.DisplaySize.y - pal_top - pal_bottom_margin, 260.0f, 900.0f);
 
-		ImVec2 pal_pos = (pal_dock == 0)
-			? ImVec2(8.0f, pal_top)
-			: ImVec2(io.DisplaySize.x - pal_width - 8.0f, pal_top);
-
-		if (pal_minimized) {
+		if (pal_state.minimized) {
 			ImGui::SetNextWindowSize(ImVec2(240.0f, 32.0f), ImGuiCond_Always);
 		} else {
 			ImGui::SetNextWindowSize(ImVec2(pal_width, pal_h), ImGuiCond_FirstUseEver);
 			ImGui::SetNextWindowSizeConstraints(ImVec2(240.0f, 200.0f), ImVec2(500.0f, std::max(200.0f, io.DisplaySize.y - 35.0f)));
 		}
 
-		if (pal_dock != last_applied_dock_side) {
-			ImGui::SetNextWindowPos(pal_pos, ImGuiCond_Always);
-			last_applied_dock_side = pal_dock;
+		if (is_main_palette) {
+			ImVec2 pal_pos = (pal_dock == 0)
+				? ImVec2(8.0f, pal_top)
+				: ImVec2(io.DisplaySize.x - pal_width - 8.0f, pal_top);
+
+			if (pal_dock != last_applied_dock_side) {
+				ImGui::SetNextWindowPos(pal_pos, ImGuiCond_Always);
+				last_applied_dock_side = pal_dock;
+			} else {
+				ImGui::SetNextWindowPos(pal_pos, ImGuiCond_FirstUseEver);
+			}
 		} else {
-			ImGui::SetNextWindowPos(pal_pos, ImGuiCond_FirstUseEver);
+			if (pal_state.custom_x >= 0.0f && pal_state.custom_y >= 0.0f) {
+				ImGui::SetNextWindowPos(ImVec2(pal_state.custom_x, pal_state.custom_y), ImGuiCond_FirstUseEver);
+			}
 		}
 
 		ImGui::SetNextWindowBgAlpha(0.88f);
@@ -1837,48 +1866,61 @@ static ToolbarIconCache s_toolbar_icons;
 		ImGui::PushStyleColor(ImGuiCol_TabActive, ImVec4(0.20f, 0.30f, 0.48f, 1.00f));
 
 		ImGuiWindowFlags pal_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
-		if (pal_minimized) pal_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
-		bool pal_open = true;
+		if (pal_state.minimized) pal_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
+		bool p_open = true;
 
-		if (ImGui::Begin("##CanvasPaletteFiligree", &pal_open, pal_flags)) {
-			// Magnetic side snapping to left and right canvas edge:
-			ImVec2 pal_curr_pos = ImGui::GetWindowPos();
-			ImVec2 pal_curr_sz = ImGui::GetWindowSize();
-			const float snapThreshold = 35.0f;
-			const float snapMargin = 8.0f;
-			if (pal_curr_pos.x < snapThreshold) {
-				if (!ImGui::IsMouseDown(0)) {
-					ImGui::SetWindowPos(ImVec2(snapMargin, pal_curr_pos.y), ImGuiCond_Always);
-					g_settings.setInteger(Config::PALETTE_DOCK_SIDE, 0);
-				} else {
-					ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(5.0f, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
-				}
-			} else if (io.DisplaySize.x - (pal_curr_pos.x + pal_curr_sz.x) < snapThreshold) {
-				if (!ImGui::IsMouseDown(0)) {
-					ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - pal_curr_sz.x - snapMargin, pal_curr_pos.y), ImGuiCond_Always);
-					g_settings.setInteger(Config::PALETTE_DOCK_SIDE, 1);
-				} else {
-					ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(io.DisplaySize.x - 5.0f, 0), ImVec2(io.DisplaySize.x, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
+		std::string win_imgui_id = is_main_palette ? "##CanvasPaletteFiligree" : "##CanvasPalette_" + std::to_string(pal_state.id);
+
+		if (ImGui::Begin(win_imgui_id.c_str(), &p_open, pal_flags)) {
+			// Magnetic side snapping for main palette:
+			if (is_main_palette) {
+				ImVec2 pal_curr_pos = ImGui::GetWindowPos();
+				ImVec2 pal_curr_sz = ImGui::GetWindowSize();
+				const float snapThreshold = 35.0f;
+				const float snapMargin = 8.0f;
+				if (pal_curr_pos.x < snapThreshold) {
+					if (!ImGui::IsMouseDown(0)) {
+						ImGui::SetWindowPos(ImVec2(snapMargin, pal_curr_pos.y), ImGuiCond_Always);
+						g_settings.setInteger(Config::PALETTE_DOCK_SIDE, 0);
+					} else {
+						ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(5.0f, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
+					}
+				} else if (io.DisplaySize.x - (pal_curr_pos.x + pal_curr_sz.x) < snapThreshold) {
+					if (!ImGui::IsMouseDown(0)) {
+						ImGui::SetWindowPos(ImVec2(io.DisplaySize.x - pal_curr_sz.x - snapMargin, pal_curr_pos.y), ImGuiCond_Always);
+						g_settings.setInteger(Config::PALETTE_DOCK_SIDE, 1);
+					} else {
+						ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(io.DisplaySize.x - 5.0f, 0), ImVec2(io.DisplaySize.x, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
+					}
 				}
 			}
 
 			// Header Title & Fantasy Gem Controls (Amber Minimize, Red Close)
-			ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "Tileset Palette");
+			std::string title_caption = is_main_palette ? "Tileset Palette" : "Palette " + std::to_string(pal_state.id);
+			ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "%s", title_caption.c_str());
 
-			WindowControlAction ctrl_act = RenderFantasyWindowControls("pal", true, pal_minimized, "Change Position", false);
+			std::string ctrl_tag = "pal_" + std::to_string(pal_state.id);
+			WindowControlAction ctrl_act = RenderFantasyWindowControls(ctrl_tag.c_str(), true, pal_state.minimized, "Change Position", false);
 			if (ctrl_act == WindowControlAction::Minimize) {
-				pal_minimized = !pal_minimized;
+				pal_state.minimized = !pal_state.minimized;
 			} else if (ctrl_act == WindowControlAction::Close) {
-				g_settings.setInteger(Config::SHOW_PALETTE, 0);
-				if (g_gui.root) g_gui.root->UpdateMenubar();
+				if (is_main_palette) {
+					g_settings.setInteger(Config::SHOW_PALETTE, 0);
+					if (g_gui.root) g_gui.root->UpdateMenubar();
+				} else {
+					g_gui.CloseCanvasPalette(pal_state.id);
+					ImGui::End();
+					ImGui::PopStyleColor(11);
+					ImGui::PopStyleVar(4);
+					--pal_loop_i;
+					continue;
+				}
 			}
 
-			if (!pal_minimized) {
+			if (!pal_state.minimized) {
 				ImGui::Separator();
 
 				// Category Switcher (Favorites first, then classic order)
-				static int current_cat_idx = 1; // Default to Terrain
-				static int last_seen_cat_idx = -1;
 				const char* categories[] = {
 					"Favorites", "Terrain", "Doodads", "Items", "RAW", "Creatures", "Houses", "Waypoints", "Prefabs"
 				};
@@ -1905,7 +1947,7 @@ static ToolbarIconCache s_toolbar_icons;
 							if (pair.second->name == "Favorites" || pair.second->name == "Host-Favorites") continue;
 							if (const TilesetCategory* cat = pair.second->getCategory(ctype)) {
 								if (cat->containsBrush(cur_active_brush)) {
-									current_cat_idx = c;
+									pal_state.current_cat_idx = c;
 									found_cat = true;
 									break;
 								}
@@ -1916,14 +1958,15 @@ static ToolbarIconCache s_toolbar_icons;
 				}
 
 				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-				if (ImGui::Combo("##PalCategory", &current_cat_idx, categories, IM_ARRAYSIZE(categories))) {
+				std::string cat_combo_id = "##PalCategory_" + std::to_string(pal_state.id);
+				if (ImGui::Combo(cat_combo_id.c_str(), &pal_state.current_cat_idx, categories, IM_ARRAYSIZE(categories))) {
 					// manual switch
 				}
 				if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
-					current_cat_idx = std::clamp(current_cat_idx - (int)io.MouseWheel, 0, (int)IM_ARRAYSIZE(categories) - 1);
+					pal_state.current_cat_idx = std::clamp(pal_state.current_cat_idx - (int)io.MouseWheel, 0, (int)IM_ARRAYSIZE(categories) - 1);
 				}
 
-				TilesetCategoryType active_cat_type = cat_types[current_cat_idx];
+				TilesetCategoryType active_cat_type = cat_types[pal_state.current_cat_idx];
 
 				// Subcategory / Tileset Selector exactly matching classic palette (NO "All Tilesets")
 				std::vector<std::pair<std::string, const TilesetCategory*>> available_tilesets;
@@ -1995,24 +2038,23 @@ static ToolbarIconCache s_toolbar_icons;
 					}
 				}
 
-				static int selected_tileset_idx = 0;
-				if (current_cat_idx != last_seen_cat_idx) {
-					selected_tileset_idx = 0;
-					last_seen_cat_idx = current_cat_idx;
+				if (pal_state.current_cat_idx != pal_state.last_seen_cat_idx) {
+					pal_state.selected_tileset_idx = 0;
+					pal_state.last_seen_cat_idx = pal_state.current_cat_idx;
 				}
 
 				// If syncing brush, pick the tileset that contains it
 				if (s_need_scroll_to_brush && cur_active_brush) {
 					for (size_t i = 0; i < available_tilesets.size(); ++i) {
 						if (available_tilesets[i].second && available_tilesets[i].second->containsBrush(cur_active_brush)) {
-							selected_tileset_idx = (int)i;
+							pal_state.selected_tileset_idx = (int)i;
 							break;
 						}
 					}
 				}
 
-				if (selected_tileset_idx >= (int)available_tilesets.size()) {
-					selected_tileset_idx = 0;
+				if (pal_state.selected_tileset_idx >= (int)available_tilesets.size()) {
+					pal_state.selected_tileset_idx = 0;
 				}
 
 				std::vector<const char*> tileset_names;
@@ -2022,25 +2064,27 @@ static ToolbarIconCache s_toolbar_icons;
 
 				if (!tileset_names.empty()) {
 					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-					ImGui::Combo("##PalTileset", &selected_tileset_idx, tileset_names.data(), (int)tileset_names.size());
+					std::string ts_combo_id = "##PalTileset_" + std::to_string(pal_state.id);
+					ImGui::Combo(ts_combo_id.c_str(), &pal_state.selected_tileset_idx, tileset_names.data(), (int)tileset_names.size());
 					if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
-						selected_tileset_idx = std::clamp(selected_tileset_idx - (int)io.MouseWheel, 0, (int)tileset_names.size() - 1);
+						pal_state.selected_tileset_idx = std::clamp(pal_state.selected_tileset_idx - (int)io.MouseWheel, 0, (int)tileset_names.size() - 1);
 					}
 				}
 
 				// Search Box with complete keyboard input support
-				static char search_buf[128] = "";
 				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-				ImGui::InputTextWithHint("##PalSearch", "Search by name or ID...", search_buf, sizeof(search_buf));
+				std::string search_input_id = "##PalSearch_" + std::to_string(pal_state.id);
+				ImGui::InputTextWithHint(search_input_id.c_str(), "Search by name or ID...", pal_state.search_buf, sizeof(pal_state.search_buf));
 
-				std::string search_str = search_buf;
+				std::string search_str = pal_state.search_buf;
 				for (auto& c : search_str) c = (char)tolower(c);
 
 				// Scrollable Brush Grid / List with Collapsible Section Headers and Large Perspective Previews
-				ImGui::BeginChild("##PalBrushList", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+				std::string child_grid_id = "##PalBrushList_" + std::to_string(pal_state.id);
+				ImGui::BeginChild(child_grid_id.c_str(), ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-				if (!available_tilesets.empty() && (size_t)selected_tileset_idx < available_tilesets.size()) {
-					const auto& brushlist = available_tilesets[selected_tileset_idx].second->brushlist;
+				if (!available_tilesets.empty() && (size_t)pal_state.selected_tileset_idx < available_tilesets.size()) {
+					const auto& brushlist = available_tilesets[pal_state.selected_tileset_idx].second->brushlist;
 
 					bool current_section_collapsed = false;
 					std::vector<Brush*> section_brushes;

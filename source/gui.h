@@ -422,6 +422,23 @@ public:
 	const std::list<PaletteWindow*>& GetPalettes();
 
 	void DestroyPalettes();
+
+	struct CanvasPaletteState {
+		int id = 1;
+		bool open = true;
+		bool minimized = false;
+		int current_cat_idx = 1;
+		int last_seen_cat_idx = -1;
+		int selected_tileset_idx = 0;
+		char search_buf[128] = { 0 };
+		float custom_x = -1.0f;
+		float custom_y = -1.0f;
+	};
+
+	std::vector<CanvasPaletteState> canvas_palettes;
+	void OpenNewCanvasPalette();
+	void CloseCanvasPalette(int id);
+
 	// Hidden from public view
 protected:
 	PaletteWindow* CreatePalette();

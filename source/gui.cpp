@@ -167,7 +167,40 @@ PaletteWindow *GUI::GetPalette() {
   return palettes.front();
 }
 
-PaletteWindow *GUI::NewPalette() { return CreatePalette(); }
+void GUI::OpenNewCanvasPalette() {
+  int next_id = 2;
+  for (const auto& p : canvas_palettes) {
+    if (p.id >= next_id) {
+      next_id = p.id + 1;
+    }
+  }
+  CanvasPaletteState inst;
+  inst.id = next_id;
+  inst.open = true;
+  inst.minimized = false;
+  inst.current_cat_idx = 1;
+  inst.last_seen_cat_idx = -1;
+  inst.selected_tileset_idx = 0;
+  inst.custom_x = 40.0f + static_cast<float>((next_id - 2) * 35);
+  inst.custom_y = 60.0f + static_cast<float>((next_id - 2) * 35);
+  canvas_palettes.push_back(inst);
+  RefreshView();
+}
+
+void GUI::CloseCanvasPalette(int id) {
+  for (auto it = canvas_palettes.begin(); it != canvas_palettes.end(); ++it) {
+    if (it->id == id) {
+      canvas_palettes.erase(it);
+      break;
+    }
+  }
+  RefreshView();
+}
+
+PaletteWindow *GUI::NewPalette() {
+  OpenNewCanvasPalette();
+  return GetPalette();
+}
 
 void GUI::RefreshPalettes(Map *m, bool usedefault) {
   for (auto &palette : palettes) {
