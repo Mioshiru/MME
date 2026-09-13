@@ -167,6 +167,9 @@ BinaryNode* NodeFileReadHandle::getNode(BinaryNode* parent) {
 
 void NodeFileReadHandle::freeNode(BinaryNode* node) {
 	if (node) {
+		if (node == root_node) {
+			root_node = nullptr;
+		}
 		node->~BinaryNode();
 		unused.push(node);
 	}
@@ -304,7 +307,10 @@ BinaryNode::BinaryNode(NodeFileReadHandle* file, BinaryNode* parent) :
 }
 
 BinaryNode::~BinaryNode() {
-	file->freeNode(child);
+	if (child) {
+		file->freeNode(child);
+		child = nullptr;
+	}
 }
 
 BinaryNode* BinaryNode::getChild() {
@@ -368,10 +374,8 @@ BinaryNode* BinaryNode::advance() {
 	}
 	// We need to move the cursor to the next node, since we're still iterating our child node!
 	while (child) {
-		// both functions modify ourselves and sets child to nullptr, so loop will be aborted
-		// possibly change to assignment ?
 		child->getChild();
-		child->advance();
+		child = child->advance();
 	}
 
 	if (file->last_was_start) {
@@ -386,7 +390,9 @@ BinaryNode* BinaryNode::advance() {
 		if (local_read_index >= cache_length) {
 			if (!file->renewCache()) {
 				// Failed to renew, exit
-				parent->child = nullptr;
+				if (parent) {
+					parent->child = nullptr;
+				}
 				file->freeNode(this);
 				return nullptr;
 			}
@@ -404,7 +410,9 @@ BinaryNode* BinaryNode::advance() {
 			return this;
 		} else if (op == NODE_END) {
 			// End of this child-tree
-			parent->child = nullptr;
+			if (parent) {
+				parent->child = nullptr;
+			}
 			file->last_was_start = false;
 			file->freeNode(this);
 			return nullptr;

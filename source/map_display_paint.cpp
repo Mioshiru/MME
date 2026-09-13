@@ -432,7 +432,13 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	auto SnapOverlayWindow = [](const std::string& name, ImVec2 pos, ImVec2 size, ImGuiViewport* vp) -> ImVec2 {
 		const float edgeMargin = 5.0f;
 		const float windowGap = 5.0f;
-		const float snapThreshold = 25.0f;
+		const float snapThreshold = 18.0f;
+
+		// Only snap if the current window is focused and actively being dragged by the user
+		// This prevents any feedback loops or mutual oscillation between adjacent windows.
+		if (!ImGui::IsWindowFocused() || !ImGui::IsMouseDragging(0)) {
+			return pos;
+		}
 
 		ImVec2 targetPos = pos;
 		bool snappedX = false;
@@ -516,7 +522,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			}
 		}
 
-		if ((snappedX || snappedY) && !ImGui::IsMouseDown(0)) {
+		if (snappedX || snappedY) {
 			ImGui::SetWindowPos(targetPos, ImGuiCond_Always);
 			return targetPos;
 		}

@@ -366,30 +366,27 @@ bool Container::unserializeItemNode_OTBM(const IOMap& maphandle, BinaryNode* nod
 		return false;
 	}
 
-	BinaryNode* child = node->getChild();
-	if (child) {
-		do {
-			uint8_t type;
-			if (!child->getByte(type)) {
-				return false;
-			}
+	for (BinaryNode* child = node->getChild(); child != nullptr; child = child->advance()) {
+		uint8_t type;
+		if (!child->getByte(type)) {
+			return false;
+		}
 
-			if (type != OTBM_ITEM) {
-				return false;
-			}
+		if (type != OTBM_ITEM) {
+			return false;
+		}
 
-			Item* item = Item::Create_OTBM(maphandle, child);
-			if (!item) {
-				return false;
-			}
+		Item* item = Item::Create_OTBM(maphandle, child);
+		if (!item) {
+			return false;
+		}
 
-			if (!item->unserializeItemNode_OTBM(maphandle, child)) {
-				delete item;
-				return false;
-			}
+		if (!item->unserializeItemNode_OTBM(maphandle, child)) {
+			delete item;
+			return false;
+		}
 
-			contents.push_back(item);
-		} while (child->advance());
+		contents.push_back(item);
 	}
 	return true;
 }
