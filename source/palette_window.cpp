@@ -816,14 +816,14 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets,
 
 	splitter->Initialize(card_assets);
 
-	// Module 3: Quest Checklist Card (hidden by default; enable via right-click context menu)
-	card_checklist = new PaletteModuleCard(this, "Quest Checklist", true);
+	// Module 3: Map Notepad Card (hidden by default; enable via right-click context menu)
+	card_checklist = new PaletteModuleCard(this, "Map Notepad", true);
 	ChecklistPalettePanel* checklist_content = new ChecklistPalettePanel(card_checklist);
 	card_checklist->SetContent(checklist_content);
 	card_checklist->OnClosed = [this]() {
 		allow_checklist = false;
 		if (card_checklist) card_checklist->Show(false);
-		g_gui.SetStatusText("Quest Checklist hidden. Right-click palette to restore.");
+		g_gui.SetStatusText("Map Notepad hidden. Right-click palette to restore.");
 		Layout();
 		Refresh();
 	};
@@ -1604,7 +1604,7 @@ void PaletteWindow::ShowContextMenu(const wxPoint& pos) {
 		item->Check(allow_minimap && (!splitter || splitter->IsSplit()));
 	}
 	if (card_checklist) {
-		wxMenuItem* item = menu.AppendCheckItem(12004, "Show Quest Checklist");
+		wxMenuItem* item = menu.AppendCheckItem(12004, "Show Map Notepad");
 		item->Check(allow_checklist && card_checklist->IsShown());
 	}
 	menu.AppendSeparator();

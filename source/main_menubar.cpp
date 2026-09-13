@@ -1526,6 +1526,7 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 	}
 
 	wxDialog* live_host_dlg = newd wxDialog(frame, wxID_ANY, "Host Live Session (Multiplayer 2.0)", wxDefaultPosition, wxSize(460, 360));
+	live_host_dlg->SetBackgroundColour(wxColour(18, 22, 30));
 
 	wxSizer* top_sizer = newd wxBoxSizer(wxVERTICAL);
 
@@ -1638,6 +1639,7 @@ void MainMenuBar::OnApprovalsLive(wxCommandEvent& event) {
 
 void MainMenuBar::OnJoinLive(wxCommandEvent& event) {
 	wxDialog* live_join_dlg = newd wxDialog(frame, wxID_ANY, "Join Live Session (Multiplayer 2.0)", wxDefaultPosition, wxSize(480, 400));
+	live_join_dlg->SetBackgroundColour(wxColour(18, 22, 30));
 
 	wxSizer* top_sizer = newd wxBoxSizer(wxVERTICAL);
 

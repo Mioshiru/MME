@@ -51,26 +51,31 @@ LiveLogTab::LiveLogTab(MapTabbook* aui, LiveSocket* server) :
 	wxPanel(aui),
 	aui(aui),
 	socket(server) {
+	SetBackgroundColour(wxColour(18, 22, 30));
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxPanel* splitter = newd wxPanel(this);
+	splitter->SetBackgroundColour(wxColour(18, 22, 30));
 	topsizer->Add(splitter, 1, wxEXPAND);
 
 	// Setup left panel
 	wxPanel* left_pane = newd wxPanel(splitter);
+	left_pane->SetBackgroundColour(wxColour(20, 24, 32));
 	wxSizer* left_sizer = newd wxBoxSizer(wxVERTICAL);
 
 	wxFont time_font(*wxSWISS_FONT);
 
 	log = newd myGrid(left_pane, wxID_ANY, wxDefaultPosition, wxDefaultSize);
 	log->SetDefaultCellFont(time_font);
+	log->SetDefaultCellBackgroundColour(wxColour(18, 22, 30));
+	log->SetDefaultCellTextColour(wxColour(240, 244, 250));
+	log->SetLabelBackgroundColour(wxColour(28, 34, 46));
+	log->SetLabelTextColour(wxColour(229, 193, 88));
 	log->CreateGrid(0, 3);
 	log->DisableDragRowSize();
 	log->DisableDragColSize();
 	log->SetSelectionMode(wxGrid::wxGridSelectRows);
 	log->SetRowLabelSize(0);
-	// log->SetColLabelSize(0);
-	// log->EnableGridLines(false);
 	log->EnableEditing(false);
 
 	log->SetColLabelValue(0, "Time");
@@ -88,6 +93,8 @@ LiveLogTab::LiveLogTab(MapTabbook* aui, LiveSocket* server) :
 	left_sizer->Add(log, 1, wxEXPAND);
 
 	input = newd wxTextCtrl(left_pane, LIVE_CHAT_TEXTBOX, wxEmptyString, wxDefaultPosition, wxDefaultSize);
+	input->SetBackgroundColour(wxColour(26, 32, 44));
+	input->SetForegroundColour(wxColour(240, 244, 250));
 	left_sizer->Add(input, 0, wxEXPAND);
 
 	input->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(LiveLogTab::OnSelectChatbox), nullptr, this);
@@ -97,7 +104,11 @@ LiveLogTab::LiveLogTab(MapTabbook* aui, LiveSocket* server) :
 
 	// Setup right panel
 	user_list = newd myGrid(splitter, wxID_ANY, wxDefaultPosition, wxSize(420, 100));
-	user_list->CreateGrid(5, 5);
+	user_list->SetDefaultCellBackgroundColour(wxColour(18, 22, 30));
+	user_list->SetDefaultCellTextColour(wxColour(240, 244, 250));
+	user_list->SetLabelBackgroundColour(wxColour(28, 34, 46));
+	user_list->SetLabelTextColour(wxColour(229, 193, 88));
+	user_list->CreateGrid(6, 5);
 	user_list->DisableDragRowSize();
 	user_list->DisableDragColSize();
 	user_list->SetSelectionMode(wxGrid::wxGridSelectRows);
@@ -114,8 +125,6 @@ LiveLogTab::LiveLogTab(MapTabbook* aui, LiveSocket* server) :
 	user_list->SetColLabelValue(4, "State");
 	user_list->SetColSize(4, 130);
 
-	// user_list->GetGridWindow()->
-
 	// Finalize
 	SetSizerAndFit(topsizer);
 
@@ -123,7 +132,6 @@ LiveLogTab::LiveLogTab(MapTabbook* aui, LiveSocket* server) :
 	split_sizer->Add(left_pane, wxSizerFlags(1).Expand());
 	split_sizer->Add(user_list, wxSizerFlags(0).Expand());
 	splitter->SetSizerAndFit(split_sizer);
-	// splitter->SplitVertically(left_pane, user_list, max(this->GetSize().GetWidth() - 200, 0));
 
 	aui->AddTab(this, true);
 }

@@ -1,4 +1,6 @@
 #include "checklist_manager.h"
+#include "gui.h"
+#include "editor.h"
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -7,7 +9,7 @@
 #include <wx/filename.h>
 #include <nlohmann/json.hpp>
 
-using json = nlohmann::json;
+using nlohmann_json = nlohmann::json;
 
 static std::string GetFallbackChecklistPath() {
 	static std::string s_cachedPath;
@@ -48,6 +50,9 @@ std::string ChecklistManager::getFilePath() const {
 }
 
 void ChecklistManager::save() {
+	if (g_gui.GetCurrentEditor() && g_gui.GetCurrentEditor()->IsLiveClient()) {
+		return; // In Multiplayer, only the Host persists the Notepad to disk!
+	}
 	saveToFile(getFilePath());
 }
 
@@ -184,9 +189,9 @@ void ChecklistManager::setAllItems(const std::vector<ChecklistItem>& newItems, b
 void ChecklistManager::saveToFile(const std::string& filepath) {
 	std::lock_guard<std::mutex> lock(itemsMutex);
 	try {
-		json j = json::array();
+		nlohmann_json j = nlohmann_json::array();
 		for (const auto& item : items) {
-			json itemJson;
+			nlohmann_json itemJson;
 			itemJson["id"] = item.id;
 			itemJson["text"] = item.text;
 			itemJson["author"] = item.author;
@@ -212,7 +217,7 @@ void ChecklistManager::loadFromFile(const std::string& filepath) {
 	if (!file.is_open()) return;
 
 	try {
-		json j;
+		nlohmann_json j;
 		file >> j;
 		file.close();
 

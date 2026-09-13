@@ -413,6 +413,17 @@ void LivePeer::parseReady(NetworkMessage &message) {
   connectionStatus = "Connected";
   lastHeartbeat = wxGetLocalTimeMillis().GetValue();
 
+  // Limit session to 6 simultaneous mappers (1 Host + 5 Peers)
+  if (server->clients.size() >= 5) {
+    NetworkMessage outMessage;
+    outMessage.write<uint8_t>(PACKET_KICK);
+    outMessage.write<std::string>("Server is full (Maximum 6 players allowed).");
+
+    send(outMessage);
+    close();
+    return;
+  }
+
   // Find free client id
   clientId = server->getFreeClientId();
   if (clientId == 0) {
@@ -424,6 +435,18 @@ void LivePeer::parseReady(NetworkMessage &message) {
     close();
     return;
   }
+
+  // Assign distinctive palette color for players
+  static const wxColor s_peerColors[] = {
+    wxColor(58, 134, 255),  // 1: Azure Sapphire
+    wxColor(56, 176, 0),    // 2: Emerald Green
+    wxColor(255, 0, 110),   // 3: Crimson Rose
+    wxColor(131, 56, 236),  // 4: Amethyst Purple
+    wxColor(251, 86, 7)     // 5: Coral Orange
+  };
+  int colorIdx = ((clientId >> 1) - 1) % 5;
+  if (colorIdx < 0) colorIdx = 0;
+  color = s_peerColors[colorIdx];
 
   server->updateClientList();
 
@@ -650,23 +673,20 @@ void LivePeer::parseReceiveChanges(NetworkMessage &message) {
   if (!rootNode) {
     return;
   }
-  BinaryNode *tileNode = rootNode->getChild();
-
-  NetworkedAction *action = static_cast<NetworkedAction *>(
-      editor.actionQueue->createAction(ACTION_REMOTE));
-  action->owner = clientId;
-
-  if (tileNode) {
-    do {
-      Tile *tile = readTile(tileNode, editor, nullptr);
-      if (tile) {
-        action->addChange(newd Change(tile));
-      }
-    } while (tileNode->advance());
+  Action *action = editor.actionQueue->createAction(ACTION_REMOTE);
+  for (BinaryNode *tileNode = rootNode->getChild(); tileNode != nullptr; tileNode = tileNode->advance()) {
+    Tile *tile = readTile(tileNode, editor, nullptr);
+    if (tile) {
+      action->addChange(newd Change(tile));
+    }
   }
   mapReader.close();
 
-  editor.actionQueue->addAction(action);
+  if (action->size() > 0) {
+    editor.actionQueue->addAction(action);
+  } else {
+    delete action;
+  }
 
   g_gui.RefreshView();
 }

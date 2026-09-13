@@ -346,7 +346,7 @@ void LiveSocket::receiveBatchNodesZlib(NetworkMessage& message, MapEditor& edito
 								if (tile) {
 									map.setTile(position.x, position.y, position.z, tile);
 								}
-								tileNode->advance();
+								tileNode = tileNode->advance();
 							}
 						}
 					}
@@ -387,7 +387,7 @@ void LiveSocket::receiveFloor(NetworkMessage& message, MapEditor& editor, Action
 					if (tile) {
 						map.setTile(position.x, position.y, position.z, tile);
 					}
-					tileNode->advance();
+					tileNode = tileNode->advance();
 				}
 			}
 		}
@@ -551,30 +551,22 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 		}
 	}
 
-	// for(BinaryNode* itemNode = node->getChild(); itemNode; itemNode->advance()) {
-	BinaryNode* itemNode = node->getChild();
-	if (itemNode) {
-		do {
-			uint8_t itemType;
-			if (!itemNode->getByte(itemType)) {
-				// warning("Unknown item type %d:%d:%d", pos.x, pos.y, pos.z);
-				delete tile;
-				return nullptr;
-			}
+	for (BinaryNode* itemNode = node->getChild(); itemNode != nullptr; itemNode = itemNode->advance()) {
+		uint8_t itemType;
+		if (!itemNode->getByte(itemType)) {
+			delete tile;
+			return nullptr;
+		}
 
-			if (itemType == OTBM_ITEM) {
-				Item* item = Item::Create_OTBM(mapVersion, itemNode);
-				if (item) {
-					if (!item->unserializeItemNode_OTBM(mapVersion, itemNode)) {
-						// warning("Couldn't unserialize item attributes at %d:%d:%d", pos.x, pos.y, pos.z);
-					}
-					tile->addItem(item);
+		if (itemType == OTBM_ITEM) {
+			Item* item = Item::Create_OTBM(mapVersion, itemNode);
+			if (item) {
+				if (!item->unserializeItemNode_OTBM(mapVersion, itemNode)) {
+					// warning("Couldn't unserialize item attributes at %d:%d:%d", pos.x, pos.y, pos.z);
 				}
-			} else {
-				// warning("Unknown type of tile child node");
+				tile->addItem(item);
 			}
-			//}
-		} while (itemNode->advance());
+		}
 	}
 
 	return tile;

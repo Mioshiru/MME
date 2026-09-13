@@ -587,21 +587,21 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			}
 			ImGui::SetNextWindowSizeConstraints(ImVec2(240, 160), ImVec2(800, 600));
 
-			// Corporate Medieval Palette Styles
-			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.11f, 0.08f, 0.04f, 0.94f));
-			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.18f, 0.12f, 0.06f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.25f, 0.16f, 0.08f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.91f, 0.78f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.22f, 0.15f, 0.08f, 0.85f));
-			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.35f, 0.24f, 0.12f, 0.95f));
+			// Palette Corporate Design Styles
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.07f, 0.09f, 0.13f, 0.96f));       // #12161E Deep Navy Slate
+			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.11f, 0.13f, 0.18f, 1.00f));        // #1C222E
+			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.13f, 0.16f, 0.22f, 1.00f));  // #222836
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));         // #E5C158 Gold
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.94f, 0.96f, 0.98f, 1.00f));           // #F0F4FA
+			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.11f, 0.15f, 0.22f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.16f, 0.22f, 0.32f, 0.95f));
 			ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.83f, 0.69f, 0.22f, 0.80f));
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.15f, 0.08f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.24f, 0.12f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.11f, 0.15f, 0.22f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.16f, 0.22f, 0.32f, 1.00f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.08f, 0.05f, 0.03f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.09f, 0.05f, 0.95f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.20f, 0.13f, 0.07f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.10f, 0.12f, 0.17f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.18f, 0.25f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.18f, 0.24f, 0.32f, 1.00f));
 			ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.83f, 0.69f, 0.22f, 0.40f));
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
@@ -763,29 +763,29 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		size_t completedCount = ChecklistManager::getInstance().getCompletedCount();
 
 		if (notepad_minimized) {
-			// Floating parchment minimized pill in the bottom-left area
+			// Floating minimized pill in the bottom-left area
 			ImGui::SetNextWindowPos(ImVec2(10.0f, io.DisplaySize.y - 70.0f), ImGuiCond_Always);
 			ImGui::SetNextWindowBgAlpha(0.92f);
 			ImGuiWindowFlags pill_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
 				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 
-			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.08f, 0.04f, 0.95f)); // Dark parchment wood
-			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));   // Medieval Gold
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.07f, 0.09f, 0.13f, 0.95f)); // Deep Navy Slate
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));   // Palette Gold
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.5f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
 
 			if (ImGui::Begin("##NotepadMinimizedPill", nullptr, pill_flags)) {
-				std::string label = "Notes (" + std::to_string(activeCount) + " open)";
-				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.24f, 0.16f, 0.09f, 0.90f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.38f, 0.25f, 0.13f, 1.00f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.38f, 0.18f, 1.00f));
-				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.90f, 0.76f, 1.0f));
+				std::string label = "Notepad (" + std::to_string(activeCount) + " notes)";
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.11f, 0.15f, 0.22f, 0.95f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.16f, 0.22f, 0.32f, 1.00f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.94f, 0.96f, 0.98f, 1.0f));
 
 				if (ImGui::Button(label.c_str())) {
 					notepad_minimized = false;
 				}
 				if (ImGui::IsItemHovered()) {
-					ImGui::SetTooltip("Click to expand Collaborative Medieval Notepad");
+					ImGui::SetTooltip("Click to open Map Notepad");
 				}
 				ImGui::PopStyleColor(4);
 				ImGui::End();
@@ -793,32 +793,32 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			ImGui::PopStyleVar(2);
 			ImGui::PopStyleColor(2);
 		} else {
-			// Rich Medieval Parchment Dialog
+			// Rich Palette Corporate Notepad Dialog
 			ImGui::SetNextWindowPos(ImVec2(18.0f, 60.0f), ImGuiCond_FirstUseEver);
 			ImGui::SetNextWindowSize(ImVec2(360.0f, 440.0f), ImGuiCond_FirstUseEver);
 			ImGui::SetNextWindowSizeConstraints(ImVec2(280.0f, 240.0f), ImVec2(700.0f, 900.0f));
 
-			// Medieval Palette Styles (21 PushStyleColor calls)
-			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.11f, 0.08f, 0.04f, 0.94f));       // Aged Oak / Dark Leather
-			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.18f, 0.12f, 0.06f, 1.00f));        // Deep wood title
-			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.25f, 0.16f, 0.08f, 1.00f));  // Active Title
-			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));         // Radiant Antique Gold
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.91f, 0.78f, 1.00f));           // Parchment Ivory Text
-			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.22f, 0.15f, 0.08f, 0.85f));
-			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.35f, 0.24f, 0.12f, 0.95f));
+			// Palette Corporate Theme Colors (21 PushStyleColor calls)
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.07f, 0.09f, 0.13f, 0.96f));       // #12161E Deep Navy Slate
+			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.11f, 0.13f, 0.18f, 1.00f));        // #1C222E
+			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.13f, 0.16f, 0.22f, 1.00f));  // #222836
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));         // #E5C158 Gold
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.94f, 0.96f, 0.98f, 1.00f));           // #F0F4FA
+			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.11f, 0.15f, 0.22f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.16f, 0.22f, 0.32f, 0.95f));
 			ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.83f, 0.69f, 0.22f, 0.80f));
-			ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.16f, 0.11f, 0.06f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.32f, 0.22f, 0.11f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_TabActive, ImVec4(0.26f, 0.18f, 0.09f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_TabUnfocused, ImVec4(0.14f, 0.09f, 0.05f, 0.85f));
-			ImGui::PushStyleColor(ImGuiCol_TabUnfocusedActive, ImVec4(0.20f, 0.13f, 0.07f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.15f, 0.08f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.24f, 0.12f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.10f, 0.12f, 0.17f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.16f, 0.22f, 0.32f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_TabActive, ImVec4(0.14f, 0.18f, 0.26f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_TabUnfocused, ImVec4(0.08f, 0.10f, 0.14f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_TabUnfocusedActive, ImVec4(0.11f, 0.14f, 0.20f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.11f, 0.15f, 0.22f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.16f, 0.22f, 0.32f, 1.00f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.08f, 0.05f, 0.03f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.09f, 0.05f, 0.95f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.20f, 0.13f, 0.07f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(0.85f, 0.70f, 0.25f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.10f, 0.12f, 0.17f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.18f, 0.25f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.18f, 0.24f, 0.32f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(0.83f, 0.69f, 0.22f, 1.00f));
 			ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.83f, 0.69f, 0.22f, 0.40f));
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
@@ -827,22 +827,8 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.8f);
 
-			static GLuint parchment_tex_id = 0;
-			static bool parchment_loaded = false;
-			if (!parchment_loaded) {
-				parchment_loaded = true;
-				wxBitmap parchment_bmp = LoadBitmapFromCandidatesRadial(wxDefaultSize, {
-					"icons/parchment_bg.png", "../icons/parchment_bg.png", "Map Editor/icons/parchment_bg.png",
-					wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "parchment_bg.png",
-					wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "parchment_bg.png"
-				});
-				if (parchment_bmp.IsOk()) {
-					parchment_tex_id = ConvertBitmapToTexture(parchment_bmp);
-				}
-			}
-
 			bool notepad_open = true;
-			if (ImGui::Begin("Quest Notepad & Checklist", &notepad_open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse)) {
+			if (ImGui::Begin("Map Notepad", &notepad_open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse)) {
 				// If user collapsed the window or clicked minimize, switch to minimized floating pill
 				if (ImGui::IsWindowCollapsed()) {
 					ImGui::SetWindowCollapsed(false);
@@ -854,17 +840,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				ImVec2 w_size = ImGui::GetWindowSize();
 				ImGuiViewport* vp = ImGui::GetMainViewport();
 				if (vp) {
-					w_pos = SnapOverlayWindow("Quest Notepad & Checklist", w_pos, w_size, vp);
-				}
-
-				// Draw parchment background texture inside window
-				if (parchment_tex_id != 0) {
-					ImDrawList* dl = ImGui::GetWindowDrawList();
-					dl->AddImage((ImTextureID)(intptr_t)parchment_tex_id,
-						ImVec2(w_pos.x + 2.0f, w_pos.y + 24.0f),
-						ImVec2(w_pos.x + w_size.x - 2.0f, w_pos.y + w_size.y - 2.0f),
-						ImVec2(0, 0), ImVec2(1, 1),
-						IM_COL32(255, 255, 255, 45)); // Soft 18% opacity parchment texture overlay
+					w_pos = SnapOverlayWindow("Map Notepad", w_pos, w_size, vp);
 				}
 
 				// Custom Title Bar Minimize Button rendered right next to the 'X' close button
@@ -893,16 +869,16 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 				// Top Task Input Bar
 				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.83f, 0.69f, 0.22f, 1.0f));
-				ImGui::Text("Inscribe Task:");
+				ImGui::Text("Add Note / Task:");
 				ImGui::PopStyleColor();
 
 				float btn_w = 70.0f;
-				ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.04f, 0.03f, 0.02f, 0.95f));
-				ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.85f, 0.72f, 0.25f, 0.90f));
+				ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.10f, 0.12f, 0.17f, 0.95f));
+				ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));
 				ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.2f);
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 6.0f));
 				ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - btn_w - 8.0f);
-				bool enter_pressed = ImGui::InputTextWithHint("##NewTaskInput", "Example Text", new_task_input, IM_ARRAYSIZE(new_task_input), ImGuiInputTextFlags_EnterReturnsTrue);
+				bool enter_pressed = ImGui::InputTextWithHint("##NewTaskInput", "Write a note...", new_task_input, IM_ARRAYSIZE(new_task_input), ImGuiInputTextFlags_EnterReturnsTrue);
 				ImGui::PopItemWidth();
 				ImGui::PopStyleVar(2);
 				ImGui::PopStyleColor(2);
@@ -949,16 +925,16 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 				ImGui::Separator();
 
-				// Tabs: Active Tasks vs Completed
-				if (ImGui::BeginTabBar("##ChecklistTabs", ImGuiTabBarFlags_None)) {
-					// TAB 1: ACTIVE TASKS
+				// Tabs: Active Notes vs Completed
+				if (ImGui::BeginTabBar("##NotepadTabs", ImGuiTabBarFlags_None)) {
+					// TAB 1: ACTIVE NOTES
 					std::string activeTabLabel = "Active (" + std::to_string(activeCount) + ")###ActiveTab";
 					if (ImGui::BeginTabItem(activeTabLabel.c_str())) {
 						auto activeItems = ChecklistManager::getInstance().getActiveItems();
 
 						if (activeItems.empty()) {
 							ImGui::Spacing();
-							ImGui::TextColored(ImVec4(0.65f, 0.60f, 0.48f, 0.8f), "No active tasks. Inscribe a new quest above!");
+							ImGui::TextColored(ImVec4(0.65f, 0.70f, 0.80f, 0.8f), "No active notes. Add a note or task above!");
 						} else {
 							ImGui::BeginChild("##ActiveListChild", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
 							for (const auto& item : activeItems) {
@@ -1078,7 +1054,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					ImGui::EndTabBar();
 				}
 
-				RegisterOverlayWindowRect("Quest Notepad & Checklist", w_pos, w_size);
+				RegisterOverlayWindowRect("Map Notepad", w_pos, w_size);
 			}
 			ImGui::End();
 
@@ -1105,14 +1081,14 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		std::string curStationName = (curIdx >= 0 && curIdx < (int)stations.size()) ? stations[curIdx].name : "None";
 
 		if (radio_minimized) {
-			// Render a sleek button pill in the bottom status area with Corporate Design
+			// Render a sleek button pill in the bottom status area with Palette Corporate Design
 			ImGui::SetNextWindowPos(ImVec2(10.0f, io.DisplaySize.y - 104.0f), ImGuiCond_Always);
 			ImGui::SetNextWindowBgAlpha(0.92f);
 			ImGuiWindowFlags pill_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
 				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
 
-			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.08f, 0.04f, 0.95f));
-			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.07f, 0.09f, 0.13f, 0.95f)); // Deep Navy Slate
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));   // Palette Gold
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.5f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
 
@@ -1122,14 +1098,14 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					: "[Radio] (Stopped)";
 
 				if (rm.IsPlaying()) {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.35f, 0.18f, 0.95f));
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12f, 0.28f, 0.16f, 0.95f));
 					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
 				} else {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.24f, 0.16f, 0.09f, 0.90f));
-					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.90f, 0.76f, 1.0f));
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.11f, 0.15f, 0.22f, 0.90f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.94f, 0.96f, 0.98f, 1.0f));
 				}
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.38f, 0.25f, 0.13f, 1.00f));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.38f, 0.18f, 1.00f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.16f, 0.22f, 0.32f, 1.00f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
 
 				if (ImGui::Button(label.c_str())) {
 					radio_minimized = false;
@@ -1153,21 +1129,21 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			}
 			ImGui::SetNextWindowSizeConstraints(ImVec2(260, 140), ImVec2(600, 300));
 
-			// Corporate Medieval Palette Styles
-			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.11f, 0.08f, 0.04f, 0.94f));
-			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.18f, 0.12f, 0.06f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.25f, 0.16f, 0.08f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.91f, 0.78f, 1.00f));
-			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.22f, 0.15f, 0.08f, 0.85f));
-			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.35f, 0.24f, 0.12f, 0.95f));
+			// Palette Corporate Theme Colors (17 PushStyleColor calls)
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.07f, 0.09f, 0.13f, 0.96f));       // #12161E Deep Navy Slate
+			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.11f, 0.13f, 0.18f, 1.00f));        // #1C222E
+			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.13f, 0.16f, 0.22f, 1.00f));  // #222836
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));         // #E5C158 Gold
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.94f, 0.96f, 0.98f, 1.00f));           // #F0F4FA
+			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.11f, 0.15f, 0.22f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.16f, 0.22f, 0.32f, 0.95f));
 			ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.83f, 0.69f, 0.22f, 0.80f));
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.15f, 0.08f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.24f, 0.12f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.11f, 0.15f, 0.22f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.16f, 0.22f, 0.32f, 1.00f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.08f, 0.05f, 0.03f, 0.90f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.09f, 0.05f, 0.95f));
-			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.20f, 0.13f, 0.07f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.10f, 0.12f, 0.17f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.18f, 0.25f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.18f, 0.24f, 0.32f, 1.00f));
 			ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.83f, 0.69f, 0.22f, 0.40f));
 			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));
 			ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.95f, 0.85f, 0.35f, 1.00f));
