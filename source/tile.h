@@ -82,19 +82,19 @@ public:
 
 	// Position of the tile
 	Position getPosition() {
-		return location->getPosition();
+		return location ? location->getPosition() : Position(0, 0, 0);
 	}
 	const Position getPosition() const {
-		return location->getPosition();
+		return location ? location->getPosition() : Position(0, 0, 0);
 	}
 	int getX() const {
-		return location->getPosition().x;
+		return location ? location->getPosition().x : 0;
 	}
 	int getY() const {
-		return location->getPosition().y;
+		return location ? location->getPosition().y : 0;
 	}
 	int getZ() const {
-		return location->getPosition().z;
+		return location ? location->getPosition().z : 0;
 	}
 
 public: // Functions
@@ -285,12 +285,12 @@ inline uint32_t Tile::getHouseID() const {
 	return house_id;
 }
 
-inline HouseExitList* Tile::getHouseExits() {
-	return location->getHouseExits();
+inline const HouseExitList* Tile::getHouseExits() const {
+	return location ? location->getHouseExits() : nullptr;
 }
 
-inline const HouseExitList* Tile::getHouseExits() const {
-	return location->getHouseExits();
+inline HouseExitList* Tile::getHouseExits() {
+	return location ? location->getHouseExits() : nullptr;
 }
 
 inline bool Tile::isHouseExit() const {

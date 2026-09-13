@@ -2,7 +2,9 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <wincrypt.h>
 #include <shellapi.h>
+#pragma comment(lib, "advapi32.lib")
 #endif
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
@@ -11,6 +13,7 @@
 #include <wx/utils.h>
 #include <wx/stdpaths.h>
 #include <wx/filename.h>
+#include <wx/file.h>
 #include <wx/app.h>
 #include <wx/stattext.h>
 #include <wx/button.h>
@@ -21,6 +24,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 
 MMEUpdater& MMEUpdater::Instance() {
 	static MMEUpdater instance;
@@ -61,6 +65,45 @@ static std::vector<int> ParseVersion(const std::string& str) {
 	return parts;
 }
 
+#ifdef _WIN32
+#ifndef CALG_SHA_256
+#define CALG_SHA_256 0x0000800c
+#endif
+static std::string ComputeFileSHA256(const wxString& filePath) {
+	HANDLE hFile = CreateFileW(filePath.wc_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	if (hFile == INVALID_HANDLE_VALUE) {
+		return "";
+	}
+
+	HCRYPTPROV hProv = 0;
+	HCRYPTHASH hHash = 0;
+	std::string result = "";
+
+	if (CryptAcquireContextW(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT)) {
+		if (CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) {
+			BYTE buffer[8192];
+			DWORD bytesRead = 0;
+			while (ReadFile(hFile, buffer, sizeof(buffer), &bytesRead, NULL) && bytesRead > 0) {
+				CryptHashData(hHash, buffer, bytesRead, 0);
+			}
+			BYTE hash[32];
+			DWORD hashLen = sizeof(hash);
+			if (CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0)) {
+				std::stringstream ss;
+				for (DWORD i = 0; i < hashLen; ++i) {
+					ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
+				}
+				result = ss.str();
+			}
+			CryptDestroyHash(hHash);
+		}
+		CryptReleaseContext(hProv, 0);
+	}
+	CloseHandle(hFile);
+	return result;
+}
+#endif
+
 static std::string ReadLocalBuildHash() {
 	wxString appDir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
 	wxString hashFile = appDir + "\\version_hash.txt";
@@ -69,29 +112,45 @@ static std::string ReadLocalBuildHash() {
 		if (f.IsOpened()) {
 			wxString content;
 			f.ReadAll(&content);
-			return content.Trim(true).Trim(false).Lower().ToStdString();
+			std::string h = content.Trim(true).Trim(false).Lower().ToStdString();
+			if (!h.empty()) return h;
 		}
 	}
+#ifdef _WIN32
+	// Fallback to computing the SHA256 of the running binary directly
+	return ComputeFileSHA256(wxStandardPaths::Get().GetExecutablePath());
+#else
 	return "";
+#endif
 }
 
 static std::string ExtractShaFromNotes(const std::string& notes) {
-	// Look for <!-- BUILD_SHA256:hex --> or SHA256: hex
-	size_t pos = notes.find("BUILD_SHA256:");
-	if (pos != std::string::npos) {
-		size_t start = pos + 13;
-		size_t end = notes.find_first_of(" \r\n->", start);
-		if (end == std::string::npos) end = notes.size();
-		return notes.substr(start, end - start);
+	// Look for <!-- BUILD_SHA256:hex --> or SHA256: hex or Hash: hex or Commit: hex
+	const std::vector<std::string> prefixes = {
+		"BUILD_SHA256:",
+		"BUILD_SHA:",
+		"SHA256:",
+		"SHA-256:",
+		"Hash:",
+		"hash:",
+		"Commit:",
+		"commit:"
+	};
+
+	for (const auto& prefix : prefixes) {
+		size_t pos = notes.find(prefix);
+		if (pos != std::string::npos) {
+			size_t start = pos + prefix.length();
+			while (start < notes.size() && (notes[start] == ' ' || notes[start] == '`' || notes[start] == '"')) ++start;
+			size_t end = notes.find_first_of(" `\"\r\n->", start);
+			if (end == std::string::npos) end = notes.size();
+			std::string token = notes.substr(start, end - start);
+			if (token.length() >= 7) {
+				return token;
+			}
+		}
 	}
-	pos = notes.find("SHA256:");
-	if (pos != std::string::npos) {
-		size_t start = pos + 7;
-		while (start < notes.size() && (notes[start] == ' ' || notes[start] == '`')) ++start;
-		size_t end = notes.find_first_of(" `\r\n", start);
-		if (end == std::string::npos) end = notes.size();
-		return notes.substr(start, end - start);
-	}
+
 	return "";
 }
 
@@ -105,13 +164,20 @@ static bool IsRemoteNewer(const std::string& remoteTag, const std::string& local
 	}
 
 	// Semantic numbers are identical (e.g. both are 2.0 Beta).
-	// Check SHA256 build hash if available.
+	// Check SHA256 / commit build hash if available.
 	std::string remoteSha = ExtractShaFromNotes(remoteNotes);
 	std::string localSha = ReadLocalBuildHash();
 
 	if (!remoteSha.empty() && !localSha.empty()) {
-		// If SHA hashes differ, remote has a newer build
-		return remoteSha != localSha;
+		std::string rLower = remoteSha;
+		std::string lLower = localSha;
+		std::transform(rLower.begin(), rLower.end(), rLower.begin(), ::tolower);
+		std::transform(lLower.begin(), lLower.end(), lLower.begin(), ::tolower);
+
+		// Support partial prefix match (e.g. 7-8 char git commit vs full sha)
+		if (lLower.find(rLower) != 0 && rLower.find(lLower) != 0) {
+			return true;
+		}
 	}
 
 	return false;
@@ -139,6 +205,11 @@ bool MMEUpdater::PerformCheck(std::string& out_tag, std::string& out_url, std::s
 		out_tag = j["tag_name"].get<std::string>();
 		out_url = j.value("html_url", "https://github.com/Mioshiru/MME/releases");
 		out_notes = j.value("body", "");
+
+		std::string commitish = j.value("target_commitish", "");
+		if (!commitish.empty() && commitish != "main" && commitish != "master") {
+			out_notes += "\nCommit: " + commitish;
+		}
 
 		if (j.contains("assets") && j["assets"].is_array()) {
 			for (const auto& asset : j["assets"]) {
@@ -255,6 +326,8 @@ void MMEUpdater::CheckForUpdates(wxWindow* parent, bool user_initiated) {
 	}
 
 	std::string cur = GetCurrentVersion();
+	std::string localSha = ReadLocalBuildHash();
+	std::string remoteSha = ExtractShaFromNotes(notes);
 	bool is_newer = IsRemoteNewer(tag, cur, notes, "");
 
 	if (is_newer) {
@@ -265,9 +338,14 @@ void MMEUpdater::CheckForUpdates(wxWindow* parent, bool user_initiated) {
 
 		wxString msg = wxString::Format(
 			"A new version (%s) of Mios Map Editor is available!\n\n"
-			"Current installed version: %s\n\n"
+			"Current installed: %s%s\n"
+			"Available release: %s%s\n\n"
 			"Would you like to download and install this update now?",
-			tag.c_str(), cur.c_str()
+			tag.c_str(),
+			cur.c_str(),
+			localSha.empty() ? "" : (" [" + localSha.substr(0, 8) + "]").c_str(),
+			tag.c_str(),
+			remoteSha.empty() ? "" : (" [" + remoteSha.substr(0, 8) + "]").c_str()
 		);
 
 		StyledUpdateDialog dlg(parent, "Update Available", msg, true);
@@ -284,9 +362,12 @@ void MMEUpdater::CheckForUpdates(wxWindow* parent, bool user_initiated) {
 		if (user_initiated) {
 			wxString msg = wxString::Format(
 				"You are running the latest version of Mios Map Editor!\n\n"
-				"Current installed version: %s\n"
-				"Latest release on GitHub: %s",
-				cur.c_str(), tag.c_str()
+				"Current installed version: %s%s\n"
+				"Latest release on GitHub: %s%s",
+				cur.c_str(),
+				localSha.empty() ? "" : (" (Build: " + localSha.substr(0, 8) + ")").c_str(),
+				tag.c_str(),
+				remoteSha.empty() ? "" : (" (Build: " + remoteSha.substr(0, 8) + ")").c_str()
 			);
 			StyledUpdateDialog dlg(parent, "Up to Date", msg, false);
 			dlg.ShowModal();

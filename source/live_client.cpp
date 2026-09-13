@@ -876,6 +876,7 @@ void LiveClient::parseUpdateOperation(NetworkMessage& message) {
 			if (tab) {
 				tab->SetScreenCenterPosition(pendingFocusPos);
 			}
+			applyPendingWorldPalettes();
 			g_gui.UpdateTitle();
 			g_gui.RefreshPalettes();
 			if (g_gui.root) {
@@ -970,23 +971,23 @@ void LiveClient::parseWorldPalette(NetworkMessage& message) {
 		return;
 	}
 
-	Tileset* tileset = nullptr;
-	auto it = g_materials.tilesets.find(tsName);
-	if (it != g_materials.tilesets.end() && it->second) {
-		tileset = it->second;
-		tileset->clear();
-	} else {
-		tileset = new Tileset(g_brushes, tsName);
-		g_materials.tilesets[tsName] = tileset;
+	std::vector<std::string>& list = pendingWorldPalettes[tsName];
+	list.clear();
+	for (uint32_t i = 0; i < brushCount; ++i) {
+		std::string brushName = message.read<std::string>();
+		message.read<uint32_t>(); // brushId
+		if (!brushName.empty()) {
+			list.push_back(brushName);
+		}
 	}
 
-	if (!tileset) {
-		for (uint32_t i = 0; i < brushCount; ++i) {
-			message.read<std::string>();
-			message.read<uint32_t>();
-		}
-		return;
+	if (hasCreatedEditorTab && g_gui.IsEditorOpen()) {
+		applyPendingWorldPalettes();
 	}
+}
+
+void LiveClient::applyPendingWorldPalettes() {
+	if (pendingWorldPalettes.empty()) return;
 
 	auto addBrushSafe = [](TilesetCategory* cat, Brush* b) {
 		if (!cat || !b) return;
@@ -996,41 +997,49 @@ void LiveClient::parseWorldPalette(NetworkMessage& message) {
 		cat->brushlist.push_back(b);
 	};
 
-	for (uint32_t i = 0; i < brushCount; ++i) {
-		std::string brushName = message.read<std::string>();
-		uint32_t brushId = message.read<uint32_t>();
-		if (brushName.empty()) continue;
+	for (const auto& pair : pendingWorldPalettes) {
+		const std::string& tsName = pair.first;
+		const auto& brushNames = pair.second;
 
-		Brush* b = g_brushes.getBrush(brushName);
-		if (b && !b->isSeparator()) {
-			// Always add to overall TILESET_FAVORITE category of this tileset
-			TilesetCategory* catAll = tileset->getCategory(TILESET_FAVORITE);
-			addBrushSafe(catAll, b);
+		Tileset* tileset = nullptr;
+		auto it = g_materials.tilesets.find(tsName);
+		if (it != g_materials.tilesets.end() && it->second) {
+			tileset = it->second;
+			tileset->clear();
+		} else {
+			tileset = new Tileset(g_brushes, tsName);
+			g_materials.tilesets[tsName] = tileset;
+		}
 
-			// Also categorize into specific palette types
-			if (b->isCreature()) {
-				CreatureBrush* cb = dynamic_cast<CreatureBrush*>(b);
-				if (cb && cb->getType() && cb->getType()->isNpc) {
-					addBrushSafe(tileset->getCategory(TILESET_NPC), b);
-				} else {
-					addBrushSafe(tileset->getCategory(TILESET_CREATURE), b);
+		if (!tileset) continue;
+
+		for (const std::string& brushName : brushNames) {
+			Brush* b = g_brushes.getBrush(brushName);
+			if (b && !b->isSeparator()) {
+				TilesetCategory* catAll = tileset->getCategory(TILESET_FAVORITE);
+				addBrushSafe(catAll, b);
+
+				if (b->isCreature()) {
+					CreatureBrush* cb = dynamic_cast<CreatureBrush*>(b);
+					if (cb && cb->getType() && cb->getType()->isNpc) {
+						addBrushSafe(tileset->getCategory(TILESET_NPC), b);
+					} else {
+						addBrushSafe(tileset->getCategory(TILESET_CREATURE), b);
+					}
+				} else if (b->isWall() || b->isGround() || b->isTerrain() || b->isOptionalBorder()) {
+					addBrushSafe(tileset->getCategory(TILESET_TERRAIN), b);
+				} else if (b->isDoodad() || b->isTable() || b->isCarpet() || wxstr(b->getName()).Lower().Contains("ladder")) {
+					addBrushSafe(tileset->getCategory(TILESET_DOODAD), b);
+				} else if (b->isHouse()) {
+					addBrushSafe(tileset->getCategory(TILESET_HOUSE), b);
+				} else if (b->isRaw()) {
+					addBrushSafe(tileset->getCategory(TILESET_RAW), b);
+					addBrushSafe(tileset->getCategory(TILESET_ITEM), b);
 				}
-			} else if (b->isWall() || b->isGround() || b->isTerrain() || b->isOptionalBorder()) {
-				addBrushSafe(tileset->getCategory(TILESET_TERRAIN), b);
-			} else if (b->isDoodad() || b->isTable() || b->isCarpet() || wxstr(b->getName()).Lower().Contains("ladder")) {
-				addBrushSafe(tileset->getCategory(TILESET_DOODAD), b);
-			} else if (b->isHouse()) {
-				addBrushSafe(tileset->getCategory(TILESET_HOUSE), b);
-			} else if (b->isRaw()) {
-				addBrushSafe(tileset->getCategory(TILESET_RAW), b);
-				addBrushSafe(tileset->getCategory(TILESET_ITEM), b);
 			}
 		}
 	}
 
-	// Only rebuild palettes after the live editor tab exists.
-	// Calling RebuildPalettes before the tab is created can crash because
-	// g_gui.GetCurrentEditor() is still null at that point in the handshake.
 	if (hasCreatedEditorTab && g_gui.IsEditorOpen()) {
 		g_gui.RebuildPalettes();
 	}

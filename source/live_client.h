@@ -166,6 +166,9 @@ protected:
 	uint32_t pendingHostViewFlags = 0;
 	bool hasPendingHostViewFlags = false;
 
+	void applyPendingWorldPalettes();
+	std::map<std::string, std::vector<std::string>> pendingWorldPalettes;
+
 	std::deque<std::vector<uint8_t>> writeQueue;
 	std::mutex writeMutex;
 	bool isWriting = false;

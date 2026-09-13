@@ -255,6 +255,9 @@ Tile* QTreeNode::setTile(int x, int y, int z, Tile* newtile) {
 	TileLocation* tmp = &f->locs[offset_x * 4 + offset_y];
 	Tile* oldtile = tmp->tile;
 	tmp->tile = newtile;
+	if (newtile) {
+		newtile->location = tmp;
+	}
 
 	if (newtile && !oldtile) {
 		++map.tilecount;

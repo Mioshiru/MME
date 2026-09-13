@@ -510,7 +510,8 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 		return nullptr;
 	}
 
-	Tile* tile = newd Tile(pos.x, pos.y, pos.z);
+	TileLocation* loc = map.createTileL(pos.x, pos.y, pos.z);
+	Tile* tile = loc ? newd Tile(*loc) : newd Tile(pos.x, pos.y, pos.z);
 
 	VirtualIOMap currentMapVersion(editor.map.getVersion());
 
