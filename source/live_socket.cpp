@@ -344,7 +344,7 @@ void LiveSocket::receiveBatchNodesZlib(NetworkMessage& message, MapEditor& edito
 							if (tileNode) {
 								Tile* tile = readTile(tileNode, editor, &position);
 								if (tile) {
-									map.setTile(position.x, position.y, position.z, tile);
+									map.setTile(position.x, position.y, position.z, tile, true);
 								}
 								tileNode = tileNode->advance();
 							}
@@ -383,7 +383,7 @@ void LiveSocket::receiveFloor(NetworkMessage& message, MapEditor& editor, Action
 				if (tileNode) {
 					Tile* tile = readTile(tileNode, editor, &position);
 					if (tile) {
-						map.setTile(position.x, position.y, position.z, tile);
+						map.setTile(position.x, position.y, position.z, tile, true);
 					}
 					tileNode = tileNode->advance();
 				}
@@ -510,11 +510,9 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 		return nullptr;
 	}
 
-	TileLocation* location = map.createTileL(pos.x, pos.y, pos.z);
-	if (!location) {
-		return nullptr;
-	}
-	Tile* tile = newd Tile(*location);
+	Tile* tile = newd Tile(pos.x, pos.y, pos.z);
+
+	VirtualIOMap currentMapVersion(editor.map.getVersion());
 
 	if (tileType == OTBM_HOUSETILE) {
 		uint32_t houseId = 0;
@@ -537,7 +535,7 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 				break;
 			}
 			case OTBM_ATTR_ITEM: {
-				Item* item = Item::Create_OTBM(mapVersion, node);
+				Item* item = Item::Create_OTBM(currentMapVersion, node);
 				if (item) {
 					tile->addItem(item);
 				}
@@ -552,9 +550,9 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 		uint8_t itemType = 0;
 		if (itemNode->getByte(itemType)) {
 			if (itemType == OTBM_ITEM) {
-				Item* item = Item::Create_OTBM(mapVersion, itemNode);
+				Item* item = Item::Create_OTBM(currentMapVersion, itemNode);
 				if (item) {
-					item->unserializeItemNode_OTBM(mapVersion, itemNode);
+					item->unserializeItemNode_OTBM(currentMapVersion, itemNode);
 					tile->addItem(item);
 				}
 			}
