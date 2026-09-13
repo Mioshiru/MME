@@ -102,7 +102,8 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 			} else if (scheduleReconnect(wxString::Format("Connection failed: %s", error.message()))) {
 				//
 			} else {
-				wxTheApp->CallAfter([this]() {
+				wxTheApp->CallAfter([this, alive]() {
+					if (!alive->load() || stopped) return;
 					close();
 					g_gui.CloseLiveEditors(this);
 				});
@@ -113,7 +114,8 @@ void LiveClient::tryConnect(const boost::asio::ip::tcp::resolver::results_type& 
 			socket->set_option(boost::asio::socket_base::send_buffer_size(131072), error);
 			socket->set_option(boost::asio::socket_base::receive_buffer_size(131072), error);
 			if (error) {
-				wxTheApp->CallAfter([this]() {
+				wxTheApp->CallAfter([this, alive]() {
+					if (!alive->load() || stopped) return;
 					close();
 				});
 				return;
@@ -201,9 +203,10 @@ bool LiveClient::scheduleReconnect(const wxString& reason) {
 		log->Message(connectionStatus + "...");
 	}
 
-	std::thread([this]() {
+	std::thread([this, alive = callbackAlive]() {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1500));
-		wxTheApp->CallAfter([this]() {
+		wxTheApp->CallAfter([this, alive]() {
+			if (!alive->load() || stopped) return;
 			attemptReconnect();
 		});
 	}).detach();
@@ -333,7 +336,8 @@ void LiveClient::doWrite() {
 					isWriting = false;
 				}
 				boost::system::error_code err = error;
-				wxTheApp->CallAfter([this, err]() {
+				wxTheApp->CallAfter([this, err, alive]() {
+					if (!alive->load() || stopped) return;
 					if (!handleError(err)) {
 						logMessage(wxString() + getHostName() + ": " + err.message());
 					}

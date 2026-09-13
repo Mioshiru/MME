@@ -39,14 +39,14 @@ std::string MMEUpdater::GetCurrentVersion() const {
 #endif
 }
 
-// Parses string like "v1.8", "1.8.1", "1.8.1 (by Mioshiro)" into (major, minor, patch)
+// Parses string like "v1.8", "1.8.1", "2.0 Beta", "2.0-Beta" into (major, minor, patch)
 static std::vector<int> ParseVersion(const std::string& str) {
 	std::vector<int> parts = { 0, 0, 0 };
 	std::string clean;
 	for (char c : str) {
 		if (std::isdigit(c) || c == '.') {
 			clean += c;
-		} else if (!clean.empty()) {
+		} else if (!clean.empty() && (c == ' ' || c == '-' || c == '_')) {
 			break;
 		}
 	}
@@ -61,7 +61,41 @@ static std::vector<int> ParseVersion(const std::string& str) {
 	return parts;
 }
 
-static bool IsRemoteNewer(const std::string& remoteTag, const std::string& localVer) {
+static std::string ReadLocalBuildHash() {
+	wxString appDir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath());
+	wxString hashFile = appDir + "\\version_hash.txt";
+	if (wxFileExists(hashFile)) {
+		wxFile f(hashFile);
+		if (f.IsOpened()) {
+			wxString content;
+			f.ReadAll(&content);
+			return content.Trim(true).Trim(false).Lower().ToStdString();
+		}
+	}
+	return "";
+}
+
+static std::string ExtractShaFromNotes(const std::string& notes) {
+	// Look for <!-- BUILD_SHA256:hex --> or SHA256: hex
+	size_t pos = notes.find("BUILD_SHA256:");
+	if (pos != std::string::npos) {
+		size_t start = pos + 13;
+		size_t end = notes.find_first_of(" \r\n->", start);
+		if (end == std::string::npos) end = notes.size();
+		return notes.substr(start, end - start);
+	}
+	pos = notes.find("SHA256:");
+	if (pos != std::string::npos) {
+		size_t start = pos + 7;
+		while (start < notes.size() && (notes[start] == ' ' || notes[start] == '`')) ++start;
+		size_t end = notes.find_first_of(" `\r\n", start);
+		if (end == std::string::npos) end = notes.size();
+		return notes.substr(start, end - start);
+	}
+	return "";
+}
+
+static bool IsRemoteNewer(const std::string& remoteTag, const std::string& localVer, const std::string& remoteNotes, const std::string& publishedAt) {
 	std::vector<int> r = ParseVersion(remoteTag);
 	std::vector<int> l = ParseVersion(localVer);
 
@@ -69,6 +103,17 @@ static bool IsRemoteNewer(const std::string& remoteTag, const std::string& local
 		if (r[i] > l[i]) return true;
 		if (r[i] < l[i]) return false;
 	}
+
+	// Semantic numbers are identical (e.g. both are 2.0 Beta).
+	// Check SHA256 build hash if available.
+	std::string remoteSha = ExtractShaFromNotes(remoteNotes);
+	std::string localSha = ReadLocalBuildHash();
+
+	if (!remoteSha.empty() && !localSha.empty()) {
+		// If SHA hashes differ, remote has a newer build
+		return remoteSha != localSha;
+	}
+
 	return false;
 }
 
@@ -121,7 +166,7 @@ void MMEUpdater::CheckForUpdatesAsync(wxWindow* parent) {
 		std::string tag, url, zip_url, notes;
 		if (PerformCheck(tag, url, zip_url, notes)) {
 			std::string cur = GetCurrentVersion();
-			if (IsRemoteNewer(tag, cur)) {
+			if (IsRemoteNewer(tag, cur, notes, "")) {
 				update_available = true;
 				latest_tag = tag;
 				latest_url = url;
@@ -210,7 +255,7 @@ void MMEUpdater::CheckForUpdates(wxWindow* parent, bool user_initiated) {
 	}
 
 	std::string cur = GetCurrentVersion();
-	bool is_newer = IsRemoteNewer(tag, cur);
+	bool is_newer = IsRemoteNewer(tag, cur, notes, "");
 
 	if (is_newer) {
 		update_available = true;
@@ -256,7 +301,6 @@ bool MMEUpdater::DownloadAndInstall(wxWindow* parent, const std::string& zip_url
 	wxProgressDialog progress("Downloading Update", "Connecting to download server...", 100, parent, wxPD_APP_MODAL | wxPD_CAN_ABORT | wxPD_AUTO_HIDE);
 
 	// Resolve any HTTP 301/302 redirects first to obtain the direct asset URL (AWS S3/GitHub CDN link)
-	// This prevents the 302 redirect response body from being written into the ZIP stream.
 	std::string direct_url = zip_url;
 	try {
 		cpr::Response r_redir = cpr::Get(
@@ -270,7 +314,6 @@ bool MMEUpdater::DownloadAndInstall(wxWindow* parent, const std::string& zip_url
 			direct_url = r_redir.url.str();
 		}
 	} catch (...) {
-		// Fall back to original URL
 		direct_url = zip_url;
 	}
 
@@ -351,21 +394,28 @@ bool MMEUpdater::DownloadAndInstall(wxWindow* parent, const std::string& zip_url
 	std::ofstream script(scriptPath.ToStdString());
 	if (script.is_open()) {
 		script << "@echo off\n";
+		script << "chcp 65001 >nul 2>&1\n";
 		script << "setlocal enabledelayedexpansion\n";
-		script << "title Mios Map Editor - Applying Update " << tag << "...\n";
+		script << "title Mios Map Editor - Applying Update " << tag << "\n";
 		script << "echo ========================================================\n";
 		script << "echo        Applying Mios Map Editor Update " << tag << "\n";
 		script << "echo ========================================================\n";
 		script << "echo.\n";
-		script << "echo Waiting for Mios Map Editor to shut down...\n";
+		script << "set \"APP_DIR=" << appDir.ToStdString() << "\"\n";
+		script << "set \"ZIP_PATH=" << zipPath.ToStdString() << "\"\n";
+		script << "set \"EXE_NAME=" << exeName.ToStdString() << "\"\n";
+		script << "set \"EXE_PATH=" << exePath.ToStdString() << "\"\n";
+		script << "set \"STAGE_DIR=%TEMP%\\mme_stage_" << tag << "_%RANDOM%\"\n";
+		script << "echo [1/4] Terminating active Mios Map Editor processes...\n";
+		script << "taskkill /F /IM \"" << exeName.ToStdString() << "\" /IM \"MME-Win64.exe\" /IM \"MME.exe\" /T >nul 2>&1\n";
+		script << "timeout /t 2 /nobreak >nul\n";
 		script << "set /a WAIT_COUNT=0\n";
 		script << ":WAIT_LOOP\n";
 		script << "tasklist /FI \"IMAGENAME eq " << exeName.ToStdString() << "\" 2>nul | find /I /N \"" << exeName.ToStdString() << "\">nul\n";
 		script << "if !ERRORLEVEL! EQU 0 (\n";
 		script << "    set /a WAIT_COUNT+=1\n";
 		script << "    if !WAIT_COUNT! GTR 10 (\n";
-		script << "        echo Closing active process...\n";
-		script << "        taskkill /F /IM \"" << exeName.ToStdString() << "\" >nul 2>&1\n";
+		script << "        taskkill /F /IM \"" << exeName.ToStdString() << "\" /IM \"MME-Win64.exe\" /IM \"MME.exe\" /T >nul 2>&1\n";
 		script << "        timeout /t 1 /nobreak >nul\n";
 		script << "    ) else (\n";
 		script << "        timeout /t 1 /nobreak >nul\n";
@@ -373,22 +423,31 @@ bool MMEUpdater::DownloadAndInstall(wxWindow* parent, const std::string& zip_url
 		script << "    )\n";
 		script << ")\n";
 		script << "timeout /t 1 /nobreak >nul\n";
-		script << "echo Extracting update package...\n";
-		script << "tar -xf \"" << zipPath.ToStdString() << "\" -C \"" << appDir.ToStdString() << "\" >nul 2>&1\n";
-		script << "set EXTRACT_STATUS=!ERRORLEVEL!\n";
-		script << "if !EXTRACT_STATUS! NEQ 0 (\n";
-		script << "    echo Using PowerShell extraction engine...\n";
-		script << "    powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference = 'Stop'; [System.Reflection.Assembly]::LoadWithPartialName('System.IO.Compression.FileSystem') | Out-Null; $zip = [System.IO.Compression.ZipFile]::OpenRead('" << zipPath.ToStdString() << "'); foreach ($entry in $zip.Entries) { $target = [System.IO.Path]::Combine('" << appDir.ToStdString() << "', $entry.FullName); if ($entry.FullName.EndsWith('/') -or $entry.FullName.EndsWith('\\')) { [System.IO.Directory]::CreateDirectory($target) | Out-Null; } else { $parent = [System.IO.Path]::GetDirectoryName($target); if (-not [System.IO.Directory]::Exists($parent)) { [System.IO.Directory]::CreateDirectory($parent) | Out-Null; } [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true); } }; $zip.Dispose()\" >nul 2>&1\n";
+		script << "echo [2/4] Unpacking update package...\n";
+		script << "if exist \"!STAGE_DIR!\" rmdir /s /q \"!STAGE_DIR!\" >nul 2>&1\n";
+		script << "mkdir \"!STAGE_DIR!\" >nul 2>&1\n";
+		script << "tar -xf \"!ZIP_PATH!\" -C \"!STAGE_DIR!\" >nul 2>&1\n";
+		script << "if !ERRORLEVEL! NEQ 0 (\n";
+		script << "    powershell -NoProfile -ExecutionPolicy Bypass -Command \"Expand-Archive -Force -Path '!ZIP_PATH!' -DestinationPath '!STAGE_DIR!'\" >nul 2>&1\n";
 		script << ")\n";
-		script << "if exist \"" << zipPath.ToStdString() << "\" del /f /q \"" << zipPath.ToStdString() << "\" >nul 2>&1\n";
-		script << "echo Starting updated Mios Map Editor...\n";
-		script << "cd /d \"" << appDir.ToStdString() << "\"\n";
-		script << "start \"\" /D \"" << appDir.ToStdString() << "\" \"" << exePath.ToStdString() << "\"\n";
+		script << "set \"SRC_DIR=!STAGE_DIR!\"\n";
+		script << "if exist \"!STAGE_DIR!\\Mios_Map_Editor\\MME.exe\" set \"SRC_DIR=!STAGE_DIR!\\Mios_Map_Editor\"\n";
+		script << "if exist \"!STAGE_DIR!\\MME\\MME.exe\" set \"SRC_DIR=!STAGE_DIR!\\MME\"\n";
+		script << "echo [3/4] Installing updated files...\n";
+		script << "xcopy \"!SRC_DIR!\\*\" \"!APP_DIR!\\\" /E /Y /H /R /Q >nul 2>&1\n";
+		script << "if !ERRORLEVEL! NEQ 0 (\n";
+		script << "    robocopy \"!SRC_DIR!\" \"!APP_DIR!\" /E /IS /IT /R:5 /W:1 >nul 2>&1\n";
+		script << ")\n";
+		script << "if exist \"!STAGE_DIR!\" rmdir /s /q \"!STAGE_DIR!\" >nul 2>&1\n";
+		script << "if exist \"!ZIP_PATH!\" del /f /q \"!ZIP_PATH!\" >nul 2>&1\n";
+		script << "echo [4/4] Starting updated Mios Map Editor...\n";
+		script << "cd /d \"!APP_DIR!\"\n";
+		script << "start \"\" \"!EXE_PATH!\"\n";
+		script << "timeout /t 1 /nobreak >nul\n";
 		script << "(goto) 2>nul & del \"%~f0\"\n";
 		script.close();
 
 #ifdef _WIN32
-		// Launch updater script explicitly with cmd.exe
 		HINSTANCE res_exec = ShellExecuteA(NULL, "open", "cmd.exe", ("/c \"" + scriptPath.ToStdString() + "\"").c_str(), appDir.ToStdString().c_str(), SW_SHOWNORMAL);
 		if ((INT_PTR)res_exec <= 32) {
 			ShellExecuteA(NULL, "runas", "cmd.exe", ("/c \"" + scriptPath.ToStdString() + "\"").c_str(), appDir.ToStdString().c_str(), SW_SHOWNORMAL);

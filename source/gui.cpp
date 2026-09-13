@@ -74,7 +74,7 @@ bool GUI::CloseLiveEditors(LiveSocket *sock) {
     auto *mapTab = dynamic_cast<MapTab *>(tab);
     if (mapTab) {
       Editor *editor = mapTab->GetEditor();
-      if (editor->GetLiveClient() == sock || editor->GetLiveServer() == sock) {
+      if (editor && (editor->GetLiveClient() == sock || editor->GetLiveServer() == sock)) {
         tabbook->DeleteTab(i--);
       }
       continue; // Tab was either deleted or is a MapTab (not a LiveLogTab)
@@ -490,7 +490,7 @@ void GUI::CreateLoadBar(wxString message, bool canCancel /* = false */) {
 
   for (int idx = 0; idx < tabbook->GetTabCount(); ++idx) {
     auto *mt = dynamic_cast<MapTab *>(tabbook->GetTab(idx));
-    if (mt && mt->GetEditor()->IsLiveServer()) {
+    if (mt && mt->GetEditor() && mt->GetEditor()->IsLiveServer()) {
       mt->GetEditor()->GetLiveServer()->startOperation(progressText);
     }
   }

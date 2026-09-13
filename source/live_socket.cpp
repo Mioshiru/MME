@@ -568,6 +568,7 @@ Tile* LiveSocket::readTile(BinaryNode* node, MapEditor& editor, const Position* 
 		}
 	}
 
+	tile->update();
 	return tile;
 }
 

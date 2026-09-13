@@ -187,7 +187,7 @@ void GUI::CloseCurrentEditor() {
 
 void GUI::SaveMap() {
 	MapTab* mapTab = GetCurrentMapTab();
-	if (mapTab) {
+	if (mapTab && mapTab->GetEditor()) {
 		mapTab->GetEditor()->saveMap(FileName(), true);
 	}
 	g_settings.save();
