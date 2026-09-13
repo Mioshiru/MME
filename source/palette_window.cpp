@@ -202,10 +202,10 @@ public:
 		canvas->UpdateMinimapTexture();
 
 		// Draw the minimap image
-		wxImage img(180, 180);
-		std::memcpy(img.GetData(), canvas->minimap_pixels, 180 * 180 * 3);
-		if (map_size != 180) {
-			img.Rescale(map_size, map_size, wxIMAGE_QUALITY_NEAREST);
+		wxImage img(256, 256);
+		std::memcpy(img.GetData(), canvas->minimap_pixels, 256 * 256 * 3);
+		if (map_size != 256) {
+			img.Rescale(map_size, map_size, wxIMAGE_QUALITY_BILINEAR);
 		}
 		wxBitmap bmp(img);
 		dc.DrawBitmap(bmp, offset_x, offset_y, false);
@@ -216,33 +216,35 @@ public:
 		dc.DrawRectangle(offset_x, offset_y, map_size, map_size);
 
 		if (g_settings.getInteger(Config::MINIMAP_VIEW_BOX)) {
-			int screensize_x, screensize_y;
-			int view_scroll_x, view_scroll_y;
-			canvas->GetViewBox(&view_scroll_x, &view_scroll_y, &screensize_x, &screensize_y);
+			int cam_x1, cam_y1, cam_x2, cam_y2;
+			int scr_w, scr_h;
+			canvas->GetSize(&scr_w, &scr_h);
+			canvas->ScreenToMap(0, 0, &cam_x1, &cam_y1);
+			canvas->ScreenToMap(scr_w, scr_h, &cam_x2, &cam_y2);
 
-			int tile_size = int(TileSize / canvas->GetZoom());
-			int floor_offset = (canvas->floor > GROUND_LAYER ? 0 : (GROUND_LAYER - canvas->floor));
+			int start_mx = canvas->minimap_start_x;
+			int start_my = canvas->minimap_start_y;
+			int span_w = std::max(1, canvas->minimap_span_w);
+			int span_h = std::max(1, canvas->minimap_span_h);
 
-			int view_start_x = view_scroll_x / TileSize + floor_offset;
-			int view_start_y = view_scroll_y / TileSize + floor_offset;
-			int view_end_x = view_start_x + screensize_x / tile_size + 1;
-			int view_end_y = view_start_y + screensize_y / tile_size + 1;
+			float vx1 = (float)(cam_x1 - start_mx) / (float)span_w;
+			float vy1 = (float)(cam_y1 - start_my) / (float)span_h;
+			float vx2 = (float)(cam_x2 - start_mx) / (float)span_w;
+			float vy2 = (float)(cam_y2 - start_my) / (float)span_h;
 
-			const float sx = (float)map_size / (float)std::max(1, canvas->minimap_span_w);
-			const float sy = (float)map_size / (float)std::max(1, canvas->minimap_span_h);
-			int p_start_x = (int)((view_start_x - canvas->minimap_start_x) * sx);
-			int p_start_y = (int)((view_start_y - canvas->minimap_start_y) * sy);
-			int p_end_x = (int)((view_end_x - canvas->minimap_start_x) * sx);
-			int p_end_y = (int)((view_end_y - canvas->minimap_start_y) * sy);
+			int p_start_x = (int)(vx1 * (float)map_size);
+			int p_start_y = (int)(vy1 * (float)map_size);
+			int p_end_x = (int)(vx2 * (float)map_size);
+			int p_end_y = (int)(vy2 * (float)map_size);
 
-			p_start_x = std::max(p_start_x, 0);
-			p_start_y = std::max(p_start_y, 0);
-			p_end_x = std::min(p_end_x, map_size);
-			p_end_y = std::min(p_end_y, map_size);
+			p_start_x = std::clamp(p_start_x, 0, map_size);
+			p_start_y = std::clamp(p_start_y, 0, map_size);
+			p_end_x = std::clamp(p_end_x, 0, map_size);
+			p_end_y = std::clamp(p_end_y, 0, map_size);
 
 			if (p_start_x < p_end_x && p_start_y < p_end_y) {
 				dc.SetBrush(*wxTRANSPARENT_BRUSH);
-				dc.SetPen(wxPen(*wxWHITE, 1));
+				dc.SetPen(wxPen(wxColor(255, 215, 60), 1));
 				dc.DrawRectangle(offset_x + p_start_x, offset_y + p_start_y, p_end_x - p_start_x, p_end_y - p_start_y);
 			}
 		}
@@ -271,8 +273,10 @@ public:
 		float rel_x = (float)mx / (float)map_size;
 		float rel_y = (float)my / (float)map_size;
 
-		int click_map_x = canvas->minimap_start_x + (int)(rel_x * (float)std::max(1, canvas->minimap_span_w - 1));
-		int click_map_y = canvas->minimap_start_y + (int)(rel_y * (float)std::max(1, canvas->minimap_span_h - 1));
+		int click_map_x = canvas->minimap_start_x + (int)(rel_x * (float)canvas->minimap_span_w);
+		int click_map_y = canvas->minimap_start_y + (int)(rel_y * (float)canvas->minimap_span_h);
+		click_map_x = std::clamp(click_map_x, 0, canvas->editor.map.getWidth() - 1);
+		click_map_y = std::clamp(click_map_y, 0, canvas->editor.map.getHeight() - 1);
 
 		g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, canvas->floor), false);
 		canvas->last_minimap_update_time = 0; // immediate update
@@ -810,18 +814,7 @@ PaletteWindow::PaletteWindow(wxWindow* parent, const TilesetContainer& tilesets,
 		}
 	};
 
-	int saved_sash = g_settings.getInteger(Config::MINIMAP_SASH_POS);
-	if (saved_sash <= 30) saved_sash = 100;
-	last_sash_pos = saved_sash;
-
-	if (allow_minimap && g_settings.getBoolean(Config::MINIMAP_VISIBLE)) {
-		int total_h = splitter->GetClientSize().y;
-		int target_sash = (total_h > 150) ? std::min(saved_sash, total_h / 6) : saved_sash;
-		if (target_sash < 40) target_sash = 40;
-		splitter->SplitHorizontally(card_minimap, card_assets, target_sash);
-	} else {
-		splitter->Initialize(card_assets);
-	}
+	splitter->Initialize(card_assets);
 
 	// Module 3: Quest Checklist Card (hidden by default; enable via right-click context menu)
 	card_checklist = new PaletteModuleCard(this, "Quest Checklist", true);

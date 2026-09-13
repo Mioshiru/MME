@@ -320,6 +320,26 @@ MainToolBar::MainToolBar(wxWindow* parent, wxAuiManager* manager) {
 		}
 	});
 
+	wxBitmap world_map_bitmap = LoadBitmapFromFileCandidates(icon_size, {
+		"icons/world-map.png",
+		"../icons/world-map.png",
+		"Map Editor/icons/world-map.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "world-map.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "world-map.png"
+	});
+	auto* world_map_button = new wxBitmapButton(brushes_toolbar, wxID_ANY, world_map_bitmap,
+		wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW);
+	world_map_button->SetBackgroundColour(wxColour(24, 30, 42));
+	world_map_button->SetToolTip("World Map / Weltkarte (Hotkey: M)\nExplore world, set custom pins & fast travel");
+	brushes_toolbar->AddControl(world_map_button);
+	world_map_button->Bind(wxEVT_BUTTON, [](wxCommandEvent&) {
+		bool current = g_settings.getBoolean(Config::SHOW_WORLD_MAP);
+		g_settings.setInteger(Config::SHOW_WORLD_MAP, current ? 0 : 1);
+		if (g_gui.GetCurrentMapTab() && g_gui.GetCurrentMapTab()->GetCanvas()) {
+			g_gui.GetCurrentMapTab()->GetCanvas()->Refresh();
+		}
+	});
+
 	brushes_toolbar->AddSeparator();
 
 	// Move / Toggle Dock Dot Button ("•") and Close Button ("×")

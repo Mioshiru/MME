@@ -348,6 +348,7 @@ void Settings::IO(IOMode mode) {
 	Int(EXP_PIXEL_SNAPPING, 0);
 	Int(SHOW_CHAT, 1);
 	Int(SHOW_NOTEPAD, 1);
+	Int(SHOW_RADIO, 0);
 	Int(PALETTE_COL_COUNT, 0);
 	String(PALETTE_TERRAIN_STYLE, "large icons");
 	String(PALETTE_COLLECTION_STYLE, "large icons");
@@ -398,6 +399,8 @@ void Settings::IO(IOMode mode) {
 	Int(PALETTE_DOCK_SIDE, 1); // 0=left, 1=right
 	Int(TOOLBAR_OPACITY, 90);
 	Int(PALETTE_OPACITY, 80);
+	Int(RADIO_DOCKED, 1);
+	Int(RADIO_OPACITY, 100);
 
 
 	section("");
@@ -460,6 +463,9 @@ void Settings::load() {
 #endif
 	wxConfig::Set(conf);
 	IO(LOAD);
+	if (g_settings.getInteger(Config::MULTIPLAYER_PORT) == 7171 || g_settings.getInteger(Config::MULTIPLAYER_PORT) <= 0) {
+		g_settings.setInteger(Config::MULTIPLAYER_PORT, 3074);
+	}
 }
 
 void Settings::save(bool endoftheworld) {

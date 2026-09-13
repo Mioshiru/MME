@@ -38,6 +38,8 @@
 #include "creature_brush.h"
 #include "spawn_brush.h"
 #include "lua/lua_script_manager.h"
+#include "checklist_manager.h"
+#include "world_map_markers.h"
 
 #include "live_server.h"
 #include "live_client.h"
@@ -393,6 +395,19 @@ bool MapEditor::saveMap(FileName filename, bool show_dialog, bool is_autosave) {
 	std::remove(backup_house.c_str());
 	std::remove(backup_spawn.c_str());
 	std::remove(backup_waypoint.c_str());
+
+	// Persist checklist alongside map
+	{
+		FileName chkFile(wxstr(savefile));
+		chkFile.SetExt("json");
+		chkFile.SetName(chkFile.GetName() + "-checklist");
+		std::string chkPath = nstr(chkFile.GetFullPath());
+		ChecklistManager::getInstance().setFilePath(chkPath);
+		ChecklistManager::getInstance().save();
+	}
+	// Persist world map markers alongside map
+	WorldMapMarkerManager::GetInstance().SetCurrentMapPath(savefile);
+	WorldMapMarkerManager::GetInstance().SaveToFile();
 
 	map.clearChanges();
 	return true;

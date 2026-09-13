@@ -1319,11 +1319,10 @@ void MainMenuBar::OnTakeScreenshot(wxCommandEvent& WXUNUSED(event)) {
 }
 
 void MainMenuBar::OnMinimapWindow(wxCommandEvent& WXUNUSED(event)) {
-	bool new_state = !g_settings.getBoolean(Config::MINIMAP_VISIBLE);
-	g_settings.setInteger(Config::MINIMAP_VISIBLE, new_state);
+	bool new_state = !g_settings.getBoolean(Config::SHOW_WORLD_MAP);
+	g_settings.setInteger(Config::SHOW_WORLD_MAP, new_state ? 1 : 0);
 	CheckItem(MenuBar::SHOW_MINIMAP_HUD, new_state);
 	g_gui.RefreshPalettes();
-	g_gui.RefreshMinimapPanel();
 	g_gui.RefreshView();
 }
 
@@ -1553,8 +1552,11 @@ void MainMenuBar::OnStartLive(wxCommandEvent& event) {
 	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Server Name:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 15);
 	gsizer->Add(hostname = newd wxTextCtrl(live_host_dlg, wxID_ANY, wxstr(savedName)), 0, wxEXPAND | wxRIGHT, 15);
 
+	int default_host_port = g_settings.getInteger(Config::MULTIPLAYER_PORT);
+	if (default_host_port == 7171 || default_host_port <= 0) default_host_port = 3074;
+
 	gsizer->Add(newd wxStaticText(live_host_dlg, wxID_ANY, "Port:"), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 15);
-	gsizer->Add(port = newd wxSpinCtrl(live_host_dlg, wxID_ANY, i2ws(g_settings.getInteger(Config::MULTIPLAYER_PORT)), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, g_settings.getInteger(Config::MULTIPLAYER_PORT)), 0, wxEXPAND | wxRIGHT, 15);
+	gsizer->Add(port = newd wxSpinCtrl(live_host_dlg, wxID_ANY, i2ws(default_host_port), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, default_host_port), 0, wxEXPAND | wxRIGHT, 15);
 	top_sizer->Add(gsizer, 0, wxEXPAND | wxBOTTOM, 10);
 
 	wxString versionLabel = g_gui.IsVersionLoaded() ? wxString::FromUTF8(g_gui.GetCurrentVersion().getName()) : wxString("No client version loaded");
@@ -2097,7 +2099,9 @@ void MainMenuBar::OnRotateItem(wxCommandEvent& event) {
 }
 
 void MainMenuBar::OnRadioPlayer(wxCommandEvent& WXUNUSED(event)) {
-	RadioPlayerWindow::Toggle(frame);
+	bool cur = g_settings.getBoolean(Config::SHOW_RADIO);
+	g_settings.setInteger(Config::SHOW_RADIO, cur ? 0 : 1);
+	g_gui.RefreshView();
 }
 
 void MainMenuBar::OnRealOTSConverter(wxCommandEvent& WXUNUSED(event)) {

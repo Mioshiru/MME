@@ -204,6 +204,7 @@ namespace Config {
 		LIGHT_AMBIENT,
 		MULTI_MONITOR_WORKSPACE,
 		SHOW_MINIMAP_HUD,
+		SHOW_WORLD_MAP = SHOW_MINIMAP_HUD,
 
 		UI_THEME,           // Visual Theme (Dark/Light)
 		RENDER_BACKEND,     // Rendering Engine (OpenGL/Vulkan)
@@ -229,6 +230,7 @@ namespace Config {
 		EXP_PIXEL_SNAPPING, // Sub-pixel camera snapping to eliminate shimmer
 		SHOW_CHAT,          // Multiplayer In-Editor Team Chat Window (0 or 1)
 		SHOW_NOTEPAD,       // Collaborative Medieval Checklist & Notepad Window (0 or 1)
+		SHOW_RADIO,         // In-Canvas Web Radio Player Window (0 or 1)
 		MULTIPLAYER_ADOPTED_SERVERS, // Remembered host view settings decisions
 		TOOLBAR_ALIGNMENT,  // Toolbar icon alignment (0 = Left, 1 = Center, 2 = Right)
 		HIDE_STATUSBAR,     // Hide the bottom status bar (0 = shown, 1 = hidden)
@@ -236,6 +238,8 @@ namespace Config {
 		PALETTE_SELECTED_TILESET,
 		SHOW_PALETTE,
 		MINIMAP_CORNER,
+		RADIO_DOCKED,       // Radio player docked beneath palette (1) or floating (0)
+		RADIO_OPACITY,      // Radio player window transparency (20 - 100)
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;

@@ -54,6 +54,7 @@ public:
 	void OnEditWaypointLabel(wxListEvent& event);
 	void OnClickAddWaypoint(wxCommandEvent& event);
 	void OnClickRemoveWaypoint(wxCommandEvent& event);
+	void OnContextMenu(wxContextMenuEvent& event);
 
 	void SetMap(Map* map);
 

@@ -467,7 +467,7 @@ void LivePeer::parseReady(NetworkMessage &message) {
   if (g_settings.getBoolean(Config::SHOW_WAYPOINTS)) viewFlags |= (1 << 20);
   if (g_settings.getBoolean(Config::SHOW_TOWNS)) viewFlags |= (1 << 21);
   if (g_settings.getBoolean(Config::ALWAYS_SHOW_ZONES)) viewFlags |= (1 << 22);
-  if (RadioPlayerWindow::IsDocked() || RadioPlayerWindow::GetInstance() != nullptr) viewFlags |= (1 << 23);
+  if (g_settings.getBoolean(Config::SHOW_RADIO)) viewFlags |= (1 << 23);
 
   outMessage.write<uint32_t>(viewFlags);
   send(outMessage);

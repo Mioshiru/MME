@@ -3,9 +3,20 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
+#include <wx/stdpaths.h>
+#include <wx/filename.h>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
+
+static std::string GetFallbackChecklistPath() {
+	wxStandardPaths& paths = wxStandardPaths::Get();
+	wxString dir = paths.GetUserConfigDir() + wxFILE_SEP_PATH + "Remere's Map Editor";
+	if (!wxDirExists(dir)) {
+		wxMkdir(dir);
+	}
+	return (dir + wxFILE_SEP_PATH + "checklist_autosave.json").ToStdString();
+}
 
 ChecklistManager& ChecklistManager::getInstance() {
 	static ChecklistManager s_instance;
@@ -13,7 +24,22 @@ ChecklistManager& ChecklistManager::getInstance() {
 }
 
 ChecklistManager::ChecklistManager() {
-	// Sample initial task if empty
+	m_filePath = GetFallbackChecklistPath();
+	loadFromFile(m_filePath);
+}
+
+void ChecklistManager::setFilePath(const std::string& filepath) {
+	std::string target = filepath.empty() ? GetFallbackChecklistPath() : filepath;
+	m_filePath = target;
+	loadFromFile(target);
+}
+
+std::string ChecklistManager::getFilePath() const {
+	return m_filePath.empty() ? GetFallbackChecklistPath() : m_filePath;
+}
+
+void ChecklistManager::save() {
+	saveToFile(getFilePath());
 }
 
 uint32_t ChecklistManager::addItem(const std::string& text, const std::string& author, bool completed, uint32_t forcedId) {
@@ -159,7 +185,8 @@ void ChecklistManager::saveToFile(const std::string& filepath) {
 		j.push_back(itemJson);
 	}
 
-	std::ofstream file(filepath);
+	std::string savePath = filepath.empty() ? GetFallbackChecklistPath() : filepath;
+	std::ofstream file(savePath);
 	if (file.is_open()) {
 		file << j.dump(2);
 		file.close();
@@ -167,7 +194,8 @@ void ChecklistManager::saveToFile(const std::string& filepath) {
 }
 
 void ChecklistManager::loadFromFile(const std::string& filepath) {
-	std::ifstream file(filepath);
+	std::string loadPath = filepath.empty() ? GetFallbackChecklistPath() : filepath;
+	std::ifstream file(loadPath);
 	if (!file.is_open()) return;
 
 	try {
@@ -195,13 +223,16 @@ void ChecklistManager::loadFromFile(const std::string& filepath) {
 			items = loadedItems;
 			nextId = maxId + 1;
 		}
-		notifyChanged();
+		if (onChangeCallback) {
+			onChangeCallback();
+		}
 	} catch (...) {
 		// Ignore parse errors on corrupt file
 	}
 }
 
 void ChecklistManager::notifyChanged() {
+	save();
 	if (onChangeCallback) {
 		onChangeCallback();
 	}

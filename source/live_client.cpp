@@ -950,9 +950,7 @@ void LiveClient::checkAndApplyHostSettings() {
 		g_settings.setInteger(Config::ALWAYS_SHOW_ZONES, (hostViewFlags & (1 << 22)) ? 1 : 0);
 
 		if (hostViewFlags & (1 << 23)) {
-			if (!RadioPlayerWindow::IsDocked() && !RadioPlayerWindow::GetInstance()) {
-				RadioPlayerWindow::ShowDocked(true);
-			}
+			g_settings.setInteger(Config::SHOW_RADIO, 1);
 		}
 
 		if (g_gui.root) {

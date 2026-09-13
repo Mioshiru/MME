@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "main.h"
+#include "radio_player.h"
 
 #include <boost/asio.hpp>
 
@@ -251,6 +252,17 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	show_welcome_dialog_chkbox->SetToolTip("Show welcome dialog when starting the editor.");
 	startup_sizer->Add(show_welcome_dialog_chkbox, 0, wxLEFT | wxTOP, 10);
 
+	wxStaticBoxSizer* profile_box = newd wxStaticBoxSizer(wxVERTICAL, startup_panel, "Mapper & Multiplayer Profile");
+	wxBoxSizer* name_row = newd wxBoxSizer(wxHORIZONTAL);
+	name_row->Add(newd wxStaticText(startup_panel, wxID_ANY, "User / Mapper Name:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	std::string current_name = g_settings.getString(Config::MULTIPLAYER_NAME);
+	if (current_name.empty()) current_name = "Mapper";
+	mapper_name_txt = newd wxTextCtrl(startup_panel, wxID_ANY, wxstr(current_name));
+	mapper_name_txt->SetToolTip("Your nickname used for Team Chat, Multiplayer Live Sessions, and Quest Notepad inscriptions.");
+	name_row->Add(mapper_name_txt, 1, wxEXPAND);
+	profile_box->Add(name_row, 0, wxEXPAND | wxALL, 6);
+	startup_sizer->Add(profile_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
 	always_make_backup_chkbox = newd wxCheckBox(startup_panel, wxID_ANY, "Always make map backup");
 	always_make_backup_chkbox->SetValue(g_settings.getInteger(Config::ALWAYS_MAKE_BACKUP) == 1);
 	startup_sizer->Add(always_make_backup_chkbox, 0, wxLEFT | wxTOP, 10);
@@ -419,6 +431,7 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 		autosave_interval_slider->SetValue(10);
 		autosave_interval_slider->Enable(false);
 		autosave_interval_label->SetLabel(" 10 min");
+		if (mapper_name_txt) mapper_name_txt->SetValue("Mapper");
 		check_sigs_chkbox->SetValue(false);
 		position_choice->SetSelection(0);
 	});
@@ -1103,7 +1116,7 @@ wxNotebookPage* PreferencesWindow::CreateHotkeysPage() {
 		{"Pan Canvas", "Space + Left Mouse Drag"},
 		{"Zoom In / Out / 100%", "Mouse Wheel  or  Ctrl + + / - / 0"},
 		{"Change Floor (Up / Down)", "PageUp / PageDown"},
-		{"Toggle Minimap (HUD Window)", "M"},
+		{"Toggle World Map (Interactive Pins)", "M"},
 		{"Show All Floors", "Ctrl + W"},
 		{"Ghost Higher Floors", "Ctrl + L"},
 		{"Shade Lower Floors", "Q"},
@@ -1219,6 +1232,12 @@ void PreferencesWindow::Apply() {
 
 	// General
 	g_settings.setInteger(Config::WELCOME_DIALOG, show_welcome_dialog_chkbox->GetValue());
+	if (mapper_name_txt) {
+		wxString val = mapper_name_txt->GetValue().Trim(true).Trim(false);
+		if (!val.empty()) {
+			g_settings.setString(Config::MULTIPLAYER_NAME, nstr(val));
+		}
+	}
 	g_settings.setInteger(Config::ALWAYS_MAKE_BACKUP, always_make_backup_chkbox->GetValue());
 	g_settings.setInteger(Config::AUTO_SAVE_ENABLED, autosave_enabled_chkbox ? autosave_enabled_chkbox->GetValue() : 0);
 	g_settings.setInteger(Config::AUTO_SAVE_INTERVAL, autosave_interval_slider ? autosave_interval_slider->GetValue() : 10);

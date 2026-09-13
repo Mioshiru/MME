@@ -189,18 +189,21 @@ void MapWindow::GoToPreviousCenterPosition() {
 
 void MapWindow::Scroll(int x, int y, bool center) {
   int windowSizeX, windowSizeY;
-  canvas->GetSize(&windowSizeX, &windowSizeY);
+  canvas->GetClientSize(&windowSizeX, &windowSizeY);
+  double scale = canvas->GetContentScaleFactor();
+  double physW = windowSizeX * scale;
+  double physH = windowSizeY * scale;
 
   double zoom = canvas->GetZoom();
-  int thumb_x = std::max(1, int(windowSizeX * zoom));
-  int thumb_y = std::max(1, int(windowSizeY * zoom));
+  int thumb_x = std::max(1, int(physW * zoom));
+  int thumb_y = std::max(1, int(physH * zoom));
 
   int map_w_pixels = editor.map.getWidth() * TileSize;
   int map_h_pixels = editor.map.getHeight() * TileSize;
 
   if (center) {
-    x -= int((windowSizeX * zoom) / 2.0);
-    y -= int((windowSizeY * zoom) / 2.0);
+    x -= int((physW * zoom) / 2.0);
+    y -= int((physH * zoom) / 2.0);
   }
 
   int max_x = map_w_pixels - thumb_x;

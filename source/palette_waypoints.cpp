@@ -42,6 +42,7 @@ WaypointPalettePanel::WaypointPalettePanel(wxWindow* parent, wxWindowID id) :
 
 	waypoint_list = newd wxListCtrl(this, PALETTE_WAYPOINT_LISTBOX, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_EDIT_LABELS | wxLC_NO_HEADER);
 	waypoint_list->InsertColumn(0, "UNNAMED", wxLIST_FORMAT_LEFT, 200);
+	waypoint_list->Bind(wxEVT_CONTEXT_MENU, &WaypointPalettePanel::OnContextMenu, this);
 	sidesizer->Add(waypoint_list, 1, wxEXPAND);
 
 	wxSizer* tmpsizer = newd wxBoxSizer(wxHORIZONTAL);
@@ -231,4 +232,38 @@ void WaypointPalettePanel::OnClickRemoveWaypoint(wxCommandEvent& event) {
 		waypoint_list->DeleteItem(item);
 		refresh_timer.Start(300, true);
 	}
+}
+
+void WaypointPalettePanel::OnContextMenu(wxContextMenuEvent& event) {
+	if (!map) return;
+	wxPoint client_pos = waypoint_list->ScreenToClient(event.GetPosition());
+	int flags = 0;
+	long item = waypoint_list->HitTest(client_pos, flags);
+	if (item == -1) {
+		item = waypoint_list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+	}
+	if (item != -1) {
+		waypoint_list->SetItemState(item, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+	}
+	wxMenu menu;
+	menu.Append(101, "Add Waypoint");
+	if (item != -1) {
+		menu.Append(102, "Rename Waypoint");
+		menu.Append(103, "Go to Waypoint");
+		menu.Append(104, "Delete Waypoint");
+	}
+	menu.Bind(wxEVT_MENU, [this, item](wxCommandEvent& ev) {
+		if (ev.GetId() == 101) {
+			wxCommandEvent e; OnClickAddWaypoint(e);
+		} else if (ev.GetId() == 102 && item != -1) {
+			waypoint_list->EditLabel(item);
+		} else if (ev.GetId() == 103 && item != -1) {
+			std::string wpname = nstr(waypoint_list->GetItemText(item));
+			Waypoint* wp = map->waypoints.getWaypoint(wpname);
+			if (wp) g_gui.SetScreenCenterPosition(wp->pos);
+		} else if (ev.GetId() == 104 && item != -1) {
+			wxCommandEvent e; OnClickRemoveWaypoint(e);
+		}
+	});
+	waypoint_list->PopupMenu(&menu, client_pos);
 }

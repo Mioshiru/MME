@@ -259,14 +259,32 @@ protected:
   unsigned int radial_tex_ids[16] = {0};
   bool radial_textures_loaded = false;
   void LoadRadialTextures();
-  uint8_t minimap_pixels[180 * 180 * 3]; // Added for Palette minimap
+  static const int MINIMAP_TEX_SIZE = 256;
+  uint8_t minimap_pixels[256 * 256 * 3]; // High-resolution RPG Minimap buffer
   float minimap_zoom = 1.0f;
   int minimap_start_x = 0;
   int minimap_start_y = 0;
-  int minimap_span_w = 180;
-  int minimap_span_h = 180;
-   unsigned int last_minimap_update_time = 0;
+  int minimap_span_w = 256;
+  int minimap_span_h = 256;
+  unsigned int last_minimap_update_time = 0;
   void UpdateMinimapTexture(); // This is a member of MapCanvas
+
+  // World Map (Weltkarte) System
+  unsigned int world_map_tex_id = 0;
+  unsigned int table_tex_id = 0;
+  static const int WORLD_MAP_TEX_SIZE = 512;
+  uint8_t world_map_pixels[512 * 512 * 4];
+  float world_map_zoom = 1.0f;
+  float world_map_center_x = -1.0f;
+  float world_map_center_y = -1.0f;
+  int world_map_floor = 7;
+  int world_map_start_x = 0;
+  int world_map_start_y = 0;
+  int world_map_span_w = 512;
+  int world_map_span_h = 512;
+  unsigned int last_world_map_update_time = 0;
+  void UpdateWorldMapTexture(int target_floor);
+  void RenderWorldMapOverlay();
 
   // Kinetic Scrolling
   bool is_kinetic_scrolling = false;

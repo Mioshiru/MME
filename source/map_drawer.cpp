@@ -172,6 +172,7 @@ static const char* k_MapFragSrc = R"GLSL(
 #version 120
 uniform sampler2D uTexture;
 uniform int   uUpscaling;
+uniform int   uMuddledMode;
 uniform float uTime;
 uniform int   uFloor;
 uniform int   uExpColorGrading;
@@ -272,10 +273,15 @@ void main() {
 
     vec4 texel = raw;
 
-    // ── STEP 1: Spatial Pixel Art Upscaling & Reconstruction (xBRZ / Soft Multi-Tap) ──
-    // Edge reconstruction and spatial smoothing are applied first to the raw texels
-    // so that subsequent color mood grading operates on the enhanced geometry.
-    if (uUpscaling == 2) {
+    // ── STEP 1: Spatial Pixel Art Upscaling OR Adaptive Low-FPS Muddled LOD Fallback ──
+    if (uMuddledMode == 1) {
+      // Downsample/muddle texture into low-res simplified watercolor silhouettes
+      vec2 muddledUv = floor(uv * 10.0) / 10.0;
+      vec4 muddled = texture2D(uTexture, muddledUv);
+      texel.rgb = mix(texel.rgb, muddled.rgb, 0.88);
+      float luma = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+      texel.rgb = mix(texel.rgb, vec3(luma), 0.18);
+    } else if (uUpscaling == 2) {
       vec2 stepUv = vec2(1.0 / 128.0);
       vec3 soft = texture2D(uTexture, uv).rgb * 4.0;
       soft += texture2D(uTexture, uv + vec2(stepUv.x, 0.0)).rgb * 2.0;
@@ -1489,9 +1495,16 @@ void MapDrawer::SetupGL() {
     uint32_t now_ms = wxGetLocalTimeMillis().GetValue();
     if (g_shader_last_ms != 0) {
       float dt = (now_ms - g_shader_last_ms) / 1000.0f;
+      if (dt > 0.0001f && dt < 1.0f) {
+        float instant_fps = 1.0f / dt;
+        g_current_fps = g_current_fps * 0.85f + instant_fps * 0.15f;
+      }
       g_shader_time = float(g_gui.gfx.getElapsedTime()) / 1000.0f;
     }
     g_shader_last_ms = now_ms;
+
+    // Performance adaptive LOD: activate muddled simplified assets when FPS < 60 and zoomed out
+    const bool muddled_active = (g_current_fps < 60.0f && zoom > 1.15f);
 
     const bool enhancement_enabled = g_settings.getBoolean(Config::FAKE_HD_ASSETS);
     const int enhancement_mode = enhancement_enabled
@@ -1502,6 +1515,7 @@ void MapDrawer::SetupGL() {
     g_map_shader.setFloat("uTime",   g_shader_time);
     g_map_shader.setInt("uTexture", 0); // texture unit 0
     g_map_shader.setInt("uUpscaling", enhancement_mode);
+    g_map_shader.setInt("uMuddledMode", muddled_active ? 1 : 0);
     g_map_shader.setInt("uFloor", 7); // default: Oberflaeche
     g_map_shader.setInt("uExpColorGrading", g_settings.getInteger(Config::EXP_COLOR_GRADING));
     g_map_shader.setInt("uExpVignette", g_settings.getBoolean(Config::EXP_VIGNETTE) ? 1 : 0);
@@ -1977,7 +1991,7 @@ void MapDrawer::DrawMap() {
               }
               nd->clearDirty(map_z);
               needs_rebuild = true;
-            } else if ((f->has_animations && zoom < 1.95f) || f->last_rebuild_tick != current_vbo_revision) {
+            } else if ((f->has_animations && zoom < 1.25f) || f->last_rebuild_tick != current_vbo_revision) {
               // Soft update: animation frame or global revision change
               needs_rebuild = true;
               if (f->vbo_id != 0) {
@@ -2418,13 +2432,16 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Tile *tile, Item *item,
   BlitItem(draw_x, draw_y, pos, item, ephemeral, red, green, blue, alpha, tile);
 }
 
-void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
-                         Item *item, bool ephemeral, int red, int green,
-                         int blue, int alpha, const Tile *tile) {
-  ItemType &it = g_items[item->getID()];
+static float computeItemShaderFlag(uint16_t id, const ItemType& it) {
+  static std::vector<float> s_shader_flags;
+  if (s_shader_flags.size() <= id) {
+    s_shader_flags.resize(std::max<size_t>(65536, id + 2048), -1.0f);
+  }
+  if (s_shader_flags[id] >= 0.0f) {
+    return s_shader_flags[id];
+  }
 
-  // GPU Shader Flags setzen
-  g_vbo_current_shader_flag = 0.0f;
+  float flag = 0.0f;
   std::string lowerName = it.name;
   std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
 
@@ -2433,26 +2450,26 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
                             lowerName.find("ocean") != std::string::npos ||
                             lowerName.find("river") != std::string::npos ||
                             lowerName.find("lake")  != std::string::npos)) {
-    g_vbo_current_shader_flag = 1.0f; // Wasser – Dynamic Caustic Shimmer
+    flag = 1.0f; // Wasser – Dynamic Caustic Shimmer
   } else if (it.isGroundTile() && (lowerName.find("lava") != std::string::npos ||
                                    lowerName.find("magma") != std::string::npos)) {
-    g_vbo_current_shader_flag = 3.0f; // Lava / Magma – Heat Glow
+    flag = 3.0f; // Lava / Magma – Heat Glow
   } else if (it.isGroundTile() && lowerName.find("sand") != std::string::npos &&
              lowerName.find("beach") == std::string::npos &&
              lowerName.find("shore") == std::string::npos) {
-    g_vbo_current_shader_flag = 5.0f; // Wüstensand – Hitzeschleier & Dune Grain
+    flag = 5.0f; // Wüstensand – Hitzeschleier & Dune Grain
   } else if (it.isGroundTile() && (lowerName.find("snow") != std::string::npos ||
                                    lowerName.find("ice")  != std::string::npos ||
                                    lowerName.find("frost") != std::string::npos)) {
-    g_vbo_current_shader_flag = 6.0f; // Schnee / Eis – Frostschleier & Crystal Sparkle
+    flag = 6.0f; // Schnee / Eis – Frostschleier & Crystal Sparkle
   } else if (it.isGroundTile() && (lowerName.find("grass") != std::string::npos ||
                                    lowerName.find("dirt")  != std::string::npos ||
                                    lowerName.find("earth") != std::string::npos ||
                                    lowerName.find("mud")   != std::string::npos ||
                                    lowerName.find("jungle")!= std::string::npos ||
                                    lowerName.find("moss")  != std::string::npos ||
-                                   item->getID() == 102 || item->getID() == 103 || item->getID() == 4526)) {
-    g_vbo_current_shader_flag = 10.0f; // Grass & Earth – Organic Blades & Soil Variegation
+                                   id == 102 || id == 103 || id == 4526)) {
+    flag = 10.0f; // Grass & Earth – Organic Blades & Soil Variegation
   } else if (it.isGroundTile() && (lowerName.find("cobble") != std::string::npos ||
                                    lowerName.find("stone")  != std::string::npos ||
                                    lowerName.find("pavement")!= std::string::npos ||
@@ -2462,9 +2479,9 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
                                    lowerName.find("flag")   != std::string::npos ||
                                    lowerName.find("gravel") != std::string::npos ||
                                    lowerName.find("rock")   != std::string::npos)) {
-    g_vbo_current_shader_flag = 11.0f; // Cobblestone & Masonry – Beveled Crevice AO & Mineral Grit
+    flag = 11.0f; // Cobblestone & Masonry – Beveled Crevice AO & Mineral Grit
   } else if (it.isGroundTile()) {
-    g_vbo_current_shader_flag = 12.0f; // Generic Ground Layer Detail
+    flag = 12.0f; // Generic Ground Layer Detail
   } else if (!it.isGroundTile() && !it.isBorder && !it.isWall) {
     // Explicit blacklist: Shelves, furniture, lights, structures must NEVER sway
     bool isBlacklisted = (
@@ -2503,7 +2520,6 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
     );
 
     if (!isBlacklisted && (
-        // Foliage: einfaches Name-Matching – alle Bäume, Pflanzen etc.
         lowerName.find("tree")      != std::string::npos ||
         lowerName.find("grass")     != std::string::npos ||
         lowerName.find("wheat")     != std::string::npos ||
@@ -2515,7 +2531,6 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
         lowerName.find("plants")    != std::string::npos ||
         lowerName.find("tentacle")  != std::string::npos ||
         lowerName.find("sprout")    != std::string::npos ||
-        // Bekannte Baumarten per Name
         lowerName.find("willow")    != std::string::npos ||
         lowerName.find("pine")      != std::string::npos ||
         lowerName.find("poplar")    != std::string::npos ||
@@ -2529,23 +2544,34 @@ void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
         lowerName.find("vine")      != std::string::npos ||
         lowerName.find("mushroom")  != std::string::npos ||
         lowerName.find("crop")      != std::string::npos ||
-        // ID-Whitelist bekannter Tibia-Bäume (willow, pine, poplar, birch)
-        item->getID() == 2700 || item->getID() == 2701 || item->getID() == 2702 ||
-        item->getID() == 2703 || item->getID() == 2704 || item->getID() == 2705 ||
-        item->getID() == 2706 || item->getID() == 2707 || item->getID() == 2708 ||
-        item->getID() == 2709 || item->getID() == 2710 || item->getID() == 2711 ||
-        item->getID() == 2712 || item->getID() == 2713 || item->getID() == 2714 ||
-        item->getID() == 2715 || item->getID() == 2716 || item->getID() == 2717 ||
-        item->getID() == 2718 || item->getID() == 2719 || item->getID() == 2720 ||
-        item->getID() == 8313 || item->getID() == 8314 || item->getID() == 8315 ||
-        item->getID() == 8316 || item->getID() == 8317 || item->getID() == 20178)) {
-      g_vbo_current_shader_flag = 4.0f; // Foliage – Wind Sway
+        id == 2700 || id == 2701 || id == 2702 ||
+        id == 2703 || id == 2704 || id == 2705 ||
+        id == 2706 || id == 2707 || id == 2708 ||
+        id == 2709 || id == 2710 || id == 2711 ||
+        id == 2712 || id == 2713 || id == 2714 ||
+        id == 2715 || id == 2716 || id == 2717 ||
+        id == 2718 || id == 2719 || id == 2720 ||
+        id == 8313 || id == 8314 || id == 8315 ||
+        id == 8316 || id == 8317 || id == 20178)) {
+      flag = 4.0f; // Foliage – Wind Sway
     } else if (it.sprite && it.sprite->animator) {
-      g_vbo_current_shader_flag = 2.0f; // Generisches Animations-Flag
+      flag = 2.0f;
     }
   } else if (it.sprite && it.sprite->animator) {
-    g_vbo_current_shader_flag = 2.0f; // Generisches Animations-Flag
+    flag = 2.0f;
   }
+
+  s_shader_flags[id] = flag;
+  return flag;
+}
+
+void MapDrawer::BlitItem(int &draw_x, int &draw_y, const Position &pos,
+                         Item *item, bool ephemeral, int red, int green,
+                         int blue, int alpha, const Tile *tile) {
+  ItemType &it = g_items[item->getID()];
+
+  // GPU Shader Flags setzen (O(1) cached lookup)
+  g_vbo_current_shader_flag = computeItemShaderFlag(item->getID(), it);
 
   // Locked door indicator
   if (!options.ingame && options.highlight_locked_doors && it.isDoor() &&

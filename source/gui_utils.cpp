@@ -63,13 +63,18 @@ void GUI::AddChatMessage(const std::string& sender, const std::string& text) {
 void GUI::SendChat(const std::string& text) {
 	if (text.empty()) return;
 	Editor* ed = GetCurrentEditor();
+	std::string myName = g_settings.getString(Config::MULTIPLAYER_NAME);
+	if (myName.empty()) myName = "Mapper";
 	if (ed && ed->IsLive()) {
 		if (ed->IsLiveServer()) {
-			ed->GetLiveServer()->broadcastChat("Host", wxstr(text));
-			AddChatMessage("Host", text);
-		} else {
+			std::string hostName = myName;
+			ed->GetLiveServer()->broadcastChat(hostName, wxstr(text));
+			AddChatMessage(hostName, text);
+		} else if (ed->GetLiveClient()) {
             ed->GetLiveClient()->sendChat(wxstr(text));
             // Client waits for the server to broadcast the message back
 		}
+	} else {
+		AddChatMessage(myName, text);
 	}
 }

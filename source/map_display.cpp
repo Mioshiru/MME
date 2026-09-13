@@ -1829,7 +1829,7 @@ void MapCanvas::ScreenToMap(int screen_x, int screen_y, int *map_x,
 
 void MapCanvas::GetScreenCenter(int *map_x, int *map_y) {
   int width, height;
-  static_cast<MapWindow *>(GetParent())->GetViewSize(&width, &height);
+  GetClientSize(&width, &height);
   return ScreenToMap(width / 2, height / 2, map_x, map_y);
 }
 
@@ -2605,79 +2605,192 @@ void MapCanvas::UpdateMinimapTexture() {
   int center_x, center_y;
   GetScreenCenter(&center_x, &center_y);
 
-  int span_w = (int)(180.0f * minimap_zoom);
-  int span_h = (int)(180.0f * minimap_zoom);
+  int span_w = (int)(256.0f * minimap_zoom);
+  int span_h = (int)(256.0f * minimap_zoom);
   int map_width = editor.map.getWidth();
   int map_height = editor.map.getHeight();
 
-  int start_x;
-  if (span_w >= map_width) {
-    start_x = (map_width - span_w) / 2;
-  } else {
-    start_x = std::max(0, std::min(center_x - span_w / 2, map_width - span_w));
-  }
-
-  int start_y;
-  if (span_h >= map_height) {
-    start_y = (map_height - span_h) / 2;
-  } else {
-    start_y = std::max(0, std::min(center_y - span_h / 2, map_height - span_h));
-  }
+  // Exactly center the span around the viewport center
+  int start_x = center_x - span_w / 2;
+  int start_y = center_y - span_h / 2;
 
   minimap_start_x = start_x;
   minimap_start_y = start_y;
   minimap_span_w = std::max(1, span_w);
   minimap_span_h = std::max(1, span_h);
 
-  uint8_t tex_data[180 * 180 * 3] = {};
+  const int DIM = 256;
+  uint8_t tex_data[DIM * DIM * 3];
 
-  for (int window_y = 0; window_y < 180; ++window_y) {
-    for (int window_x = 0; window_x < 180; ++window_x) {
-      int x = start_x + (int)(window_x * ((double)span_w / 180.0));
-      int y = start_y + (int)(window_y * ((double)span_h / 180.0));
+  for (int window_y = 0; window_y < DIM; ++window_y) {
+    for (int window_x = 0; window_x < DIM; ++window_x) {
+      int x = start_x + (int)((double)window_x * (double)span_w / (double)DIM);
+      int y = start_y + (int)((double)window_y * (double)span_h / (double)DIM);
+      int idx = (window_y * DIM + window_x) * 3;
+
       if (x < 0 || x >= map_width || y < 0 || y >= map_height) {
+        // Void background outside map bounds with subtle survival parchment grid
+        bool grid = ((window_x / 16) + (window_y / 16)) % 2 == 0;
+        tex_data[idx] = grid ? 12 : 8;
+        tex_data[idx + 1] = grid ? 16 : 12;
+        tex_data[idx + 2] = grid ? 24 : 18;
         continue;
       }
 
-      Tile *tile = editor.map.getTile(x, y, floor);
-      if (!tile) {
-        continue;
+      uint8_t color_idx = 0;
+      int found_layer = floor;
+
+      // Sample current floor first; if transparent/empty, scan down to ground
+      for (int z = floor; z <= MAP_MAX_LAYER; ++z) {
+        Tile *tile = editor.map.getTile(x, y, z);
+        if (tile) {
+          color_idx = tile->getMiniMapColor();
+          if (color_idx > 0 && color_idx < INVALID_MINIMAP_COLOR) {
+            found_layer = z;
+            break;
+          }
+        }
+        if (!g_settings.getBoolean(Config::SHOW_ALL_FLOORS) && z != floor && floor <= GROUND_LAYER) {
+          if (z >= GROUND_LAYER) break;
+        }
       }
 
-      uint8_t color_idx = tile->getMiniMapColor();
-      if (color_idx == 0 || color_idx >= INVALID_MINIMAP_COLOR) {
-        continue;
+      if (color_idx > 0 && color_idx < INVALID_MINIMAP_COLOR) {
+        float depth_shade = 1.0f - std::min(0.40f, (float)(found_layer - floor) * 0.10f);
+        tex_data[idx] = (uint8_t)(minimap_color[color_idx].red * depth_shade);
+        tex_data[idx + 1] = (uint8_t)(minimap_color[color_idx].green * depth_shade);
+        tex_data[idx + 2] = (uint8_t)(minimap_color[color_idx].blue * depth_shade);
+      } else {
+        // Unexplored / empty indoor or cave void (dark slate obsidian)
+        tex_data[idx] = 16;
+        tex_data[idx + 1] = 22;
+        tex_data[idx + 2] = 32;
       }
-
-      int idx = (window_y * 180 + window_x) * 3;
-      tex_data[idx] = minimap_color[color_idx].red;
-      tex_data[idx + 1] = minimap_color[color_idx].green;
-      tex_data[idx + 2] = minimap_color[color_idx].blue;
     }
   }
 
   // Copy into minimap_pixels so the palette-docked minimap can read it via wxImage
   memcpy(minimap_pixels, tex_data, sizeof(tex_data));
 
-  // The wx minimap above is CPU-backed. Upload the same pixels only when the
-  // canvas owns a valid OpenGL context for the main minimap renderer.
+  // Upload texture to OpenGL
   if (IsShownOnScreen() && g_gui.GetGLContext(this)) {
     SetCurrent(*g_gui.GetGLContext(this));
     if (minimap_tex_id == 0) {
       glGenTextures(1, &minimap_tex_id);
       glBindTexture(GL_TEXTURE_2D, minimap_tex_id);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 180, 180, 0, GL_RGB,
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, DIM, DIM, 0, GL_RGB,
                    GL_UNSIGNED_BYTE, nullptr);
     }
     glBindTexture(GL_TEXTURE_2D, minimap_tex_id);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 180, 180, GL_RGB,
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, DIM, DIM, GL_RGB,
                     GL_UNSIGNED_BYTE, tex_data);
   }
+}
 
+void MapCanvas::UpdateWorldMapTexture(int target_floor) {
+  if (!g_gui.IsEditorOpen()) {
+    return;
+  }
+
+  Editor &editor = *g_gui.GetCurrentEditor();
+  int map_width = editor.map.getWidth();
+  int map_height = editor.map.getHeight();
+  if (map_width <= 0 || map_height <= 0) return;
+
+  target_floor = std::clamp(target_floor, 0, MAP_MAX_LAYER);
+  world_map_floor = target_floor;
+
+  if (world_map_center_x < 0.0f || world_map_center_y < 0.0f) {
+    int cx = map_width / 2, cy = map_height / 2;
+    GetScreenCenter(&cx, &cy);
+    world_map_center_x = (float)cx;
+    world_map_center_y = (float)cy;
+  }
+
+  int base_dimension = std::max(map_width, map_height);
+  // Allow deep zoom down to 16 tiles span for sharp close-up detail
+  int span_w = std::clamp((int)((float)base_dimension * world_map_zoom), 16, map_width);
+  int span_h = std::clamp((int)((float)base_dimension * world_map_zoom), 16, map_height);
+
+  int start_x = (int)world_map_center_x - span_w / 2;
+  int start_y = (int)world_map_center_y - span_h / 2;
+
+  world_map_start_x = start_x;
+  world_map_start_y = start_y;
+  world_map_span_w = std::max(1, span_w);
+  world_map_span_h = std::max(1, span_h);
+
+  const int DIM = WORLD_MAP_TEX_SIZE;
+  memset(world_map_pixels, 0, sizeof(world_map_pixels));
+
+  for (int window_y = 0; window_y < DIM; ++window_y) {
+    for (int window_x = 0; window_x < DIM; ++window_x) {
+      int x = start_x + (int)((double)window_x * (double)span_w / (double)DIM);
+      int y = start_y + (int)((double)window_y * (double)span_h / (double)DIM);
+      int idx = (window_y * DIM + window_x) * 4;
+
+      if (x < 0 || x >= map_width || y < 0 || y >= map_height) {
+        // Transparent void outside map boundaries
+        world_map_pixels[idx] = 0;
+        world_map_pixels[idx + 1] = 0;
+        world_map_pixels[idx + 2] = 0;
+        world_map_pixels[idx + 3] = 0;
+        continue;
+      }
+
+      uint8_t color_idx = 0;
+      int found_layer = target_floor;
+
+      for (int z = target_floor; z <= MAP_MAX_LAYER; ++z) {
+        Tile *tile = editor.map.getTile(x, y, z);
+        if (tile) {
+          color_idx = tile->getMiniMapColor();
+          if (color_idx > 0 && color_idx < INVALID_MINIMAP_COLOR) {
+            found_layer = z;
+            break;
+          }
+        }
+        if (!g_settings.getBoolean(Config::SHOW_ALL_FLOORS) && z != target_floor && target_floor <= GROUND_LAYER) {
+          if (z >= GROUND_LAYER) break;
+        }
+      }
+
+      if (color_idx > 0 && color_idx < INVALID_MINIMAP_COLOR) {
+        float depth_shade = 1.0f - std::min(0.40f, (float)(found_layer - target_floor) * 0.10f);
+        world_map_pixels[idx] = (uint8_t)(minimap_color[color_idx].red * depth_shade);
+        world_map_pixels[idx + 1] = (uint8_t)(minimap_color[color_idx].green * depth_shade);
+        world_map_pixels[idx + 2] = (uint8_t)(minimap_color[color_idx].blue * depth_shade);
+        world_map_pixels[idx + 3] = 245; // Crisp opaque map terrain
+      } else {
+        // Unexplored terrain void (semi-transparent fog so wooden table shows through)
+        world_map_pixels[idx] = 20;
+        world_map_pixels[idx + 1] = 26;
+        world_map_pixels[idx + 2] = 38;
+        world_map_pixels[idx + 3] = 40; // Subtle dark parchment tint with high transparency
+      }
+    }
+  }
+
+  if (IsShownOnScreen() && g_gui.GetGLContext(this)) {
+    SetCurrent(*g_gui.GetGLContext(this));
+    if (world_map_tex_id == 0) {
+      glGenTextures(1, &world_map_tex_id);
+      glBindTexture(GL_TEXTURE_2D, world_map_tex_id);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, DIM, DIM, 0, GL_RGBA,
+                   GL_UNSIGNED_BYTE, nullptr);
+    }
+    glBindTexture(GL_TEXTURE_2D, world_map_tex_id);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, DIM, DIM, GL_RGBA,
+                    GL_UNSIGNED_BYTE, world_map_pixels);
+  }
 }
 
 void MapCanvas::OnIdle(wxIdleEvent& event) {

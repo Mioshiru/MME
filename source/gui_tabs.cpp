@@ -7,6 +7,8 @@
 #include "brush.h"
 #include "palette_window.h"
 #include "lua/lua_api.h"
+#include "checklist_manager.h"
+#include "world_map_markers.h"
 #include <wx/msgdlg.h>
 #include <wx/textdlg.h>
 
@@ -73,6 +75,9 @@ bool GUI::NewMap(const wxString& target_dir) {
 	propWindow->ShowModal();
 	propWindow->Destroy();
 
+	ChecklistManager::getInstance().clearAll();
+	WorldMapMarkerManager::GetInstance().SetCurrentMapPath("");
+
 	editor->map.clearChanges();
 	ShowPalette();
 	UpdateTitle(); RefreshPalettes();
@@ -107,6 +112,17 @@ bool GUI::LoadMap(const FileName& fileName) {
 	mapTab->OnSwitchEditorMode(mode);
 	root->AddRecentFile(fileName);
 	mapTab->GetView()->FitToMap();
+
+	// Load checklist associated with map
+	{
+		FileName chkFile(fileName);
+		chkFile.SetExt("json");
+		chkFile.SetName(chkFile.GetName() + "-checklist");
+		std::string chkPath = nstr(chkFile.GetFullPath());
+		ChecklistManager::getInstance().setFilePath(chkPath);
+	}
+	WorldMapMarkerManager::GetInstance().SetCurrentMapPath(nstr(fileName.GetFullPath()));
+
 	ShowPalette();
 	UpdateTitle();
 	ListDialog("Map loader errors", mapTab->GetMap()->getWarnings());

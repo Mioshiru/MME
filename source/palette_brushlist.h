@@ -74,8 +74,11 @@ public:
 
 	void OnKey(wxKeyEvent& event);
 	void OnLeftDown(wxMouseEvent& event);
+	void OnRightDown(wxMouseEvent& event);
+	void OnMouseWheel(wxMouseEvent& event);
 	void Filter(const wxString& query) override;
 	void UpdateVisibleList();
+	void EnsureVisible(size_t n);
 
 protected:
 	wxString current_query;
@@ -110,6 +113,7 @@ public:
 	void OnLeftUp(wxMouseEvent& event);
 	void OnRightClick(wxMouseEvent& event);
 	void OnMouseMove(wxMouseEvent& event);
+	void OnMouseWheel(wxMouseEvent& event);
 
 	void SetIconSize(RenderSize sz) {
 		icon_size = sz;

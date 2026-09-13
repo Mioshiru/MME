@@ -26,6 +26,7 @@
 #include "materials.h"
 #include "application.h"
 #include "creature_wiki_dialog.h"
+#include "tfs_npc_wizard_window.h"
 #include <wx/srchctrl.h>
 
 // ============================================================================
@@ -99,22 +100,34 @@ CreaturePalettePanel::CreaturePalettePanel(wxWindow* parent, wxWindowID id) :
 					menu.Append(10001, "Favorite");
 				}
 
-				menu.Bind(wxEVT_MENU, [brush](wxCommandEvent& ev) {
+				CreatureBrush* cb = dynamic_cast<CreatureBrush*>(brush);
+				bool is_npc = (cb && cb->getType() && cb->getType()->isNpc) || (tileset_choice && tileset_choice->GetStringSelection().Contains("NPC"));
+				if (is_npc) {
+					menu.AppendSeparator();
+					menu.Append(10010, "Edit with NPC Editor...");
+				}
+
+				menu.Bind(wxEVT_MENU, [this, brush](wxCommandEvent& ev) {
 					Tileset* f = g_materials.tilesets["Favorites"];
-					if (!f) return;
 					if (ev.GetId() == 10001) {
+						if (!f) return;
 						TilesetCategory* catFav = f->getCategory(TILESET_CREATURE);
 						if (!catFav) catFav = f->getCategory(TILESET_FAVORITE);
 						if (catFav && !catFav->containsBrush(brush)) {
 							catFav->brushlist.push_back(brush);
 						}
 					} else if (ev.GetId() == 10002) {
+						if (!f) return;
 						for (TilesetCategory* cat : f->categories) {
 							auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), brush);
 							if (it != cat->brushlist.end()) {
 								cat->brushlist.erase(it);
 							}
 						}
+					} else if (ev.GetId() == 10010) {
+						NPCWizardDialog dlg(this);
+						dlg.ShowModal();
+						return;
 					}
 					g_materials.rebuildFavorites();
 					g_materials.saveFavorites();

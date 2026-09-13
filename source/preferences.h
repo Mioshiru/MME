@@ -58,6 +58,7 @@ public:
 	wxCheckBox* update_check_on_startup_chkbox = nullptr;
 	wxCheckBox* only_one_instance_chkbox = nullptr;
 	wxCheckBox* show_welcome_dialog_chkbox = nullptr;
+	wxTextCtrl* mapper_name_txt = nullptr;
 	wxCheckBox* enable_tileset_editing_chkbox = nullptr;
 	wxSpinCtrl* multiplayer_port_spin = nullptr;
 	wxSpinCtrl* undo_size_spin = nullptr;

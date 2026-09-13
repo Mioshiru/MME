@@ -665,6 +665,7 @@ EVT_LEFT_DOWN(BrushIconBox::OnClick)
 EVT_LEFT_UP(BrushIconBox::OnLeftUp)
 EVT_RIGHT_DOWN(BrushIconBox::OnRightClick)
 EVT_MOTION(BrushIconBox::OnMouseMove)
+EVT_MOUSEWHEEL(BrushIconBox::OnMouseWheel)
 EVT_SIZE(BrushIconBox::OnSize)
 END_EVENT_TABLE()
 
@@ -679,6 +680,20 @@ BrushIconBox::BrushIconBox(wxWindow* parent, const std::vector<Brush*>& brushes,
 }
 
 BrushIconBox::~BrushIconBox() {
+}
+
+void BrushIconBox::OnMouseWheel(wxMouseEvent& event) {
+	int rotation = event.GetWheelRotation();
+	int delta = event.GetWheelDelta();
+	if (delta <= 0) delta = 120;
+	int lines = event.GetLinesPerAction();
+	if (lines <= 0) lines = 3;
+
+	int start_x, start_y;
+	GetViewStart(&start_x, &start_y);
+	int scroll_units = (rotation * lines) / delta;
+	Scroll(-1, std::max(0, start_y - scroll_units));
+	Refresh();
 }
 
 void BrushIconBox::SelectFirstBrush() {
@@ -698,11 +713,25 @@ Brush* BrushIconBox::GetSelectedBrush() const {
 }
 
 bool BrushIconBox::SelectBrush(const Brush* whatbrush) {
-	if (whatbrush && whatbrush->isSeparator()) return false;
+	if (!whatbrush || whatbrush->isSeparator()) return false;
 	for (size_t i = 0; i < visible_brushes.size(); ++i) {
 		if (visible_brushes[i] == whatbrush) {
 			selected_brush = const_cast<Brush*>(whatbrush);
 			EnsureVisible(i);
+			Refresh();
+			return true;
+		}
+	}
+	for (size_t i = 0; i < all_brushes.size(); ++i) {
+		if (all_brushes[i] == whatbrush) {
+			Filter("");
+			selected_brush = const_cast<Brush*>(whatbrush);
+			for (size_t v = 0; v < visible_brushes.size(); ++v) {
+				if (visible_brushes[v] == whatbrush) {
+					EnsureVisible(v);
+					break;
+				}
+			}
 			Refresh();
 			return true;
 		}
@@ -718,6 +747,9 @@ void BrushIconBox::SetBrushes(const std::vector<Brush*>& brushes) {
 
 void BrushIconBox::EnsureVisible(size_t n) {
 	if (n >= visible_brushes.size()) return;
+	if (item_layout.empty() || last_layout_width <= 0) {
+		UpdateLayout();
+	}
 	Brush* target = visible_brushes[n];
 	for (const auto& item : item_layout) {
 		if (item.brush == target) {
@@ -1305,6 +1337,8 @@ void BrushIconBox::OnMouseMove(wxMouseEvent& event) {
 BEGIN_EVENT_TABLE(BrushListBox, wxVListBox)
 EVT_KEY_DOWN(BrushListBox::OnKey)
 EVT_LEFT_DOWN(BrushListBox::OnLeftDown)
+EVT_RIGHT_DOWN(BrushListBox::OnRightDown)
+EVT_MOUSEWHEEL(BrushListBox::OnMouseWheel)
 END_EVENT_TABLE()
 
 BrushListBox::BrushListBox(wxWindow* parent, const std::vector<Brush*>& brushes) :
@@ -1315,6 +1349,58 @@ BrushListBox::BrushListBox(wxWindow* parent, const std::vector<Brush*>& brushes)
 
 BrushListBox::~BrushListBox() {
 	////
+}
+
+void BrushListBox::OnMouseWheel(wxMouseEvent& event) {
+	int rotation = event.GetWheelRotation();
+	int delta = event.GetWheelDelta();
+	if (delta <= 0) delta = 120;
+	int lines = event.GetLinesPerAction();
+	if (lines <= 0) lines = 3;
+
+	int scroll_lines = -(rotation * lines) / delta;
+	ScrollLines(scroll_lines);
+	Refresh();
+}
+
+void BrushListBox::OnRightDown(wxMouseEvent& event) {
+	int item_hit = HitTest(event.GetPosition());
+	if (item_hit != wxNOT_FOUND && item_hit < (int)visible_brushes.size()) {
+		Brush* clicked_brush = visible_brushes[item_hit];
+		if (clicked_brush && !clicked_brush->isSeparator()) {
+			SetSelection(item_hit);
+			wxMenu menu;
+			Tileset* favs = g_materials.tilesets["Favorites"];
+			bool is_favorited = false;
+			if (favs) {
+				const TilesetCategory* cat = favs->getCategory(TILESET_FAVORITE);
+				if (cat && cat->containsBrush(clicked_brush)) {
+					is_favorited = true;
+				}
+			}
+			if (is_favorited) {
+				menu.Append(10002, "Remove Favorite");
+			} else {
+				menu.Append(10001, "Favorite");
+			}
+
+			menu.Bind(wxEVT_MENU, [clicked_brush](wxCommandEvent& ev) {
+				if (ev.GetId() == 10001) {
+					AddFavoriteBrushIconBox(clicked_brush);
+					g_gui.RefreshFavoritesBox();
+				} else if (ev.GetId() == 10002) {
+					RemoveFavoriteBrushIconBox(clicked_brush);
+					g_gui.RefreshFavoritesBox();
+				}
+			});
+			PopupMenu(&menu, event.GetPosition());
+		}
+	}
+}
+
+void BrushListBox::EnsureVisible(size_t n) {
+	if (n >= visible_brushes.size()) return;
+	ScrollToRow(n);
 }
 
 void BrushListBox::UpdateVisibleList() {
@@ -1347,6 +1433,7 @@ void BrushListBox::SelectFirstBrush() {
 	for (size_t n = 0; n < visible_brushes.size(); ++n) {
 		if (visible_brushes[n] && !visible_brushes[n]->isSeparator()) {
 			SetSelection(n);
+			EnsureVisible(n);
 			return;
 		}
 	}
@@ -1374,7 +1461,21 @@ bool BrushListBox::SelectBrush(const Brush* whatbrush) {
 	for (size_t n = 0; n < visible_brushes.size(); ++n) {
 		if (visible_brushes[n] == whatbrush) {
 			SetSelection(n);
+			EnsureVisible(n);
 			return true;
+		}
+	}
+	for (size_t n = 0; n < all_brushes.size(); ++n) {
+		if (all_brushes[n] == whatbrush) {
+			Filter("");
+			for (size_t v = 0; v < visible_brushes.size(); ++v) {
+				if (visible_brushes[v] == whatbrush) {
+					SetSelection(v);
+					EnsureVisible(v);
+					return true;
+				}
+			}
+			break;
 		}
 	}
 	return false;

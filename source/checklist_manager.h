@@ -41,6 +41,9 @@ public:
 	void setAllItems(const std::vector<ChecklistItem>& items);
 
 	// Persistence to file (.notes or config)
+	void setFilePath(const std::string& filepath);
+	std::string getFilePath() const;
+	void save();
 	void saveToFile(const std::string& filepath);
 	void loadFromFile(const std::string& filepath);
 
@@ -53,6 +56,7 @@ private:
 	mutable std::mutex itemsMutex;
 	std::vector<ChecklistItem> items;
 	uint32_t nextId = 1;
+	std::string m_filePath;
 	std::function<void()> onChangeCallback;
 };
 

@@ -20,6 +20,8 @@
 #include "editor_tabs.h"
 #include "editor.h"
 #include "live_tab.h"
+#include "checklist_manager.h"
+#include "world_map_markers.h"
 
 EditorTab::EditorTab() {
 	;
@@ -121,9 +123,24 @@ void MapTabbook::OnNotebookPageChanged(wxAuiNotebookEvent& evt) {
 
 	if (oldMapTab) {
 		oldMapTab->VisibilityCheck();
+		ChecklistManager::getInstance().save();
 	}
 	if (newMapTab) {
 		newMapTab->VisibilityCheck();
+		if (newMapTab->GetEditor()) {
+			std::string mfile = newMapTab->GetEditor()->map.getFilename();
+			if (!mfile.empty()) {
+				FileName newChk(wxstr(mfile));
+				newChk.SetExt("json");
+				newChk.SetName(newChk.GetName() + "-checklist");
+				std::string chkPath = nstr(newChk.GetFullPath());
+				ChecklistManager::getInstance().setFilePath(chkPath);
+				WorldMapMarkerManager::GetInstance().SetCurrentMapPath(mfile);
+			} else {
+				ChecklistManager::getInstance().setFilePath("");
+				WorldMapMarkerManager::GetInstance().SetCurrentMapPath("");
+			}
+		}
 	}
 }
 

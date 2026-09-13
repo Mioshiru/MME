@@ -24,6 +24,8 @@
 #include "checklist_manager.h"
 #include "tileset.h"
 #include "materials.h"
+#include "world_map_markers.h"
+#include "radio_player.h"
 #include <cmath>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
@@ -413,8 +415,119 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 			ImGui::End();
 		}
 	}
-	// Team Chat Window (Multiplayer only)
-	if (editor.IsLive() && g_settings.getBoolean(Config::SHOW_CHAT)) {
+
+	// Universal In-Canvas Overlay Window Snapping System
+	struct OverlayWindowRect {
+		std::string name;
+		ImVec2 pos;
+		ImVec2 size;
+	};
+	static std::vector<OverlayWindowRect> s_prevOverlayWindows;
+	static std::vector<OverlayWindowRect> s_currentOverlayWindows;
+
+	auto RegisterOverlayWindowRect = [](const std::string& name, ImVec2 pos, ImVec2 size) {
+		s_currentOverlayWindows.push_back({ name, pos, size });
+	};
+
+	auto SnapOverlayWindow = [](const std::string& name, ImVec2 pos, ImVec2 size, ImGuiViewport* vp) -> ImVec2 {
+		const float edgeMargin = 5.0f;
+		const float windowGap = 5.0f;
+		const float snapThreshold = 25.0f;
+
+		ImVec2 targetPos = pos;
+		bool snappedX = false;
+		bool snappedY = false;
+
+		// 1. Inter-window snapping (against other registered windows from previous frame with 5px gap)
+		for (const auto& other : s_prevOverlayWindows) {
+			if (other.name == name) continue;
+
+			bool vOverlap = (pos.y + size.y > other.pos.y - snapThreshold) && (pos.y < other.pos.y + other.size.y + snapThreshold);
+			bool hOverlap = (pos.x + size.x > other.pos.x - snapThreshold) && (pos.x < other.pos.x + other.size.x + snapThreshold);
+
+			if (vOverlap && !snappedX) {
+				// Snap our left edge to other's right edge (+5px gap)
+				if (std::abs(pos.x - (other.pos.x + other.size.x + windowGap)) < snapThreshold) {
+					targetPos.x = other.pos.x + other.size.x + windowGap;
+					snappedX = true;
+				}
+				// Snap our right edge to other's left edge (-5px gap)
+				else if (std::abs((pos.x + size.x) - (other.pos.x - windowGap)) < snapThreshold) {
+					targetPos.x = other.pos.x - windowGap - size.x;
+					snappedX = true;
+				}
+				// Snap alignment: Left-to-Left
+				else if (std::abs(pos.x - other.pos.x) < snapThreshold) {
+					targetPos.x = other.pos.x;
+					snappedX = true;
+				}
+				// Snap alignment: Right-to-Right
+				else if (std::abs((pos.x + size.x) - (other.pos.x + other.size.x)) < snapThreshold) {
+					targetPos.x = other.pos.x + other.size.x - size.x;
+					snappedX = true;
+				}
+			}
+
+			if (hOverlap && !snappedY) {
+				// Snap our top edge to other's bottom edge (+5px gap)
+				if (std::abs(pos.y - (other.pos.y + other.size.y + windowGap)) < snapThreshold) {
+					targetPos.y = other.pos.y + other.size.y + windowGap;
+					snappedY = true;
+				}
+				// Snap our bottom edge to other's top edge (-5px gap)
+				else if (std::abs((pos.y + size.y) - (other.pos.y - windowGap)) < snapThreshold) {
+					targetPos.y = other.pos.y - windowGap - size.y;
+					snappedY = true;
+				}
+				// Snap alignment: Top-to-Top
+				else if (std::abs(pos.y - other.pos.y) < snapThreshold) {
+					targetPos.y = other.pos.y;
+					snappedY = true;
+				}
+				// Snap alignment: Bottom-to-Bottom
+				else if (std::abs((pos.y + size.y) - (other.pos.y + other.size.y)) < snapThreshold) {
+					targetPos.y = other.pos.y + other.size.y - size.y;
+					snappedY = true;
+				}
+			}
+		}
+
+		// 2. Viewport Canvas Boundary Snapping (all 4 edges with 5px margin)
+		if (vp) {
+			// Left Edge
+			if (!snappedX && std::abs(pos.x - (vp->Pos.x + edgeMargin)) < snapThreshold) {
+				targetPos.x = vp->Pos.x + edgeMargin;
+				snappedX = true;
+			}
+			// Right Edge
+			if (!snappedX && std::abs((pos.x + size.x) - (vp->Pos.x + vp->Size.x - edgeMargin)) < snapThreshold) {
+				targetPos.x = vp->Pos.x + vp->Size.x - size.x - edgeMargin;
+				snappedX = true;
+			}
+			// Top Edge
+			if (!snappedY && std::abs(pos.y - (vp->Pos.y + edgeMargin)) < snapThreshold) {
+				targetPos.y = vp->Pos.y + edgeMargin;
+				snappedY = true;
+			}
+			// Bottom Edge
+			if (!snappedY && std::abs((pos.y + size.y) - (vp->Pos.y + vp->Size.y - edgeMargin)) < snapThreshold) {
+				targetPos.y = vp->Pos.y + vp->Size.y - size.y - edgeMargin;
+				snappedY = true;
+			}
+		}
+
+		if ((snappedX || snappedY) && !ImGui::IsMouseDown(0)) {
+			ImGui::SetWindowPos(targetPos, ImGuiCond_Always);
+			return targetPos;
+		}
+		return pos;
+	};
+
+	s_prevOverlayWindows = s_currentOverlayWindows;
+	s_currentOverlayWindows.clear();
+
+	// Team Chat Window (Multiplayer & Local Log)
+	if (g_settings.getBoolean(Config::SHOW_CHAT)) {
 		static bool chat_minimized = false;
 		static bool chat_docked_to_palette = false;
 		static int last_seen_msg_count = 0;
@@ -423,135 +536,176 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		int unread_count = std::max(0, total_msgs - last_seen_msg_count);
 
 		if (chat_minimized) {
-			// Render a sleek button pill in the bottom status area
+			// Render a sleek button pill in the bottom status area with Corporate Design
 			ImGui::SetNextWindowPos(ImVec2(10, io.DisplaySize.y - 36), ImGuiCond_Always);
-			ImGui::SetNextWindowBgAlpha(0.85f);
+			ImGui::SetNextWindowBgAlpha(0.92f);
 			ImGuiWindowFlags pill_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
 				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.08f, 0.04f, 0.95f)); // Dark oak/leather
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));   // Medieval Gold
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.5f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
+
 			if (ImGui::Begin("##ChatMinimizedPill", nullptr, pill_flags)) {
 				std::string label = unread_count > 0 
-					? "💬 Team Chat (" + std::to_string(unread_count) + " new)"
-					: "💬 Team Chat";
+					? "[Chat] (" + std::to_string(unread_count) + " new)"
+					: "[Chat]";
 				
 				if (unread_count > 0) {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.85f, 0.45f, 0.1f, 0.9f));
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.45f, 0.12f, 0.95f));
 					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+				} else {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.24f, 0.16f, 0.09f, 0.90f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.90f, 0.76f, 1.0f));
 				}
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.38f, 0.25f, 0.13f, 1.00f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.38f, 0.18f, 1.00f));
+
 				if (ImGui::Button(label.c_str())) {
 					chat_minimized = false;
 					last_seen_msg_count = (int)g_gui.chat_log.size();
 				}
-				if (unread_count > 0) {
-					ImGui::PopStyleColor(2);
-				}
+				ImGui::PopStyleColor(4);
+
 				if (ImGui::IsItemHovered()) {
 					ImGui::SetTooltip("Click to restore Team Chat window");
 				}
 				ImGui::End();
 			}
+			ImGui::PopStyleVar(2);
+			ImGui::PopStyleColor(2);
 		} else {
 			last_seen_msg_count = total_msgs;
 
 			if (chat_docked_to_palette) {
-				ImGui::SetNextWindowPos(ImVec2(std::max(10.0f, io.DisplaySize.x - 330.0f), std::max(10.0f, io.DisplaySize.y - 250.0f)), ImGuiCond_Always);
-				ImGui::SetNextWindowSize(ImVec2(320, 240), ImGuiCond_Always);
+				ImGui::SetNextWindowPos(ImVec2(std::max(10.0f, io.DisplaySize.x - 340.0f), std::max(10.0f, io.DisplaySize.y - 270.0f)), ImGuiCond_Always);
+				ImGui::SetNextWindowSize(ImVec2(330, 260), ImGuiCond_Always);
 			} else {
-				ImGui::SetNextWindowPos(ImVec2(10, io.DisplaySize.y - 250), ImGuiCond_FirstUseEver);
-				ImGui::SetNextWindowSize(ImVec2(320, 240), ImGuiCond_FirstUseEver);
+				ImGui::SetNextWindowPos(ImVec2(18, io.DisplaySize.y - 270), ImGuiCond_FirstUseEver);
+				ImGui::SetNextWindowSize(ImVec2(330, 260), ImGuiCond_FirstUseEver);
 			}
-			ImGui::SetNextWindowSizeConstraints(ImVec2(220, 140), ImVec2(800, 600));
+			ImGui::SetNextWindowSizeConstraints(ImVec2(240, 160), ImVec2(800, 600));
+
+			// Corporate Medieval Palette Styles
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.11f, 0.08f, 0.04f, 0.94f));
+			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.18f, 0.12f, 0.06f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.25f, 0.16f, 0.08f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.91f, 0.78f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.22f, 0.15f, 0.08f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.35f, 0.24f, 0.12f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.83f, 0.69f, 0.22f, 0.80f));
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.15f, 0.08f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.24f, 0.12f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.08f, 0.05f, 0.03f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.09f, 0.05f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.20f, 0.13f, 0.07f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.83f, 0.69f, 0.22f, 0.40f));
+
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.8f);
 
 			bool open = true;
-			if (ImGui::Begin("Team Chat", &open, ImGuiWindowFlags_None)) {
+			if (ImGui::Begin("Team Chat", &open, ImGuiWindowFlags_NoCollapse)) {
+				// Universal Magnetic Edge & Window Snapping
+				ImVec2 w_pos = ImGui::GetWindowPos();
+				ImVec2 w_size = ImGui::GetWindowSize();
+				ImGuiViewport* vp = ImGui::GetMainViewport();
+				if (vp && !chat_docked_to_palette) {
+					w_pos = SnapOverlayWindow("Team Chat", w_pos, w_size, vp);
+				}
+
 				// Header quick buttons
-				ImGui::SameLine(ImGui::GetWindowWidth() - 95);
-				if (ImGui::SmallButton(chat_docked_to_palette ? "⚓ Float" : "📌 Dock")) {
+				ImGui::SameLine(ImGui::GetWindowWidth() - 105);
+				if (ImGui::SmallButton(chat_docked_to_palette ? "[Float]" : "[Dock]")) {
 					chat_docked_to_palette = !chat_docked_to_palette;
 				}
 				if (ImGui::IsItemHovered()) {
 					ImGui::SetTooltip(chat_docked_to_palette ? "Switch to free-floating window" : "Dock to right palette area");
 				}
 				ImGui::SameLine();
-				if (ImGui::SmallButton(" _ ")) {
+				if (ImGui::SmallButton("[-]")) {
 					chat_minimized = true;
 				}
 				if (ImGui::IsItemHovered()) {
 					ImGui::SetTooltip("Minimize to bottom status bar");
 				}
 
-				// Network Latency Display
-				if (editor.IsLiveServer()) {
-					LiveServer* server = editor.GetLiveServer();
-					ImGui::TextColored(ImVec4(0.9f, 0.78f, 0.35f, 1.0f), "Host Mode | Clients: %d", (int)server->clients.size());
-					ImGui::SameLine();
-					if (ImGui::SmallButton("📋 Copy IP")) {
-						TriggerCopyLiveIP();
-					}
-					if (ImGui::IsItemHovered()) {
-						ImGui::SetTooltip("Copy Host IP & Port to clipboard");
+				// Connection status sub-bar
+				if (editor.IsLive()) {
+					if (editor.IsLiveServer()) {
+						LiveServer* srv = editor.GetLiveServer();
+						int peers = srv ? (int)srv->clients.size() : 0;
+						ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "* HOSTING (Port %d, %d Client%s)", 
+							srv ? srv->getPort() : 7171, peers, peers == 1 ? "" : "s");
+					} else if (editor.GetLiveClient()) {
+						LiveClient* cli = editor.GetLiveClient();
+						uint32_t lat = cli ? cli->getLatency() : 0;
+						ImVec4 pingColor = lat < 50 ? ImVec4(0.4f, 1.0f, 0.4f, 1.0f) :
+										  lat < 120 ? ImVec4(1.0f, 0.8f, 0.2f, 1.0f) :
+													  ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
+						ImGui::TextColored(pingColor, "* CONNECTED (Ping: %u ms)", lat);
 					}
 				} else {
-					LiveClient* client = editor.GetLiveClient();
-					uint32_t lat = client ? client->getLatency() : 0;
-					ImVec4 col = (lat < 100) ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : (lat < 250 ? ImVec4(1.0f, 1.0f, 0.2f, 1.0f) : ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-					ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Join Mode | ");
-					ImGui::SameLine();
-					if (lat <= 1) {
-						ImGui::TextColored(col, "%s | < 1 ms | %u%% loss", client ? nstr(client->getConnectionStatus()).c_str() : "Online", client ? client->getPacketLoss() : 0);
-					} else {
-						ImGui::TextColored(col, "%s | %u ms | %u%% loss", client ? nstr(client->getConnectionStatus()).c_str() : "Online", lat, client ? client->getPacketLoss() : 0);
-					}
+					ImGui::TextColored(ImVec4(0.75f, 0.70f, 0.55f, 0.9f), "[LOCAL] Chat / Log Mode");
 				}
+				ImGui::Separator();
 
 				// Collaborators & Teleport section
-				if (ImGui::CollapsingHeader("👥 Collaborators & Teleport", ImGuiTreeNodeFlags_None)) {
-					LiveSocket& live = editor.GetLive();
-					std::vector<LiveCursor> cursors = live.getCursorList();
-					if (cursors.empty()) {
-						ImGui::TextDisabled("No other collaborators connected yet.");
-					} else {
-						for (const auto& cur : cursors) {
-							std::string name = wxString::Format("Collaborator #%u", cur.id).ToStdString();
-							if (editor.IsLiveServer() && editor.GetLiveServer()) {
-								auto it = editor.GetLiveServer()->clients.find(cur.id);
-								if (it != editor.GetLiveServer()->clients.end() && it->second) {
-									name = nstr(it->second->getClientName());
+				if (editor.IsLive()) {
+					if (ImGui::CollapsingHeader("[Team] Collaborators & Teleport", ImGuiTreeNodeFlags_None)) {
+						LiveSocket& live = editor.GetLive();
+						std::vector<LiveCursor> cursors = live.getCursorList();
+						if (cursors.empty()) {
+							ImGui::TextDisabled("No other collaborators connected yet.");
+						} else {
+							for (const auto& cur : cursors) {
+								std::string name = wxString::Format("Collaborator #%u", cur.id).ToStdString();
+								if (editor.IsLiveServer() && editor.GetLiveServer()) {
+									auto it = editor.GetLiveServer()->clients.find(cur.id);
+									if (it != editor.GetLiveServer()->clients.end() && it->second) {
+										name = nstr(it->second->getClientName());
+									}
 								}
-							}
-							ImGui::TextColored(ImVec4(cur.color.Red()/255.0f, cur.color.Green()/255.0f, cur.color.Blue()/255.0f, 1.0f), "👤 %s", name.c_str());
-							ImGui::SameLine();
-							ImGui::TextDisabled("(%d, %d, %d)", cur.pos.x, cur.pos.y, cur.pos.z);
-							ImGui::SameLine();
-							std::string jump_btn_id = wxString::Format("🎯 Jump##jump_%u", cur.id).ToStdString();
-							if (ImGui::SmallButton(jump_btn_id.c_str())) {
-								if (cur.pos.isValid()) {
-									ChangeFloor(cur.pos.z);
-									g_gui.SetScreenCenterPosition(cur.pos, false);
-									g_gui.SetStatusText(wxString::Format("Teleported to collaborator %s at (%d, %d, %d)", name.c_str(), cur.pos.x, cur.pos.y, cur.pos.z));
+								ImGui::TextColored(ImVec4(cur.color.Red()/255.0f, cur.color.Green()/255.0f, cur.color.Blue()/255.0f, 1.0f), "[Player] %s", name.c_str());
+								ImGui::SameLine();
+								ImGui::TextDisabled("(%d, %d, %d)", cur.pos.x, cur.pos.y, cur.pos.z);
+								ImGui::SameLine();
+								std::string jump_btn_id = wxString::Format(">> Jump##jump_%u", cur.id).ToStdString();
+								if (ImGui::SmallButton(jump_btn_id.c_str())) {
+									if (cur.pos.isValid()) {
+										ChangeFloor(cur.pos.z);
+										g_gui.SetScreenCenterPosition(cur.pos, false);
+										g_gui.SetStatusText(wxString::Format("Teleported to collaborator %s at (%d, %d, %d)", name.c_str(), cur.pos.x, cur.pos.y, cur.pos.z));
+									}
 								}
 							}
 						}
 					}
+					ImGui::Separator();
 				}
 
-				ImGui::Separator();
-
 				// Determine own name for highlighting
-				std::string ownName;
-				if (editor.IsLiveServer()) {
-					ownName = "Host";
-				} else if (editor.GetLiveClient()) {
-					ownName = nstr(editor.GetLiveClient()->getName());
+				std::string ownName = g_settings.getString(Config::MULTIPLAYER_NAME);
+				if (ownName.empty()) ownName = "Mapper";
+				if (editor.IsLiveClient() && editor.GetLiveClient()) {
+					std::string cname = nstr(editor.GetLiveClient()->getName());
+					if (!cname.empty()) ownName = cname;
 				}
 
 				// Chat history area
-				float reserve_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+				float reserve_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing() + 6.0f;
 				ImGui::BeginChild("ScrollingRegion", ImVec2(0, -reserve_height), false, ImGuiWindowFlags_HorizontalScrollbar);
 				for (const auto& msg : g_gui.chat_log) {
-					ImVec4 color = ImVec4(0.7f, 0.7f, 0.9f, 1.0f); // Default silver for other players
-					if (msg.sender == ownName) color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // White for self
-					else if (msg.sender == "Host") color = ImVec4(0.4f, 1.0f, 0.4f, 1.0f); // Green for Host
-					else if (msg.sender == "Server") color = ImVec4(1.0f, 0.8f, 0.2f, 1.0f); // Gold for Server messages
+					ImVec4 color = ImVec4(0.80f, 0.75f, 0.65f, 1.0f); // Parchment tone for others
+					if (msg.sender == ownName) color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); // Bright ivory for self
+					else if (msg.sender == "Host") color = ImVec4(0.5f, 1.0f, 0.5f, 1.0f); // Light green for Host
+					else if (msg.sender == "Server") color = ImVec4(0.95f, 0.80f, 0.30f, 1.0f); // Gold for Server messages
 
 					ImGui::TextColored(color, "[%s]: ", msg.sender.c_str());
 					ImGui::SameLine();
@@ -570,7 +724,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				if (ImGui::IsWindowAppearing()) {
 					ImGui::SetKeyboardFocusHere();
 				}
-				if (ImGui::InputText("##ChatInput", chat_input, IM_ARRAYSIZE(chat_input), ImGuiInputTextFlags_EnterReturnsTrue)) {
+				if (ImGui::InputTextWithHint("##ChatInput", "Type a message...", chat_input, IM_ARRAYSIZE(chat_input), ImGuiInputTextFlags_EnterReturnsTrue)) {
 					std::string t = chat_input;
 					if (!t.empty()) {
 						g_gui.SendChat(t);
@@ -583,8 +737,13 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				if (reclaim_focus) {
 					ImGui::SetKeyboardFocusHere(-1);
 				}
+
+				RegisterOverlayWindowRect("Team Chat", w_pos, w_size);
 			}
 			ImGui::End();
+
+			ImGui::PopStyleVar(5);
+			ImGui::PopStyleColor(15);
 
 			if (!open) {
 				g_settings.setInteger(Config::SHOW_CHAT, 0);
@@ -690,42 +849,12 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					notepad_minimized = true;
 				}
 
-				// Magnetic Edge Snapping: If window edge is within snapThreshold of viewport boundary, snap to edge
+				// Universal Magnetic Edge & Window Snapping
 				ImVec2 w_pos = ImGui::GetWindowPos();
 				ImVec2 w_size = ImGui::GetWindowSize();
 				ImGuiViewport* vp = ImGui::GetMainViewport();
 				if (vp) {
-					const float snapMargin = 16.0f;     // Distance from boundary to rest at
-					const float snapThreshold = 30.0f;  // Snapping magnetic pull distance
-					ImVec2 targetPos = w_pos;
-					bool snapped = false;
-
-					// Left Edge Magnet
-					if (w_pos.x - vp->Pos.x < snapThreshold && w_pos.x - vp->Pos.x > -snapThreshold) {
-						targetPos.x = vp->Pos.x + snapMargin;
-						snapped = true;
-					}
-					// Right Edge Magnet
-					else if ((vp->Pos.x + vp->Size.x) - (w_pos.x + w_size.x) < snapThreshold && (vp->Pos.x + vp->Size.x) - (w_pos.x + w_size.x) > -snapThreshold) {
-						targetPos.x = vp->Pos.x + vp->Size.x - w_size.x - snapMargin;
-						snapped = true;
-					}
-
-					// Top Edge Magnet
-					if (w_pos.y - vp->Pos.y < snapThreshold && w_pos.y - vp->Pos.y > -snapThreshold) {
-						targetPos.y = vp->Pos.y + snapMargin;
-						snapped = true;
-					}
-					// Bottom Edge Magnet
-					else if ((vp->Pos.y + vp->Size.y) - (w_pos.y + w_size.y) < snapThreshold && (vp->Pos.y + vp->Size.y) - (w_pos.y + w_size.y) > -snapThreshold) {
-						targetPos.y = vp->Pos.y + vp->Size.y - w_size.y - snapMargin;
-						snapped = true;
-					}
-
-					if (snapped && !ImGui::IsMouseDown(0)) {
-						ImGui::SetWindowPos(targetPos, ImGuiCond_Always);
-						w_pos = targetPos;
-					}
+					w_pos = SnapOverlayWindow("Quest Notepad & Checklist", w_pos, w_size, vp);
 				}
 
 				// Draw parchment background texture inside window
@@ -793,11 +922,11 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 					}
 
 					if (!task_text.empty()) {
-						std::string author_name = "Mapper";
-						if (editor.IsLiveServer() && editor.GetLiveServer()) {
-							author_name = "Host";
-						} else if (editor.IsLiveClient() && editor.GetLiveClient()) {
-							author_name = nstr(editor.GetLiveClient()->getName());
+						std::string author_name = g_settings.getString(Config::MULTIPLAYER_NAME);
+						if (author_name.empty()) author_name = "Mapper";
+						if (editor.IsLiveClient() && editor.GetLiveClient()) {
+							std::string cname = nstr(editor.GetLiveClient()->getName());
+							if (!cname.empty()) author_name = cname;
 						}
 
 						uint32_t assignedId = ChecklistManager::getInstance().addItem(task_text, author_name, false);
@@ -948,6 +1077,8 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 					ImGui::EndTabBar();
 				}
+
+				RegisterOverlayWindowRect("Quest Notepad & Checklist", w_pos, w_size);
 			}
 			ImGui::End();
 
@@ -956,6 +1087,214 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 
 			if (!notepad_open) {
 				g_settings.setInteger(Config::SHOW_NOTEPAD, 0);
+				if (g_gui.root) {
+					g_gui.root->UpdateMenubar();
+				}
+			}
+		}
+	}
+
+	// Radio Player In-Canvas ImGui Window
+	if (g_settings.getBoolean(Config::SHOW_RADIO)) {
+		static bool radio_minimized = false;
+		static bool radio_docked_to_palette = false;
+
+		RadioManager& rm = RadioManager::Get();
+		const auto& stations = rm.GetStations();
+		int curIdx = rm.GetCurrentStationIndex();
+		std::string curStationName = (curIdx >= 0 && curIdx < (int)stations.size()) ? stations[curIdx].name : "None";
+
+		if (radio_minimized) {
+			// Render a sleek button pill in the bottom status area with Corporate Design
+			ImGui::SetNextWindowPos(ImVec2(10.0f, io.DisplaySize.y - 104.0f), ImGuiCond_Always);
+			ImGui::SetNextWindowBgAlpha(0.92f);
+			ImGuiWindowFlags pill_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+				ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.08f, 0.04f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.5f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
+
+			if (ImGui::Begin("##RadioMinimizedPill", nullptr, pill_flags)) {
+				std::string label = rm.IsPlaying()
+					? "[Radio] > " + curStationName
+					: "[Radio] (Stopped)";
+
+				if (rm.IsPlaying()) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.35f, 0.18f, 0.95f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+				} else {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.24f, 0.16f, 0.09f, 0.90f));
+					ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.90f, 0.76f, 1.0f));
+				}
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.38f, 0.25f, 0.13f, 1.00f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.55f, 0.38f, 0.18f, 1.00f));
+
+				if (ImGui::Button(label.c_str())) {
+					radio_minimized = false;
+				}
+				ImGui::PopStyleColor(4);
+
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Click to restore Radio Player window");
+				}
+				ImGui::End();
+			}
+			ImGui::PopStyleVar(2);
+			ImGui::PopStyleColor(2);
+		} else {
+			if (radio_docked_to_palette) {
+				ImGui::SetNextWindowPos(ImVec2(std::max(10.0f, io.DisplaySize.x - 340.0f), 60.0f), ImGuiCond_Always);
+				ImGui::SetNextWindowSize(ImVec2(330, 160), ImGuiCond_Always);
+			} else {
+				ImGui::SetNextWindowPos(ImVec2(18.0f, io.DisplaySize.y - 440.0f), ImGuiCond_FirstUseEver);
+				ImGui::SetNextWindowSize(ImVec2(330, 160), ImGuiCond_FirstUseEver);
+			}
+			ImGui::SetNextWindowSizeConstraints(ImVec2(260, 140), ImVec2(600, 300));
+
+			// Corporate Medieval Palette Styles
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.11f, 0.08f, 0.04f, 0.94f));
+			ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.18f, 0.12f, 0.06f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.25f, 0.16f, 0.08f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.96f, 0.91f, 0.78f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.22f, 0.15f, 0.08f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.35f, 0.24f, 0.12f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.83f, 0.69f, 0.22f, 0.80f));
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.22f, 0.15f, 0.08f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.24f, 0.12f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.83f, 0.69f, 0.22f, 0.85f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.08f, 0.05f, 0.03f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.14f, 0.09f, 0.05f, 0.95f));
+			ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.20f, 0.13f, 0.07f, 1.00f));
+			ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.83f, 0.69f, 0.22f, 0.40f));
+			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.83f, 0.69f, 0.22f, 0.90f));
+			ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0.95f, 0.85f, 0.35f, 1.00f));
+
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 8.0f));
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 6.0f));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.8f);
+
+			bool radio_open = true;
+			if (ImGui::Begin("Radio Player", &radio_open, ImGuiWindowFlags_NoCollapse)) {
+				// Universal Magnetic Edge & Window Snapping
+				ImVec2 w_pos = ImGui::GetWindowPos();
+				ImVec2 w_size = ImGui::GetWindowSize();
+				ImGuiViewport* vp = ImGui::GetMainViewport();
+				if (vp && !radio_docked_to_palette) {
+					w_pos = SnapOverlayWindow("Radio Player", w_pos, w_size, vp);
+				}
+
+				// Header quick buttons
+				ImGui::SameLine(ImGui::GetWindowWidth() - 105);
+				if (ImGui::SmallButton(radio_docked_to_palette ? "[Float]" : "[Dock]")) {
+					radio_docked_to_palette = !radio_docked_to_palette;
+				}
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip(radio_docked_to_palette ? "Switch to free-floating window" : "Dock to right palette area");
+				}
+				ImGui::SameLine();
+				if (ImGui::SmallButton("[-]")) {
+					radio_minimized = true;
+				}
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Minimize to bottom status bar");
+				}
+
+				// Status sub-bar
+				if (rm.IsPlaying()) {
+					ImGui::TextColored(ImVec4(0.4f, 1.0f, 0.4f, 1.0f), "[>] %s", curStationName.c_str());
+				} else {
+					ImGui::TextColored(ImVec4(0.70f, 0.65f, 0.55f, 0.85f), "[#] Stopped");
+				}
+				ImGui::SameLine(ImGui::GetWindowWidth() - 85);
+				if (ImGui::SmallButton("Web Radio")) {
+					rm.OpenCurrentWebStation();
+				}
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Open station web player in browser");
+				}
+				ImGui::Separator();
+
+				// Station Selector Combo
+				const char* preview_value = (curIdx >= 0 && curIdx < (int)stations.size()) ? stations[curIdx].name.c_str() : "Select...";
+				ImGui::PushItemWidth(-1.0f);
+				if (ImGui::BeginCombo("##StationCombo", preview_value)) {
+					for (int i = 0; i < (int)stations.size(); ++i) {
+						const bool is_selected = (curIdx == i);
+						if (ImGui::Selectable(stations[i].name.c_str(), is_selected)) {
+							rm.Play(i);
+						}
+						if (is_selected) {
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+					ImGui::EndCombo();
+				}
+				// Mouse-wheel scroll to change station when hovering combo
+				if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
+					int newIdx = curIdx - (int)io.MouseWheel;
+					if (newIdx < 0) newIdx = 0;
+					if (newIdx >= (int)stations.size()) newIdx = (int)stations.size() - 1;
+					if (newIdx != curIdx) {
+						rm.Play(newIdx);
+					}
+				}
+				ImGui::PopItemWidth();
+
+				// Controls Row: Play, Stop, Mute, Volume
+				if (rm.IsPlaying()) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.45f, 0.18f, 0.95f));
+					if (ImGui::Button("[ > ]")) {
+						rm.TogglePlay();
+					}
+					ImGui::PopStyleColor();
+				} else {
+					if (ImGui::Button("[ > ]")) {
+						rm.TogglePlay();
+					}
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip(rm.IsPlaying() ? "Pause/Play" : "Play Station");
+
+				ImGui::SameLine();
+				if (ImGui::Button("[ # ]")) {
+					rm.Stop();
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stop Playback");
+
+				ImGui::SameLine();
+				bool isMuted = rm.IsMuted();
+				if (isMuted) {
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.18f, 0.18f, 0.95f));
+				}
+				if (ImGui::Button(isMuted ? "[Mute]" : "[Vol]")) {
+					rm.SetMute(!isMuted);
+				}
+				if (isMuted) {
+					ImGui::PopStyleColor();
+				}
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip(isMuted ? "Unmute" : "Mute audio");
+
+				ImGui::SameLine();
+				int curVol = rm.GetVolume();
+				ImGui::PushItemWidth(-1.0f);
+				if (ImGui::SliderInt("##VolumeSlider", &curVol, 0, 100, "%d%%")) {
+					rm.SetVolume(curVol);
+				}
+				ImGui::PopItemWidth();
+
+				RegisterOverlayWindowRect("Radio Player", w_pos, w_size);
+			}
+			ImGui::End();
+
+			ImGui::PopStyleVar(5);
+			ImGui::PopStyleColor(17);
+
+			if (!radio_open) {
+				g_settings.setInteger(Config::SHOW_RADIO, 0);
 				if (g_gui.root) {
 					g_gui.root->UpdateMenubar();
 				}
@@ -988,6 +1327,7 @@ struct ToolbarIconCache {
 	GLuint tex_day_night = 0;
 	GLuint tex_rect_brush = 0;
 	GLuint tex_circle_brush = 0;
+	GLuint tex_world_map = 0;
 	GLuint tex_sizes[7] = {0, 0, 0, 0, 0, 0, 0};
 	bool initialized = false;
 
@@ -1012,6 +1352,7 @@ struct ToolbarIconCache {
 		tex_door = load_tex({"icons/door.png", "../icons/door.png", "Map Editor/icons/door.png", exeDir + "door.png", cwdDir + "door.png"});
 		tex_window = load_tex({"icons/window.png", "../icons/window.png", "Map Editor/icons/window.png", exeDir + "window.png", cwdDir + "window.png"});
 		tex_day_night = load_tex({"icons/day-night.png", "../icons/day-night.png", "Map Editor/icons/day-night.png", exeDir + "day-night.png", cwdDir + "day-night.png"});
+		tex_world_map = load_tex({"icons/world-map.png", "../icons/world-map.png", "Map Editor/icons/world-map.png", exeDir + "world-map.png", cwdDir + "world-map.png"});
 		tex_rect_brush = load_tex({"icons/rectangular_tileset.png", "../icons/rectangular_tileset.png", "Map Editor/icons/rectangular_tileset.png", exeDir + "rectangular_tileset.png", cwdDir + "rectangular_tileset.png"});
 		tex_circle_brush = load_tex({"icons/circular_tileset.png", "../icons/circular_tileset.png", "Map Editor/icons/circular_tileset.png", exeDir + "circular_tileset.png", cwdDir + "circular_tileset.png"});
 
@@ -1270,6 +1611,14 @@ static ToolbarIconCache s_toolbar_icons;
 			const bool show_lights = g_settings.getBoolean(Config::SHOW_LIGHTS);
 			if (draw_icon_btn("##tool_daynight", s_toolbar_icons.tex_day_night, "D/N", show_lights, "Toggle Day/Night Ambient Light", tool_btn_sz, tool_icon_sz)) {
 				g_settings.setInteger(Config::SHOW_LIGHTS, show_lights ? 0 : 1);
+				Refresh(false);
+			}
+
+			ImGui::SameLine();
+			// 12. World Map / Weltkarte Button (Hotkey: M)
+			const bool is_world_map = g_settings.getBoolean(Config::SHOW_WORLD_MAP);
+			if (draw_icon_btn("##tool_worldmap", s_toolbar_icons.tex_world_map, "Map", is_world_map, "World Map / Weltkarte (Hotkey: M)\nExplore full world, set custom markers & fast travel", tool_btn_sz, tool_icon_sz)) {
+				g_settings.setInteger(Config::SHOW_WORLD_MAP, is_world_map ? 0 : 1);
 				Refresh(false);
 			}
 
@@ -1554,8 +1903,42 @@ static ToolbarIconCache s_toolbar_icons;
 					TILESET_FAVORITE, TILESET_TERRAIN, TILESET_DOODAD, TILESET_ITEM, TILESET_RAW, TILESET_CREATURE, TILESET_HOUSE, TILESET_WAYPOINT, TILESET_PREFAB
 				};
 
+				// Synchronize with active brush selected from canvas right-click
+				Brush* cur_active_brush = g_gui.GetCurrentBrush();
+				static Brush* s_last_synced_brush = nullptr;
+				static bool s_need_scroll_to_brush = false;
+
+				if (cur_active_brush && cur_active_brush != s_last_synced_brush) {
+					s_last_synced_brush = cur_active_brush;
+					s_need_scroll_to_brush = true;
+
+					// Locate which category contains this brush
+					bool found_cat = false;
+					for (int c = 0; c < (int)IM_ARRAYSIZE(cat_types); ++c) {
+						TilesetCategoryType ctype = cat_types[c];
+						if (ctype == TILESET_FAVORITE) continue;
+						for (auto& pair : g_materials.tilesets) {
+							if (!pair.second) continue;
+							if (pair.second->name == "Favorites" || pair.second->name == "Host-Favorites") continue;
+							if (const TilesetCategory* cat = pair.second->getCategory(ctype)) {
+								if (cat->containsBrush(cur_active_brush)) {
+									current_cat_idx = c;
+									found_cat = true;
+									break;
+								}
+							}
+						}
+						if (found_cat) break;
+					}
+				}
+
 				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-				ImGui::Combo("##PalCategory", &current_cat_idx, categories, IM_ARRAYSIZE(categories));
+				if (ImGui::Combo("##PalCategory", &current_cat_idx, categories, IM_ARRAYSIZE(categories))) {
+					// manual switch
+				}
+				if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
+					current_cat_idx = std::clamp(current_cat_idx - (int)io.MouseWheel, 0, (int)IM_ARRAYSIZE(categories) - 1);
+				}
 
 				TilesetCategoryType active_cat_type = cat_types[current_cat_idx];
 
@@ -1634,6 +2017,17 @@ static ToolbarIconCache s_toolbar_icons;
 					selected_tileset_idx = 0;
 					last_seen_cat_idx = current_cat_idx;
 				}
+
+				// If syncing brush, pick the tileset that contains it
+				if (s_need_scroll_to_brush && cur_active_brush) {
+					for (size_t i = 0; i < available_tilesets.size(); ++i) {
+						if (available_tilesets[i].second && available_tilesets[i].second->containsBrush(cur_active_brush)) {
+							selected_tileset_idx = (int)i;
+							break;
+						}
+					}
+				}
+
 				if (selected_tileset_idx >= (int)available_tilesets.size()) {
 					selected_tileset_idx = 0;
 				}
@@ -1646,6 +2040,9 @@ static ToolbarIconCache s_toolbar_icons;
 				if (!tileset_names.empty()) {
 					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 					ImGui::Combo("##PalTileset", &selected_tileset_idx, tileset_names.data(), (int)tileset_names.size());
+					if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
+						selected_tileset_idx = std::clamp(selected_tileset_idx - (int)io.MouseWheel, 0, (int)tileset_names.size() - 1);
+					}
 				}
 
 				// Search Box with complete keyboard input support
@@ -1742,6 +2139,11 @@ static ToolbarIconCache s_toolbar_icons;
 								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.45f, 0.85f, 0.95f));
 								ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.95f, 0.80f, 0.30f, 1.0f));
 								ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f);
+
+								if (s_need_scroll_to_brush) {
+									ImGui::SetScrollHereY(0.5f);
+									s_need_scroll_to_brush = false;
+								}
 							} else {
 								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.13f, 0.20f, 0.80f));
 								ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.35f, 0.38f, 0.48f, 0.50f));
@@ -1814,6 +2216,11 @@ static ToolbarIconCache s_toolbar_icons;
 								current_sep = b->asSeparator();
 								current_section_collapsed = current_sep ? current_sep->isCollapsed() : false;
 
+								if (current_sep && current_section_collapsed && s_need_scroll_to_brush && cur_active_brush) {
+									current_sep->toggleCollapsed();
+									current_section_collapsed = false;
+								}
+
 								std::string header_label = (current_sep && !current_sep->getName().empty()) ? current_sep->getName() : "Section";
 								std::string arrow = current_section_collapsed ? "> " : "v ";
 								std::string full_title = arrow + header_label;
@@ -1859,204 +2266,8 @@ static ToolbarIconCache s_toolbar_icons;
 		nvgEndFrame(drawer->GetNanoVGContext());
 	}
 
-	// macOS-Style Floating / Docked Minimap Panel with Magnetic Snapping & Fantasy Look
-	static bool mm_minimized = false;
-	static int mm_last_applied_dock_corner = -1;
-
-	if (g_settings.getBoolean(Config::MINIMAP_VISIBLE)) {
-		UpdateMinimapTexture();
-
-		const int minimap_corner = std::clamp(g_settings.getInteger(Config::MINIMAP_CORNER), 0, 3);
-		const float margin = 10.0f;
-		const float mm_top_y = (tb_active && tb_dock == 0) ? 48.0f : margin;
-		const float mm_bot_y = (tb_active && tb_dock == 1) ? (io.DisplaySize.y - 50.0f) : (io.DisplaySize.y - margin);
-
-		ImVec2 mm_anchor;
-		ImVec2 mm_pivot(0.0f, 0.0f);
-
-		if (minimap_corner == 0) { // Top-Right
-			mm_anchor = ImVec2(io.DisplaySize.x - 176.0f - margin, mm_top_y);
-		} else if (minimap_corner == 1) { // Top-Left
-			mm_anchor = ImVec2(margin, mm_top_y);
-		} else if (minimap_corner == 2) { // Bottom-Right
-			mm_anchor = ImVec2(io.DisplaySize.x - 176.0f - margin, mm_bot_y - (mm_minimized ? 32.0f : 218.0f));
-		} else { // Bottom-Left (3)
-			mm_anchor = ImVec2(margin, mm_bot_y - (mm_minimized ? 32.0f : 218.0f));
-		}
-
-		if (minimap_corner != mm_last_applied_dock_corner) {
-			ImGui::SetNextWindowPos(mm_anchor, ImGuiCond_Always);
-			mm_last_applied_dock_corner = minimap_corner;
-		} else {
-			ImGui::SetNextWindowPos(mm_anchor, ImGuiCond_FirstUseEver);
-		}
-
-		ImGui::SetNextWindowSize(mm_minimized ? ImVec2(176.0f, 32.0f) : ImVec2(176.0f, 218.0f), ImGuiCond_Always);
-		ImGui::SetNextWindowBgAlpha(0.88f);
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 6.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 4.0f));
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.07f, 0.11f, 0.90f));
-		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.55f, 0.45f, 0.25f, 0.65f));
-
-		ImGuiWindowFlags mm_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
-		if (mm_minimized) mm_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
-
-		bool mm_open = true;
-		if (ImGui::Begin("##CanvasMacOSMinimapFiligree", &mm_open, mm_flags)) {
-			// Magnetic Edge Snapping for Minimap (all 4 edges)
-			ImVec2 mm_curr_pos = ImGui::GetWindowPos();
-			ImVec2 mm_curr_sz = ImGui::GetWindowSize();
-			const float snapThreshold = 35.0f;
-			const float snapMargin = 8.0f;
-
-			bool near_left = (mm_curr_pos.x < snapThreshold);
-			bool near_right = (io.DisplaySize.x - (mm_curr_pos.x + mm_curr_sz.x) < snapThreshold);
-			bool near_top = (mm_curr_pos.y < snapThreshold);
-			bool near_bottom = (io.DisplaySize.y - (mm_curr_pos.y + mm_curr_sz.y) < snapThreshold);
-
-			if (near_left || near_right || near_top || near_bottom) {
-				if (ImGui::IsMouseDown(0)) {
-					// Visual glowing snapping guide line
-					if (near_left) ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(4.0f, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
-					if (near_right) ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(io.DisplaySize.x - 4.0f, 0), ImVec2(io.DisplaySize.x, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
-					if (near_top) ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, 0), ImVec2(io.DisplaySize.x, 4.0f), IM_COL32(80, 200, 255, 180));
-					if (near_bottom) ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0, io.DisplaySize.y - 4.0f), ImVec2(io.DisplaySize.x, io.DisplaySize.y), IM_COL32(80, 200, 255, 180));
-				} else {
-					// Magnetic Snap on release
-					float target_x = mm_curr_pos.x;
-					float target_y = mm_curr_pos.y;
-					if (near_left) target_x = snapMargin;
-					if (near_right) target_x = io.DisplaySize.x - mm_curr_sz.x - snapMargin;
-					if (near_top) target_y = snapMargin;
-					if (near_bottom) target_y = io.DisplaySize.y - mm_curr_sz.y - snapMargin;
-					ImGui::SetWindowPos(ImVec2(target_x, target_y), ImGuiCond_Always);
-				}
-			}
-
-			// Header with Title & Fantasy Gem Controls (without Change Position button)
-			ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "Minimap");
-
-			WindowControlAction mm_act = RenderFantasyWindowControls("mm", true, mm_minimized, "Change Position", false);
-			if (mm_act == WindowControlAction::Minimize) {
-				mm_minimized = !mm_minimized;
-			} else if (mm_act == WindowControlAction::Close) {
-				g_settings.setInteger(Config::MINIMAP_VISIBLE, 0);
-				if (g_gui.root) g_gui.root->UpdateMenubar();
-			}
-
-			if (!mm_minimized) {
-				ImGui::Separator();
-
-				// "Go to..." Dropdown (Map Center and Towns)
-				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-				if (ImGui::BeginCombo("##MMGotoCombo", "Go to...", ImGuiComboFlags_HeightRegular)) {
-					if (ImGui::Selectable("Map Center")) {
-						int map_w = editor.map.getWidth();
-						int map_h = editor.map.getHeight();
-						g_gui.SetScreenCenterPosition(Position(map_w / 2, map_h / 2, floor), false);
-						last_minimap_update_time = 0;
-						Refresh(false);
-					}
-					const Towns& towns = editor.map.towns;
-					for (auto it = towns.begin(); it != towns.end(); ++it) {
-						Town* town = it->second;
-						if (town && !town->getName().empty()) {
-							if (ImGui::Selectable(town->getName().c_str())) {
-								g_gui.SetScreenCenterPosition(town->getTemplePosition(), false);
-								last_minimap_update_time = 0;
-								Refresh(false);
-							}
-						}
-					}
-					ImGui::EndCombo();
-				}
-
-				if (minimap_tex_id != 0) {
-					float avail_w = ImGui::GetContentRegionAvail().x;
-					float mm_dim = (avail_w > 80.0f) ? avail_w : 160.0f;
-					ImVec2 img_sz = ImVec2(mm_dim, mm_dim);
-					ImVec2 pos = ImGui::GetCursorScreenPos();
-
-					// Capture clicks/drags specifically so the window itself DOES NOT move when clicking the map!
-					ImGui::InvisibleButton("##minimap_viewport_click", img_sz);
-					bool mm_hovered = ImGui::IsItemHovered();
-					bool mm_active = ImGui::IsItemActive();
-
-					// Draw Minimap Texture
-					ImDrawList* dl = ImGui::GetWindowDrawList();
-					dl->AddImage((ImTextureID)(intptr_t)minimap_tex_id, pos, ImVec2(pos.x + img_sz.x, pos.y + img_sz.y));
-
-					// Mouse wheel zoom directly on the minimap (smooth minimap scale)
-					if (mm_hovered) {
-						if (io.MouseWheel != 0.0f) {
-							float cur_mzoom = minimap_zoom;
-							if (io.MouseWheel > 0.0f) {
-								cur_mzoom /= 1.25f;
-							} else {
-								cur_mzoom *= 1.25f;
-							}
-							float max_mzoom = std::max(4.0f, (float)std::max(editor.map.getWidth(), editor.map.getHeight()) / 180.0f);
-							minimap_zoom = std::clamp(cur_mzoom, 0.20f, max_mzoom);
-							minimap_span_w = (int)(180.0f * minimap_zoom);
-							minimap_span_h = (int)(180.0f * minimap_zoom);
-							last_minimap_update_time = 0;
-							UpdateMinimapTexture();
-							Refresh(false);
-						}
-					}
-
-					// Panning via click/drag on minimap (accurate map coordinates)
-					if (mm_active || (mm_hovered && ImGui::IsMouseDown(0))) {
-						ImVec2 mouse_pos = ImGui::GetMousePos();
-						float rel_x = std::clamp((mouse_pos.x - pos.x) / img_sz.x, 0.0f, 1.0f);
-						float rel_y = std::clamp((mouse_pos.y - pos.y) / img_sz.y, 0.0f, 1.0f);
-						int map_w = std::max(1, editor.map.getWidth());
-						int map_h = std::max(1, editor.map.getHeight());
-						int click_map_x = std::clamp(minimap_start_x + (int)(rel_x * (float)minimap_span_w), 0, map_w - 1);
-						int click_map_y = std::clamp(minimap_start_y + (int)(rel_y * (float)minimap_span_h), 0, map_h - 1);
-						g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, floor), false);
-						last_minimap_update_time = 0;
-						Refresh(false);
-					}
-
-					// Draw Viewport Box Rectangle
-					if (g_settings.getInteger(Config::MINIMAP_VIEW_BOX)) {
-						int screensize_x, screensize_y;
-						int view_scroll_x, view_scroll_y;
-						if (MapWindow* mw = static_cast<MapWindow*>(GetParent())) {
-							mw->GetViewStart(&view_scroll_x, &view_scroll_y);
-							mw->GetClientSize(&screensize_x, &screensize_y);
-
-							int start_mx = minimap_start_x;
-							int start_my = minimap_start_y;
-							int span_w = std::max(1, minimap_span_w);
-							int span_h = std::max(1, minimap_span_h);
-
-							float vx1 = (float)(view_scroll_x / TileSize - start_mx) / (float)span_w;
-							float vy1 = (float)(view_scroll_y / TileSize - start_my) / (float)span_h;
-							float vx2 = (float)((view_scroll_x + (int)(screensize_x * zoom)) / TileSize - start_mx) / (float)span_w;
-							float vy2 = (float)((view_scroll_y + (int)(screensize_y * zoom)) / TileSize - start_my) / (float)span_h;
-
-							vx1 = std::clamp(vx1, 0.0f, 1.0f);
-							vy1 = std::clamp(vy1, 0.0f, 1.0f);
-							vx2 = std::clamp(vx2, 0.0f, 1.0f);
-							vy2 = std::clamp(vy2, 0.0f, 1.0f);
-
-							ImVec2 p_min(pos.x + vx1 * img_sz.x, pos.y + vy1 * img_sz.y);
-							ImVec2 p_max(pos.x + vx2 * img_sz.x, pos.y + vy2 * img_sz.y);
-							dl->AddRect(p_min, p_max, IM_COL32(255, 220, 50, 220), 0.0f, 0, 1.5f);
-						}
-					}
-				}
-			}
-		}
-		ImGui::End();
-		ImGui::PopStyleColor(2);
-		ImGui::PopStyleVar(4);
-	}
+	// Interactive World Map (Weltkarte) System (Hotkey: M)
+	RenderWorldMapOverlay();
 
 	// Keep coordinates and hovered item information parallel and exactly 5px above the bottom editor edge
 	if (g_settings.getInteger(Config::CANVAS_INFO_CORNER) >= 0) {
@@ -3342,4 +3553,785 @@ void MapCanvas::LoadRadialTextures() {
 	}
 	
 	radial_textures_loaded = true;
+}
+
+void MapCanvas::RenderWorldMapOverlay() {
+	if (!g_settings.getBoolean(Config::SHOW_WORLD_MAP)) {
+		return;
+	}
+
+	ImGuiIO& io = ImGui::GetIO();
+	Editor& editor = *g_gui.GetCurrentEditor();
+	const int map_w = editor.map.getWidth();
+	const int map_h = editor.map.getHeight();
+	if (map_w <= 0 || map_h <= 0) return;
+
+	// Load Table.jpg texture
+	static GLuint s_table_tex_id = 0;
+	static bool s_table_tex_loaded = false;
+	if (!s_table_tex_loaded) {
+		s_table_tex_loaded = true;
+		wxImage img;
+		wxString exeDir = wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH;
+		wxString cwdDir = wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH;
+		std::vector<wxString> paths = {
+			"icons/Table.jpg", "../icons/Table.jpg", "Map Editor/icons/Table.jpg",
+			exeDir + "Table.jpg", cwdDir + "Table.jpg",
+			"icons/table.jpg", "../icons/table.jpg", exeDir + "table.jpg", cwdDir + "table.jpg"
+		};
+		for (const auto& p : paths) {
+			if (wxFileExists(p) && img.LoadFile(p)) {
+				wxBitmap bmp(img);
+				s_table_tex_id = ConvertBitmapToTexture(bmp);
+				break;
+			}
+		}
+	}
+
+	// Synchronize markers with current map file
+	static std::string last_synced_map_path;
+	std::string cur_map_path = editor.map.hasFile() ? editor.map.getFilename() : "";
+	if (cur_map_path != last_synced_map_path) {
+		WorldMapMarkerManager::GetInstance().SetCurrentMapPath(cur_map_path);
+		last_synced_map_path = cur_map_path;
+	}
+
+	// Update texture for active world map floor
+	UpdateWorldMapTexture(world_map_floor);
+
+	// Proportional Window Dimensions matching 16:9 Table.jpg perfectly
+	const float default_win_h = std::clamp(io.DisplaySize.y * 0.88f, 560.0f, 960.0f);
+	const float default_table_h = default_win_h - 75.0f;
+	const float default_table_w = default_table_h * (16.0f / 9.0f);
+	const float default_win_w = std::min(default_table_w + 270.0f + 30.0f, io.DisplaySize.x * 0.96f);
+
+	ImGui::SetNextWindowSize(ImVec2(default_win_w, default_win_h), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowPos(ImVec2((io.DisplaySize.x - default_win_w) * 0.5f, (io.DisplaySize.y - default_win_h) * 0.5f), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowBgAlpha(0.96f);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 6.0f));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.04f, 0.06f, 0.09f, 0.97f));
+	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.85f, 0.70f, 0.32f, 0.90f)); // Radiant Antique Gold
+
+	bool wm_open = true;
+	ImGuiWindowFlags wm_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+
+	static char search_filter[128] = "";
+	static bool show_pins = true;
+	static bool show_towns = true;
+	static bool show_viewport_box = true;
+	static bool show_peers = true;
+	static int active_tab = 0; // 0: Pins, 1: Towns, 2: Multiplayer
+
+	// Marker Category Definitions & Stylized Colored Badges (Pure ASCII to avoid '?' font missing glyphs)
+	struct MarkerCatInfo {
+		const char* name;
+		const char* badge;
+		ImU32 fill_color;
+		ImU32 border_color;
+		ImU32 text_color;
+		const char* icon;
+	};
+
+	static const MarkerCatInfo s_cat_info[8] = {
+		{ "Waypoint", "[WP]", IM_COL32(14, 165, 233, 255),  IM_COL32(56, 189, 248, 255),  IM_COL32(186, 230, 253, 255), "*" }, // Cyan Waypoint
+		{ "Town",     "[TW]", IM_COL32(217, 119, 6, 255),    IM_COL32(251, 191, 36, 255),  IM_COL32(254, 240, 138, 255), "+" }, // Amber Castle/Town
+		{ "Quest",    "[QS]", IM_COL32(234, 88, 12, 255),    IM_COL32(249, 115, 22, 255),  IM_COL32(254, 215, 170, 255), "!" }, // Orange Quest
+		{ "Dungeon",  "[DG]", IM_COL32(147, 51, 234, 255),   IM_COL32(192, 132, 252, 255), IM_COL32(233, 213, 255, 255), "@" }, // Violet Dungeon
+		{ "Treasure", "[TR]", IM_COL32(202, 138, 4, 255),    IM_COL32(250, 204, 21, 255),  IM_COL32(254, 240, 138, 255), "$" }, // Gold Treasure
+		{ "Base",     "[BS]", IM_COL32(22, 163, 74, 255),    IM_COL32(74, 222, 128, 255),  IM_COL32(187, 247, 208, 255), "#" }, // Green Base
+		{ "Special",  "[SP]", IM_COL32(219, 39, 119, 255),   IM_COL32(244, 114, 182, 255), IM_COL32(251, 207, 232, 255), "~" }, // Magenta Portal
+		{ "Danger",   "[DN]", IM_COL32(220, 38, 38, 255),    IM_COL32(248, 113, 113, 255), IM_COL32(254, 202, 202, 255), "X" }  // Crimson Danger
+	};
+
+	// Modal state for adding/editing marker
+	static bool modal_marker_open = false;
+	static WorldMapMarker editing_marker;
+	static bool is_editing_existing = false;
+	static char marker_title_buf[128] = "";
+	static char marker_desc_buf[256] = "";
+
+	if (ImGui::Begin("WELTKARTE / WORLD MAP", &wm_open, wm_flags)) {
+		ImDrawList* wdl = ImGui::GetWindowDrawList();
+		ImVec2 wpos = ImGui::GetWindowPos();
+		ImVec2 wsz = ImGui::GetWindowSize();
+
+		// Corner Golden Rivets
+		wdl->AddCircleFilled(ImVec2(wpos.x + 8, wpos.y + 8), 3.0f, IM_COL32(255, 215, 80, 255));
+		wdl->AddCircleFilled(ImVec2(wpos.x + wsz.x - 8, wpos.y + 8), 3.0f, IM_COL32(255, 215, 80, 255));
+		wdl->AddCircleFilled(ImVec2(wpos.x + 8, wpos.y + wsz.y - 8), 3.0f, IM_COL32(255, 215, 80, 255));
+		wdl->AddCircleFilled(ImVec2(wpos.x + wsz.x - 8, wpos.y + wsz.y - 8), 3.0f, IM_COL32(255, 215, 80, 255));
+
+		// Top Controls Row
+		ImGui::SetNextItemWidth(200.0f);
+		ImGui::InputTextWithHint("##WMSearchFilter", "Search Pins & Towns...", search_filter, sizeof(search_filter));
+
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.6f, 1.0f), "|");
+		ImGui::SameLine();
+
+		// Floor Dropdown Combo with Mousewheel hover scrolling (without < & > buttons)
+		const char* floor_names[16] = {
+			"Floor 0 (Sky 7)",
+			"Floor 1 (Sky 6)",
+			"Floor 2 (Sky 5)",
+			"Floor 3 (Sky 4)",
+			"Floor 4 (Sky 3)",
+			"Floor 5 (Sky 2)",
+			"Floor 6 (Sky 1)",
+			"Floor 7 (Surface / Ground)",
+			"Floor 8 (Underground -1)",
+			"Floor 9 (Underground -2)",
+			"Floor 10 (Underground -3)",
+			"Floor 11 (Underground -4)",
+			"Floor 12 (Underground -5)",
+			"Floor 13 (Underground -6)",
+			"Floor 14 (Underground -7)",
+			"Floor 15 (Underground -8)"
+		};
+
+		ImGui::SetNextItemWidth(215.0f);
+		if (ImGui::Combo("##WMFloorCombo", &world_map_floor, floor_names, 16)) {
+			UpdateWorldMapTexture(world_map_floor);
+		}
+		if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
+			int new_floor = std::clamp(world_map_floor - (int)io.MouseWheel, 0, 15);
+			if (new_floor != world_map_floor) {
+				world_map_floor = new_floor;
+				UpdateWorldMapTexture(world_map_floor);
+			}
+		}
+
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.6f, 1.0f), "|");
+		ImGui::SameLine();
+
+		if (ImGui::Button("Fit World##WMFit", ImVec2(74, 22))) {
+			world_map_zoom = 1.0f;
+			world_map_center_x = (float)(map_w / 2);
+			world_map_center_y = (float)(map_h / 2);
+			UpdateWorldMapTexture(world_map_floor);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Focus 1:1##WMFocusCenter", ImVec2(74, 22))) {
+			int cx = map_w / 2, cy = map_h / 2;
+			GetScreenCenter(&cx, &cy);
+			world_map_center_x = (float)cx;
+			world_map_center_y = (float)cy;
+			world_map_zoom = 256.0f / (float)std::max(map_w, map_h);
+			UpdateWorldMapTexture(world_map_floor);
+		}
+
+		ImGui::SameLine();
+		ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.6f, 1.0f), "|");
+		ImGui::SameLine();
+
+		ImGui::Checkbox("Pins", &show_pins);
+		ImGui::SameLine();
+		ImGui::Checkbox("Towns", &show_towns);
+		ImGui::SameLine();
+		ImGui::Checkbox("Viewport", &show_viewport_box);
+
+		if (editor.IsLiveClient()) {
+			ImGui::SameLine();
+			ImGui::Checkbox("Multiplayer Live", &show_peers);
+		}
+
+		ImGui::Separator();
+
+		// Main Content Area: Split Sidebar (Left) and Interactive World Map Canvas (Right)
+		const float avail_h = ImGui::GetContentRegionAvail().y - 4.0f;
+		const float sidebar_w = 265.0f;
+
+		// --- Left Sidebar ---
+		ImGui::BeginChild("##WMSidebar", ImVec2(sidebar_w, avail_h), true);
+		{
+			auto& markerMgr = WorldMapMarkerManager::GetInstance();
+			auto& markerList = markerMgr.GetMarkers();
+
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+			if (ImGui::Button("Pins", ImVec2(74, 24))) active_tab = 0;
+			ImGui::SameLine();
+			if (ImGui::Button("Towns", ImVec2(74, 24))) active_tab = 1;
+			if (editor.IsLiveClient()) {
+				ImGui::SameLine();
+				if (ImGui::Button("Live MP", ImVec2(74, 24))) active_tab = 2;
+			}
+			ImGui::PopStyleVar();
+			ImGui::Separator();
+
+			std::string filter_str = search_filter;
+			std::transform(filter_str.begin(), filter_str.end(), filter_str.begin(), ::tolower);
+
+			if (active_tab == 0) {
+				ImGui::TextColored(ImVec4(0.85f, 0.75f, 0.35f, 1.0f), "Custom Pins (%zu)", markerList.size());
+				ImGui::Separator();
+
+				for (size_t i = 0; i < markerList.size(); ++i) {
+					const auto& m = markerList[i];
+					std::string title_lower = m.title;
+					std::transform(title_lower.begin(), title_lower.end(), title_lower.begin(), ::tolower);
+					if (!filter_str.empty() && title_lower.find(filter_str) == std::string::npos) continue;
+
+					int cat_idx = std::clamp(m.category, 0, 7);
+					const auto& info = s_cat_info[cat_idx];
+
+					ImGui::PushID((int)m.id);
+					ImVec4 tag_col((float)(info.fill_color & 0xFF) / 255.0f,
+					               (float)((info.fill_color >> 8) & 0xFF) / 255.0f,
+					               (float)((info.fill_color >> 16) & 0xFF) / 255.0f, 1.0f);
+					ImGui::TextColored(tag_col, "%s %s", info.icon, info.badge);
+					ImGui::SameLine();
+					ImGui::TextColored(ImVec4(0.95f, 0.90f, 0.75f, 1.0f), "%s", m.title.c_str());
+
+					ImGui::TextColored(ImVec4(0.60f, 0.65f, 0.75f, 0.85f), "Pos: %d, %d, %d", m.x, m.y, m.z);
+					if (!m.description.empty()) {
+						ImGui::TextWrapped("%s", m.description.c_str());
+					}
+
+					if (ImGui::SmallButton("Go")) {
+						g_gui.SetScreenCenterPosition(Position(m.x, m.y, m.z), false);
+						world_map_floor = m.z;
+						world_map_center_x = (float)m.x;
+						world_map_center_y = (float)m.y;
+						UpdateWorldMapTexture(world_map_floor);
+						Refresh(false);
+					}
+					ImGui::SameLine();
+					if (ImGui::SmallButton("Edit")) {
+						editing_marker = m;
+						strncpy(marker_title_buf, m.title.c_str(), sizeof(marker_title_buf));
+						strncpy(marker_desc_buf, m.description.c_str(), sizeof(marker_desc_buf));
+						is_editing_existing = true;
+						modal_marker_open = true;
+					}
+					ImGui::SameLine();
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.40f, 0.15f, 0.15f, 0.70f));
+					if (ImGui::SmallButton("Del")) {
+						markerMgr.RemoveMarker(m.id);
+						ImGui::PopStyleColor();
+						ImGui::PopID();
+						break;
+					}
+					ImGui::PopStyleColor();
+					ImGui::Separator();
+					ImGui::PopID();
+				}
+			} else if (active_tab == 1) {
+				// Towns Tab
+				const Towns& towns = editor.map.towns;
+				ImGui::TextColored(ImVec4(0.85f, 0.75f, 0.35f, 1.0f), "Towns & Temples (%u)", towns.count());
+				ImGui::Separator();
+
+				for (auto it = towns.begin(); it != towns.end(); ++it) {
+					Town* town = it->second;
+					if (!town || town->getName().empty()) continue;
+					std::string name_lower = town->getName();
+					std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+					if (!filter_str.empty() && name_lower.find(filter_str) == std::string::npos) continue;
+
+					Position tpos = town->getTemplePosition();
+					ImGui::TextColored(ImVec4(0.95f, 0.85f, 0.40f, 1.0f), "[Town] %s", town->getName().c_str());
+					ImGui::TextColored(ImVec4(0.60f, 0.65f, 0.75f, 0.85f), "Temple: %d, %d, %d", tpos.x, tpos.y, tpos.z);
+
+					ImGui::PushID(town->getID());
+					if (ImGui::SmallButton("Go to Temple")) {
+						g_gui.SetScreenCenterPosition(tpos, false);
+						world_map_floor = tpos.z;
+						world_map_center_x = (float)tpos.x;
+						world_map_center_y = (float)tpos.y;
+						UpdateWorldMapTexture(world_map_floor);
+						Refresh(false);
+					}
+					ImGui::PopID();
+					ImGui::Separator();
+				}
+			} else if (active_tab == 2 && editor.IsLiveClient()) {
+				// Multiplayer Peers Tab
+				LiveClient* lc = editor.GetLiveClient();
+				auto cursors = lc ? lc->getCursorList() : std::vector<LiveCursor>();
+				ImGui::TextColored(ImVec4(0.40f, 0.85f, 0.45f, 1.0f), "Live Session Co-Editors (%zu)", cursors.size());
+				ImGui::Separator();
+
+				for (const auto& cur : cursors) {
+					ImGui::PushID((int)cur.id);
+					ImGui::TextColored(ImVec4(0.95f, 0.85f, 0.40f, 1.0f), "Co-Editor #%u", cur.id);
+					ImGui::TextColored(ImVec4(0.60f, 0.65f, 0.75f, 0.85f), "Pos: %d, %d, %d", cur.pos.x, cur.pos.y, cur.pos.z);
+					if (ImGui::SmallButton("Jump to Player")) {
+						g_gui.SetScreenCenterPosition(cur.pos, false);
+						world_map_floor = cur.pos.z;
+						world_map_center_x = (float)cur.pos.x;
+						world_map_center_y = (float)cur.pos.y;
+						UpdateWorldMapTexture(world_map_floor);
+						Refresh(false);
+					}
+					ImGui::Separator();
+					ImGui::PopID();
+				}
+			}
+		}
+		ImGui::EndChild();
+
+		ImGui::SameLine();
+
+		// --- Right Area: Table Texture Background with Centered Wooden Map Desk (16:9 Aspect Ratio) ---
+		const float avail_w = ImGui::GetContentRegionAvail().x;
+		const float avail_h_desk = avail_h;
+
+		// Exact 16:9 proportional fitting so Table.jpg is never stretched or squashed
+		float map_view_w = avail_w;
+		float map_view_h = map_view_w * (9.0f / 16.0f);
+		if (map_view_h > avail_h_desk) {
+			map_view_h = avail_h_desk;
+			map_view_w = map_view_h * (16.0f / 9.0f);
+		}
+		float offset_x = (avail_w - map_view_w) * 0.5f;
+		float offset_y = (avail_h_desk - map_view_h) * 0.5f;
+		ImVec2 cur_pos = ImGui::GetCursorScreenPos();
+		ImVec2 map_pos(cur_pos.x + offset_x, cur_pos.y + offset_y);
+		ImVec2 map_sz(map_view_w, map_view_h);
+
+		ImGui::SetCursorScreenPos(map_pos);
+		ImGui::InvisibleButton("##WorldMapCanvasInteractive", map_sz);
+		bool wm_hovered = ImGui::IsItemHovered();
+		bool wm_active = ImGui::IsItemActive();
+		bool is_window_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+
+		ImDrawList* mdl = ImGui::GetWindowDrawList();
+
+		// 1. Draw Adventure Desk Background (Table.jpg)
+		if (s_table_tex_id != 0) {
+			mdl->AddImage((ImTextureID)(intptr_t)s_table_tex_id, map_pos, ImVec2(map_pos.x + map_sz.x, map_pos.y + map_sz.y));
+		} else {
+			mdl->AddRectFilled(map_pos, ImVec2(map_pos.x + map_sz.x, map_pos.y + map_sz.y), IM_COL32(24, 18, 12, 255), 6.0f);
+		}
+
+		// 2. Define the Inner Center Desk Area where the map is placed (2% smaller, strictly inside wooden surface, no gold border)
+		ImVec2 desk_min(map_pos.x + map_sz.x * 0.262f, map_pos.y + map_sz.y * 0.220f);
+		ImVec2 desk_max(map_pos.x + map_sz.x * 0.748f, map_pos.y + map_sz.y * 0.782f);
+		ImVec2 desk_sz(desk_max.x - desk_min.x, desk_max.y - desk_min.y);
+
+		// Navigation: WASD smooth panning while window is active
+		if (is_window_focused) {
+			float pan_delta = 450.0f * io.DeltaTime;
+			if (io.KeyShift) pan_delta *= 2.5f;
+			bool moved = false;
+
+			if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow)) {
+				world_map_center_y -= (float)world_map_span_h * pan_delta * 0.002f;
+				moved = true;
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow)) {
+				world_map_center_y += (float)world_map_span_h * pan_delta * 0.002f;
+				moved = true;
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow)) {
+				world_map_center_x -= (float)world_map_span_w * pan_delta * 0.002f;
+				moved = true;
+			}
+			if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow)) {
+				world_map_center_x += (float)world_map_span_w * pan_delta * 0.002f;
+				moved = true;
+			}
+
+			if (moved) {
+				world_map_center_x = std::clamp(world_map_center_x, 0.0f, (float)map_w);
+				world_map_center_y = std::clamp(world_map_center_y, 0.0f, (float)map_h);
+				UpdateWorldMapTexture(world_map_floor);
+			}
+		}
+
+		// Navigation: Mouse Drag with Middle Mouse Button (Wheel Press), Left Drag or Right Drag
+		if (wm_active && (ImGui::IsMouseDragging(2, 0.0f) || ImGui::IsMouseDragging(0, 4.0f) || ImGui::IsMouseDragging(1, 4.0f))) {
+			ImVec2 drag_delta = io.MouseDelta;
+			float move_scale_x = (float)world_map_span_w / desk_sz.x;
+			float move_scale_y = (float)world_map_span_h / desk_sz.y;
+			world_map_center_x -= drag_delta.x * move_scale_x;
+			world_map_center_y -= drag_delta.y * move_scale_y;
+			world_map_center_x = std::clamp(world_map_center_x, 0.0f, (float)map_w);
+			world_map_center_y = std::clamp(world_map_center_y, 0.0f, (float)map_h);
+			UpdateWorldMapTexture(world_map_floor);
+		}
+
+		// Navigation: Deep Zooming with Mouse Wheel
+		if (wm_hovered && io.MouseWheel != 0.0f) {
+			if (io.MouseWheel > 0.0f) world_map_zoom = std::clamp(world_map_zoom * 0.80f, 0.0005f, 2.0f);
+			else world_map_zoom = std::clamp(world_map_zoom * 1.25f, 0.0005f, 2.0f);
+			UpdateWorldMapTexture(world_map_floor);
+		}
+
+		// 1. Outer Ambient Occlusion & Multi-Layer Drop Shadow onto the table wood
+		mdl->AddRectFilled(ImVec2(desk_min.x - 7.0f, desk_min.y - 7.0f), ImVec2(desk_max.x + 7.0f, desk_max.y + 7.0f), IM_COL32(0, 0, 0, 35), 6.0f);
+		mdl->AddRectFilled(ImVec2(desk_min.x - 5.0f, desk_min.y - 5.0f), ImVec2(desk_max.x + 5.0f, desk_max.y + 5.0f), IM_COL32(0, 0, 0, 60), 5.0f);
+		mdl->AddRectFilled(ImVec2(desk_min.x - 3.0f, desk_min.y - 3.0f), ImVec2(desk_max.x + 3.0f, desk_max.y + 3.0f), IM_COL32(0, 0, 0, 95), 4.0f);
+		mdl->AddRectFilled(ImVec2(desk_min.x - 1.0f, desk_min.y - 1.0f), ImVec2(desk_max.x + 1.0f, desk_max.y + 1.0f), IM_COL32(0, 0, 0, 140), 3.0f);
+
+		// Push Clipping Rect strictly to the center wooden desk
+		mdl->PushClipRect(desk_min, desk_max, true);
+
+		// Render Map Texture in Center Desk
+		if (world_map_tex_id != 0) {
+			mdl->AddImage((ImTextureID)(intptr_t)world_map_tex_id, desk_min, desk_max);
+		}
+
+		// 2. Inner Aged Parchment Vignette Shading (Soft feathered edge falloff marrying map to the wooden desk)
+		const float v_size = 18.0f;
+		mdl->AddRectFilledMultiColor(desk_min, ImVec2(desk_max.x, desk_min.y + v_size),
+			IM_COL32(24, 15, 8, 210), IM_COL32(24, 15, 8, 210), IM_COL32(24, 15, 8, 0), IM_COL32(24, 15, 8, 0));
+		mdl->AddRectFilledMultiColor(ImVec2(desk_min.x, desk_max.y - v_size), desk_max,
+			IM_COL32(24, 15, 8, 0), IM_COL32(24, 15, 8, 0), IM_COL32(24, 15, 8, 210), IM_COL32(24, 15, 8, 210));
+		mdl->AddRectFilledMultiColor(desk_min, ImVec2(desk_min.x + v_size, desk_max.y),
+			IM_COL32(24, 15, 8, 210), IM_COL32(24, 15, 8, 0), IM_COL32(24, 15, 8, 0), IM_COL32(24, 15, 8, 210));
+		mdl->AddRectFilledMultiColor(ImVec2(desk_max.x - v_size, desk_min.y), desk_max,
+			IM_COL32(24, 15, 8, 0), IM_COL32(24, 15, 8, 210), IM_COL32(24, 15, 8, 210), IM_COL32(24, 15, 8, 0));
+
+		// 3. Subtle Antique Parchment Border & Brass Corner Rivets
+		mdl->AddRect(desk_min, desk_max, IM_COL32(140, 95, 45, 160), 0.0f, 0, 1.5f);
+
+		auto DrawCornerPin = [&](ImVec2 pos) {
+			mdl->AddCircleFilled(ImVec2(pos.x + 1.5f, pos.y + 1.5f), 4.5f, IM_COL32(0, 0, 0, 160));
+			mdl->AddCircleFilled(pos, 3.5f, IM_COL32(185, 140, 55, 255));
+			mdl->AddCircle(pos, 3.5f, IM_COL32(245, 210, 110, 240), 12, 1.0f);
+			mdl->AddCircleFilled(ImVec2(pos.x - 0.8f, pos.y - 0.8f), 1.0f, IM_COL32(255, 255, 220, 220));
+		};
+		DrawCornerPin(ImVec2(desk_min.x + 6.0f, desk_min.y + 6.0f));
+		DrawCornerPin(ImVec2(desk_max.x - 6.0f, desk_min.y + 6.0f));
+		DrawCornerPin(ImVec2(desk_min.x + 6.0f, desk_max.y - 6.0f));
+		DrawCornerPin(ImVec2(desk_max.x - 6.0f, desk_max.y - 6.0f));
+
+		// Coordinate Transformation Helpers
+		auto MapToDeskScreen = [&](int mx, int my) -> ImVec2 {
+			float rx = (float)(mx - world_map_start_x) / (float)world_map_span_w;
+			float ry = (float)(my - world_map_start_y) / (float)world_map_span_h;
+			return ImVec2(desk_min.x + rx * desk_sz.x, desk_min.y + ry * desk_sz.y);
+		};
+
+		auto DeskScreenToMap = [&](const ImVec2& spos, int* mx, int* my) {
+			float rx = std::clamp((spos.x - desk_min.x) / desk_sz.x, 0.0f, 1.0f);
+			float ry = std::clamp((spos.y - desk_min.y) / desk_sz.y, 0.0f, 1.0f);
+			*mx = std::clamp(world_map_start_x + (int)(rx * (float)world_map_span_w), 0, map_w - 1);
+			*my = std::clamp(world_map_start_y + (int)(ry * (float)world_map_span_h), 0, map_h - 1);
+		};
+
+		// Draw Exact Viewport Box & Crosshair Reticle
+		if (show_viewport_box) {
+			int cam_x1, cam_y1, cam_x2, cam_y2;
+			int scr_w, scr_h;
+			static_cast<MapWindow*>(GetParent())->GetClientSize(&scr_w, &scr_h);
+			ScreenToMap(0, 0, &cam_x1, &cam_y1);
+			ScreenToMap(scr_w, scr_h, &cam_x2, &cam_y2);
+
+			ImVec2 vp1 = MapToDeskScreen(cam_x1, cam_y1);
+			ImVec2 vp2 = MapToDeskScreen(cam_x2, cam_y2);
+			vp1.x = std::clamp(vp1.x, desk_min.x, desk_max.x);
+			vp1.y = std::clamp(vp1.y, desk_min.y, desk_max.y);
+			vp2.x = std::clamp(vp2.x, desk_min.x, desk_max.x);
+			vp2.y = std::clamp(vp2.y, desk_min.y, desk_max.y);
+
+			mdl->AddRect(vp1, vp2, IM_COL32(255, 215, 60, 240), 0.0f, 0, 1.8f);
+			ImVec2 vp_mid((vp1.x + vp2.x) * 0.5f, (vp1.y + vp2.y) * 0.5f);
+			mdl->AddLine(ImVec2(vp_mid.x - 6, vp_mid.y), ImVec2(vp_mid.x + 7, vp_mid.y), IM_COL32(255, 235, 120, 255), 1.5f);
+			mdl->AddLine(ImVec2(vp_mid.x, vp_mid.y - 6), ImVec2(vp_mid.x, vp_mid.y + 7), IM_COL32(255, 235, 120, 255), 1.5f);
+		}
+
+		// Render Towns
+		if (show_towns) {
+			const Towns& towns = editor.map.towns;
+			for (auto it = towns.begin(); it != towns.end(); ++it) {
+				Town* town = it->second;
+				if (!town || town->getName().empty()) continue;
+				Position tpos = town->getTemplePosition();
+				if (tpos.z != world_map_floor) continue;
+
+				ImVec2 pt = MapToDeskScreen(tpos.x, tpos.y);
+				if (pt.x >= desk_min.x && pt.x <= desk_max.x && pt.y >= desk_min.y && pt.y <= desk_max.y) {
+					mdl->AddCircleFilled(ImVec2(pt.x + 1.5f, pt.y + 2.0f), 7.5f, IM_COL32(0, 0, 0, 160));
+					mdl->AddCircleFilled(pt, 6.0f, IM_COL32(217, 119, 6, 255));
+					mdl->AddCircle(pt, 6.0f, IM_COL32(251, 191, 36, 255), 20, 1.5f);
+					ImVec2 isz = ImGui::CalcTextSize("+");
+					mdl->AddText(ImVec2(pt.x - isz.x * 0.5f, pt.y - isz.y * 0.5f - 1.0f), IM_COL32(255, 255, 255, 245), "+");
+
+					std::string tlabel = "[Town] " + town->getName();
+					ImVec2 tsz = ImGui::CalcTextSize(tlabel.c_str());
+					ImVec2 pill_min(pt.x + 10.0f, pt.y - tsz.y * 0.5f - 2.0f);
+					ImVec2 pill_max(pill_min.x + tsz.x + 8.0f, pill_min.y + tsz.y + 4.0f);
+					mdl->AddRectFilled(pill_min, pill_max, IM_COL32(12, 16, 24, 225), 4.0f);
+					mdl->AddRect(pill_min, pill_max, IM_COL32(251, 191, 36, 180), 4.0f, 0, 1.0f);
+					mdl->AddText(ImVec2(pill_min.x + 4.0f, pill_min.y + 2.0f), IM_COL32(254, 240, 138, 255), tlabel.c_str());
+				}
+			}
+		}
+
+		// Render Custom Markers (Pins) with Distinct Colored Category Icons
+		int hovered_marker_id = -1;
+		auto& markerMgr = WorldMapMarkerManager::GetInstance();
+		auto& markerList = markerMgr.GetMarkers();
+
+		if (show_pins) {
+			for (const auto& m : markerList) {
+				if (m.z != world_map_floor) continue;
+				ImVec2 pt = MapToDeskScreen(m.x, m.y);
+				if (pt.x >= desk_min.x - 20 && pt.x <= desk_max.x + 20 && pt.y >= desk_min.y - 20 && pt.y <= desk_max.y + 20) {
+					ImVec2 mpos = io.MousePos;
+					float dist = std::sqrt((mpos.x - pt.x) * (mpos.x - pt.x) + (mpos.y - pt.y) * (mpos.y - pt.y));
+					if (dist < 14.0f) {
+						hovered_marker_id = m.id;
+					}
+
+					bool is_h = (hovered_marker_id == m.id);
+					int c = std::clamp(m.category, 0, 7);
+					const auto& info = s_cat_info[c];
+					float rad = is_h ? 9.0f : 7.0f;
+
+					// Drop shadow
+					mdl->AddCircleFilled(ImVec2(pt.x + 1.5f, pt.y + 2.0f), rad + 1.5f, IM_COL32(0, 0, 0, 160));
+
+					// Glow halo if hovered
+					if (is_h) {
+						mdl->AddCircleFilled(pt, rad + 4.0f, info.border_color & IM_COL32(255, 255, 255, 100));
+					}
+
+					// Badge Body & Golden / Category Rim
+					mdl->AddCircleFilled(pt, rad, info.fill_color);
+					mdl->AddCircle(pt, rad, is_h ? IM_COL32(255, 245, 160, 255) : info.border_color, 24, is_h ? 2.0f : 1.5f);
+
+					// Inner Icon Glyph centered
+					ImVec2 isz = ImGui::CalcTextSize(info.icon);
+					mdl->AddText(ImVec2(pt.x - isz.x * 0.5f, pt.y - isz.y * 0.5f - 1.0f), IM_COL32(255, 255, 255, 245), info.icon);
+
+					// Label badge with sleek dark background pill
+					std::string full_label = std::string(info.badge) + " " + m.title;
+					ImVec2 tsz = ImGui::CalcTextSize(full_label.c_str());
+					ImVec2 pill_min(pt.x + rad + 4.0f, pt.y - tsz.y * 0.5f - 2.0f);
+					ImVec2 pill_max(pill_min.x + tsz.x + 8.0f, pill_min.y + tsz.y + 4.0f);
+
+					mdl->AddRectFilled(pill_min, pill_max, IM_COL32(12, 16, 24, 225), 4.0f);
+					mdl->AddRect(pill_min, pill_max, is_h ? IM_COL32(255, 215, 80, 230) : info.border_color & IM_COL32(255, 255, 255, 160), 4.0f, 0, 1.0f);
+					mdl->AddText(ImVec2(pill_min.x + 4.0f, pill_min.y + 2.0f), is_h ? IM_COL32(255, 245, 180, 255) : info.text_color, full_label.c_str());
+				}
+			}
+		}
+
+		// Render Multiplayer Co-Editor Cursors & Positions
+		if (show_peers && editor.IsLiveClient()) {
+			LiveClient* lc = editor.GetLiveClient();
+			if (lc) {
+				for (const auto& peer_cur : lc->getCursorList()) {
+					if (peer_cur.pos.z != world_map_floor) continue;
+					ImVec2 ppt = MapToDeskScreen(peer_cur.pos.x, peer_cur.pos.y);
+					if (ppt.x >= desk_min.x && ppt.x <= desk_max.x && ppt.y >= desk_min.y && ppt.y <= desk_max.y) {
+						ImU32 pcolor = IM_COL32(peer_cur.color.Red(), peer_cur.color.Green(), peer_cur.color.Blue(), 255);
+						mdl->AddCircleFilled(ppt, 6.0f, pcolor);
+						mdl->AddCircle(ppt, 8.0f, IM_COL32(255, 255, 255, 220), 16, 1.5f);
+						std::string peer_label = "User #" + std::to_string(peer_cur.id);
+						mdl->AddText(ImVec2(ppt.x + 10, ppt.y - 6), IM_COL32(0, 0, 0, 255), peer_label.c_str());
+						mdl->AddText(ImVec2(ppt.x + 9, ppt.y - 7), pcolor, peer_label.c_str());
+					}
+				}
+			}
+		}
+
+		// Pop Desk Clipping
+		mdl->PopClipRect();
+
+		// Hover Coordinate & Tooltip
+		int hover_map_x = 0, hover_map_y = 0;
+		bool in_desk = (io.MousePos.x >= desk_min.x && io.MousePos.x <= desk_max.x && io.MousePos.y >= desk_min.y && io.MousePos.y <= desk_max.y);
+		if (wm_hovered && in_desk) {
+			DeskScreenToMap(io.MousePos, &hover_map_x, &hover_map_y);
+
+			if (hovered_marker_id != -1) {
+				for (const auto& m : markerList) {
+					if (m.id == hovered_marker_id) {
+						ImGui::SetTooltip("%s\n%s\nLocation: [X: %d, Y: %d, Z: %d]\n(Left-Click: Teleport | Right-Click: Edit/Del)",
+							m.title.c_str(), m.description.empty() ? "(No notes)" : m.description.c_str(), m.x, m.y, m.z);
+						break;
+					}
+				}
+			} else {
+				ImGui::SetTooltip("Location: [X: %d, Y: %d, Z: %d]\n(Click: Teleport | Drag/WASD: Pan | Right-Click: Add Marker)", hover_map_x, hover_map_y, world_map_floor);
+			}
+		}
+
+		// Left-Click Travel Navigation inside Desk
+		if (wm_hovered && in_desk && ImGui::IsMouseClicked(0) && !ImGui::IsMouseDragging(0, 4.0f)) {
+			int click_map_x, click_map_y;
+			DeskScreenToMap(io.MousePos, &click_map_x, &click_map_y);
+
+			if (hovered_marker_id != -1) {
+				for (const auto& m : markerList) {
+					if (m.id == hovered_marker_id) {
+						g_gui.SetScreenCenterPosition(Position(m.x, m.y, m.z), false);
+						Refresh(false);
+						break;
+					}
+				}
+			} else {
+				g_gui.SetScreenCenterPosition(Position(click_map_x, click_map_y, world_map_floor), false);
+				Refresh(false);
+			}
+		}
+
+		// Right-Click Context Menu for Adding or Editing Pins
+		static int ctx_map_x = 0, ctx_map_y = 0, ctx_marker_id = -1;
+		if (wm_hovered && in_desk && ImGui::IsMouseClicked(1)) {
+			DeskScreenToMap(io.MousePos, &ctx_map_x, &ctx_map_y);
+			ctx_marker_id = hovered_marker_id;
+			ImGui::OpenPopup("##WMCanvasContextMenu");
+		}
+
+		if (ImGui::BeginPopup("##WMCanvasContextMenu")) {
+			if (ctx_marker_id != -1) {
+				for (const auto& m : markerList) {
+					if (m.id == ctx_marker_id) {
+						ImGui::TextColored(ImVec4(0.95f, 0.85f, 0.40f, 1.0f), "Pin: %s", m.title.c_str());
+						ImGui::Separator();
+						if (ImGui::MenuItem("Teleport Here")) {
+							g_gui.SetScreenCenterPosition(Position(m.x, m.y, m.z), false);
+							Refresh(false);
+						}
+						if (ImGui::MenuItem("Edit Pin...")) {
+							editing_marker = m;
+							strncpy(marker_title_buf, m.title.c_str(), sizeof(marker_title_buf));
+							strncpy(marker_desc_buf, m.description.c_str(), sizeof(marker_desc_buf));
+							is_editing_existing = true;
+							modal_marker_open = true;
+						}
+						if (ImGui::MenuItem("Delete Pin")) {
+							markerMgr.RemoveMarker(m.id);
+						}
+						break;
+					}
+				}
+			} else {
+				ImGui::TextColored(ImVec4(0.95f, 0.85f, 0.40f, 1.0f), "World Location: [%d, %d, %d]", ctx_map_x, ctx_map_y, world_map_floor);
+				ImGui::Separator();
+				if (ImGui::MenuItem("Add Custom Marker Here...")) {
+					editing_marker = WorldMapMarker();
+					editing_marker.x = ctx_map_x;
+					editing_marker.y = ctx_map_y;
+					editing_marker.z = world_map_floor;
+					editing_marker.title = "New Marker";
+					editing_marker.category = 0;
+					editing_marker.color = 0xFFE5C158;
+					strncpy(marker_title_buf, editing_marker.title.c_str(), sizeof(marker_title_buf));
+					marker_desc_buf[0] = '\0';
+					is_editing_existing = false;
+					modal_marker_open = true;
+				}
+				if (ImGui::MenuItem("Teleport Editor Here")) {
+					g_gui.SetScreenCenterPosition(Position(ctx_map_x, ctx_map_y, world_map_floor), false);
+					Refresh(false);
+				}
+			}
+			ImGui::EndPopup();
+		}
+
+		// --- Modal: Add / Edit Marker ---
+		if (modal_marker_open) {
+			ImGui::OpenPopup("Add / Edit World Marker##MarkerModal");
+		}
+
+		ImVec2 center_pos = ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f);
+		ImGui::SetNextWindowPos(center_pos, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(380, 320), ImGuiCond_Always);
+
+		if (ImGui::BeginPopupModal("Add / Edit World Marker##MarkerModal", &modal_marker_open, ImGuiWindowFlags_AlwaysAutoResize)) {
+			ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), is_editing_existing ? "Edit World Marker" : "Create New World Marker");
+			ImGui::Separator();
+
+			ImGui::Text("Title:");
+			ImGui::SetNextItemWidth(340.0f);
+			ImGui::InputText("##MTitle", marker_title_buf, sizeof(marker_title_buf));
+
+			ImGui::Text("Description / Notes:");
+			ImGui::SetNextItemWidth(340.0f);
+			ImGui::InputText("##MDesc", marker_desc_buf, sizeof(marker_desc_buf));
+
+			ImGui::Text("Category:");
+			int cur_cat = std::clamp(editing_marker.category, 0, 7);
+			const auto& cur_info = s_cat_info[cur_cat];
+			std::string combo_preview = std::string(cur_info.icon) + " " + cur_info.badge + " " + cur_info.name;
+
+			ImGui::SetNextItemWidth(340.0f);
+			if (ImGui::BeginCombo("##MCat", combo_preview.c_str())) {
+				for (int n = 0; n < 8; n++) {
+					const auto& info = s_cat_info[n];
+					bool is_selected = (editing_marker.category == n);
+					ImGui::PushID(n);
+
+					ImVec4 tag_col((float)(info.fill_color & 0xFF) / 255.0f,
+					               (float)((info.fill_color >> 8) & 0xFF) / 255.0f,
+					               (float)((info.fill_color >> 16) & 0xFF) / 255.0f, 1.0f);
+
+					std::string desc_suffix = (n == 0 ? " (Navigation)" :
+					                           n == 1 ? " (Settlement)" :
+					                           n == 2 ? " (Objective)" :
+					                           n == 3 ? " (Cave / Crypt)" :
+					                           n == 4 ? " (Loot / Chest)" :
+					                           n == 5 ? " (Camp / Outpost)" :
+					                           n == 6 ? " (Portal / Arcane)" : " (Boss / Hazard)");
+
+					if (ImGui::Selectable("##cat_sel", is_selected)) {
+						editing_marker.category = n;
+					}
+					ImGui::SameLine(10);
+					ImGui::TextColored(tag_col, "%s %s", info.icon, info.badge);
+					ImGui::SameLine();
+					ImGui::TextColored(ImVec4(0.95f, 0.90f, 0.75f, 1.0f), "%s%s", info.name, desc_suffix.c_str());
+
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+					ImGui::PopID();
+				}
+				ImGui::EndCombo();
+			}
+
+			ImGui::Text("Position (X, Y, Z):");
+			ImGui::SetNextItemWidth(100.0f);
+			ImGui::InputInt("##MX", &editing_marker.x);
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(100.0f);
+			ImGui::InputInt("##MY", &editing_marker.y);
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(80.0f);
+			ImGui::InputInt("##MZ", &editing_marker.z);
+
+			ImGui::Separator();
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.40f, 0.22f, 0.90f));
+			if (ImGui::Button("Save Marker", ImVec2(160, 26))) {
+				editing_marker.title = marker_title_buf;
+				editing_marker.description = marker_desc_buf;
+				if (editing_marker.title.empty()) editing_marker.title = "Marker";
+				if (is_editing_existing) {
+					WorldMapMarkerManager::GetInstance().UpdateMarker(editing_marker);
+				} else {
+					WorldMapMarkerManager::GetInstance().AddMarker(editing_marker);
+				}
+				modal_marker_open = false;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::PopStyleColor();
+
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", ImVec2(100, 26))) {
+				modal_marker_open = false;
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+	ImGui::End();
+	ImGui::PopStyleColor(2);
+	ImGui::PopStyleVar(4);
+
+	if (!wm_open) {
+		g_settings.setInteger(Config::SHOW_WORLD_MAP, 0);
+		if (g_gui.root) g_gui.root->UpdateMenubar();
+	}
 }

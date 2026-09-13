@@ -385,18 +385,64 @@ void HousePalettePanel::OnListBoxContextMenu(wxContextMenuEvent& event) {
 	wxPoint pos = event.GetPosition();
 	wxPoint clientPos = house_list->ScreenToClient(pos);
 	int itemIndex = house_list->HitTest(clientPos);
+	if (itemIndex == wxNOT_FOUND) {
+		itemIndex = house_list->GetSelection();
+	}
 
 	wxMenu menu;
-	menu.Append(PALETTE_HOUSE_ADD_HOUSE, "+ Add House");
+	menu.Append(PALETTE_HOUSE_ADD_HOUSE, "Add House...");
 
-	if (itemIndex != wxNOT_FOUND) {
+	if (itemIndex != wxNOT_FOUND && (size_t)itemIndex < house_list->GetCount()) {
 		SelectHouse(itemIndex);
 		g_gui.SelectBrush();
 
+		House* house = reinterpret_cast<House*>(house_list->GetClientData(itemIndex));
+
 		menu.AppendSeparator();
-		menu.Append(PALETTE_HOUSE_EDIT_HOUSE, "Edit House");
+		menu.Append(PALETTE_HOUSE_EDIT_HOUSE, "Edit House Properties...");
+		menu.Append(10501, "Set House Exit");
+		if (house) {
+			Position target_pos = house->getExit();
+			if (!target_pos.isValid() || target_pos == Position(0, 0, 0)) {
+				target_pos = house->getFirstTilePosition();
+			}
+			if (target_pos.isValid() && target_pos != Position(0, 0, 0)) {
+				menu.Append(10502, "Go to House");
+			}
+		}
 		menu.Append(PALETTE_HOUSE_REMOVE_HOUSE, "Delete House");
 	}
+
+	menu.AppendSeparator();
+	menu.Append(10503, "Open House Wizard...");
+
+	menu.Bind(wxEVT_MENU, [this, itemIndex](wxCommandEvent& ev) {
+		int id = ev.GetId();
+		if (id == PALETTE_HOUSE_ADD_HOUSE) {
+			wxCommandEvent e; OnClickAddHouse(e);
+		} else if (id == PALETTE_HOUSE_EDIT_HOUSE) {
+			wxCommandEvent e; OnClickEditHouse(e);
+		} else if (id == PALETTE_HOUSE_REMOVE_HOUSE) {
+			wxCommandEvent e; OnClickRemoveHouse(e);
+		} else if (id == 10501) {
+			is_exit_mode = true;
+			if (set_exit_button) set_exit_button->SetValue(true);
+			SelectExitBrush();
+			g_gui.SelectBrush();
+			g_gui.SetStatusText("Click on the map to place the house exit.");
+		} else if (id == 10502 && itemIndex != wxNOT_FOUND && (size_t)itemIndex < house_list->GetCount()) {
+			House* h = reinterpret_cast<House*>(house_list->GetClientData(itemIndex));
+			if (h) {
+				Position p = h->getExit();
+				if (!p.isValid() || p == Position(0, 0, 0)) p = h->getFirstTilePosition();
+				if (p.isValid() && p != Position(0, 0, 0)) g_gui.SetScreenCenterPosition(p);
+			}
+		} else if (id == 10503) {
+			HouseWizardDialog dlg(this, map);
+			dlg.ShowModal();
+		}
+	});
+
 	house_list->PopupMenu(&menu, clientPos);
 }
 
