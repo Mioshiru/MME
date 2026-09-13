@@ -667,9 +667,12 @@ void LivePeer::parseReceiveChanges(NetworkMessage &message) {
   MapEditor &editor = *server->getEditor();
 
   const std::string &data = message.read<std::string>();
-  mapReader.assign(reinterpret_cast<const uint8_t *>(data.data()), data.size());
+  if (data.empty()) {
+    return;
+  }
+  MemoryNodeFileReadHandle localMapReader(reinterpret_cast<const uint8_t *>(data.data()), data.size());
 
-  BinaryNode *rootNode = mapReader.getRootNode();
+  BinaryNode *rootNode = localMapReader.getRootNode();
   if (!rootNode) {
     return;
   }
@@ -680,7 +683,7 @@ void LivePeer::parseReceiveChanges(NetworkMessage &message) {
       action->addChange(newd Change(tile));
     }
   }
-  mapReader.close();
+  localMapReader.close();
 
   if (action->size() > 0) {
     editor.actionQueue->addAction(action);

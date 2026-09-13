@@ -464,48 +464,51 @@ void LiveClient::sendNodeRequests() {
 }
 
 void LiveClient::requestTileChange(Action* action) {
-	mapWriter.reset();
-	mapWriter.addNode(0x00); // Root container node
+	if (!action) return;
+	MemoryNodeFileWriteHandle localWriter;
+	localWriter.addNode(0x00); // Root container node
 	for (Change* change : action->getChanges()) {
-		if (change->getType() == CHANGE_TILE) {
+		if (change && change->getType() == CHANGE_TILE) {
 			Tile* newtile = reinterpret_cast<Tile*>(change->getData());
 			if (newtile) {
 				const Position& position = newtile->getPosition();
-				sendTile(mapWriter, newtile, &position);
+				sendTile(localWriter, newtile, &position);
 			}
 		}
 	}
-	mapWriter.endNode();
+	localWriter.endNode();
 
 	NetworkMessage message;
 	message.write<uint8_t>(PACKET_CHANGE_LIST);
 
-	std::string data(reinterpret_cast<const char*>(mapWriter.getMemory()), mapWriter.getSize());
+	std::string data(reinterpret_cast<const char*>(localWriter.getMemory()), localWriter.getSize());
 	message.write<std::string>(data);
 
 	send(message);
 }
 
 void LiveClient::requestBatchChange(BatchAction* batchAction) {
-	mapWriter.reset();
-	mapWriter.addNode(0x00); // Root container node
+	if (!batchAction) return;
+	MemoryNodeFileWriteHandle localWriter;
+	localWriter.addNode(0x00); // Root container node
 	for (Action* action : batchAction->getActions()) {
+		if (!action) continue;
 		for (Change* change : action->getChanges()) {
-			if (change->getType() == CHANGE_TILE) {
+			if (change && change->getType() == CHANGE_TILE) {
 				Tile* newtile = reinterpret_cast<Tile*>(change->getData());
 				if (newtile) {
 					const Position& position = newtile->getPosition();
-					sendTile(mapWriter, newtile, &position);
+					sendTile(localWriter, newtile, &position);
 				}
 			}
 		}
 	}
-	mapWriter.endNode();
+	localWriter.endNode();
 
 	NetworkMessage message;
 	message.write<uint8_t>(PACKET_CHANGE_LIST);
 
-	std::string data(reinterpret_cast<const char*>(mapWriter.getMemory()), mapWriter.getSize());
+	std::string data(reinterpret_cast<const char*>(localWriter.getMemory()), localWriter.getSize());
 	message.write<std::string>(data);
 
 	send(message);
@@ -513,19 +516,23 @@ void LiveClient::requestBatchChange(BatchAction* batchAction) {
 
 void LiveClient::sendChanges(DirtyList& dirtyList) {
 	ChangeList& changeList = dirtyList.GetChanges();
-	if (changeList.empty()) {
+	if (changeList.empty() || !mapEditor) {
 		return;
 	}
 
-	mapWriter.reset();
-	mapWriter.addNode(0x00); // Root container node
+	MemoryNodeFileWriteHandle localWriter;
+	localWriter.addNode(0x00); // Root container node
 	for (Change* change : changeList) {
+		if (!change) continue;
 		switch (change->getType()) {
 			case CHANGE_TILE: { 
-				const Position& position = static_cast<Tile*>(change->getData())->getPosition();
-				Tile* tile = mapEditor->map.getTile(position);
-				if (tile) {
-					sendTile(mapWriter, tile, &position);
+				Tile* t = static_cast<Tile*>(change->getData());
+				if (t) {
+					const Position& position = t->getPosition();
+					Tile* tile = mapEditor->map.getTile(position);
+					if (tile) {
+						sendTile(localWriter, tile, &position);
+					}
 				}
 				break;
 			}
@@ -533,12 +540,12 @@ void LiveClient::sendChanges(DirtyList& dirtyList) {
 				break;
 		}
 	}
-	mapWriter.endNode();
+	localWriter.endNode();
 
 	NetworkMessage message;
 	message.write<uint8_t>(PACKET_CHANGE_LIST);
 
-	std::string data(reinterpret_cast<const char*>(mapWriter.getMemory()), mapWriter.getSize());
+	std::string data(reinterpret_cast<const char*>(localWriter.getMemory()), localWriter.getSize());
 	message.write<std::string>(data);
 
 	send(message);
@@ -748,25 +755,6 @@ void LiveClient::parseHello(NetworkMessage& message) {
 		g_gui.RefreshView();
 		g_gui.UpdateMinimap();
 		checkAndApplyHostSettings();
-	}
-
-	// Now that the server has set connected=true and is in parseEditorPacket mode,
-	// we can safely send PACKET_REQUEST_NODES for the visible area.
-	int map_x = pendingFocusPos.x;
-	int map_y = pendingFocusPos.y;
-	int min_ndx = std::max(0, (map_x - 100) / 4);
-	int max_ndx = (map_x + 100) / 4;
-	int min_ndy = std::max(0, (map_y - 100) / 4);
-	int max_ndy = (map_y + 100) / 4;
-
-	for (int ndx = min_ndx; ndx <= max_ndx; ++ndx) {
-		for (int ndy = min_ndy; ndy <= max_ndy; ++ndy) {
-			queryNode(ndx, ndy, false);
-			queryNode(ndx, ndy, true);
-		}
-	}
-	if (!queryNodeList.empty()) {
-		sendNodeRequests();
 	}
 }
 
