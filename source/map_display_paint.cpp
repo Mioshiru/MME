@@ -1437,7 +1437,7 @@ static ToolbarIconCache s_toolbar_icons;
 
 			ImGui::SameLine();
 			// 2. Pencil Tool
-			const bool is_pencil = (!g_gui.IsSelectionMode() && !g_gui.IsFillBrushMode() && g_gui.GetCurrentBrush() != g_gui.eraser && g_gui.GetCurrentBrush() != g_gui.optional_brush && g_gui.GetCurrentBrush() != g_gui.normal_door_brush && g_gui.GetCurrentBrush() != g_gui.locked_door_brush && g_gui.GetCurrentBrush() != g_gui.magic_door_brush && g_gui.GetCurrentBrush() != g_gui.quest_door_brush && g_gui.GetCurrentBrush() != g_gui.archway_door_brush && g_gui.GetCurrentBrush() != g_gui.window_door_brush && g_gui.GetCurrentBrush() != g_gui.hatch_door_brush);
+			const bool is_pencil = (!g_gui.IsSelectionMode() && !g_gui.IsFillBrushMode() && g_gui.GetCurrentBrush() != g_gui.eraser && g_gui.GetCurrentBrush() != g_gui.optional_brush && g_gui.GetCurrentBrush() != g_gui.normal_door_brush && g_gui.GetCurrentBrush() != g_gui.locked_door_brush && g_gui.GetCurrentBrush() != g_gui.magic_door_brush && g_gui.GetCurrentBrush() != g_gui.quest_door_brush && g_gui.GetCurrentBrush() != g_gui.window_door_brush && g_gui.GetCurrentBrush() != g_gui.hatch_door_brush);
 			if (draw_icon_btn("##tool_pencil", s_toolbar_icons.tex_pencil, "Pen", is_pencil, "Pencil Drawing Tool", tool_btn_sz, tool_icon_sz)) {
 				g_gui.SetFillBrushMode(false);
 				g_gui.SetDrawingMode();
@@ -1469,7 +1469,7 @@ static ToolbarIconCache s_toolbar_icons;
 
 			ImGui::SameLine();
 			// 6. Doors Tool (Click to select or choose variant)
-			const bool is_door = (g_gui.GetCurrentBrush() == g_gui.normal_door_brush || g_gui.GetCurrentBrush() == g_gui.locked_door_brush || g_gui.GetCurrentBrush() == g_gui.magic_door_brush || g_gui.GetCurrentBrush() == g_gui.quest_door_brush || g_gui.GetCurrentBrush() == g_gui.archway_door_brush);
+			const bool is_door = (g_gui.GetCurrentBrush() == g_gui.normal_door_brush || g_gui.GetCurrentBrush() == g_gui.locked_door_brush || g_gui.GetCurrentBrush() == g_gui.magic_door_brush || g_gui.GetCurrentBrush() == g_gui.quest_door_brush);
 			if (draw_icon_btn("##tool_door", s_toolbar_icons.tex_door, "Dor", is_door, "Doors Tool (Click for Door Options)", tool_btn_sz, tool_icon_sz)) {
 				ImGui::OpenPopup("##DoorSubMenu");
 			}
@@ -1492,10 +1492,6 @@ static ToolbarIconCache s_toolbar_icons;
 				if (ImGui::Selectable("Quest Door", g_gui.GetCurrentBrush() == g_gui.quest_door_brush)) {
 					g_gui.SetFillBrushMode(false);
 					g_gui.SelectBrush(g_gui.quest_door_brush);
-				}
-				if (ImGui::Selectable("Archway", g_gui.GetCurrentBrush() == g_gui.archway_door_brush)) {
-					g_gui.SetFillBrushMode(false);
-					g_gui.SelectBrush(g_gui.archway_door_brush);
 				}
 				ImGui::EndPopup();
 			}
@@ -1586,19 +1582,28 @@ static ToolbarIconCache s_toolbar_icons;
 			ImGui::SameLine();
 
 			// 10. Brush Sizes 1..7 with uniform height
+			static const int s_brush_sizes[7] = {0, 1, 2, 4, 6, 8, 11};
+			static const char* s_brush_size_tips[7] = {
+				"Brush Size 1 (1x1)",
+				"Brush Size 2 (3x3)",
+				"Brush Size 3 (5x5)",
+				"Brush Size 4 (7x7)",
+				"Brush Size 5 (9x9)",
+				"Brush Size 6 (15x15)",
+				"Brush Size 7 (19x19)"
+			};
 			int current_size = g_gui.GetBrushSize();
-			for (int sz = 1; sz <= 7; ++sz) {
+			for (int i = 0; i < 7; ++i) {
+				const int target_sz = s_brush_sizes[i];
 				char btn_id[16];
-				snprintf(btn_id, sizeof(btn_id), "##sz_%d", sz);
+				snprintf(btn_id, sizeof(btn_id), "##sz_%d", i + 1);
 				char sz_fallback[8];
-				snprintf(sz_fallback, sizeof(sz_fallback), "%d", sz);
-				char tip[32];
-				snprintf(tip, sizeof(tip), "Brush Size %d", sz);
-				const bool is_curr_sz = (current_size == sz);
-				if (draw_icon_btn(btn_id, s_toolbar_icons.tex_sizes[sz - 1], sz_fallback, is_curr_sz, tip, size_btn_sz, size_icon_sz)) {
-					g_gui.SetBrushSize(sz);
+				snprintf(sz_fallback, sizeof(sz_fallback), "%d", i + 1);
+				const bool is_curr_sz = (current_size == target_sz);
+				if (draw_icon_btn(btn_id, s_toolbar_icons.tex_sizes[i], sz_fallback, is_curr_sz, s_brush_size_tips[i], size_btn_sz, size_icon_sz)) {
+					g_gui.SetBrushSize(target_sz);
 				}
-				if (sz < 7) ImGui::SameLine();
+				if (i < 6) ImGui::SameLine();
 			}
 
 			ImGui::SameLine();

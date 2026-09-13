@@ -101,11 +101,18 @@ static void autoAlignHangableItem(BaseMap* map, Tile* tile, Item* item) {
 	auto checkTileWalls = [&](Tile* t) {
 		if (!t) return;
 		for (Item* tile_item : t->items) {
+			if (!tile_item) continue;
+			if (tile_item->hasProperty(HOOK_SOUTH)) {
+				is_horizontal_wall = true;
+			}
+			if (tile_item->hasProperty(HOOK_EAST)) {
+				is_vertical_wall = true;
+			}
 			if (tile_item->isWall()) {
 				BorderType bt = tile_item->getWallAlignment();
-				if (bt == NORTH_HORIZONTAL || bt == SOUTH_HORIZONTAL || bt == WALL_HORIZONTAL) {
+				if (bt == WALL_HORIZONTAL || bt == WALL_SOUTH_T || bt == WALL_NORTH_T || bt == WALL_EAST_END || bt == WALL_WEST_END || bt == NORTH_HORIZONTAL || bt == SOUTH_HORIZONTAL) {
 					is_horizontal_wall = true;
-				} else if (bt == EAST_HORIZONTAL || bt == WEST_HORIZONTAL || bt == WALL_VERTICAL) {
+				} else if (bt == WALL_VERTICAL || bt == WALL_EAST_T || bt == WALL_WEST_T || bt == WALL_NORTH_END || bt == WALL_SOUTH_END || bt == EAST_HORIZONTAL || bt == WEST_HORIZONTAL) {
 					is_vertical_wall = true;
 				}
 			}

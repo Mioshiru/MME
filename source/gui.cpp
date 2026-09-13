@@ -1489,8 +1489,8 @@ void GUI::SelectBrushInternal(Brush *brush) {
     secondary_map = doodad_buffer_map;
   }
 
-  // Automatic 1x1 brush size reset for Door, Window, Monster/NPC, RAW, HouseExit, Waypoint
-  if (brush->isDoor() || brush->isCreature() || brush->isRaw() ||
+  // Automatic 1x1 brush size reset for Wall, Door, Window, Monster/NPC, RAW, HouseExit, Waypoint
+  if (brush->isWall() || brush->isDoor() || brush->isCreature() || brush->isRaw() ||
       brush->isHouseExit() || brush->isWaypoint() || brush->isFlag() ||
       brush->oneSizeFitsAll()) {
     SetBrushSize(0);

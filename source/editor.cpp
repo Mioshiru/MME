@@ -1449,22 +1449,9 @@ void doSurroundingBorders(DoodadBrush* doodad_brush, PositionList& tilestoborder
 }
 
 void removeDuplicateWalls(Tile* buffer, Tile* tile) {
-	bool buffer_has_wall_or_arch = false;
-	for (Item* it : buffer->items) {
-		if (it && (it->isWall() || it->getWallBrush() || it->isDoor() || it->isBrushDoor() || it->isHangable())) {
-			buffer_has_wall_or_arch = true;
-			break;
-		}
-	}
-
-	if (buffer_has_wall_or_arch) {
-		// Replace existing walls at this tile position seamlessly (e.g. wall arch, archway, doors)
-		tile->cleanWalls();
-	} else {
-		for (ItemVector::const_iterator iter = buffer->items.begin(); iter != buffer->items.end(); ++iter) {
-			if ((*iter)->getWallBrush()) {
-				tile->cleanWalls((*iter)->getWallBrush());
-			}
+	for (ItemVector::const_iterator iter = buffer->items.begin(); iter != buffer->items.end(); ++iter) {
+		if ((*iter)->getWallBrush()) {
+			tile->cleanWalls((*iter)->getWallBrush());
 		}
 	}
 }
@@ -1531,20 +1518,19 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 					action->addChange(newd Change(new_tile));
 				}
 			} else {
-				bool is_wall_blocking = false;
-				if (tile) {
-					for (Item* item : tile->items) {
-						if (item && item->getWallBrush()) {
-							is_wall_blocking = true;
-							break;
+				if (tile && !tile->isBlocking()) {
+					bool place = true;
+					if (tile && !doodad_brush->placeOnDuplicate() && !alt) {
+						for (ItemVector::const_iterator iter = tile->items.begin(); iter != tile->items.end(); ++iter) {
+							if (doodad_brush->ownsItem(*iter)) {
+								place = false;
+								break;
+							}
 						}
 					}
-				}
-				if (!is_wall_blocking) {
-					bool place = true;
 					if (place) {
-						Tile* new_tile = tile ? tile->deepCopy(map) : map.allocator(location);
-						if (tile && !doodad_brush->placeOnDuplicate() && !alt) {
+						Tile* new_tile = tile->deepCopy(map);
+						if (!doodad_brush->placeOnDuplicate() && !alt) {
 							for (ItemVector::iterator item_iter = new_tile->items.begin(); item_iter != new_tile->items.end();) {
 								Item* item = *item_iter;
 								if (doodad_brush->ownsItem(item)) {
@@ -1560,6 +1546,12 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 						new_tile->merge(buffer_tile);
 						action->addChange(newd Change(new_tile));
 					}
+				} else if (!tile) {
+					Tile* new_tile = map.allocator(location);
+					removeDuplicateWalls(buffer_tile, new_tile);
+					doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
+					new_tile->merge(buffer_tile);
+					action->addChange(newd Change(new_tile));
 				}
 			}
 		}

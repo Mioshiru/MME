@@ -762,7 +762,6 @@ void MainToolBar::OnDoorsDropdown(wxCommandEvent& WXUNUSED(event)) {
 	menu.Append(PALETTE_TERRAIN_LOCKED_DOOR, "Locked Door");
 	menu.Append(PALETTE_TERRAIN_MAGIC_DOOR, "Magic Door");
 	menu.Append(PALETTE_TERRAIN_QUEST_DOOR, "Quest Door");
-	menu.Append(PALETTE_TERRAIN_ARCHWAY_DOOR, "Archway Door");
 	menu.Bind(wxEVT_COMMAND_MENU_SELECTED, &MainToolBar::OnBrushesButtonClick, this);
 	brushes_toolbar->PopupMenu(&menu);
 }

@@ -443,8 +443,14 @@ void BrushPalettePanel::DoSearch(const wxString& query) {
 void BrushPalettePanel::OnSwitchIn() {
 	LoadCurrentContents();
 	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushSizeInternal(last_brush_size);
-	OnUpdateBrushSize(g_gui.GetBrushShape(), last_brush_size);
+	Brush* cb = g_gui.GetCurrentBrush();
+	if (cb && (cb->isWall() || cb->isDoor() || cb->isCreature() || cb->isRaw() || cb->isHouseExit() || cb->isWaypoint() || cb->isFlag() || cb->oneSizeFitsAll())) {
+		g_gui.SetBrushSizeInternal(0);
+		OnUpdateBrushSize(g_gui.GetBrushShape(), 0);
+	} else {
+		g_gui.SetBrushSizeInternal(last_brush_size);
+		OnUpdateBrushSize(g_gui.GetBrushShape(), last_brush_size);
+	}
 }
 
 void BrushPalettePanel::OnClickAddTileset(wxCommandEvent& WXUNUSED(event)) {

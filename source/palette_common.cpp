@@ -149,7 +149,12 @@ void PalettePanel::OnSwitchIn() {
 		(*iter)->OnSwitchIn();
 	}
 	g_gui.ActivatePalette(GetParentPalette());
-	g_gui.SetBrushSize(last_brush_size);
+	Brush* cb = g_gui.GetCurrentBrush();
+	if (cb && (cb->isWall() || cb->isDoor() || cb->isCreature() || cb->isRaw() || cb->isHouseExit() || cb->isWaypoint() || cb->isFlag() || cb->oneSizeFitsAll())) {
+		g_gui.SetBrushSize(0);
+	} else {
+		g_gui.SetBrushSize(last_brush_size);
+	}
 }
 
 void PalettePanel::OnSwitchOut() {

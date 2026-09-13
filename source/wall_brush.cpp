@@ -222,8 +222,6 @@ bool WallBrush::load(pugi::xml_node node, wxArrayString& warnings) {
 						door_items[alignment].push_back(dt);
 						dt.type = WALL_DOOR_MAGIC;
 						door_items[alignment].push_back(dt);
-						dt.type = WALL_ARCHWAY;
-						door_items[alignment].push_back(dt);
 					}
 
 					if (all_windows) {
