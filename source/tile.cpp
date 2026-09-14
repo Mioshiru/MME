@@ -278,29 +278,13 @@ void Tile::addItem(Item* item) {
 		return;
 	}
 
+	// Replace existing floor change items if placing another floor change item or border
 	ItemType& it_info = g_items[item->getID()];
-	bool is_doodad_dup = (it_info.doodad_brush && it_info.doodad_brush->isDoodad() && it_info.doodad_brush->asDoodad()->placeOnDuplicate());
-	bool allow_stacking = item->isStackable() || it_info.moveable || it_info.pickupable || it_info.hasElevation || is_doodad_dup;
-
-	// Passive duplicate prevention: avoid stacking exact identical static items
-	if (!allow_stacking) {
-		for (auto* existing : items) {
-			if (existing && existing->getID() == item->getID() &&
-			    existing->getActionID() == item->getActionID() && existing->getUniqueID() == item->getUniqueID()) {
-				delete item;
-				return;
-			}
-		}
-	}
-
-
-
-	if (!allow_stacking) {
-		bool item_fc = it_info.isFloorChange();
+	if (it_info.isFloorChange()) {
 		for (ItemVector::iterator iter = items.begin(); iter != items.end();) {
 			bool iter_fc = g_items[(*iter)->getID()].isFloorChange();
 			bool iter_border = (*iter)->isBorder() || g_items[(*iter)->getID()].isBorder;
-			if (*iter != item && ((*iter)->getID() == item->getID() || (item_fc && (iter_fc || iter_border)))) {
+			if (*iter != item && (iter_fc || iter_border)) {
 				delete *iter;
 				iter = items.erase(iter);
 			} else {

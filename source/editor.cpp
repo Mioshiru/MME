@@ -1460,6 +1460,51 @@ void removeDuplicateWalls(Tile* buffer, Tile* tile) {
 	}
 }
 
+void assignNearestTownToDepots(Map& map, Tile* tile) {
+	if (!tile || map.towns.count() == 0) {
+		return;
+	}
+	for (ItemVector::iterator iter = tile->items.begin(); iter != tile->items.end(); ++iter) {
+		Item* item = *iter;
+		if (item && (item->isDepot() || dynamic_cast<Depot*>(item) != nullptr)) {
+			if (Depot* depot = dynamic_cast<Depot*>(item)) {
+				if (depot->getDepotID() == 0) {
+					Position tile_pos = tile->getPosition();
+					uint32_t nearest_town_id = 0;
+					int min_dist = std::numeric_limits<int>::max();
+
+					for (const auto& pair : map.towns) {
+						Town* town = pair.second;
+						if (town) {
+							Position temple = town->getTemplePosition();
+							if (temple.isValid() && tile_pos.isValid()) {
+								int dx = std::abs((int)tile_pos.x - (int)temple.x);
+								int dy = std::abs((int)tile_pos.y - (int)temple.y);
+								int dz = std::abs((int)tile_pos.z - (int)temple.z);
+								int dist = dx + dy + dz * 5;
+								if (dist < min_dist) {
+									min_dist = dist;
+									nearest_town_id = town->getID();
+								}
+							} else if (nearest_town_id == 0) {
+								nearest_town_id = town->getID();
+							}
+						}
+					}
+
+					if (nearest_town_id == 0 && map.towns.count() > 0) {
+						nearest_town_id = map.towns.begin()->second->getID();
+					}
+
+					if (nearest_town_id > 0) {
+						depot->setDepotID(static_cast<uint16_t>(nearest_town_id));
+					}
+				}
+			}
+		}
+	}
+}
+
 void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 	Brush* brush = g_gui.GetCurrentBrush();
 	if (!brush) {
@@ -1485,7 +1530,7 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 			TileLocation* location = map.createTileL(pos);
 			Tile* tile = location->get();
 
-			if (doodad_brush->placeOnBlocking() || alt) {
+			if (doodad_brush->placeOnBlocking() || alt || (tile && tile->hasTable())) {
 				if (tile) {
 					bool place = true;
 					if (!doodad_brush->placeOnDuplicate() && !alt) {
@@ -1512,6 +1557,7 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 						removeDuplicateWalls(buffer_tile, new_tile);
 						doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
 						new_tile->merge(buffer_tile);
+						assignNearestTownToDepots(map, new_tile);
 						action->addChange(newd Change(new_tile));
 					}
 				} else {
@@ -1519,10 +1565,11 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 					removeDuplicateWalls(buffer_tile, new_tile);
 					doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
 					new_tile->merge(buffer_tile);
+					assignNearestTownToDepots(map, new_tile);
 					action->addChange(newd Change(new_tile));
 				}
 			} else {
-				if (tile && !tile->isBlocking()) {
+				if (tile && (!tile->isBlocking() || tile->hasTable())) {
 					bool place = true;
 					if (tile && !doodad_brush->placeOnDuplicate() && !alt) {
 						for (ItemVector::const_iterator iter = tile->items.begin(); iter != tile->items.end(); ++iter) {
@@ -1548,6 +1595,7 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 						removeDuplicateWalls(buffer_tile, new_tile);
 						doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
 						new_tile->merge(buffer_tile);
+						assignNearestTownToDepots(map, new_tile);
 						action->addChange(newd Change(new_tile));
 					}
 				} else if (!tile) {
@@ -1555,6 +1603,7 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 					removeDuplicateWalls(buffer_tile, new_tile);
 					doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
 					new_tile->merge(buffer_tile);
+					assignNearestTownToDepots(map, new_tile);
 					action->addChange(newd Change(new_tile));
 				}
 			}

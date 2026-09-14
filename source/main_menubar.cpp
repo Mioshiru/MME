@@ -156,6 +156,7 @@ MainMenuBar::MainMenuBar(MainFrame* frame) :
 	MAKE_ACTION(NEW, wxITEM_NORMAL, OnNew);
 	MAKE_ACTION(OPEN, wxITEM_NORMAL, OnOpen);
 	MAKE_ACTION(SAVE, wxITEM_NORMAL, OnSave);
+	MAKE_ACTION(SAVE_AS, wxITEM_NORMAL, OnSaveAs);
 	MAKE_ACTION(TEST_MAP, wxITEM_NORMAL, OnTestMap);
 	MAKE_ACTION(GENERATE_MAP, wxITEM_NORMAL, OnGenerateMap);
 	MAKE_ACTION(CLOSE, wxITEM_NORMAL, OnClose);
@@ -970,6 +971,17 @@ void MainMenuBar::OnClose(wxCommandEvent& WXUNUSED(event)) {
 
 void MainMenuBar::OnSave(wxCommandEvent& WXUNUSED(event)) {
 	g_gui.SaveMap();
+}
+
+void MainMenuBar::OnSaveAs(wxCommandEvent& WXUNUSED(event)) {
+	if (!g_gui.IsEditorOpen()) {
+		return;
+	}
+	wxString wildcard = g_settings.getInteger(Config::USE_OTGZ) != 0 ? MAP_LOAD_FILE_WILDCARD_OTGZ : MAP_LOAD_FILE_WILDCARD;
+	wxFileDialog dlg(frame, "Save Map As...", "", "", wildcard, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dlg.ShowModal() == wxID_OK) {
+		g_gui.SaveCurrentMap(FileName(dlg.GetPath()), true);
+	}
 }
 
 void MainMenuBar::OnTestMap(wxCommandEvent& WXUNUSED(event)) {

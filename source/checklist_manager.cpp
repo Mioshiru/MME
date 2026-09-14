@@ -57,7 +57,7 @@ void ChecklistManager::save() {
 }
 
 uint32_t ChecklistManager::addItem(const std::string& text, const std::string& author, bool completed, uint32_t forcedId) {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	if (text.empty()) return 0;
 
 	ChecklistItem item;
@@ -82,7 +82,7 @@ uint32_t ChecklistManager::addItem(const std::string& text, const std::string& a
 }
 
 bool ChecklistManager::toggleItem(uint32_t id, bool completed) {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	for (auto& item : items) {
 		if (item.id == id) {
 			item.completed = completed;
@@ -94,7 +94,7 @@ bool ChecklistManager::toggleItem(uint32_t id, bool completed) {
 }
 
 bool ChecklistManager::deleteItem(uint32_t id) {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	auto it = std::remove_if(items.begin(), items.end(), [id](const ChecklistItem& item) {
 		return item.id == id;
 	});
@@ -107,7 +107,7 @@ bool ChecklistManager::deleteItem(uint32_t id) {
 }
 
 void ChecklistManager::clearCompleted() {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	auto it = std::remove_if(items.begin(), items.end(), [](const ChecklistItem& item) {
 		return item.completed;
 	});
@@ -118,13 +118,13 @@ void ChecklistManager::clearCompleted() {
 }
 
 void ChecklistManager::clearAll() {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	items.clear();
 	notifyChanged();
 }
 
 std::vector<ChecklistItem> ChecklistManager::getActiveItems() const {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	std::vector<ChecklistItem> active;
 	for (const auto& item : items) {
 		if (!item.completed) {
@@ -135,7 +135,7 @@ std::vector<ChecklistItem> ChecklistManager::getActiveItems() const {
 }
 
 std::vector<ChecklistItem> ChecklistManager::getCompletedItems() const {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	std::vector<ChecklistItem> completed;
 	for (const auto& item : items) {
 		if (item.completed) {
@@ -146,12 +146,12 @@ std::vector<ChecklistItem> ChecklistManager::getCompletedItems() const {
 }
 
 std::vector<ChecklistItem> ChecklistManager::getAllItems() const {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	return items;
 }
 
 size_t ChecklistManager::getActiveCount() const {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	size_t count = 0;
 	for (const auto& item : items) {
 		if (!item.completed) count++;
@@ -160,7 +160,7 @@ size_t ChecklistManager::getActiveCount() const {
 }
 
 size_t ChecklistManager::getCompletedCount() const {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	size_t count = 0;
 	for (const auto& item : items) {
 		if (item.completed) count++;
@@ -169,13 +169,13 @@ size_t ChecklistManager::getCompletedCount() const {
 }
 
 size_t ChecklistManager::getTotalCount() const {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	return items.size();
 }
 
 void ChecklistManager::setAllItems(const std::vector<ChecklistItem>& newItems, bool saveToDisk) {
 	{
-		std::lock_guard<std::mutex> lock(itemsMutex);
+		std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 		items = newItems;
 		uint32_t maxId = 0;
 		for (const auto& item : items) {
@@ -187,7 +187,7 @@ void ChecklistManager::setAllItems(const std::vector<ChecklistItem>& newItems, b
 }
 
 void ChecklistManager::saveToFile(const std::string& filepath) {
-	std::lock_guard<std::mutex> lock(itemsMutex);
+	std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 	try {
 		nlohmann_json j = nlohmann_json::array();
 		for (const auto& item : items) {
@@ -237,7 +237,7 @@ void ChecklistManager::loadFromFile(const std::string& filepath) {
 		}
 
 		{
-			std::lock_guard<std::mutex> lock(itemsMutex);
+			std::lock_guard<std::recursive_mutex> lock(itemsMutex);
 			items = loadedItems;
 			nextId = maxId + 1;
 		}

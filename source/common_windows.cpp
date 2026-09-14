@@ -219,17 +219,26 @@ void MapPropertiesWindow::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 		if (new_map_width != map.getWidth() || new_map_height != map.getHeight()) {
 			map.setWidth(new_map_width);
 			map.setHeight(new_map_height);
-			g_gui.FitViewToMap(view);
+			if (view) {
+				g_gui.FitViewToMap(view);
+			} else {
+				g_gui.FitViewToMap();
+			}
 		}
 	}
 	g_gui.RefreshPalettes();
+	if (view && view->GetCanvas()) {
+		view->GetCanvas()->Refresh(false);
+	} else if (g_gui.GetCurrentMapTab() && g_gui.GetCurrentMapTab()->GetCanvas()) {
+		g_gui.GetCurrentMapTab()->GetCanvas()->Refresh(false);
+	}
 
 	EndModal(1);
 }
 
 void MapPropertiesWindow::OnClickCancel(wxCommandEvent& WXUNUSED(event)) {
 	// Just close this window
-	EndModal(1);
+	EndModal(wxID_CANCEL);
 }
 
 MapPropertiesWindow::~MapPropertiesWindow() = default;

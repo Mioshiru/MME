@@ -53,7 +53,7 @@ public:
 private:
 	void notifyChanged(bool saveToDisk = true);
 
-	mutable std::mutex itemsMutex;
+	mutable std::recursive_mutex itemsMutex;
 	std::vector<ChecklistItem> items;
 	uint32_t nextId = 1;
 	std::string m_filePath;

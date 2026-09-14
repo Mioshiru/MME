@@ -235,6 +235,7 @@ public:
 	void OnGenerateMap(wxCommandEvent& event);
 	void OnOpenRecent(wxCommandEvent& event);
 	void OnSave(wxCommandEvent& event);
+	void OnSaveAs(wxCommandEvent& event);
 	void OnTestMap(wxCommandEvent& event);
 
 	void OnClose(wxCommandEvent& event);

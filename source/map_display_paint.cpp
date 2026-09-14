@@ -220,6 +220,7 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		ImGui::SetCurrentContext(imgui_context);
 		ImGuiIO& io_init = ImGui::GetIO();
 		io_init.ConfigWindowsResizeFromEdges = true;
+		io_init.ConfigDebugHighlightIdConflicts = false;
 		// Note: Canvas overlays use free floating windows with magnetic edge snapping instead of intrusive dock nodes
 		ImGui::StyleColorsDark();
 		
@@ -2263,6 +2264,7 @@ static ToolbarIconCache s_toolbar_icons;
 							Brush* b = brushes[i];
 							if (!b || b->isSeparator()) continue;
 
+							ImGui::PushID((int)i);
 							ImGui::PushID(b);
 
 							bool is_sel = (cur_active_brush == b);
@@ -2353,37 +2355,49 @@ static ToolbarIconCache s_toolbar_icons;
 							}
 
 							ImGui::PopID();
+							ImGui::PopID();
 						}
 					};
 
 					if (!search_str.empty()) {
 						bool any_found = false;
-						for (const auto& ts_entry : available_tilesets) {
+						std::set<Brush*> seen_in_search;
+						for (size_t ts_idx = 0; ts_idx < available_tilesets.size(); ++ts_idx) {
+							const auto& ts_entry = available_tilesets[ts_idx];
 							std::vector<Brush*> matched;
 							for (Brush* b : ts_entry.second->brushlist) {
 								if (!b || b->isSeparator()) continue;
+								if (active_cat_type != TILESET_RAW && active_cat_type != TILESET_FAVORITE) {
+									if (seen_in_search.count(b)) continue;
+								}
 								std::string bname = b->getName();
 								for (auto& c : bname) c = (char)tolower(c);
 								std::string id_str = std::to_string(b->getLookID());
 								if (bname.find(search_str) != std::string::npos || id_str.find(search_str) != std::string::npos) {
 									matched.push_back(b);
+									seen_in_search.insert(b);
 								}
 							}
 							if (!matched.empty()) {
 								any_found = true;
+								ImGui::PushID((int)ts_idx);
 								ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "v %s", ts_entry.first.c_str());
 								flush_section_tiles(matched);
+								ImGui::PopID();
 							}
 						}
 						if (!any_found) {
 							ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.7f, 0.8f), "No matching tiles found in this category.");
 						}
 					} else {
+						int sec_idx = 0;
 						for (Brush* b : brushlist) {
 							if (!b) continue;
 							if (b->isSeparator()) {
 								if (!current_section_collapsed && !section_brushes.empty()) {
+									ImGui::PushID(sec_idx++);
 									flush_section_tiles(section_brushes);
+									ImGui::PopID();
 									section_brushes.clear();
 								} else {
 									section_brushes.clear();
@@ -2419,7 +2433,9 @@ static ToolbarIconCache s_toolbar_icons;
 							}
 						}
 						if (!current_section_collapsed && !section_brushes.empty()) {
+							ImGui::PushID(sec_idx++);
 							flush_section_tiles(section_brushes);
+							ImGui::PopID();
 						}
 					}
 				}

@@ -314,6 +314,9 @@ public:
 	bool isCarpet() const {
 		return g_items[id].isCarpet;
 	}
+	bool isDepot() const {
+		return g_items[id].isDepot();
+	}
 	bool isMetaItem() const {
 		return g_items[id].isMetaItem();
 	}

@@ -18,6 +18,7 @@
 #include "main.h"
 
 #include "tileset.h"
+#include "materials.h"
 #include "creatures.h"
 #include "creature_brush.h"
 #include "items.h"
@@ -197,6 +198,27 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings) {
 
 		Brush* brush = tileset.brushes.getBrush(attribute.as_string());
 		if (brush) {
+			// Skip duplicate entries in palettes (except RAW and Favorites)
+			if (type != TILESET_RAW && type != TILESET_FAVORITE && tileset.name != "Favorites" && tileset.name != "Host-Favorites") {
+				if (containsBrush(brush)) {
+					return;
+				}
+				bool already_in_category = false;
+				for (const auto& pair : g_materials.tilesets) {
+					if (pair.second && pair.second->name != "Favorites" && pair.second->name != "Host-Favorites") {
+						if (const TilesetCategory* other_cat = pair.second->getCategory(type)) {
+							if (other_cat->containsBrush(brush)) {
+								already_in_category = true;
+								break;
+							}
+						}
+					}
+				}
+				if (already_in_category) {
+					return;
+				}
+			}
+
 			auto insertPosition = brushlist.end();
 			if (!brushName.empty()) {
 				for (auto itt = brushlist.begin(); itt != brushlist.end(); ++itt) {
@@ -257,6 +279,26 @@ void TilesetCategory::loadBrush(pugi::xml_node node, wxArrayString& warnings) {
 
 			if (it.doodad_brush == nullptr && !isTrivial()) {
 				it.doodad_brush = brush;
+			}
+
+			if (type != TILESET_RAW && type != TILESET_FAVORITE && tileset.name != "Favorites" && tileset.name != "Host-Favorites") {
+				if (containsBrush(brush)) {
+					continue;
+				}
+				bool already_in_category = false;
+				for (const auto& pair : g_materials.tilesets) {
+					if (pair.second && pair.second->name != "Favorites" && pair.second->name != "Host-Favorites") {
+						if (const TilesetCategory* other_cat = pair.second->getCategory(type)) {
+							if (other_cat->containsBrush(brush)) {
+								already_in_category = true;
+								break;
+							}
+						}
+					}
+				}
+				if (already_in_category) {
+					continue;
+				}
 			}
 
 			brush->flagAsVisible();

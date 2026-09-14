@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<favorites>
+	<brush name="wooden floor" />
+	<brush name="oramond pavement" />
+	<brush name="sand" />
+	<brush name="grass" />
+	<brush name="earth" />
+	<brush name="dirt" />
+	<brush name="light dirt" />
+	<brush name="mountain" />
+	<brush name="mountain ground" />
+	<brush name="sea" />
+	<brush name="dry earth" />
+	<brush name="swamp" />
+	<brush name="walkable swamp" />
+	<brush name="cave" />
+	<brush name="cave (alternate border)" />
+	<brush name="lava" />
+	<brush name="flat roof" />
+	<brush name="framework wall" />
+	<brush name="rock wall" />
+	<brush name="brick wall" />
+	<brush name="egypt wall" />
+	<brush name="egypt stone wall" />
+	<brush name="something sparkling" />
+	<brush name="venorean grass tufts" />
+</favorites>
