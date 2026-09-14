@@ -1320,6 +1320,7 @@ struct ToolbarIconCache {
 	GLuint tex_magic_wand = 0;
 	GLuint tex_eraser = 0;
 	GLuint tex_autoborder = 0;
+	GLuint tex_zones = 0;
 	GLuint tex_door = 0;
 	GLuint tex_window = 0;
 	GLuint tex_day_night = 0;
@@ -1347,6 +1348,7 @@ struct ToolbarIconCache {
 		tex_magic_wand = load_tex({"icons/magic-wand.png", "../icons/magic-wand.png", "Map Editor/icons/magic-wand.png", exeDir + "magic-wand.png", cwdDir + "magic-wand.png"});
 		tex_eraser = load_tex({"icons/eraser.png", "../icons/eraser.png", "Map Editor/icons/eraser.png", exeDir + "eraser.png", cwdDir + "eraser.png"});
 		tex_autoborder = load_tex({"icons/auto_border.png", "../icons/auto_border.png", "Map Editor/icons/auto_border.png", exeDir + "auto_border.png", cwdDir + "auto_border.png"});
+		tex_zones = load_tex({"icons/protected_zone.png", "../icons/protected_zone.png", "Map Editor/icons/protected_zone.png", exeDir + "protected_zone.png", cwdDir + "protected_zone.png"});
 		tex_door = load_tex({"icons/door.png", "../icons/door.png", "Map Editor/icons/door.png", exeDir + "door.png", cwdDir + "door.png"});
 		tex_window = load_tex({"icons/window.png", "../icons/window.png", "Map Editor/icons/window.png", exeDir + "window.png", cwdDir + "window.png"});
 		tex_day_night = load_tex({"icons/day-night.png", "../icons/day-night.png", "Map Editor/icons/day-night.png", exeDir + "day-night.png", cwdDir + "day-night.png"});
@@ -1437,7 +1439,7 @@ static ToolbarIconCache s_toolbar_icons;
 
 			ImGui::SameLine();
 			// 2. Pencil Tool
-			const bool is_pencil = (!g_gui.IsSelectionMode() && !g_gui.IsFillBrushMode() && g_gui.GetCurrentBrush() != g_gui.eraser && g_gui.GetCurrentBrush() != g_gui.optional_brush && g_gui.GetCurrentBrush() != g_gui.normal_door_brush && g_gui.GetCurrentBrush() != g_gui.locked_door_brush && g_gui.GetCurrentBrush() != g_gui.magic_door_brush && g_gui.GetCurrentBrush() != g_gui.quest_door_brush && g_gui.GetCurrentBrush() != g_gui.window_door_brush && g_gui.GetCurrentBrush() != g_gui.hatch_door_brush);
+			const bool is_pencil = (!g_gui.IsSelectionMode() && !g_gui.IsFillBrushMode() && g_gui.GetCurrentBrush() != g_gui.eraser && g_gui.GetCurrentBrush() != g_gui.optional_brush && g_gui.GetCurrentBrush() != g_gui.pz_brush && g_gui.GetCurrentBrush() != g_gui.nolog_brush && g_gui.GetCurrentBrush() != g_gui.rook_brush && g_gui.GetCurrentBrush() != g_gui.pvp_brush && g_gui.GetCurrentBrush() != g_gui.normal_door_brush && g_gui.GetCurrentBrush() != g_gui.locked_door_brush && g_gui.GetCurrentBrush() != g_gui.magic_door_brush && g_gui.GetCurrentBrush() != g_gui.quest_door_brush && g_gui.GetCurrentBrush() != g_gui.window_door_brush && g_gui.GetCurrentBrush() != g_gui.hatch_door_brush);
 			if (draw_icon_btn("##tool_pencil", s_toolbar_icons.tex_pencil, "Pen", is_pencil, "Pencil Drawing Tool", tool_btn_sz, tool_icon_sz)) {
 				g_gui.SetFillBrushMode(false);
 				g_gui.SetDrawingMode();
@@ -1468,7 +1470,36 @@ static ToolbarIconCache s_toolbar_icons;
 			}
 
 			ImGui::SameLine();
-			// 6. Doors Tool (Click to select or choose variant)
+			// 6. Zones Tool (Click to select or choose variant)
+			const bool is_zone = (g_gui.GetCurrentBrush() == g_gui.pz_brush || g_gui.GetCurrentBrush() == g_gui.nolog_brush || g_gui.GetCurrentBrush() == g_gui.rook_brush || g_gui.GetCurrentBrush() == g_gui.pvp_brush);
+			if (draw_icon_btn("##tool_zone", s_toolbar_icons.tex_zones, "Zone", is_zone, "Special Zones Tool (Protected, No Logout, No-PvP, PvP Zone)", tool_btn_sz, tool_icon_sz)) {
+				ImGui::OpenPopup("##ZoneSubMenu");
+			}
+
+			if (ImGui::BeginPopup("##ZoneSubMenu")) {
+				ImGui::TextColored(ImVec4(0.95f, 0.82f, 0.35f, 1.0f), "Select Zone Type");
+				ImGui::Separator();
+				if (ImGui::Selectable("Protection Zone (PZ)", g_gui.GetCurrentBrush() == g_gui.pz_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.pz_brush);
+				}
+				if (ImGui::Selectable("No Logout Zone", g_gui.GetCurrentBrush() == g_gui.nolog_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.nolog_brush);
+				}
+				if (ImGui::Selectable("No PvP Zone (Non-PvP)", g_gui.GetCurrentBrush() == g_gui.rook_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.rook_brush);
+				}
+				if (ImGui::Selectable("PvP Zone", g_gui.GetCurrentBrush() == g_gui.pvp_brush)) {
+					g_gui.SetFillBrushMode(false);
+					g_gui.SelectBrush(g_gui.pvp_brush);
+				}
+				ImGui::EndPopup();
+			}
+
+			ImGui::SameLine();
+			// 7. Doors Tool (Click to select or choose variant)
 			const bool is_door = (g_gui.GetCurrentBrush() == g_gui.normal_door_brush || g_gui.GetCurrentBrush() == g_gui.locked_door_brush || g_gui.GetCurrentBrush() == g_gui.magic_door_brush || g_gui.GetCurrentBrush() == g_gui.quest_door_brush);
 			if (draw_icon_btn("##tool_door", s_toolbar_icons.tex_door, "Dor", is_door, "Doors Tool (Click for Door Options)", tool_btn_sz, tool_icon_sz)) {
 				ImGui::OpenPopup("##DoorSubMenu");

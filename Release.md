@@ -32,7 +32,7 @@
   * **Malformed Network Packet Protection:** `NetworkMessage` now latches truncated reads and invalid string lengths. The live client logs the offending packet type and closes the session cleanly instead of continuing with default or partial values.
   * **Reliable Undo Memory Budget:** Existing `UNDO_MEM_SIZE` limits are enforced after inserting or merging the newest action, including oversized single operations. The configured minimum is clamped to a safe positive value.
   * **Transactional Map Saving:** OTBM data is written completely to a temporary file and renamed into place only after all writes succeed, preserving the previous map file during interrupted saves. Crash recovery also records and restores waypoint backups in addition to OTBM, house, and spawn files.
-  * **Release Package Hygiene:** Personal `Saves` and `World_Backup` content remain available to local build output but are excluded from the clean release package.
+  * **Release Package & Save Structure:** Included a clean, ready-to-use `Saves` folder structure in the release package so users can immediately organize and save their custom maps out-of-the-box.
   * **Viewport-Aware Lighting API:** Deferred lighting now accepts explicit viewport bounds and requests only lights intersecting the visible map area, removing the former fixed 10,000 x 10,000 fallback.
   * **Visible Multiplayer Lock Feedback:** Lock and unlock broadcasts now report the affected map position and current editor in the status bar, complementing the existing property and context-menu protection.
   * **Auto-Save Status Feedback:** The coordinates/status bar now keeps the time of the last successful automatic save visible alongside the zoom level.

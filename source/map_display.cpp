@@ -414,6 +414,16 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
       Refresh();
       return;
     }
+    if (event.GetKeyCode() == 'S' || event.GetKeyCode() == 's') {
+      if (event.ShiftDown()) {
+        if (g_gui.GetCurrentEditor()) {
+          g_gui.GetCurrentEditor()->saveMap(FileName(), true);
+        }
+      } else {
+        g_gui.SaveMap();
+      }
+      return;
+    }
     if (event.GetKeyCode() == 'F' || event.GetKeyCode() == 'f' || event.GetKeyCode() == 'K' || event.GetKeyCode() == 'k' || event.GetKeyCode() == 'P' || event.GetKeyCode() == 'p') {
       wxCommandEvent cmd_evt;
       if (g_gui.root && g_gui.root->menu_bar) {

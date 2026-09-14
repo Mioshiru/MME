@@ -410,6 +410,8 @@ bool MapEditor::saveMap(FileName filename, bool show_dialog, bool is_autosave) {
 	WorldMapMarkerManager::GetInstance().SaveToFile();
 
 	map.clearChanges();
+	g_gui.SetStatusText(wxString::Format("Map saved successfully to %s", wxstr(savefile)));
+	g_gui.UpdateTitle();
 	return true;
 }
 

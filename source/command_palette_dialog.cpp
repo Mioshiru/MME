@@ -88,7 +88,7 @@ CommandPaletteDialog::CommandPaletteDialog(wxWindow* parent) :
 	input_sizer->Add(filter_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 
 	// Schließen-Button (X) oben rechts
-	wxButton* close_btn = newd wxButton(this, wxID_CANCEL, "✕", wxDefaultPosition, wxSize(44, 46), wxBORDER_NONE);
+	wxButton* close_btn = newd wxButton(this, wxID_CANCEL, wxString::FromUTF8("✕"), wxDefaultPosition, wxSize(44, 46), wxBORDER_NONE);
 	close_btn->SetBackgroundColour(wxColour(36, 24, 28));
 	close_btn->SetForegroundColour(wxColour(245, 120, 120));
 	wxFont close_font = close_btn->GetFont();
