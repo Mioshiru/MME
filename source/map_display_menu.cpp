@@ -1021,10 +1021,21 @@ void MapCanvas::OnSelectRAWBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
-	Item* top = tile->getTopItem();
-	if (!top) top = tile->ground;
-	if (top && top->getRAWBrush()) {
-		g_gui.SelectBrush(top->getRAWBrush(), TILESET_RAW);
+	Item* found = nullptr;
+	for (auto* item : tile->items) {
+		if (item && item->isSelected() && item->getRAWBrush()) {
+			found = item;
+			break;
+		}
+	}
+	if (!found) {
+		found = tile->getTopItem();
+	}
+	if (!found) {
+		found = tile->ground;
+	}
+	if (found && found->getRAWBrush()) {
+		g_gui.SelectBrush(found->getRAWBrush(), TILESET_RAW);
 	}
 }
 void MapCanvas::OnSelectGroundBrush(wxCommandEvent& WXUNUSED(event)) {
@@ -1094,33 +1105,69 @@ void MapCanvas::OnSelectWallBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
+	Item* found = nullptr;
 	for (auto* item : tile->items) {
-		if (item->isWall() && item->getWallBrush()) {
-			g_gui.SelectBrush(item->getWallBrush(), TILESET_TERRAIN);
+		if (item->isSelected() && item->isWall() && item->getWallBrush()) {
+			found = item;
 			break;
 		}
+	}
+	if (!found) {
+		for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
+			if ((*it)->isWall() && (*it)->getWallBrush()) {
+				found = *it;
+				break;
+			}
+		}
+	}
+	if (found && found->getWallBrush()) {
+		g_gui.SelectBrush(found->getWallBrush(), TILESET_TERRAIN);
 	}
 }
 void MapCanvas::OnSelectCarpetBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
+	Item* found = nullptr;
 	for (auto* item : tile->items) {
-		if (item->isCarpet() && item->getCarpetBrush()) {
-			g_gui.SelectBrush(item->getCarpetBrush(), TILESET_TERRAIN);
+		if (item->isSelected() && item->isCarpet() && item->getCarpetBrush()) {
+			found = item;
 			break;
 		}
+	}
+	if (!found) {
+		for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
+			if ((*it)->isCarpet() && (*it)->getCarpetBrush()) {
+				found = *it;
+				break;
+			}
+		}
+	}
+	if (found && found->getCarpetBrush()) {
+		g_gui.SelectBrush(found->getCarpetBrush(), TILESET_TERRAIN);
 	}
 }
 void MapCanvas::OnSelectTableBrush(wxCommandEvent& WXUNUSED(event)) {
 	Tile* tile = editor.selection.getSelectedTile();
 	if (!tile) tile = editor.map.getTile(last_click_map_x, last_click_map_y, floor);
 	if (!tile) return;
+	Item* found = nullptr;
 	for (auto* item : tile->items) {
-		if (item->isTable() && item->getTableBrush()) {
-			g_gui.SelectBrush(item->getTableBrush(), TILESET_TERRAIN);
+		if (item->isSelected() && item->isTable() && item->getTableBrush()) {
+			found = item;
 			break;
 		}
+	}
+	if (!found) {
+		for (auto it = tile->items.rbegin(); it != tile->items.rend(); ++it) {
+			if ((*it)->isTable() && (*it)->getTableBrush()) {
+				found = *it;
+				break;
+			}
+		}
+	}
+	if (found && found->getTableBrush()) {
+		g_gui.SelectBrush(found->getTableBrush(), TILESET_TERRAIN);
 	}
 }
 void MapCanvas::OnSelectHouseBrush(wxCommandEvent& WXUNUSED(event)) {}

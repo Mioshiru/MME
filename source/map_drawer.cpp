@@ -200,68 +200,68 @@ vec3 hsv2rgb(vec3 c) {
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-// ── Zelda-Style "Fantasy Colors" Enhancer (Balanced, Rich, RPG Fantasy Aesthetics) ──
+// ── Cozy & Organic Fantasy Colors (Harmonious, Earthy, Balanced Pixel RPG Palette) ──
 vec3 applyZeldaFantasyColors(vec3 rgb) {
     vec3 hsv = rgb2hsv(rgb);
     float h = hsv.x; // [0, 1]
     float s = hsv.y; // [0, 1]
     float v = hsv.z; // [0, 1]
 
-    if (s > 0.05) {
-        // 🌿 1. Nature / Grass / Trees / Moss / Plants (Hue 65°..165° -> 0.18..0.46)
+    if (s > 0.06) {
+        // 🌿 1. Nature / Grass / Meadow / Foliage (Hue 65°..165° -> 0.18..0.46)
         if (h >= 0.18 && h <= 0.46) {
-            // Fresh, radiant emerald green with pleasant, balanced saturation
-            hsv.x = mix(hsv.x, 0.31, 0.30);
-            hsv.y = clamp(hsv.y * 1.34 + 0.04, 0.0, 1.0);
-            hsv.z = clamp(pow(hsv.z, 0.94) * 1.02, 0.0, 1.0);
+            // Soft, natural pasture/spring green with balanced warmth (not neon/oversaturated)
+            hsv.x = mix(hsv.x, 0.265, 0.20);
+            hsv.y = clamp(hsv.y * 0.94, 0.0, 0.85);
+            hsv.z = clamp(pow(hsv.z, 0.97) * 1.01, 0.0, 1.0);
         }
         // 🌊 2. Water / Oceans / Rivers / Cyan / Crystals (Hue 165°..255° -> 0.46..0.72)
         else if (h > 0.46 && h <= 0.72) {
-            // Deep tropical turquoise & sapphire blue
-            hsv.x = mix(hsv.x, 0.55, 0.18);
-            hsv.y = clamp(hsv.y * 1.28 + 0.03, 0.0, 1.0);
-            hsv.z = clamp(hsv.z * 1.02, 0.0, 1.0);
-        }
-        // 🏜️ 3. Sand / Beach / Gold / Jungle Paths (Hue 33°..65° -> 0.092..0.18)
-        else if (h >= 0.092 && h < 0.18) {
-            // Warm golden tones
-            hsv.x = mix(hsv.x, 0.125, 0.20);
-            hsv.y = clamp(hsv.y * 1.25 + 0.03, 0.0, 1.0);
+            // Clean, balanced clear water & sapphire
+            hsv.x = mix(hsv.x, 0.54, 0.12);
+            hsv.y = clamp(hsv.y * 0.96, 0.0, 0.85);
             hsv.z = clamp(hsv.z * 1.01, 0.0, 1.0);
         }
-        // 🪑 4. Wood / Furniture / Chests / Leather (Hue 15°..33° -> 0.042..0.092, s > 0.12)
-        else if (h >= 0.042 && h < 0.092 && s > 0.12) {
-            // Rich chestnut and mahogany wood tones
-            hsv.x = mix(hsv.x, 0.065, 0.12);
-            hsv.y = clamp(hsv.y * 1.24 + 0.02, 0.0, 1.0);
-            hsv.z = clamp(pow(hsv.z, 0.94) * 1.02, 0.0, 1.0);
+        // 🏜️ 3. Sand / Clay / Earth / Autumn Amber (Hue 30°..65° -> 0.082..0.18)
+        else if (h >= 0.082 && h < 0.18) {
+            // Warm clay earth and golden autumn tones
+            hsv.x = mix(hsv.x, 0.105, 0.12);
+            hsv.y = clamp(hsv.y * 0.98, 0.0, 0.88);
+            hsv.z = clamp(hsv.z * 1.01, 0.0, 1.0);
         }
-        // 🔥 5. Fire / Lava / Rubies / Potions / Flowers (Red / Magenta: h < 0.042 or h > 0.92)
+        // 🪑 4. Wood / Timber / Chests / Bark (Hue 15°..30° -> 0.042..0.082, s > 0.10)
+        else if (h >= 0.042 && h < 0.082 && s > 0.10) {
+            // Natural oak and chestnut wood tones
+            hsv.x = mix(hsv.x, 0.068, 0.10);
+            hsv.y = clamp(hsv.y * 0.96, 0.0, 0.85);
+            hsv.z = clamp(pow(hsv.z, 0.97) * 1.01, 0.0, 1.0);
+        }
+        // 🔥 5. Fire / Rust / Autumn Red / Flowers (Red / Magenta: h < 0.042 or h > 0.92)
         else if (h < 0.042 || h > 0.92) {
-            // Ruby red and embers
-            hsv.y = clamp(hsv.y * 1.20 + 0.03, 0.0, 1.0);
-            hsv.z = clamp(hsv.z * 1.02, 0.0, 1.0);
+            // Earthy rust reds and warm embers
+            hsv.y = clamp(hsv.y * 0.96, 0.0, 0.88);
+            hsv.z = clamp(hsv.z * 1.01, 0.0, 1.0);
         }
         // 💜 6. Magic / Purple / Violet (Hue 255°..330° -> 0.72..0.92)
         else if (h > 0.72 && h <= 0.92) {
-            hsv.y = clamp(hsv.y * 1.22 + 0.03, 0.0, 1.0);
-            hsv.z = clamp(hsv.z * 1.02, 0.0, 1.0);
+            hsv.y = clamp(hsv.y * 0.96, 0.0, 0.88);
+            hsv.z = clamp(hsv.z * 1.01, 0.0, 1.0);
         }
     } else {
-        // 🧱 7. Stone / Walls / Rock (Neutral greys / masonry)
+        // 🧱 7. Stone / Walls / Rock (Slate grey / clean neutral masonry)
         float luma = v;
-        hsv.z = clamp((luma - 0.45) * 1.10 + 0.46, 0.0, 1.0);
+        hsv.z = clamp((luma - 0.50) * 1.04 + 0.50, 0.0, 1.0);
     }
 
     vec3 outRgb = hsv2rgb(hsv);
 
-    // Balanced Contrast and Saturation Lift
+    // Subtle, clean contrast and gentle daylight tone
     float luma = dot(outRgb, vec3(0.299, 0.587, 0.114));
-    outRgb = clamp((outRgb - 0.5) * 1.07 + 0.5, 0.0, 1.0);
-    outRgb = clamp(mix(vec3(luma), outRgb, 1.16), 0.0, 1.0);
-    vec3 shadowTone = vec3(0.96, 0.98, 1.03);
-    vec3 highlightTone = vec3(1.04, 1.02, 0.96);
-    outRgb = mix(outRgb * shadowTone, outRgb * highlightTone, smoothstep(0.12, 0.88, luma));
+    outRgb = clamp((outRgb - 0.5) * 1.03 + 0.5, 0.0, 1.0);
+    outRgb = clamp(mix(vec3(luma), outRgb, 1.02), 0.0, 1.0);
+    vec3 shadowTone = vec3(0.98, 0.98, 1.01);
+    vec3 highlightTone = vec3(1.02, 1.01, 0.98);
+    outRgb = mix(outRgb * shadowTone, outRgb * highlightTone, smoothstep(0.15, 0.85, luma));
 
     return clamp(outRgb, 0.0, 1.0);
 }

@@ -1450,8 +1450,10 @@ void doSurroundingBorders(DoodadBrush* doodad_brush, PositionList& tilestoborder
 
 void removeDuplicateWalls(Tile* buffer, Tile* tile) {
 	for (ItemVector::const_iterator iter = buffer->items.begin(); iter != buffer->items.end(); ++iter) {
-		if ((*iter)->getWallBrush()) {
-			tile->cleanWalls((*iter)->getWallBrush());
+		Item* item = *iter;
+		if (item && (item->isWall() || item->getWallBrush() || item->isBrushDoor() || item->getDoorBrush() || item->isDoor())) {
+			tile->cleanWalls();
+			break;
 		}
 	}
 }

@@ -417,10 +417,6 @@ Item* Tile::getTopSelectedItem() {
 ItemVector Tile::popSelectedItems(bool ignoreTileSelected) {
 	ItemVector pop_items;
 
-	if (!ignoreTileSelected && !isSelected()) {
-		return pop_items;
-	}
-
 	if (ground && ground->isSelected()) {
 		pop_items.push_back(ground);
 		ground = nullptr;

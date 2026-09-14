@@ -1949,39 +1949,93 @@ static ToolbarIconCache s_toolbar_icons;
 				// Synchronize with active brush selected from canvas right-click
 				Brush* cur_active_brush = g_gui.GetCurrentBrush();
 				static Brush* s_last_synced_brush = nullptr;
-				static bool s_need_scroll_to_brush = false;
 
-				if (cur_active_brush && cur_active_brush != s_last_synced_brush) {
+				if (cur_active_brush && (cur_active_brush != s_last_synced_brush || cur_active_brush->getName() != pal_state.selected_brush_name)) {
 					s_last_synced_brush = cur_active_brush;
-					s_need_scroll_to_brush = true;
+					pal_state.selected_brush_name = cur_active_brush->getName();
 
-					// Locate which category contains this brush
-					bool found_cat = false;
+					// Locate which category and tileset contains this brush
+					bool found_match = false;
 					for (int c = 0; c < (int)IM_ARRAYSIZE(cat_types); ++c) {
 						TilesetCategoryType ctype = cat_types[c];
 						if (ctype == TILESET_FAVORITE) continue;
+
+						std::vector<Tileset*> sorted_ts;
 						for (auto& pair : g_materials.tilesets) {
 							if (!pair.second) continue;
 							if (pair.second->name == "Favorites" || pair.second->name == "Host-Favorites") continue;
-							if (const TilesetCategory* cat = pair.second->getCategory(ctype)) {
-								if (cat->containsBrush(cur_active_brush)) {
-									pal_state.current_cat_idx = c;
-									found_cat = true;
-									break;
+							sorted_ts.push_back(pair.second);
+						}
+
+						auto getTilesetRank = [](const std::string& name) -> int {
+							if (name == "Nature") return 0;
+							if (name == "City Grounds") return 1;
+							return 10;
+						};
+
+						std::sort(sorted_ts.begin(), sorted_ts.end(), [&getTilesetRank](Tileset* a, Tileset* b) {
+							if (!a && !b) return false;
+							if (!a) return false;
+							if (!b) return true;
+							int rankA = getTilesetRank(a->name);
+							int rankB = getTilesetRank(b->name);
+							if (rankA != rankB) return rankA < rankB;
+							return a->name < b->name;
+						});
+
+						int ts_idx = 0;
+						for (Tileset* ts : sorted_ts) {
+							if (const TilesetCategory* cat = ts->getCategory(ctype)) {
+								if (cat->size() > 0) {
+									bool has_b = false;
+									if (cur_active_brush->isRaw()) {
+										RAWBrush* raw_b = cur_active_brush->asRaw();
+										uint16_t item_id = raw_b ? raw_b->getItemID() : 0;
+										for (Brush* b : cat->brushlist) {
+											if (b == cur_active_brush) { has_b = true; break; }
+											if (b && b->isRaw() && b->asRaw() && b->asRaw()->getItemID() == item_id) { has_b = true; break; }
+											if (b && b->getLookID() == item_id) { has_b = true; break; }
+										}
+									} else {
+										has_b = cat->containsBrush(cur_active_brush);
+										if (!has_b) {
+											for (Brush* b : cat->brushlist) {
+												if (b && b->getName() == cur_active_brush->getName()) {
+													has_b = true;
+													break;
+												}
+											}
+										}
+									}
+
+									if (has_b) {
+										pal_state.current_cat_idx = c;
+										pal_state.last_seen_cat_idx = c;
+										pal_state.selected_tileset_idx = ts_idx;
+										found_match = true;
+										break;
+									}
+									ts_idx++;
 								}
 							}
 						}
-						if (found_cat) break;
+						if (found_match) break;
 					}
 				}
 
 				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 				std::string cat_combo_id = "##PalCategory_" + std::to_string(pal_state.id);
 				if (ImGui::Combo(cat_combo_id.c_str(), &pal_state.current_cat_idx, categories, IM_ARRAYSIZE(categories))) {
-					// manual switch
+					pal_state.selected_tileset_idx = 0;
+					pal_state.last_seen_cat_idx = pal_state.current_cat_idx;
 				}
 				if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
+					int old_cat = pal_state.current_cat_idx;
 					pal_state.current_cat_idx = std::clamp(pal_state.current_cat_idx - (int)io.MouseWheel, 0, (int)IM_ARRAYSIZE(categories) - 1);
+					if (pal_state.current_cat_idx != old_cat) {
+						pal_state.selected_tileset_idx = 0;
+						pal_state.last_seen_cat_idx = pal_state.current_cat_idx;
+					}
 				}
 
 				TilesetCategoryType active_cat_type = cat_types[pal_state.current_cat_idx];
@@ -2061,16 +2115,6 @@ static ToolbarIconCache s_toolbar_icons;
 					pal_state.last_seen_cat_idx = pal_state.current_cat_idx;
 				}
 
-				// If syncing brush, pick the tileset that contains it
-				if (s_need_scroll_to_brush && cur_active_brush) {
-					for (size_t i = 0; i < available_tilesets.size(); ++i) {
-						if (available_tilesets[i].second && available_tilesets[i].second->containsBrush(cur_active_brush)) {
-							pal_state.selected_tileset_idx = (int)i;
-							break;
-						}
-					}
-				}
-
 				if (pal_state.selected_tileset_idx >= (int)available_tilesets.size()) {
 					pal_state.selected_tileset_idx = 0;
 				}
@@ -2083,7 +2127,9 @@ static ToolbarIconCache s_toolbar_icons;
 				if (!tileset_names.empty()) {
 					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 					std::string ts_combo_id = "##PalTileset_" + std::to_string(pal_state.id);
-					ImGui::Combo(ts_combo_id.c_str(), &pal_state.selected_tileset_idx, tileset_names.data(), (int)tileset_names.size());
+					if (ImGui::Combo(ts_combo_id.c_str(), &pal_state.selected_tileset_idx, tileset_names.data(), (int)tileset_names.size())) {
+						// Tileset selected by user
+					}
 					if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
 						pal_state.selected_tileset_idx = std::clamp(pal_state.selected_tileset_idx - (int)io.MouseWheel, 0, (int)tileset_names.size() - 1);
 					}
@@ -2193,11 +2239,6 @@ static ToolbarIconCache s_toolbar_icons;
 								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.45f, 0.85f, 0.95f));
 								ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.95f, 0.80f, 0.30f, 1.0f));
 								ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f);
-
-								if (s_need_scroll_to_brush) {
-									ImGui::SetScrollHereY(0.5f);
-									s_need_scroll_to_brush = false;
-								}
 							} else {
 								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.13f, 0.20f, 0.80f));
 								ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.35f, 0.38f, 0.48f, 0.50f));
@@ -2223,6 +2264,54 @@ static ToolbarIconCache s_toolbar_icons;
 
 							ImGui::PopStyleVar();
 							ImGui::PopStyleColor(2);
+
+							if (ImGui::BeginPopupContextItem()) {
+								Tileset* favs = g_materials.tilesets["Favorites"];
+								bool is_favorited = false;
+								if (favs) {
+									const TilesetCategory* cat = favs->getCategory(TILESET_FAVORITE);
+									if (cat && cat->containsBrush(b)) {
+										is_favorited = true;
+									}
+								}
+
+								if (is_favorited) {
+									if (ImGui::MenuItem("Remove from Favorites")) {
+										if (favs) {
+											for (TilesetCategory* cat : favs->categories) {
+												auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), b);
+												if (it != cat->brushlist.end()) {
+													cat->brushlist.erase(it);
+												}
+											}
+											g_materials.rebuildFavorites();
+											g_materials.saveFavorites();
+											g_gui.RefreshFavoritesBox();
+										}
+									}
+								} else {
+									if (ImGui::MenuItem("Add to Favorites")) {
+										if (favs) {
+											TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+											if (catFav && !catFav->containsBrush(b)) {
+												catFav->brushlist.push_back(b);
+											}
+											g_materials.rebuildFavorites();
+											g_materials.saveFavorites();
+											g_gui.RefreshFavoritesBox();
+										}
+									}
+								}
+
+								ImGui::Separator();
+								if (ImGui::MenuItem("Select Brush")) {
+									pal_state.selected_brush_name = b->getName();
+									g_gui.SelectBrush(b, active_cat_type);
+									g_gui.SelectBrushInternal(b);
+								}
+
+								ImGui::EndPopup();
+							}
 
 							if (ImGui::IsItemHovered()) {
 								ImGui::SetTooltip("%s (ID: %d)", b->getName().c_str(), b->getLookID());
@@ -2272,11 +2361,6 @@ static ToolbarIconCache s_toolbar_icons;
 								current_sep = b->asSeparator();
 								current_section_collapsed = current_sep ? current_sep->isCollapsed() : false;
 
-								if (current_sep && current_section_collapsed && s_need_scroll_to_brush && cur_active_brush) {
-									current_sep->toggleCollapsed();
-									current_section_collapsed = false;
-								}
-
 								std::string header_label = (current_sep && !current_sep->getName().empty()) ? current_sep->getName() : "Section";
 								std::string arrow = current_section_collapsed ? "> " : "v ";
 								std::string full_title = arrow + header_label;
@@ -2290,6 +2374,7 @@ static ToolbarIconCache s_toolbar_icons;
 								if (ImGui::Button(full_title.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 22.0f))) {
 									if (current_sep) {
 										current_sep->toggleCollapsed();
+										current_section_collapsed = current_sep->isCollapsed();
 									}
 								}
 
@@ -2780,11 +2865,22 @@ static ToolbarIconCache s_toolbar_icons;
 						float box_w = std::max({ text_size.x, header_size.x, grid_w }) + 16.0f;
 						float content_h = text_size.y + (text_size.y > 0.0f ? 4.0f : 0.0f) + (grid_h > 0.0f ? grid_h + 6.0f : 0.0f);
 						float box_h = header_height + content_h + 8.0f;
-
 						float box_x1 = bubble_x - box_w / 2.0f;
 						float box_y1 = bubble_y - box_h;
 						float box_x2 = bubble_x + box_w / 2.0f;
 						float box_y2 = bubble_y;
+
+						// Smart Hover Occlusion Bypass: If mouse cursor is hovering over this bubble or directly over its tile, hide the bubble completely so the user can see and work underneath!
+						const ImVec2& mouse_pos = io.MousePos;
+						float tile_w = (float)(TileSize / zoom);
+						bool is_hovered = (mouse_pos.x >= box_x1 && mouse_pos.x <= box_x2 && mouse_pos.y >= box_y1 && mouse_pos.y <= box_y2) ||
+						                  (mouse_pos.x >= (float)tile_screen_x && mouse_pos.x <= (float)(tile_screen_x + tile_w) &&
+						                   mouse_pos.y >= (float)tile_screen_y && mouse_pos.y <= (float)(tile_screen_y + tile_w));
+
+						if (is_hovered) {
+							bubble_y -= box_h + 4.0f;
+							continue;
+						}
 
 						// Draw shadow
 						draw_list->AddRectFilled(ImVec2(box_x1 + 2.5f, box_y1 + 2.5f), ImVec2(box_x2 + 2.5f, box_y2 + 2.5f), IM_COL32(0, 0, 0, 140), 5.0f);

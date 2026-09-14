@@ -953,8 +953,9 @@ void MapCanvas::OnMouseLeftRelease(wxMouseEvent& event) {
 								editor.selection.add(tile, top_item);
 							} else if (tile->ground) {
 								editor.selection.add(tile, tile->ground);
+							} else {
+								editor.selection.add(tile);
 							}
-							editor.selection.add(tile);
 						}
 					}
 					editor.selection.finish(Selection::INTERNAL);

@@ -1,4 +1,4 @@
-﻿# Mio's Map Editor (MME) – Release History & Changelog
+# Mio's Map Editor (MME) – Release History & Changelog
 
 ![MME Editor Overview](docs/mme_editor_overview.png)
 
@@ -43,7 +43,7 @@
   * **Toolbar Lighting Control:** The Day/Night switch was removed from the canvas overlay and placed at the far right of the upper tools toolbar, keeping the map viewport clear while retaining quick access to lighting.
   * **Biome Color Mood Rendering Fix:** Color-grading and vignette preferences are now applied in the actual per-floor VBO shader path, so changing Biome Color Mood visibly affects the map canvas again.
   * **Correct Mood Mapping:** The six Graphics mood choices now map to distinct shader states, including the previously unhandled `Vibrant Fantasy RPG` index and explicit neutral behavior.
-  * **Stronger Fantasy Color Mood:** Vibrant Fantasy now uses warmer biome colors, stronger saturation separation, and a controlled contrast lift so it is visibly distinct from Neutral / Classic Vanilla.
+  * **Cozy & Organic Fantasy RPG Color Mood:** Rebalanced the Fantasy color grading profile away from neon/harsh saturation toward an organic, warm indie pixel-art palette inspired by cozy top-down games: natural meadow greens, warm earthy clay/autumn tones, clean slate stone, and soft daylight ambient lighting.
   * **Softer Modern Pixel-Art Upscaling:** The xBRZ visual mode now uses weighted 3x3 reconstruction with stronger softening and restrained detail preservation for a smoother top-down pixel-art presentation.
   * **Centered Tool Group & Pinned Day/Night Switch:** The upper tools/brushes toolbar now centers its complete tool group, while the Day/Night switch remains attached as the final right-edge control instead of drifting with the group.
   * **Mood Switch Refresh Stability:** Removed the redundant intermediate canvas refresh during Graphics Apply, preventing visible flicker while switching Biome Color Mood settings.
@@ -55,6 +55,11 @@
   * **Editor-Bounded Movement:** Floating toolbars and palettes are clamped to the editor client area and cannot be dragged outside the MME window.
   * **Single-Line Canvas Info:** Coordinates and item/ID information are displayed horizontally with a Mystic Gold separator and remain configurable to one of four canvas corners.
   * **Persistent Overlay Layout Controls:** Graphics/UI settings now include toolbar overlay position, palette dock side, toolbar opacity, and palette opacity. The hidden lower coordinate toolbar is no longer shown; coordinate/item information remains on the canvas.
+  * **Canvas Palette Dropdown & Section Collapse Fix:** Resolved an issue where selecting subcategories (e.g., Roofs, Walls) in the tileset combo was forcibly reset by brush syncing, and fixed collapsible separator headers (e.g., *Grasslands & Forests*) so sections can now be minimized and expanded smoothly via click.
+  * **Automatic Wall Removal for Archways:** Placing archway elements (e.g., *plaster wall arch*) now automatically cleans and removes existing blocking walls on that tile, creating a proper walkable passage as standard in RME editors.
+  * **Target-Only Selection Delete (Entf):** Pressing `Entf` (Delete) when a specific asset (such as a Wall, Doodad, or Item) is selected now deletes only the targeted asset without destroying the underlying ground or borders. The Eraser tool continues to wipe the entire tile/layer.
+  * **Palette Right-Click Context Menu:** Restored the right-click context menu on asset cards in the Canvas Floating Palette to instantly add/remove items to/from Favorites.
+  * **Smart Hover Occlusion Bypass for Map Text Bubbles:** Text badges and overlay bubbles (Town Spawns, Chest inventories, Teleports, Action/Unique IDs, Texts, and Door locks) now automatically hide completely whenever the mouse cursor hovers over them or their underlying tile, allowing unobstructed view and editing directly underneath.
 
 * **🔮 Dark Runic Obsidian & Mystic Gold Fantasy RPG UI Overhaul:**
   * **Complete Theme Transformation:** Entire editor user interface transformed into an immersive AAA Dark Fantasy aesthetic with deep basalt/obsidian panels (`#0D1117`, `#161B22`), mystic gold framing (`#E5C158`, `#D4AF37`), and subtle amber/sapphire glowing accents.

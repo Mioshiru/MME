@@ -603,7 +603,7 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	mood_label->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
 	mood_sizer->Add(mood_label, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 	wxArrayString mood_choices;
-	mood_choices.Add("Fantasy Colors (Vibrant & Rich Zelda-Style)");
+	mood_choices.Add("Fantasy RPG (Warm & Organic Pixel Aesthetic)");
 	mood_choices.Add("Dark and Dangerous (Dragons, Undead, Blight, Dungeons)");
 	mood_choices.Add("Gloomy Crypt and Cave (Cool Cave Look)");
 	mood_choices.Add("Golden Sunset and Twilight (Warm Evening Light)");
