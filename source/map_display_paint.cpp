@@ -2472,12 +2472,10 @@ static ToolbarIconCache s_toolbar_icons;
 								if (target_town_id == 0 && cur_map->towns.begin() != cur_map->towns.end()) {
 									target_town_id = cur_map->towns.begin()->second->getID();
 								}
-								wxTheApp->CallAfter([cur_map, target_town_id]() {
-									if (cur_map) {
-										HouseWizardDialog wizard(g_gui.root, cur_map, target_town_id);
-										wizard.ShowModal();
-									}
-								});
+								MapTab* mt = g_gui.GetCurrentMapTab();
+								if (mt && mt->GetCanvas()) {
+									mt->GetCanvas()->StartHouseCreationFlow(target_town_id);
+								}
 							}
 						}
 
@@ -3653,7 +3651,9 @@ static ToolbarIconCache s_toolbar_icons;
 				else if (cur_brush->isHouseExit() && g_gui.house_exit_brush) active_h = g_gui.house_exit_brush->getHouse();
 
 				std::string h_name = active_h ? active_h->name : "House";
-				std::string prompt_text = "[House Editing: " + h_name + "]  Click tile = set Exit | Paint tiles | Finish (Enter / Click Here)";
+				std::string prompt_text = cur_brush->isHouse() ?
+					("[Step 1/3: Paint Floor Tiles]  Press Enter or Click Here to set Exit") :
+					("[Step 2/3: Click tile for Exit]  Press Enter or Click Here to finish & name house");
 				ImVec2 psz = ImGui::CalcTextSize(prompt_text.c_str());
 				float pill_w = psz.x + 36.0f;
 				float pill_h = 32.0f;
@@ -3675,7 +3675,7 @@ static ToolbarIconCache s_toolbar_icons;
 				draw_list->AddText(ImVec2(pill_x + 18.0f, pill_y + (pill_h - psz.y) * 0.5f), txt_col, prompt_text.c_str());
 
 				if (hovered && ImGui::IsMouseClicked(0)) {
-					FinishHouseCreation();
+					AdvanceHouseCreationFlow();
 				}
 			}
 

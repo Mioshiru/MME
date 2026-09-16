@@ -564,18 +564,9 @@ void HousePalettePanel::OnClickAddHouse(wxCommandEvent& WXUNUSED(event)) {
 		}
 	}
 
-	HouseWizardDialog wizard(g_gui.root, map, default_town_id);
-	if (wizard.ShowModal() == wxID_OK) {
-		House* new_house = wizard.getCreatedHouse();
-		if (new_house) {
-			SelectTown(town_choice->GetSelection());
-			int idx = house_list->FindString(wxstr(new_house->getDescription()));
-			if (idx != wxNOT_FOUND) {
-				SelectHouse(idx);
-			}
-			SelectHouseBrush();
-			g_gui.SelectBrush();
-		}
+	MapTab* mt = g_gui.GetCurrentMapTab();
+	if (mt && mt->GetCanvas()) {
+		mt->GetCanvas()->StartHouseCreationFlow(default_town_id);
 	}
 }
 
@@ -710,42 +701,94 @@ void HousePalettePanel::OnListBoxClick(wxMouseEvent& event) {
 
 BEGIN_EVENT_TABLE(EditHouseDialog, wxDialog)
 EVT_SET_FOCUS(EditHouseDialog::OnFocusChange)
+EVT_BUTTON(ID_HOUSE_RANDOM_NAME, EditHouseDialog::OnClickRandomName)
 EVT_BUTTON(wxID_OK, EditHouseDialog::OnClickOK)
 EVT_BUTTON(wxID_CANCEL, EditHouseDialog::OnClickCancel)
 END_EVENT_TABLE()
 
 EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
-	// window title
-	wxDialog(parent, wxID_ANY, "House Properties", wxDefaultPosition, wxSize(250, 160)),
+	wxDialog(parent, wxID_ANY, "House Properties", wxDefaultPosition, wxSize(520, 390), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	map(map),
-	what_house(house) {
+	what_house(house),
+	name_field(nullptr),
+	town_id_field(nullptr),
+	id_field(nullptr),
+	rent_field(nullptr),
+	guildhall_field(nullptr) {
 	ASSERT(map);
 	ASSERT(what_house);
 
-	// main properties window box
-	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
-	wxSizer* boxsizer = newd wxStaticBoxSizer(wxVERTICAL, this, "House Properties");
-	wxFlexGridSizer* housePropContainer = newd wxFlexGridSizer(2, 10, 10);
-	housePropContainer->AddGrowableCol(1);
+	SetBackgroundColour(wxColour(16, 24, 38));
+	SetForegroundColour(wxColour(240, 245, 255));
 
-	wxFlexGridSizer* subsizer = newd wxFlexGridSizer(2, 10, 10);
-	subsizer->AddGrowableCol(1);
+	wxFont default_font(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, "Arial");
+	wxFont bold_font(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, "Arial");
+	wxFont title_font(13, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, "Arial");
+
+	SetFont(default_font);
+
+	wxBoxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
+
+	// Header Banner Box
+	wxPanel* header_panel = newd wxPanel(this, wxID_ANY);
+	header_panel->SetBackgroundColour(wxColour(12, 18, 30));
+	wxBoxSizer* header_sizer = newd wxBoxSizer(wxVERTICAL);
+
+	wxStaticText* title_lbl = newd wxStaticText(header_panel, wxID_ANY, "House Properties");
+	title_lbl->SetFont(title_font);
+	title_lbl->SetForegroundColour(wxColour(255, 215, 80));
+	header_sizer->Add(title_lbl, 0, wxBOTTOM, 4);
+
+	wxStaticText* subtitle_lbl = newd wxStaticText(header_panel, wxID_ANY,
+		"Configure the house name, town, rent and guildhall settings.");
+	subtitle_lbl->SetFont(default_font);
+	subtitle_lbl->SetForegroundColour(wxColour(180, 195, 215));
+	header_sizer->Add(subtitle_lbl, 0, wxEXPAND);
+
+	header_panel->SetSizer(header_sizer);
+	topsizer->Add(header_panel, 0, wxEXPAND | wxALL, 12);
+
+	// Form Grid (5 rows, 2 columns with ample spacing)
+	wxFlexGridSizer* grid = newd wxFlexGridSizer(5, 2, 12, 14);
+	grid->AddGrowableCol(1);
 
 	house_name = wxString::FromUTF8(what_house->name);
 	house_id = wxString::Format("%u", what_house->getID());
 	house_rent = wxString::Format("%u", what_house->rent);
 
-	// House name
-	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Name:"), wxSizerFlags(0).Border(wxLEFT, 5));
-	name_field = newd wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, wxSize(160, 20), 0, wxTextValidator(wxFILTER_ASCII, &house_name));
-	subsizer->Add(name_field, wxSizerFlags(1).Expand());
+	// 1. House Name with Random button
+	wxStaticText* name_lbl = newd wxStaticText(this, wxID_ANY, "Name:");
+	name_lbl->SetFont(bold_font);
+	name_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(name_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	// Town selection menu
-	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Town:"), wxSizerFlags(0).Border(wxLEFT, 5));
+	wxBoxSizer* name_row = newd wxBoxSizer(wxHORIZONTAL);
+	name_field = newd wxTextCtrl(this, wxID_ANY, house_name, wxDefaultPosition, wxDefaultSize, 0, wxTextValidator(wxFILTER_ASCII, &house_name));
+	name_field->SetFont(default_font);
+	name_field->SetBackgroundColour(wxColour(10, 15, 26));
+	name_field->SetForegroundColour(wxColour(245, 245, 255));
+	name_row->Add(name_field, 1, wxEXPAND | wxRIGHT, 8);
+
+	wxButton* random_btn = newd wxButton(this, ID_HOUSE_RANDOM_NAME, "Random", wxDefaultPosition, wxSize(80, 28));
+	random_btn->SetFont(default_font);
+	random_btn->SetBackgroundColour(wxColour(30, 60, 110));
+	random_btn->SetForegroundColour(wxColour(255, 225, 120));
+	random_btn->SetToolTip("Generate a random English fantasy house name");
+	name_row->Add(random_btn, 0, wxALIGN_CENTER_VERTICAL);
+	grid->Add(name_row, 1, wxEXPAND);
+
+	// 2. Town Selection
+	wxStaticText* town_lbl = newd wxStaticText(this, wxID_ANY, "Town / City:");
+	town_lbl->SetFont(bold_font);
+	town_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(town_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
 	const Towns& towns = map->towns;
-
 	town_id_field = newd wxChoice(this, wxID_ANY);
+	town_id_field->SetFont(default_font);
+	town_id_field->SetBackgroundColour(wxColour(10, 15, 26));
+	town_id_field->SetForegroundColour(wxColour(245, 245, 255));
+
 	int to_select_index = 0;
 	uint32_t houseTownId = what_house->townid;
 
@@ -767,52 +810,72 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 				++to_select_index;
 			}
 		}
+	} else {
+		town_id_field->Append("No Town", newd int(0));
 	}
 	town_id_field->SetSelection(to_select_index);
-	subsizer->Add(town_id_field, wxSizerFlags(1).Expand());
-	// end town selection
+	grid->Add(town_id_field, 1, wxEXPAND);
 
-	// Rent price
-	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Rent:"), wxSizerFlags(0).Border(wxLEFT, 5));
-	rent_field = newd wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, wxSize(160, 20), 0, wxTextValidator(wxFILTER_NUMERIC, &house_rent));
-	subsizer->Add(rent_field, wxSizerFlags(1).Expand());
+	// 3. House ID
+	wxStaticText* id_lbl = newd wxStaticText(this, wxID_ANY, "House ID:");
+	id_lbl->SetFont(bold_font);
+	id_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(id_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	// Right column
-	wxFlexGridSizer* subsizerRight = newd wxFlexGridSizer(1, 10, 10);
+	id_field = newd wxSpinCtrl(this, wxID_ANY, house_id, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 999999, what_house->getID());
+	id_field->SetFont(default_font);
+	id_field->SetBackgroundColour(wxColour(10, 15, 26));
+	id_field->SetForegroundColour(wxColour(245, 245, 255));
+	grid->Add(id_field, 1, wxEXPAND);
 
-	// house ID
-	wxFlexGridSizer* houseSizer = newd wxFlexGridSizer(2, 10, 10);
+	// 4. Rent
+	wxStaticText* rent_lbl = newd wxStaticText(this, wxID_ANY, "Rent (Gold):");
+	rent_lbl->SetFont(bold_font);
+	rent_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(rent_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	houseSizer->Add(newd wxStaticText(this, wxID_ANY, "ID:"), wxSizerFlags(0).Center());
-	id_field = newd wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxSize(40, 20), wxSP_ARROW_KEYS, 1, 0xFFFF, what_house->getID());
-	// id_field->Enable(false);
-	houseSizer->Add(id_field, wxSizerFlags(1).Expand());
-	subsizerRight->Add(houseSizer, wxSizerFlags(1).Expand());
+	rent_field = newd wxTextCtrl(this, wxID_ANY, house_rent, wxDefaultPosition, wxDefaultSize, 0, wxTextValidator(wxFILTER_NUMERIC, &house_rent));
+	rent_field->SetFont(default_font);
+	rent_field->SetBackgroundColour(wxColour(10, 15, 26));
+	rent_field->SetForegroundColour(wxColour(245, 245, 255));
+	grid->Add(rent_field, 1, wxEXPAND);
 
-	// Guildhall checkbox
-	wxSizer* checkbox_sub_sizer = newd wxBoxSizer(wxVERTICAL);
-	checkbox_sub_sizer->AddSpacer(4);
+	// 5. Guildhall Checkbox
+	wxStaticText* gh_lbl = newd wxStaticText(this, wxID_ANY, "Guildhall:");
+	gh_lbl->SetFont(bold_font);
+	gh_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(gh_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	guildhall_field = newd wxCheckBox(this, wxID_ANY, "Guildhall");
-
-	checkbox_sub_sizer->Add(guildhall_field);
-	subsizerRight->Add(checkbox_sub_sizer);
+	guildhall_field = newd wxCheckBox(this, wxID_ANY, "Designate this house as a Guildhall");
+	guildhall_field->SetFont(default_font);
+	guildhall_field->SetForegroundColour(wxColour(200, 215, 235));
 	guildhall_field->SetValue(what_house->guildhall);
+	grid->Add(guildhall_field, 0, wxALIGN_CENTER_VERTICAL);
 
-	// construct the layout
-	housePropContainer->Add(subsizer, wxSizerFlags(5).Expand());
-	housePropContainer->Add(subsizerRight, wxSizerFlags(5).Expand());
-	boxsizer->Add(housePropContainer, wxSizerFlags(5).Expand().Border(wxTOP | wxBOTTOM, 10));
-	topsizer->Add(boxsizer, wxSizerFlags(0).Expand().Border(wxRIGHT | wxLEFT, 20));
+	topsizer->Add(grid, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 14);
 
 	// OK/Cancel buttons
-	wxSizer* buttonsSizer = newd wxBoxSizer(wxHORIZONTAL);
-	buttonsSizer->Add(newd wxButton(this, wxID_OK, "OK"), wxSizerFlags(1).Center().Border(wxTOP | wxBOTTOM, 10));
-	buttonsSizer->Add(newd wxButton(this, wxID_CANCEL, "Cancel"), wxSizerFlags(1).Center().Border(wxTOP | wxBOTTOM, 10));
-	topsizer->Add(buttonsSizer, wxSizerFlags(0).Center().Border(wxLEFT | wxRIGHT, 20));
+	wxBoxSizer* buttonsSizer = newd wxBoxSizer(wxHORIZONTAL);
+	buttonsSizer->AddStretchSpacer();
+
+	wxButton* ok_btn = newd wxButton(this, wxID_OK, "OK", wxDefaultPosition, wxSize(100, 30));
+	ok_btn->SetFont(bold_font);
+	ok_btn->SetBackgroundColour(wxColour(25, 80, 150));
+	ok_btn->SetForegroundColour(wxColour(255, 225, 120));
+	buttonsSizer->Add(ok_btn, 0, wxRIGHT, 8);
+
+	wxButton* cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel", wxDefaultPosition, wxSize(90, 30));
+	cancel_btn->SetFont(default_font);
+	cancel_btn->SetBackgroundColour(wxColour(30, 40, 60));
+	cancel_btn->SetForegroundColour(wxColour(210, 220, 235));
+	buttonsSizer->Add(cancel_btn, 0);
+
+	topsizer->Add(buttonsSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 14);
 
 	SetSizerAndFit(topsizer);
+	SetMinSize(GetSize());
 	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
+	Centre(wxBOTH);
 }
 
 EditHouseDialog::~EditHouseDialog() {
@@ -821,6 +884,12 @@ EditHouseDialog::~EditHouseDialog() {
 			int* data = reinterpret_cast<int*>(town_id_field->GetClientData(i));
 			delete data;
 		}
+	}
+}
+
+void EditHouseDialog::OnClickRandomName(wxCommandEvent& WXUNUSED(event)) {
+	if (name_field) {
+		name_field->SetValue(wxString::FromUTF8(HouseWizardDialog::GenerateRandomHouseName()));
 	}
 }
 

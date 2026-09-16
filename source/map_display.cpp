@@ -334,7 +334,7 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
 
   if (event.GetKeyCode() == WXK_RETURN || event.GetKeyCode() == WXK_NUMPAD_ENTER || event.GetKeyCode() == WXK_SPACE) {
     if (g_gui.GetCurrentBrush() && (g_gui.GetCurrentBrush()->isHouse() || g_gui.GetCurrentBrush()->isHouseExit())) {
-      FinishHouseCreation();
+      AdvanceHouseCreationFlow();
       return;
     }
   }
@@ -709,19 +709,11 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
             break;
           case 3: // House
             {
-              Map* cur_map = &editor.map;
-              if (cur_map) {
-                uint32_t target_town_id = 0;
-                if (cur_map->towns.begin() != cur_map->towns.end()) {
-                  target_town_id = cur_map->towns.begin()->second->getID();
-                }
-                wxTheApp->CallAfter([cur_map, target_town_id]() {
-                  if (cur_map) {
-                    HouseWizardDialog wizard(g_gui.root, cur_map, target_town_id);
-                    wizard.ShowModal();
-                  }
-                });
+              uint32_t target_town_id = 0;
+              if (editor.map.towns.begin() != editor.map.towns.end()) {
+                target_town_id = editor.map.towns.begin()->second->getID();
               }
+              StartHouseCreationFlow(target_town_id);
             }
             break;
           case 4: // Zones Sub-Menu
@@ -2949,6 +2941,61 @@ void MapCanvas::TriggerCopyLiveIP() {
   }
 }
 
+void MapCanvas::StartHouseCreationFlow(uint32_t target_town_id) {
+  Map* cur_map = &editor.map;
+  if (!cur_map) return;
+
+  uint32_t town_id = target_town_id;
+  if (town_id == 0 && cur_map->towns.begin() != cur_map->towns.end()) {
+    town_id = cur_map->towns.begin()->second->getID();
+  }
+
+  uint32_t next_id = cur_map->houses.getEmptyID();
+  std::string generated_name = HouseWizardDialog::GenerateRandomHouseName();
+
+  House* new_house = newd House(*cur_map);
+  new_house->setID(next_id);
+  new_house->name = generated_name;
+  new_house->townid = town_id;
+  new_house->rent = 0;
+  new_house->guildhall = false;
+
+  cur_map->houses.addHouse(new_house);
+  cur_map->doChange();
+
+  // Switch palette to house tab and select house brush
+  g_gui.SelectPalettePage(TILESET_HOUSE);
+  if (g_gui.house_brush) {
+    g_gui.house_brush->setHouse(new_house);
+    g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
+  }
+
+  ShowHUDNotification("Step 1/3: Paint House Floor Tiles. Press [ENTER] when done!", 0xFF10B981);
+  g_gui.SetStatusText("House Creation Step 1/3: Paint house tiles on map. Press [ENTER] to proceed to Exit.");
+  Refresh();
+}
+
+void MapCanvas::AdvanceHouseCreationFlow() {
+  Brush* cur_brush = g_gui.GetCurrentBrush();
+  if (!cur_brush) return;
+
+  if (cur_brush->isHouse()) {
+    // Transition from Step 1 (Paint Tiles) to Step 2 (Set Exit)
+    House* h = g_gui.house_brush ? g_gui.house_brush->getHouse() : nullptr;
+    if (h && g_gui.house_exit_brush) {
+      g_gui.house_exit_brush->setHouse(h);
+      g_gui.SelectBrush(g_gui.house_exit_brush, TILESET_HOUSE);
+      ShowHUDNotification("Step 2/3: Click tile to place Exit Doorway. Press [ENTER] to continue!", 0xFF38BDF8);
+      g_gui.SetStatusText("House Creation Step 2/3: Click an existing tile to set the exit doorway. Press [ENTER] to configure name.");
+      Refresh();
+      return;
+    }
+  }
+
+  // From Step 2 (or any other house state), finish and open the Name/Properties dialog
+  FinishHouseCreation();
+}
+
 void MapCanvas::FinishHouseCreation() {
   Brush* b = g_gui.GetCurrentBrush();
   if (b && (b->isHouse() || b->isHouseExit())) {
@@ -2973,11 +3020,14 @@ void MapCanvas::FinishHouseCreation() {
           if (dlg.ShowModal() == 1) {
             cur_map->doChange();
             g_gui.RefreshView();
+            g_gui.SetStatusText(wxString::Format("House \"%s\" (ID: %u) saved. Returned to regular drawing mode.", wxstr(h->name), h->getID()));
+          } else {
+            g_gui.RefreshView();
+            g_gui.SetStatusText("House properties closed. Returned to regular drawing mode.");
           }
         }
       });
-      ShowHUDNotification("House \"" + h->name + "\" created! (Drawing Mode Active)", 0xFF10B981);
-      g_gui.SetStatusText(wxString::Format("House \"%s\" (ID: %u) saved. Returned to regular drawing mode.", wxstr(h->name), h->getID()));
+      ShowHUDNotification("Step 3/3: Configure House Name & Details", 0xFF10B981);
     } else {
       ShowHUDNotification("House creation finished! (Drawing Mode Active)", 0xFF10B981);
       g_gui.SetStatusText("House mode finished. Returned to regular drawing mode.");

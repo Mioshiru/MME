@@ -104,7 +104,7 @@ public:
 	virtual ~EditHouseDialog();
 
 	void OnFocusChange(wxFocusEvent&);
-
+	void OnClickRandomName(wxCommandEvent&);
 	void OnClickOK(wxCommandEvent&);
 	void OnClickCancel(wxCommandEvent&);
 
@@ -119,6 +119,10 @@ protected:
 	wxSpinCtrl* id_field;
 	wxTextCtrl* rent_field;
 	wxCheckBox* guildhall_field;
+
+	enum {
+		ID_HOUSE_RANDOM_NAME = 10060
+	};
 
 	DECLARE_EVENT_TABLE();
 };
