@@ -438,6 +438,7 @@ public:
 		// Painting always uses g_gui.current_brush; this is for visual highlight only.
 		std::string selected_brush_name;
 		bool sort_az = false; // Toggle A-Z sorting for houses, creatures, npcs, and brushes
+		bool request_scroll_to_selected = false; // Scroll directly into visible view on select
 	};
 
 	std::vector<CanvasPaletteState> canvas_palettes;

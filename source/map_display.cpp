@@ -715,23 +715,12 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
                 if (cur_map->towns.begin() != cur_map->towns.end()) {
                   target_town_id = cur_map->towns.begin()->second->getID();
                 }
-                uint32_t new_id = cur_map->houses.getEmptyID();
-                House* new_h = newd House(*cur_map);
-                new_h->setID(new_id);
-                new_h->name = "House #" + std::to_string(new_id);
-                new_h->townid = target_town_id;
-                new_h->rent = 0;
-                new_h->guildhall = false;
-                cur_map->houses.addHouse(new_h);
-                cur_map->doChange();
-
-                if (g_gui.house_brush) {
-                  g_gui.house_brush->setHouse(new_h);
-                  g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
-                }
-                ShowHUDNotification("New House #" + std::to_string(new_id) + " created! Paint tiles on map, click tile for Exit, press Enter/Done when finished.", 0xFF10B981);
-                g_gui.SetStatusText(wxString::Format("Created house \"%s\" (ID: %u). Paint tiles directly on map. Press Enter/Escape to finish.", wxstr(new_h->name), new_h->getID()));
-                g_gui.RefreshView();
+                wxTheApp->CallAfter([cur_map, target_town_id]() {
+                  if (cur_map) {
+                    HouseWizardDialog wizard(g_gui.root, cur_map, target_town_id);
+                    wizard.ShowModal();
+                  }
+                });
               }
             }
             break;

@@ -10,157 +10,123 @@
 #include "town.h"
 #include "gui.h"
 #include "house_brush.h"
-#include "house_exit_brush.h"
-
-enum {
-	WIZARD_ID_BACK = 10001,
-	WIZARD_ID_NEXT,
-	WIZARD_ID_PAINT_TILES,
-	WIZARD_ID_SET_EXIT,
-};
+#include "tileset.h"
+#include "map_tab.h"
+#include "map_display.h"
+#include <cstdlib>
+#include <ctime>
 
 BEGIN_EVENT_TABLE(HouseWizardDialog, wxDialog)
-	EVT_BUTTON(WIZARD_ID_NEXT, HouseWizardDialog::OnClickNext)
-	EVT_BUTTON(WIZARD_ID_BACK, HouseWizardDialog::OnClickBack)
+	EVT_BUTTON(WIZARD_ID_ROLL, HouseWizardDialog::OnClickRollName)
 	EVT_BUTTON(wxID_OK, HouseWizardDialog::OnClickOK)
 	EVT_BUTTON(wxID_CANCEL, HouseWizardDialog::OnClickCancel)
-	EVT_TOGGLEBUTTON(WIZARD_ID_PAINT_TILES, HouseWizardDialog::OnClickPaintTiles)
-	EVT_TOGGLEBUTTON(WIZARD_ID_SET_EXIT, HouseWizardDialog::OnClickSetExit)
-	EVT_ACTIVATE(HouseWizardDialog::OnActivate)
-	EVT_ICONIZE(HouseWizardDialog::OnIconize)
-	EVT_ENTER_WINDOW(HouseWizardDialog::OnMouseEnter)
-	EVT_LEAVE_WINDOW(HouseWizardDialog::OnMouseLeave)
 END_EVENT_TABLE()
 
-HouseWizardDialog* HouseWizardDialog::s_active_dialog = nullptr;
-
-void HouseWizardDialog::NotifyTileOrExitChanged() {
-	if (s_active_dialog) {
-		s_active_dialog->updateTileCountText();
-		s_active_dialog->updateExitText();
+std::string HouseWizardDialog::GenerateRandomHouseName() {
+	static const std::vector<std::string> prefixes = {
+		"Whispering", "Golden", "Emerald", "Moonlit", "Sunstrider", "Ravencrest", 
+		"Silverleaf", "Ironforge", "Seabreeze", "Shadowglen", "Amberfall", "Stormhaven", 
+		"Crystal", "Dragonfire", "Frostpeak", "Wildwood", "Oaken", "Starlight", 
+		"Riverbend", "Highland", "Misty", "Bramblewood", "Ember", "Cobalt", 
+		"Falcon", "Dawn", "Dusk", "Willow", "Ivory", "Sable", "Thunder",
+		"Cedar", "Pine", "Suncrest", "Nightfall", "Valiant", "Rosewood", "Royal"
+	};
+	static const std::vector<std::string> nouns = {
+		"Manor", "Cottage", "Villa", "Haven", "Sanctum", "Lodge", "Retreat", 
+		"Residence", "Hall", "Keep", "Abode", "Chateau", "Estate", "Bastion", 
+		"Refuge", "Cabin", "Dwelling", "Sanctuary", "Homestead", "Den", 
+		"Quarters", "Garrison", "Hideaway", "Tower", "Alcove", "Meadow"
+	};
+	static bool seeded = false;
+	if (!seeded) {
+		srand(static_cast<unsigned int>(time(nullptr)));
+		seeded = true;
 	}
+	int p_idx = rand() % prefixes.size();
+	int n_idx = rand() % nouns.size();
+	return prefixes[p_idx] + " " + nouns[n_idx];
 }
 
-HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t default_town_id, House* existing_house) :
-	wxDialog(parent, wxID_ANY, existing_house ? wxString::Format("Edit House: %s", existing_house->name.c_str()) : wxString("Create House Wizard"), wxDefaultPosition, wxSize(400, 260), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t default_town_id) :
+	wxDialog(parent, wxID_ANY, "Create House Wizard", wxDefaultPosition, wxSize(520, 390), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	map(map),
-	draft_house(existing_house),
-	is_editing(existing_house != nullptr),
-	current_step(1),
-	step1_panel(nullptr),
-	step2_panel(nullptr),
-	step3_panel(nullptr) {
-
-	s_active_dialog = this;
+	created_house(nullptr),
+	name_field(nullptr),
+	roll_btn(nullptr),
+	town_choice(nullptr),
+	id_field(nullptr),
+	rent_field(nullptr),
+	guildhall_checkbox(nullptr),
+	ok_btn(nullptr),
+	cancel_btn(nullptr) {
 
 	ASSERT(map);
-	if (!is_editing) {
-		draft_house = newd House(*map);
-		draft_house->setID(map->houses.getEmptyID());
-		map->houses.addHouse(draft_house);
-	}
 
-	SetBackgroundColour(wxColour(16, 28, 48));
+	SetBackgroundColour(wxColour(16, 24, 38));
 	SetForegroundColour(wxColour(240, 245, 255));
 
 	wxBoxSizer* main_sizer = newd wxBoxSizer(wxVERTICAL);
 
-	// =========================================================================
-	// STEP 1 PANEL (Paint House Tiles)
-	// =========================================================================
-	step1_panel = newd wxPanel(this, wxID_ANY);
-	wxBoxSizer* step1_sizer = newd wxBoxSizer(wxVERTICAL);
+	// Header Banner Box
+	wxPanel* header_panel = newd wxPanel(this, wxID_ANY);
+	header_panel->SetBackgroundColour(wxColour(12, 18, 30));
+	wxBoxSizer* header_sizer = newd wxBoxSizer(wxVERTICAL);
 
-	wxStaticText* step1_lbl = newd wxStaticText(step1_panel, wxID_ANY, "Step 1: Select House Floor Tiles", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-	step1_lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	step1_lbl->SetForegroundColour(wxColour(240, 210, 120));
-	step1_sizer->Add(step1_lbl, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 6);
+	wxStaticText* title_lbl = newd wxStaticText(header_panel, wxID_ANY, "House Creation Wizard");
+	title_lbl->SetFont(wxFont(11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	title_lbl->SetForegroundColour(wxColour(255, 215, 80));
+	header_sizer->Add(title_lbl, 0, wxBOTTOM, 4);
 
-	wxStaticText* tile_hint = newd wxStaticText(step1_panel, wxID_ANY,
-		"Click and drag on the map canvas to paint the floor tiles that belong to this house.\n\n"
-		"Hint: Hold Ctrl while clicking to erase house tiles.", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-	tile_hint->SetForegroundColour(wxColour(200, 210, 225));
-	step1_sizer->Add(tile_hint, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 8);
+	wxStaticText* subtitle_lbl = newd wxStaticText(header_panel, wxID_ANY,
+		"Configure the house properties below.\nOnce created, you can paint floor tiles and set the exit doorway on the map.");
+	subtitle_lbl->SetForegroundColour(wxColour(180, 195, 215));
+	header_sizer->Add(subtitle_lbl, 0, wxEXPAND);
 
-	paint_tiles_btn = newd wxToggleButton(step1_panel, WIZARD_ID_PAINT_TILES, "Paint Tiles", wxDefaultPosition, wxSize(130, 26));
-	paint_tiles_btn->SetBackgroundColour(wxColour(35, 75, 150));
-	paint_tiles_btn->SetForegroundColour(wxColour(240, 210, 120));
-	paint_tiles_btn->SetValue(true);
-	step1_sizer->Add(paint_tiles_btn, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 8);
+	header_panel->SetSizer(header_sizer);
+	main_sizer->Add(header_panel, 0, wxEXPAND | wxALL, 12);
 
-	tile_count_label = newd wxStaticText(step1_panel, wxID_ANY, "Tiles painted: 0", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-	tile_count_label->SetForegroundColour(wxColour(180, 190, 205));
-	step1_sizer->Add(tile_count_label, 0, wxALIGN_CENTER_HORIZONTAL);
+	// Form Grid (5 rows, 2 columns with ample spacing)
+	wxFlexGridSizer* grid = newd wxFlexGridSizer(5, 2, 10, 14);
+	grid->AddGrowableCol(1);
 
-	step1_panel->SetSizer(step1_sizer);
-	main_sizer->Add(step1_panel, 1, wxEXPAND | wxALL, 6);
+	// 1. House Name with Random Button
+	wxStaticText* name_lbl = newd wxStaticText(this, wxID_ANY, "House Name:");
+	name_lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	name_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(name_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	// =========================================================================
-	// STEP 2 PANEL (Set Entrance / Exit Position)
-	// =========================================================================
-	step2_panel = newd wxPanel(this, wxID_ANY);
-	wxBoxSizer* step2_sizer = newd wxBoxSizer(wxVERTICAL);
+	wxBoxSizer* name_row = newd wxBoxSizer(wxHORIZONTAL);
+	std::string initial_name = GenerateRandomHouseName();
+	name_field = newd wxTextCtrl(this, wxID_ANY, wxString::FromUTF8(initial_name));
+	name_field->SetBackgroundColour(wxColour(10, 15, 26));
+	name_field->SetForegroundColour(wxColour(245, 245, 255));
+	name_row->Add(name_field, 1, wxEXPAND | wxRIGHT, 8);
 
-	wxStaticText* step2_lbl = newd wxStaticText(step2_panel, wxID_ANY, "Step 2: Set Entrance & Exit Doorway", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-	step2_lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	step2_lbl->SetForegroundColour(wxColour(240, 210, 120));
-	step2_sizer->Add(step2_lbl, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 6);
+	roll_btn = newd wxButton(this, WIZARD_ID_ROLL, "Random", wxDefaultPosition, wxSize(75, 24));
+	roll_btn->SetBackgroundColour(wxColour(30, 60, 110));
+	roll_btn->SetForegroundColour(wxColour(255, 225, 120));
+	roll_btn->SetToolTip("Generate a random English fantasy house name");
+	name_row->Add(roll_btn, 0, wxALIGN_CENTER_VERTICAL);
+	grid->Add(name_row, 1, wxEXPAND);
 
-	wxStaticText* exit_hint = newd wxStaticText(step2_panel, wxID_ANY,
-		"Click on the doorway tile in front of the house to set the Exit position.\n"
-		"(Players appear here when entering or leaving the house).", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-	exit_hint->SetForegroundColour(wxColour(200, 210, 225));
-	step2_sizer->Add(exit_hint, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 8);
+	// 2. Town Selection
+	wxStaticText* town_lbl = newd wxStaticText(this, wxID_ANY, "Town / City:");
+	town_lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	town_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(town_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	set_exit_btn = newd wxToggleButton(step2_panel, WIZARD_ID_SET_EXIT, "Set Exit", wxDefaultPosition, wxSize(130, 26));
-	set_exit_btn->SetBackgroundColour(wxColour(35, 75, 150));
-	set_exit_btn->SetForegroundColour(wxColour(240, 210, 120));
-	set_exit_btn->SetValue(true);
-	step2_sizer->Add(set_exit_btn, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 8);
+	town_choice = newd wxChoice(this, wxID_ANY);
+	town_choice->SetBackgroundColour(wxColour(10, 15, 26));
+	town_choice->SetForegroundColour(wxColour(245, 245, 255));
 
-	exit_pos_label = newd wxStaticText(step2_panel, wxID_ANY, "Exit Position: Not Set", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-	exit_pos_label->SetForegroundColour(wxColour(180, 190, 205));
-	step2_sizer->Add(exit_pos_label, 0, wxALIGN_CENTER_HORIZONTAL);
-
-	step2_panel->SetSizer(step2_sizer);
-	main_sizer->Add(step2_panel, 1, wxEXPAND | wxALL, 6);
-
-	// =========================================================================
-	// STEP 3 PANEL (Properties: Name, Town, Rent, Guildhall)
-	// =========================================================================
-	step3_panel = newd wxPanel(this, wxID_ANY);
-	wxBoxSizer* step3_sizer = newd wxBoxSizer(wxVERTICAL);
-
-	wxStaticText* step3_lbl = newd wxStaticText(step3_panel, wxID_ANY, "Step 3: House Details & Town", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-	step3_lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	step3_lbl->SetForegroundColour(wxColour(240, 210, 120));
-	step3_sizer->Add(step3_lbl, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 8);
-
-	wxFlexGridSizer* grid3 = newd wxFlexGridSizer(2, 10, 10);
-	grid3->AddGrowableCol(1);
-
-	// House Name
-	grid3->Add(newd wxStaticText(step3_panel, wxID_ANY, "House Name:"), 0, wxALIGN_CENTER_VERTICAL);
-	std::string default_name = is_editing ? draft_house->name : ("House #" + std::to_string(draft_house->getID()));
-	name_field = newd wxTextCtrl(step3_panel, wxID_ANY, wxstr(default_name));
-	name_field->SetBackgroundColour(wxColour(10, 20, 35));
-	name_field->SetForegroundColour(wxColour(240, 245, 255));
-	grid3->Add(name_field, 1, wxEXPAND);
-
-	// Town Selection
-	grid3->Add(newd wxStaticText(step3_panel, wxID_ANY, "Town:"), 0, wxALIGN_CENTER_VERTICAL);
-	town_choice = newd wxChoice(step3_panel, wxID_ANY);
-	town_choice->SetBackgroundColour(wxColour(10, 20, 35));
-	town_choice->SetForegroundColour(wxColour(240, 245, 255));
-
-	uint32_t target_town_id = is_editing ? draft_house->townid : default_town_id;
+	uint32_t target_town_id = default_town_id;
 	int select_idx = 0;
 	if (map->towns.count() > 0) {
 		int idx = 0;
 		for (const auto& pair : map->towns) {
 			const Town* town = pair.second;
-			town_choice->Append(wxstr(town->getName()), reinterpret_cast<void*>(static_cast<uintptr_t>(town->getID())));
-			if (town->getID() == target_town_id) {
+			town_choice->Append(wxString::FromUTF8(town->getName()), reinterpret_cast<void*>(static_cast<uintptr_t>(town->getID())));
+			if (town->getID() == target_town_id || (target_town_id == 0 && idx == 0)) {
 				select_idx = idx;
 			}
 			++idx;
@@ -169,296 +135,151 @@ HouseWizardDialog::HouseWizardDialog(wxWindow* parent, Map* map, uint32_t defaul
 		town_choice->Append("No Town", reinterpret_cast<void*>(static_cast<uintptr_t>(0)));
 	}
 	town_choice->SetSelection(select_idx);
-	grid3->Add(town_choice, 1, wxEXPAND);
+	grid->Add(town_choice, 1, wxEXPAND);
 
-	// Rent
-	grid3->Add(newd wxStaticText(step3_panel, wxID_ANY, "Rent (Gold):"), 0, wxALIGN_CENTER_VERTICAL);
-	rent_field = newd wxTextCtrl(step3_panel, wxID_ANY, wxString::Format("%d", is_editing ? draft_house->rent : 0));
-	rent_field->SetBackgroundColour(wxColour(10, 20, 35));
-	rent_field->SetForegroundColour(wxColour(240, 245, 255));
-	grid3->Add(rent_field, 1, wxEXPAND);
+	// 3. House ID
+	wxStaticText* id_lbl = newd wxStaticText(this, wxID_ANY, "House ID:");
+	id_lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	id_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(id_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	// Guildhall
-	grid3->Add(newd wxStaticText(step3_panel, wxID_ANY, "Guildhall:"), 0, wxALIGN_CENTER_VERTICAL);
-	guildhall_checkbox = newd wxCheckBox(step3_panel, wxID_ANY, "Is Guildhall");
-	if (is_editing) {
-		guildhall_checkbox->SetValue(draft_house->guildhall);
-	}
-	grid3->Add(guildhall_checkbox, 0, wxALIGN_CENTER_VERTICAL);
+	uint32_t next_id = map->houses.getEmptyID();
+	id_field = newd wxSpinCtrl(this, wxID_ANY, wxString::Format("%u", next_id), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 999999, next_id);
+	id_field->SetBackgroundColour(wxColour(10, 15, 26));
+	id_field->SetForegroundColour(wxColour(245, 245, 255));
+	grid->Add(id_field, 1, wxEXPAND);
 
-	step3_sizer->Add(grid3, 1, wxEXPAND | wxALL, 8);
-	step3_panel->SetSizer(step3_sizer);
-	main_sizer->Add(step3_panel, 1, wxEXPAND | wxALL, 6);
+	// 4. Rent
+	wxStaticText* rent_lbl = newd wxStaticText(this, wxID_ANY, "Rent (Gold):");
+	rent_lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	rent_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(rent_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	step2_panel->Hide();
-	step3_panel->Hide();
+	rent_field = newd wxTextCtrl(this, wxID_ANY, "0");
+	rent_field->SetBackgroundColour(wxColour(10, 15, 26));
+	rent_field->SetForegroundColour(wxColour(245, 245, 255));
+	grid->Add(rent_field, 1, wxEXPAND);
 
-	// Navigation Buttons
-	wxBoxSizer* nav_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	back_btn = newd wxButton(this, WIZARD_ID_BACK, "< Back");
-	next_btn = newd wxButton(this, WIZARD_ID_NEXT, "Next >");
-	ok_btn = newd wxButton(this, wxID_OK, "Create House");
-	cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel");
+	// 5. Guildhall
+	wxStaticText* gh_lbl = newd wxStaticText(this, wxID_ANY, "Guildhall:");
+	gh_lbl->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	gh_lbl->SetForegroundColour(wxColour(230, 235, 245));
+	grid->Add(gh_lbl, 0, wxALIGN_CENTER_VERTICAL);
 
-	back_btn->SetBackgroundColour(wxColour(30, 45, 70));
-	back_btn->SetForegroundColour(wxColour(200, 210, 225));
-	next_btn->SetBackgroundColour(wxColour(35, 75, 150));
-	next_btn->SetForegroundColour(wxColour(240, 210, 120));
-	ok_btn->SetBackgroundColour(wxColour(35, 75, 150));
-	ok_btn->SetForegroundColour(wxColour(240, 210, 120));
-	cancel_btn->SetBackgroundColour(wxColour(30, 45, 70));
-	cancel_btn->SetForegroundColour(wxColour(200, 210, 225));
+	guildhall_checkbox = newd wxCheckBox(this, wxID_ANY, "Designate this house as a Guildhall");
+	guildhall_checkbox->SetForegroundColour(wxColour(200, 215, 235));
+	grid->Add(guildhall_checkbox, 0, wxALIGN_CENTER_VERTICAL);
 
-	nav_sizer->Add(back_btn, 0, wxRIGHT, 6);
-	nav_sizer->Add(next_btn, 0, wxRIGHT, 12);
-	nav_sizer->Add(ok_btn, 0, wxRIGHT, 6);
-	nav_sizer->Add(cancel_btn, 0);
+	main_sizer->Add(grid, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 14);
 
-	main_sizer->Add(nav_sizer, 0, wxALIGN_RIGHT | wxALL, 8);
+	// Info tip banner
+	wxStaticText* tip_lbl = newd wxStaticText(this, wxID_ANY,
+		"Tip: Left-click on map paints house tiles. Click on an existing tile to set the exit.");
+	tip_lbl->SetFont(wxFont(8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_ITALIC, wxFONTWEIGHT_NORMAL));
+	tip_lbl->SetForegroundColour(wxColour(140, 180, 220));
+	main_sizer->Add(tip_lbl, 0, wxLEFT | wxRIGHT | wxBOTTOM, 12);
+
+	// Buttons Row
+	wxBoxSizer* btn_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	btn_sizer->AddStretchSpacer();
+
+	ok_btn = newd wxButton(this, wxID_OK, "Create House", wxDefaultPosition, wxSize(125, 28));
+	ok_btn->SetBackgroundColour(wxColour(25, 80, 150));
+	ok_btn->SetForegroundColour(wxColour(255, 225, 120));
+	ok_btn->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	btn_sizer->Add(ok_btn, 0, wxRIGHT, 8);
+
+	cancel_btn = newd wxButton(this, wxID_CANCEL, "Cancel", wxDefaultPosition, wxSize(85, 28));
+	cancel_btn->SetBackgroundColour(wxColour(30, 40, 60));
+	cancel_btn->SetForegroundColour(wxColour(210, 220, 235));
+	btn_sizer->Add(cancel_btn, 0);
+
+	main_sizer->Add(btn_sizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 14);
 
 	SetSizerAndFit(main_sizer);
+	SetMinSize(GetSize());
 	RME::UI::StyleManager::ApplyThemeRecursively(this, RME::UI::StyleManager::GetTheme());
-	showStep(1);
-	bindHoverEvents(this);
 	Centre(wxBOTH);
 }
 
 HouseWizardDialog::~HouseWizardDialog() {
-	if (s_active_dialog == this) {
-		s_active_dialog = nullptr;
+}
+
+void HouseWizardDialog::OnClickRollName(wxCommandEvent& WXUNUSED(evt)) {
+	if (name_field) {
+		name_field->SetValue(wxString::FromUTF8(GenerateRandomHouseName()));
 	}
 }
 
-void HouseWizardDialog::makeSemiTransparent() {
-	if (CanSetTransparent()) {
-		SetTransparent(255); // Keep crystal clear and sharp
-	}
-}
-
-void HouseWizardDialog::makeOpaque() {
-	if (CanSetTransparent()) {
-		SetTransparent(255);
-	}
-}
-
-void HouseWizardDialog::bindHoverEvents(wxWindow* win) {
-	if (!win) return;
-	win->Bind(wxEVT_ENTER_WINDOW, &HouseWizardDialog::OnMouseEnter, this);
-	win->Bind(wxEVT_LEAVE_WINDOW, &HouseWizardDialog::OnMouseLeave, this);
-	for (wxWindowList::compatibility_iterator node = win->GetChildren().GetFirst(); node; node = node->GetNext()) {
-		bindHoverEvents(node->GetData());
-	}
-}
-
-void HouseWizardDialog::updateTileCountText() {
-	if (!tile_count_label || !draft_house) return;
-	tile_count_label->SetLabel(wxString::Format("Tiles painted: %zu", draft_house->size()));
-}
-
-void HouseWizardDialog::updateExitText() {
-	if (!exit_pos_label || !draft_house) return;
-	Position exit_pos = draft_house->getExit();
-	if (exit_pos.isValid() && exit_pos != Position(0, 0, 0)) {
-		exit_pos_label->SetLabel(wxString::Format("Exit Position: (%d, %d, %d)", exit_pos.x, exit_pos.y, exit_pos.z));
-	} else {
-		exit_pos_label->SetLabel("Exit Position: Not Set");
-	}
-}
-
-void HouseWizardDialog::showStep(int step) {
-	current_step = step;
-
-	step1_panel->Show(step == 1);
-	step2_panel->Show(step == 2);
-	step3_panel->Show(step == 3);
-
-	if (step == 1) {
-		makeSemiTransparent();
-		if (g_gui.root) g_gui.root->Enable(true);
-		back_btn->Enable(false);
-		next_btn->Show();
-		ok_btn->Hide();
-
-		if (paint_tiles_btn) paint_tiles_btn->SetValue(true);
-
-		if (draft_house && g_gui.house_brush) {
-			g_gui.house_brush->setHouse(draft_house);
-			g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
-		}
-		updateTileCountText();
-	} else if (step == 2) {
-		makeSemiTransparent();
-		if (g_gui.root) g_gui.root->Enable(true);
-		back_btn->Enable(true);
-		next_btn->Show();
-		ok_btn->Hide();
-
-		if (set_exit_btn) set_exit_btn->SetValue(true);
-
-		if (draft_house && g_gui.house_exit_brush) {
-			g_gui.house_exit_brush->setHouse(draft_house);
-			g_gui.SelectBrush(g_gui.house_exit_brush, TILESET_HOUSE);
-		}
-		updateExitText();
-	} else if (step == 3) {
-		makeOpaque();
-		back_btn->Enable(true);
-		next_btn->Hide();
-		ok_btn->Show();
-		if (is_editing) {
-			ok_btn->SetLabel("Save Properties");
-		} else {
-			ok_btn->SetLabel("Create House");
-		}
-	}
-
-	Layout();
-	Fit();
-}
-
-void HouseWizardDialog::OnClickNext(wxCommandEvent& evt) {
-	if (current_step == 1) {
-		if (draft_house && draft_house->size() == 0) {
-			int ret = g_gui.PopupDialog(this, "House Tiles", "No tiles have been painted for this house yet. Do you want to proceed anyway?", wxYES | wxNO);
-			if (ret == wxID_NO) {
-				return;
-			}
-		}
-		showStep(2);
-	} else if (current_step == 2) {
-		if (draft_house) {
-			Position p = draft_house->getExit();
-			if (!p.isValid() || p == Position(0, 0, 0)) {
-				int ret = g_gui.PopupDialog(this, "House Exit", "The house exit doorway has not been set yet. Do you want to proceed anyway?", wxYES | wxNO);
-				if (ret == wxID_NO) {
-					return;
-				}
-			}
-		}
-		showStep(3);
-	}
-}
-
-void HouseWizardDialog::OnClickBack(wxCommandEvent& evt) {
-	if (current_step > 1) {
-		showStep(current_step - 1);
-	}
-}
-
-void HouseWizardDialog::OnClickPaintTiles(wxCommandEvent& evt) {
-	if (paint_tiles_btn && draft_house) {
-		bool active = paint_tiles_btn->GetValue();
-		if (active) {
-			if (g_gui.house_brush) {
-				g_gui.house_brush->setHouse(draft_house);
-				g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
-			}
-			if (g_gui.root) g_gui.root->Enable(true);
-			makeSemiTransparent();
-		} else {
-			makeOpaque();
-		}
-	}
-}
-
-void HouseWizardDialog::OnClickSetExit(wxCommandEvent& evt) {
-	if (set_exit_btn && draft_house) {
-		bool active = set_exit_btn->GetValue();
-		if (active) {
-			if (g_gui.house_exit_brush) {
-				g_gui.house_exit_brush->setHouse(draft_house);
-				g_gui.SelectBrush(g_gui.house_exit_brush, TILESET_HOUSE);
-			}
-			if (g_gui.root) g_gui.root->Enable(true);
-			makeSemiTransparent();
-		} else {
-			makeOpaque();
-		}
-	}
-}
-
-void HouseWizardDialog::OnMouseEnter(wxMouseEvent& evt) {
-	makeOpaque();
-	if (current_step == 1) {
-		updateTileCountText();
-	} else if (current_step == 2) {
-		updateExitText();
-	}
-	evt.Skip();
-}
-
-void HouseWizardDialog::OnMouseLeave(wxMouseEvent& evt) {
-	if (current_step == 1 || current_step == 2) {
-		makeSemiTransparent();
-	}
-	evt.Skip();
-}
-
-void HouseWizardDialog::OnActivate(wxActivateEvent& evt) {
-	if (evt.GetActive()) {
-		if (current_step == 1) {
-			updateTileCountText();
-		} else if (current_step == 2) {
-			updateExitText();
-		} else {
-			makeOpaque();
-		}
-	}
-	evt.Skip();
-}
-
-void HouseWizardDialog::OnIconize(wxIconizeEvent& evt) {
-	if (!evt.IsIconized()) {
-		if (current_step == 1) {
-			updateTileCountText();
-		} else if (current_step == 2) {
-			updateExitText();
-		}
-	}
-	evt.Skip();
-}
-
-void HouseWizardDialog::OnClickOK(wxCommandEvent& evt) {
-	wxString name = name_field->GetValue().Trim().Trim(false);
-	if (name.IsEmpty()) {
-		g_gui.PopupDialog(this, "Error", "House name cannot be empty.", wxOK);
+void HouseWizardDialog::OnClickOK(wxCommandEvent& WXUNUSED(evt)) {
+	if (!map) {
+		EndModal(wxID_CANCEL);
 		return;
 	}
 
-	long rent_val = 0;
-	if (!rent_field->GetValue().ToLong(&rent_val) || rent_val < 0) {
-		g_gui.PopupDialog(this, "Error", "House rent must be a non-negative number.", wxOK);
+	wxString house_name = name_field ? name_field->GetValue().Trim().Trim(false) : wxString();
+	if (house_name.IsEmpty()) {
+		g_gui.PopupDialog(this, "Input Error", "House name cannot be empty.", wxOK);
 		return;
 	}
 
-	draft_house->name = nstr(name);
-	draft_house->rent = static_cast<int>(rent_val);
-	draft_house->guildhall = guildhall_checkbox->IsChecked();
-
-	if (town_choice && town_choice->GetSelection() != wxNOT_FOUND) {
-		uint32_t sel_town_id = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(town_choice->GetClientData(town_choice->GetSelection())));
-		draft_house->townid = sel_town_id;
-	} else {
-		draft_house->townid = 0;
+	uint32_t house_id = id_field ? static_cast<uint32_t>(id_field->GetValue()) : 0;
+	if (house_id < 1) {
+		g_gui.PopupDialog(this, "Input Error", "House ID must be 1 or higher.", wxOK);
+		return;
 	}
+
+	// Check for duplicate ID
+	if (map->houses.getHouse(house_id) != nullptr) {
+		g_gui.PopupDialog(this, "Input Error", wxString::Format("House ID %u is already in use by another house. Please choose a different ID.", house_id), wxOK);
+		return;
+	}
+
+	long house_rent = 0;
+	if (rent_field) {
+		rent_field->GetValue().ToLong(&house_rent);
+		if (house_rent < 0) house_rent = 0;
+	}
+
+	uint32_t selected_town_id = 0;
+	if (town_choice) {
+		int town_sel = town_choice->GetSelection();
+		if (town_sel != wxNOT_FOUND) {
+			selected_town_id = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(town_choice->GetClientData(town_sel)));
+		}
+	}
+
+	bool is_guildhall = guildhall_checkbox ? guildhall_checkbox->GetValue() : false;
+
+	created_house = newd House(*map);
+	created_house->setID(house_id);
+	created_house->name = nstr(house_name);
+	created_house->townid = selected_town_id;
+	created_house->rent = house_rent;
+	created_house->guildhall = is_guildhall;
+
+	map->houses.addHouse(created_house);
+	map->doChange();
+
+	// Automatically switch Palette to Houses tab
+	g_gui.SelectPalettePage(TILESET_HOUSE);
+
+	// Select house brush immediately so user can paint tiles
+	if (g_gui.house_brush) {
+		g_gui.house_brush->setHouse(created_house);
+		g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
+	}
+
+	MapTab* mt = g_gui.GetCurrentMapTab();
+	if (mt && mt->GetCanvas()) {
+		mt->GetCanvas()->ShowHUDNotification("House \"" + created_house->name + "\" created! Paint floor tiles on the map.", 0xFF10B981);
+	}
+	g_gui.SetStatusText(wxString::Format("Created house \"%s\" (ID: %u). Paint floor tiles on map. Click existing tile for Exit.", wxstr(created_house->name), created_house->getID()));
+	g_gui.RefreshView();
 
 	EndModal(wxID_OK);
 }
 
-void HouseWizardDialog::cancelWizard() {
-	if (!is_editing && draft_house && map) {
-		if (g_gui.house_brush && g_gui.house_brush->getHouse() == draft_house) {
-			g_gui.house_brush->setHouse(nullptr);
-		}
-		if (g_gui.house_exit_brush && g_gui.house_exit_brush->getHouse() == draft_house) {
-			g_gui.house_exit_brush->setHouse(nullptr);
-		}
-		map->houses.removeHouse(draft_house);
-		draft_house = nullptr;
-	}
-}
-
-void HouseWizardDialog::OnClickCancel(wxCommandEvent& evt) {
-	cancelWizard();
+void HouseWizardDialog::OnClickCancel(wxCommandEvent& WXUNUSED(evt)) {
 	EndModal(wxID_CANCEL);
 }

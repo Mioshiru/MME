@@ -2107,6 +2107,7 @@ static ToolbarIconCache s_toolbar_icons;
 				if (cur_active_brush && (cur_active_brush != s_last_synced_brush || cur_active_brush->getName() != pal_state.selected_brush_name)) {
 					s_last_synced_brush = cur_active_brush;
 					pal_state.selected_brush_name = cur_active_brush->getName();
+					pal_state.request_scroll_to_selected = true;
 
 					// Locate which category and tileset contains this brush
 					bool found_match = false;
@@ -2166,6 +2167,7 @@ static ToolbarIconCache s_toolbar_icons;
 										pal_state.current_cat_idx = c;
 										pal_state.last_seen_cat_idx = c;
 										pal_state.selected_tileset_idx = ts_idx;
+										pal_state.request_scroll_to_selected = true;
 										found_match = true;
 										break;
 									}
@@ -2413,6 +2415,10 @@ static ToolbarIconCache s_toolbar_icons;
 						if (!h) continue;
 
 						bool is_selected = (active_selected_house && active_selected_house->getID() == h->getID());
+						if (is_selected && pal_state.request_scroll_to_selected) {
+							ImGui::SetScrollHereY(0.4f);
+							pal_state.request_scroll_to_selected = false;
+						}
 						std::string item_label = h->name + " (ID: " + std::to_string(h->getID()) + (h->guildhall ? ", GH" : "") + ")##HouseItem_" + std::to_string(h->getID());
 
 						if (ImGui::Selectable(item_label.c_str(), is_selected)) {
@@ -2466,25 +2472,12 @@ static ToolbarIconCache s_toolbar_icons;
 								if (target_town_id == 0 && cur_map->towns.begin() != cur_map->towns.end()) {
 									target_town_id = cur_map->towns.begin()->second->getID();
 								}
-								uint32_t new_id = cur_map->houses.getEmptyID();
-								House* new_h = newd House(*cur_map);
-								new_h->setID(new_id);
-								new_h->name = "House #" + std::to_string(new_id);
-								new_h->townid = target_town_id;
-								new_h->rent = 0;
-								new_h->guildhall = false;
-								cur_map->houses.addHouse(new_h);
-								cur_map->doChange();
-
-								s_selected_house_id = new_h->getID();
-								active_selected_house = new_h;
-								if (g_gui.house_brush) {
-									g_gui.house_brush->setHouse(new_h);
-									g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
-								}
-								ShowHUDNotification("New House #" + std::to_string(new_id) + " created! Paint tiles on map, click tile for Exit, press Enter/Done when finished.", 0xFF10B981);
-								g_gui.SetStatusText(wxString::Format("Created house \"%s\" (ID: %u). Paint tiles directly on map. Press Enter/Escape to finish.", wxstr(new_h->name), new_h->getID()));
-								g_gui.RefreshView();
+								wxTheApp->CallAfter([cur_map, target_town_id]() {
+									if (cur_map) {
+										HouseWizardDialog wizard(g_gui.root, cur_map, target_town_id);
+										wizard.ShowModal();
+									}
+								});
 							}
 						}
 
@@ -2703,6 +2696,10 @@ static ToolbarIconCache s_toolbar_icons;
 								ImGui::PushID(b);
 
 								bool is_sel = (cur_active_brush == b);
+								if (is_sel && pal_state.request_scroll_to_selected) {
+									ImGui::SetScrollHereY(0.4f);
+									pal_state.request_scroll_to_selected = false;
+								}
 								if (is_sel) {
 									ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.38f, 0.65f, 0.95f));
 									ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.26f, 0.46f, 0.78f, 1.0f));

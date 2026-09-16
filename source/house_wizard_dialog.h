@@ -9,79 +9,44 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/sizer.h>
-#include <wx/tglbtn.h>
-#include "position.h"
+#include <wx/button.h>
+#include <string>
+#include <vector>
 
 class Map;
 class House;
 
 class HouseWizardDialog : public wxDialog {
 public:
-	HouseWizardDialog(wxWindow* parent, Map* map, uint32_t default_town_id = 0, House* existing_house = nullptr);
+	HouseWizardDialog(wxWindow* parent, Map* map, uint32_t default_town_id = 0);
 	virtual ~HouseWizardDialog();
 
-	House* getCreatedHouse() const { return draft_house; }
-	void cancelWizard();
-
-	static HouseWizardDialog* GetActiveDialog() { return s_active_dialog; }
-	static void NotifyTileOrExitChanged();
-
-	void updateTileCountText();
-	void updateExitText();
+	House* getCreatedHouse() const { return created_house; }
+	static std::string GenerateRandomHouseName();
+	static void NotifyTileOrExitChanged() {}
 
 protected:
-	static HouseWizardDialog* s_active_dialog;
-
-	void showStep(int step);
-
-	void OnClickNext(wxCommandEvent& evt);
-	void OnClickBack(wxCommandEvent& evt);
+	void OnClickRollName(wxCommandEvent& evt);
 	void OnClickOK(wxCommandEvent& evt);
 	void OnClickCancel(wxCommandEvent& evt);
 
-	void OnClickPaintTiles(wxCommandEvent& evt);
-	void OnClickSetExit(wxCommandEvent& evt);
-
-	void OnActivate(wxActivateEvent& evt);
-	void OnIconize(wxIconizeEvent& evt);
-
-	void OnMouseEnter(wxMouseEvent& evt);
-	void OnMouseLeave(wxMouseEvent& evt);
-
-	void bindHoverEvents(wxWindow* win);
-	void makeSemiTransparent();
-	void makeOpaque();
-
 private:
 	Map* map;
-	House* draft_house;
-	bool is_editing;
-	int current_step;
+	House* created_house;
 
-	// UI panels for 3 steps
-	wxPanel* step1_panel; // Step 1: Tiles
-	wxPanel* step2_panel; // Step 2: Exit
-	wxPanel* step3_panel; // Step 3: Properties
-
-	// Step 1 controls (Paint Tiles)
-	wxToggleButton* paint_tiles_btn;
-	wxStaticText* tile_count_label;
-
-	// Step 2 controls (Set Exit)
-	wxToggleButton* set_exit_btn;
-	wxStaticText* exit_pos_label;
-
-	// Step 3 controls (Properties: Name, Town, Rent, Guildhall)
 	wxTextCtrl* name_field;
+	wxButton* roll_btn;
 	wxChoice* town_choice;
+	wxSpinCtrl* id_field;
 	wxTextCtrl* rent_field;
 	wxCheckBox* guildhall_checkbox;
 
-	// Nav buttons
-	wxButton* back_btn;
-	wxButton* next_btn;
 	wxButton* ok_btn;
 	wxButton* cancel_btn;
+
+	enum {
+		WIZARD_ID_ROLL = 10050
+	};
 
 	DECLARE_EVENT_TABLE()
 };

@@ -551,47 +551,7 @@ void HousePalettePanel::OnClickSetExit(wxCommandEvent& event) {
 	g_gui.SelectBrush();
 }
 
-void HousePalettePanel::OnClickAddHouse(wxCommandEvent& event) {
-	OnClickAddHouseQuick(event);
-}
-
-void HousePalettePanel::OnClickAddHouseQuick(wxCommandEvent& event) {
-	if (map == nullptr || !town_choice || !house_list) {
-		return;
-	}
-
-	Town* what_town = reinterpret_cast<Town*>(town_choice->GetClientData(town_choice->GetSelection()));
-	if (what_town == nullptr) {
-		g_gui.PopupDialog(this, "Error", "You need to select a town to add a house to.", wxOK);
-		return;
-	}
-
-	uint32_t new_id = map->houses.getEmptyID();
-	House* new_house = newd House(*map);
-	new_house->setID(new_id);
-	new_house->name = "House #" + std::to_string(new_id);
-	new_house->townid = what_town->getID();
-	new_house->rent = 0;
-	new_house->guildhall = false;
-
-	map->houses.addHouse(new_house);
-	map->doChange();
-
-	SelectTown(town_choice->GetSelection());
-	int idx = house_list->FindString(wxstr(new_house->getDescription()));
-	if (idx != wxNOT_FOUND) {
-		SelectHouse(idx);
-	}
-	SelectHouseBrush();
-	g_gui.SelectBrush();
-	if (g_gui.house_brush) {
-		g_gui.house_brush->setHouse(new_house);
-	}
-	g_gui.SetStatusText(wxString::Format("Created house \"%s\" (ID: %u). Paint tiles on map. Press Enter/Escape when done.", wxstr(new_house->name), new_house->getID()));
-	g_gui.RefreshView();
-}
-
-void HousePalettePanel::OnClickAddHouseWizard(wxCommandEvent& event) {
+void HousePalettePanel::OnClickAddHouse(wxCommandEvent& WXUNUSED(event)) {
 	if (map == nullptr || !town_choice || !house_list) {
 		return;
 	}
@@ -608,8 +568,6 @@ void HousePalettePanel::OnClickAddHouseWizard(wxCommandEvent& event) {
 	if (wizard.ShowModal() == wxID_OK) {
 		House* new_house = wizard.getCreatedHouse();
 		if (new_house) {
-			map->doChange();
-
 			SelectTown(town_choice->GetSelection());
 			int idx = house_list->FindString(wxstr(new_house->getDescription()));
 			if (idx != wxNOT_FOUND) {
@@ -617,12 +575,16 @@ void HousePalettePanel::OnClickAddHouseWizard(wxCommandEvent& event) {
 			}
 			SelectHouseBrush();
 			g_gui.SelectBrush();
-			refresh_timer.Start(300, true);
 		}
-	} else {
-		wizard.cancelWizard();
-		SelectTown(town_choice->GetSelection());
 	}
+}
+
+void HousePalettePanel::OnClickAddHouseQuick(wxCommandEvent& event) {
+	OnClickAddHouse(event);
+}
+
+void HousePalettePanel::OnClickAddHouseWizard(wxCommandEvent& event) {
+	OnClickAddHouse(event);
 }
 
 void HousePalettePanel::OnClickEditHouse(wxCommandEvent& event) {
@@ -656,35 +618,7 @@ void HousePalettePanel::OnClickEditHouse(wxCommandEvent& event) {
 }
 
 void HousePalettePanel::OnClickEditHouseWizard(wxCommandEvent& event) {
-	if (!house_list || house_list->GetCount() == 0 || !town_choice) {
-		return;
-	}
-	if (map == nullptr) {
-		return;
-	}
-	int selection = house_list->GetSelection();
-	if (selection == wxNOT_FOUND || (size_t)selection >= house_list->GetCount()) {
-		return;
-	}
-	House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
-	if (house) {
-		HouseWizardDialog* d = newd HouseWizardDialog(g_gui.root, map, 0, house);
-		int ret = d->ShowModal();
-		if (ret == wxID_OK) {
-			house_list->SetString(selection, wxstr(house->getDescription()));
-			house_list->Sort();
-			map->doChange();
-
-			SelectTown(town_choice->GetSelection());
-			int idx = house_list->FindString(wxstr(house->getDescription()));
-			if (idx != wxNOT_FOUND) {
-				SelectHouse(idx);
-			}
-			g_gui.SelectBrush();
-			refresh_timer.Start(300, true);
-		}
-		d->Destroy();
-	}
+	OnClickEditHouse(event);
 }
 
 void HousePalettePanel::OnClickRemoveHouse(wxCommandEvent& event) {
@@ -786,7 +720,7 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 	map(map),
 	what_house(house) {
 	ASSERT(map);
-	ASSERT(house);
+	ASSERT(what_house);
 
 	// main properties window box
 	wxSizer* topsizer = newd wxBoxSizer(wxVERTICAL);
@@ -797,9 +731,9 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 	wxFlexGridSizer* subsizer = newd wxFlexGridSizer(2, 10, 10);
 	subsizer->AddGrowableCol(1);
 
-	house_name = wxstr(house->name);
-	house_id = i2ws(house->getID());
-	house_rent = i2ws(house->rent);
+	house_name = wxString::FromUTF8(what_house->name);
+	house_id = wxString::Format("%u", what_house->getID());
+	house_rent = wxString::Format("%u", what_house->rent);
 
 	// House name
 	subsizer->Add(newd wxStaticText(this, wxID_ANY, "Name:"), wxSizerFlags(0).Border(wxLEFT, 5));
@@ -813,7 +747,7 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 
 	town_id_field = newd wxChoice(this, wxID_ANY);
 	int to_select_index = 0;
-	uint32_t houseTownId = house->townid;
+	uint32_t houseTownId = what_house->townid;
 
 	if (towns.count() > 0) {
 		bool found = false;
@@ -821,7 +755,7 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 			if (town_iter->second->getID() == houseTownId) {
 				found = true;
 			}
-			town_id_field->Append(wxstr(town_iter->second->getName()), newd int(town_iter->second->getID()));
+			town_id_field->Append(wxString::FromUTF8(town_iter->second->getName()), newd int(town_iter->second->getID()));
 			if (!found) {
 				++to_select_index;
 			}
@@ -829,7 +763,7 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 
 		if (!found) {
 			if (houseTownId != 0) {
-				town_id_field->Append("Undefined Town (id:" + i2ws(houseTownId) + ")", newd int(houseTownId));
+				town_id_field->Append("Undefined Town (id:" + wxString::Format("%u", houseTownId) + ")", newd int(houseTownId));
 				++to_select_index;
 			}
 		}
@@ -850,7 +784,7 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 	wxFlexGridSizer* houseSizer = newd wxFlexGridSizer(2, 10, 10);
 
 	houseSizer->Add(newd wxStaticText(this, wxID_ANY, "ID:"), wxSizerFlags(0).Center());
-	id_field = newd wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxSize(40, 20), wxSP_ARROW_KEYS, 1, 0xFFFF, house->getID());
+	id_field = newd wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxSize(40, 20), wxSP_ARROW_KEYS, 1, 0xFFFF, what_house->getID());
 	// id_field->Enable(false);
 	houseSizer->Add(id_field, wxSizerFlags(1).Expand());
 	subsizerRight->Add(houseSizer, wxSizerFlags(1).Expand());
@@ -863,7 +797,7 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 
 	checkbox_sub_sizer->Add(guildhall_field);
 	subsizerRight->Add(checkbox_sub_sizer);
-	guildhall_field->SetValue(house->guildhall);
+	guildhall_field->SetValue(what_house->guildhall);
 
 	// construct the layout
 	housePropContainer->Add(subsizer, wxSizerFlags(5).Expand());
