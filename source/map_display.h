@@ -222,6 +222,7 @@ public:
   uint32_t hud_notification_time_ms = 0;
   uint32_t hud_notification_color = 0;
   void ShowHUDNotification(const std::string& text, uint32_t color = 0);
+  void FinishHouseCreation();
 
 protected:
 

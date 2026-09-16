@@ -284,6 +284,7 @@ public:
 	void SelectBrushInternal(Brush* brush);
 	// Get different brush parameters
 	Brush* GetCurrentBrush() const;
+	Brush* GetPreviousBrush() const { return previous_brush; }
 	BrushShape GetBrushShape() const;
 	int GetBrushSize() const;
 	int GetBrushVariation() const;
@@ -436,6 +437,7 @@ public:
 		// Per-palette independent selection — does NOT mirror g_gui.current_brush globally.
 		// Painting always uses g_gui.current_brush; this is for visual highlight only.
 		std::string selected_brush_name;
+		bool sort_az = false; // Toggle A-Z sorting for houses, creatures, npcs, and brushes
 	};
 
 	std::vector<CanvasPaletteState> canvas_palettes;

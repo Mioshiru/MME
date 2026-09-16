@@ -64,6 +64,7 @@
 #include "creature_brush.h"
 #include "doodad_brush.h"
 #include "ground_brush.h"
+#include "palette_house.h"
 #include "house_brush.h"
 #include "house_exit_brush.h"
 #include "house_wizard_dialog.h"
@@ -322,6 +323,20 @@ void MapCanvas::OnKeyDown(wxKeyEvent& event) {
     tool_wheel_open = false;
     Refresh();
     return;
+  }
+
+  if (event.GetKeyCode() == WXK_ESCAPE) {
+    if (g_gui.GetCurrentBrush() && (g_gui.GetCurrentBrush()->isHouse() || g_gui.GetCurrentBrush()->isHouseExit())) {
+      FinishHouseCreation();
+      return;
+    }
+  }
+
+  if (event.GetKeyCode() == WXK_RETURN || event.GetKeyCode() == WXK_NUMPAD_ENTER || event.GetKeyCode() == WXK_SPACE) {
+    if (g_gui.GetCurrentBrush() && (g_gui.GetCurrentBrush()->isHouse() || g_gui.GetCurrentBrush()->isHouseExit())) {
+      FinishHouseCreation();
+      return;
+    }
   }
 
   if (isPasting() && event.GetKeyCode() == WXK_ESCAPE) {
@@ -692,23 +707,51 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
             g_gui.SetDrawingMode();
             g_gui.SetFillBrushMode(true);
             break;
-          case 3: // Zones Sub-Menu
+          case 3: // House
+            {
+              Map* cur_map = &editor.map;
+              if (cur_map) {
+                uint32_t target_town_id = 0;
+                if (cur_map->towns.begin() != cur_map->towns.end()) {
+                  target_town_id = cur_map->towns.begin()->second->getID();
+                }
+                uint32_t new_id = cur_map->houses.getEmptyID();
+                House* new_h = newd House(*cur_map);
+                new_h->setID(new_id);
+                new_h->name = "House #" + std::to_string(new_id);
+                new_h->townid = target_town_id;
+                new_h->rent = 0;
+                new_h->guildhall = false;
+                cur_map->houses.addHouse(new_h);
+                cur_map->doChange();
+
+                if (g_gui.house_brush) {
+                  g_gui.house_brush->setHouse(new_h);
+                  g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
+                }
+                ShowHUDNotification("New House #" + std::to_string(new_id) + " created! Paint tiles on map, click tile for Exit, press Enter/Done when finished.", 0xFF10B981);
+                g_gui.SetStatusText(wxString::Format("Created house \"%s\" (ID: %u). Paint tiles directly on map. Press Enter/Escape to finish.", wxstr(new_h->name), new_h->getID()));
+                g_gui.RefreshView();
+              }
+            }
+            break;
+          case 4: // Zones Sub-Menu
             tool_wheel_sub_menu = 1;
             Refresh();
             return;
-          case 4: // Doors Sub-Menu
+          case 5: // Doors Sub-Menu
             tool_wheel_sub_menu = 2;
             Refresh();
             return;
-          case 5: // Windows Sub-Menu
+          case 6: // Windows Sub-Menu
             tool_wheel_sub_menu = 3;
             Refresh();
             return;
-          case 6: // Eraser
+          case 7: // Eraser
             g_gui.SetFillBrushMode(false);
             g_gui.SelectBrush(g_gui.eraser);
             break;
-          case 7: // Prefab Creator
+          case 8: // Prefab Creator
             g_gui.SetFillBrushMode(false);
             g_gui.SelectBrush(g_gui.prefab_creator_brush);
             break;
@@ -893,6 +936,21 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
         }
       }
     } else if (!rectangle_mode) {
+			// If House Brush is active, clicking on an existing tile of the same house sets it as the Exit
+			if (!event.ControlDown() && current_brush && current_brush->isHouse() && g_gui.house_brush) {
+				House* current_h = g_gui.house_brush->getHouse();
+				Tile* target_tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
+				if (current_h && target_tile && target_tile->isHouseTile() && target_tile->getHouseID() == current_h->getID()) {
+					Position clicked_p(mouse_map_x, mouse_map_y, floor);
+					current_h->setExit(clicked_p);
+					editor.map.doChange();
+					ShowHUDNotification("House Exit set to (" + std::to_string(clicked_p.x) + ", " + std::to_string(clicked_p.y) + ", " + std::to_string(clicked_p.z) + ")", 0xFF10B981);
+					g_gui.SetStatusText(wxString::Format("House \"%s\" exit set to (%d, %d, %d).", wxstr(current_h->name), clicked_p.x, clicked_p.y, clicked_p.z));
+					Refresh();
+					return;
+				}
+			}
+
 			PositionVector tilestodraw;
 			PositionVector tilestoborder;
 			getTilesToDraw(mouse_map_x, mouse_map_y, floor, &tilestodraw, &tilestoborder, false);
@@ -2899,6 +2957,43 @@ void MapCanvas::TriggerCopyLiveIP() {
   if (g_gui.root && g_gui.root->menu_bar) {
     wxCommandEvent dummy;
     g_gui.root->menu_bar->OnCopyLiveIP(dummy);
+  }
+}
+
+void MapCanvas::FinishHouseCreation() {
+  Brush* b = g_gui.GetCurrentBrush();
+  if (b && (b->isHouse() || b->isHouseExit())) {
+    House* h = nullptr;
+    if (b->isHouse() && g_gui.house_brush) h = g_gui.house_brush->getHouse();
+    else if (b->isHouseExit() && g_gui.house_exit_brush) h = g_gui.house_exit_brush->getHouse();
+    
+    // Switch back to regular drawing or previous brush
+    Brush* prev_b = g_gui.GetPreviousBrush();
+    if (prev_b && !prev_b->isHouse() && !prev_b->isHouseExit()) {
+      g_gui.SelectBrush(prev_b);
+    } else {
+      g_gui.SelectBrush(nullptr);
+      g_gui.SetDrawingMode();
+    }
+    
+    if (h) {
+      Map* cur_map = &editor.map;
+      wxTheApp->CallAfter([cur_map, h]() {
+        if (cur_map && h) {
+          EditHouseDialog dlg(g_gui.root, cur_map, h);
+          if (dlg.ShowModal() == 1) {
+            cur_map->doChange();
+            g_gui.RefreshView();
+          }
+        }
+      });
+      ShowHUDNotification("House \"" + h->name + "\" created! (Drawing Mode Active)", 0xFF10B981);
+      g_gui.SetStatusText(wxString::Format("House \"%s\" (ID: %u) saved. Returned to regular drawing mode.", wxstr(h->name), h->getID()));
+    } else {
+      ShowHUDNotification("House creation finished! (Drawing Mode Active)", 0xFF10B981);
+      g_gui.SetStatusText("House mode finished. Returned to regular drawing mode.");
+    }
+    Refresh();
   }
 }
 

@@ -2309,14 +2309,33 @@ static ToolbarIconCache s_toolbar_icons;
 						s_selected_town_idx = 0;
 					}
 
+					// Town combo selector
 					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 					std::string town_combo_id = "##PalHouseTown_" + std::to_string(pal_state.id);
 					ImGui::Combo(town_combo_id.c_str(), &s_selected_town_idx, town_cstrs.data(), (int)town_cstrs.size());
 
-					// Search Box
-					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					// Search Box with A-Z Sort Toggle Button
+					float az_btn_w = 42.0f * ui_scale_ratio;
+					float search_w = ImGui::GetContentRegionAvail().x - az_btn_w - 4.0f;
+					ImGui::SetNextItemWidth(search_w);
 					std::string search_input_id = "##PalSearch_" + std::to_string(pal_state.id);
 					ImGui::InputTextWithHint(search_input_id.c_str(), "Search house...", pal_state.search_buf, sizeof(pal_state.search_buf));
+					ImGui::SameLine(0.0f, 4.0f);
+					if (pal_state.sort_az) {
+						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.45f, 0.75f, 0.95f));
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.98f, 0.88f, 0.35f, 1.0f));
+					} else {
+						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12f, 0.16f, 0.24f, 0.85f));
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.70f, 0.75f, 0.85f, 1.0f));
+					}
+					std::string sort_btn_id = "A-Z##SortHouses_" + std::to_string(pal_state.id);
+					if (ImGui::Button(sort_btn_id.c_str(), ImVec2(az_btn_w, 0))) {
+						pal_state.sort_az = !pal_state.sort_az;
+					}
+					if (ImGui::IsItemHovered()) {
+						ImGui::SetTooltip("Toggle A-Z Alphabetical Sorting");
+					}
+					ImGui::PopStyleColor(2);
 
 					std::string search_str = pal_state.search_buf;
 					for (auto& c : search_str) c = (char)tolower(c);
@@ -2353,6 +2372,24 @@ static ToolbarIconCache s_toolbar_icons;
 
 							matching_houses.push_back(h);
 						}
+
+						// Sort matching houses (A-Z or by ID)
+						if (pal_state.sort_az) {
+							std::sort(matching_houses.begin(), matching_houses.end(), [](House* a, House* b) {
+								if (!a || !b) return false;
+								std::string na = a->name;
+								std::string nb = b->name;
+								for (auto& c : na) c = (char)tolower(c);
+								for (auto& c : nb) c = (char)tolower(c);
+								if (na != nb) return na < nb;
+								return a->getID() < b->getID();
+							});
+						} else {
+							std::sort(matching_houses.begin(), matching_houses.end(), [](House* a, House* b) {
+								if (!a || !b) return false;
+								return a->getID() < b->getID();
+							});
+						}
 					}
 
 					static uint32_t s_selected_house_id = 0;
@@ -2385,9 +2422,10 @@ static ToolbarIconCache s_toolbar_icons;
 								g_gui.house_brush->setHouse(h);
 								g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
 							}
-							g_gui.SetStatusText(wxString::Format("House \"%s\" (ID: %u) selected. Paint tiles with left mouse button.", wxstr(h->name), h->getID()));
+							g_gui.SetStatusText(wxString::Format("House \"%s\" (ID: %u) selected. Paint tiles with left click, click existing tile to set Exit.", wxstr(h->name), h->getID()));
 						}
 
+						// Double click jumps viewport to House Exit (or first tile)
 						if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
 							s_selected_house_id = h->getID();
 							active_selected_house = h;
@@ -2395,6 +2433,7 @@ static ToolbarIconCache s_toolbar_icons;
 							if (!p.isValid() || p == Position(0, 0, 0)) p = h->getFirstTilePosition();
 							if (p.isValid() && p != Position(0, 0, 0)) {
 								g_gui.SetScreenCenterPosition(p);
+								ShowHUDNotification("Jumped to House: " + h->name, 0xFF38BDF8);
 							}
 						}
 
@@ -2415,38 +2454,42 @@ static ToolbarIconCache s_toolbar_icons;
 						ImGui::OpenPopup(popup_id.c_str());
 					}
 
+					// Concise right-click menu: exactly "New", "Edit", "Delete", "Towns", "Clear invalid House Tiles"
 					if (ImGui::BeginPopup(popup_id.c_str())) {
 						House* ctx_house = right_clicked_house ? right_clicked_house : active_selected_house;
 
-						if (ImGui::MenuItem("Add House...")) {
+						if (ImGui::MenuItem("New")) {
 							canvas_context_menu_open = false;
 							ImGui::CloseCurrentPopup();
-							wxTheApp->CallAfter([cur_map, sel_town_id]() {
-								if (cur_map) {
-									HouseWizardDialog wizard(g_gui.root, cur_map, sel_town_id);
-									if (wizard.ShowModal() == wxID_OK) {
-										House* new_house = wizard.getCreatedHouse();
-										if (new_house) {
-											cur_map->doChange();
-											s_selected_house_id = new_house->getID();
-											if (g_gui.house_brush) {
-												g_gui.house_brush->setHouse(new_house);
-												g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
-											}
-											g_gui.SetStatusText(wxString::Format("Created house \"%s\" (ID: %u).", wxstr(new_house->name), new_house->getID()));
-											g_gui.RefreshView();
-										}
-									} else {
-										wizard.cancelWizard();
-										g_gui.RefreshView();
-									}
+							if (cur_map) {
+								uint32_t target_town_id = sel_town_id;
+								if (target_town_id == 0 && cur_map->towns.begin() != cur_map->towns.end()) {
+									target_town_id = cur_map->towns.begin()->second->getID();
 								}
-							});
+								uint32_t new_id = cur_map->houses.getEmptyID();
+								House* new_h = newd House(*cur_map);
+								new_h->setID(new_id);
+								new_h->name = "House #" + std::to_string(new_id);
+								new_h->townid = target_town_id;
+								new_h->rent = 0;
+								new_h->guildhall = false;
+								cur_map->houses.addHouse(new_h);
+								cur_map->doChange();
+
+								s_selected_house_id = new_h->getID();
+								active_selected_house = new_h;
+								if (g_gui.house_brush) {
+									g_gui.house_brush->setHouse(new_h);
+									g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
+								}
+								ShowHUDNotification("New House #" + std::to_string(new_id) + " created! Paint tiles on map, click tile for Exit, press Enter/Done when finished.", 0xFF10B981);
+								g_gui.SetStatusText(wxString::Format("Created house \"%s\" (ID: %u). Paint tiles directly on map. Press Enter/Escape to finish.", wxstr(new_h->name), new_h->getID()));
+								g_gui.RefreshView();
+							}
 						}
 
 						if (ctx_house) {
-							ImGui::Separator();
-							if (ImGui::MenuItem("Edit House Properties...")) {
+							if (ImGui::MenuItem("Edit")) {
 								canvas_context_menu_open = false;
 								ImGui::CloseCurrentPopup();
 								wxTheApp->CallAfter([cur_map, ctx_house]() {
@@ -2459,7 +2502,7 @@ static ToolbarIconCache s_toolbar_icons;
 									}
 								});
 							}
-							if (ImGui::MenuItem("Delete House")) {
+							if (ImGui::MenuItem("Delete")) {
 								canvas_context_menu_open = false;
 								ImGui::CloseCurrentPopup();
 								wxTheApp->CallAfter([cur_map, ctx_house]() {
@@ -2480,51 +2523,10 @@ static ToolbarIconCache s_toolbar_icons;
 									}
 								});
 							}
-
-							ImGui::Separator();
-							if (ImGui::MenuItem("Paint House Tiles")) {
-								s_selected_house_id = ctx_house->getID();
-								if (g_gui.house_brush) {
-									g_gui.house_brush->setHouse(ctx_house);
-									g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
-									g_gui.SetStatusText("Click and drag on the map to paint house tiles.");
-								}
-							}
-							if (ImGui::MenuItem("Set House Exit")) {
-								s_selected_house_id = ctx_house->getID();
-								if (g_gui.house_exit_brush) {
-									g_gui.house_exit_brush->setHouse(ctx_house);
-									g_gui.SelectBrush(g_gui.house_exit_brush, TILESET_HOUSE);
-									g_gui.SetStatusText("Click on the map to place the house exit doorway.");
-								}
-							}
-
-							Position p = ctx_house->getExit();
-							if (!p.isValid() || p == Position(0, 0, 0)) p = ctx_house->getFirstTilePosition();
-							if (p.isValid() && p != Position(0, 0, 0)) {
-								if (ImGui::MenuItem("Go to House")) {
-									g_gui.SetScreenCenterPosition(p);
-								}
-							}
-
-							if (ImGui::MenuItem("Clear House Tiles")) {
-								canvas_context_menu_open = false;
-								ImGui::CloseCurrentPopup();
-								wxTheApp->CallAfter([cur_map, ctx_house]() {
-									if (cur_map && ctx_house) {
-										int ret = g_gui.PopupDialog("Clear House Tiles", wxString::Format("Are you sure you want to remove all tiles from \"%s\" (ID: %u)?", wxstr(ctx_house->name), ctx_house->getID()), wxYES | wxNO);
-										if (ret == wxID_YES) {
-											ctx_house->clean();
-											cur_map->doChange();
-											g_gui.RefreshView();
-										}
-									}
-								});
-							}
 						}
 
 						ImGui::Separator();
-						if (ImGui::MenuItem("Manage Towns...")) {
+						if (ImGui::MenuItem("Towns")) {
 							canvas_context_menu_open = false;
 							ImGui::CloseCurrentPopup();
 							wxTheApp->CallAfter([cur_editor, sel_town_id]() {
@@ -2534,7 +2536,7 @@ static ToolbarIconCache s_toolbar_icons;
 								}
 							});
 						}
-						if (ImGui::MenuItem("Clear Invalid House Tiles")) {
+						if (ImGui::MenuItem("Clear invalid House Tiles")) {
 							canvas_context_menu_open = false;
 							ImGui::CloseCurrentPopup();
 							wxTheApp->CallAfter([cur_editor]() {
@@ -2564,10 +2566,28 @@ static ToolbarIconCache s_toolbar_icons;
 						}
 					}
 
-					// Search Box with complete keyboard input support
-					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					// Search Box with A-Z Sort Toggle Button
+					float az_btn_w = 42.0f * ui_scale_ratio;
+					float search_w = ImGui::GetContentRegionAvail().x - az_btn_w - 4.0f;
+					ImGui::SetNextItemWidth(search_w);
 					std::string search_input_id = "##PalSearch_" + std::to_string(pal_state.id);
 					ImGui::InputTextWithHint(search_input_id.c_str(), "Search by name or ID...", pal_state.search_buf, sizeof(pal_state.search_buf));
+					ImGui::SameLine(0.0f, 4.0f);
+					if (pal_state.sort_az) {
+						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.45f, 0.75f, 0.95f));
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.98f, 0.88f, 0.35f, 1.0f));
+					} else {
+						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.12f, 0.16f, 0.24f, 0.85f));
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.70f, 0.75f, 0.85f, 1.0f));
+					}
+					std::string sort_btn_id = "A-Z##SortBrushes_" + std::to_string(pal_state.id);
+					if (ImGui::Button(sort_btn_id.c_str(), ImVec2(az_btn_w, 0))) {
+						pal_state.sort_az = !pal_state.sort_az;
+					}
+					if (ImGui::IsItemHovered()) {
+						ImGui::SetTooltip("Toggle A-Z Alphabetical Sorting");
+					}
+					ImGui::PopStyleColor(2);
 
 					std::string search_str = pal_state.search_buf;
 					for (auto& c : search_str) c = (char)tolower(c);
@@ -2638,6 +2658,19 @@ static ToolbarIconCache s_toolbar_icons;
 
 						auto flush_section_tiles = [&](const std::vector<Brush*>& brushes) {
 							if (brushes.empty()) return;
+							std::vector<Brush*> display_brushes = brushes;
+							if (pal_state.sort_az) {
+								std::sort(display_brushes.begin(), display_brushes.end(), [](Brush* a, Brush* b) {
+									if (!a || !b) return false;
+									std::string na = a->getName();
+									std::string nb = b->getName();
+									for (auto& c : na) c = (char)tolower(c);
+									for (auto& c : nb) c = (char)tolower(c);
+									if (na != nb) return na < nb;
+									return a->getLookID() < b->getLookID();
+								});
+							}
+
 							float avail_w = ImGui::GetContentRegionAvail().x;
 							float btn_dim = 32.0f * ui_scale_ratio;
 							float btn_spacing = 3.0f * ui_scale_ratio;
@@ -2650,21 +2683,20 @@ static ToolbarIconCache s_toolbar_icons;
 							}
 
 							// Use per-palette selected_brush_name for visual highlight, NOT the global brush.
-							// This keeps each palette's selection independent from other palettes.
 							Brush* cur_active_brush = nullptr;
 							{
 								Brush* global_brush = g_gui.GetCurrentBrush();
 								if (global_brush && !pal_state.selected_brush_name.empty() &&
 									global_brush->getName() == pal_state.selected_brush_name) {
-									cur_active_brush = global_brush; // Only highlight if this palette selected it
+									cur_active_brush = global_brush;
 								}
 							}
 
 							ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.0f, 1.0f));
 
 							int col_idx = 0;
-							for (size_t i = 0; i < brushes.size(); ++i) {
-								Brush* b = brushes[i];
+							for (size_t i = 0; i < display_brushes.size(); ++i) {
+								Brush* b = display_brushes[i];
 								if (!b || b->isSeparator()) continue;
 
 								ImGui::PushID((int)i);
@@ -2756,7 +2788,7 @@ static ToolbarIconCache s_toolbar_icons;
 								}
 
 								col_idx++;
-								if (col_idx < cols && (i + 1) < brushes.size()) {
+								if (col_idx < cols && (i + 1) < display_brushes.size()) {
 									ImGui::SameLine(0.0f, btn_spacing);
 								} else {
 									col_idx = 0;
@@ -2850,6 +2882,7 @@ static ToolbarIconCache s_toolbar_icons;
 					}
 				}
 				ImGui::EndChild();
+
 			}
 		}
 		ImGui::End();
@@ -2950,8 +2983,9 @@ static ToolbarIconCache s_toolbar_icons;
 		if (ImGui::Begin("##RadialMenuFullscreen", &tool_wheel_open, flags)) {
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
 			
-			const float r_min = 45.0f;
-			const float r_max = 145.0f;
+			const float ui_scale = std::clamp((float)g_settings.getInteger(Config::UI_SCALE) / 100.0f, 1.0f, 2.5f);
+			const float r_min = 45.0f * ui_scale;
+			const float r_max = 145.0f * ui_scale;
 			
 			struct RadialTool {
 				std::string label;
@@ -2986,6 +3020,7 @@ static ToolbarIconCache s_toolbar_icons;
 					{"SELECTION", radial_tex_ids[0]},
 					{"PENCIL", radial_tex_ids[1]},
 					{"BUCKET", radial_tex_ids[2]},
+					{"HOUSE", radial_tex_ids[13]},
 					{"ZONES", radial_tex_ids[4]},
 					{"DOORS", radial_tex_ids[5]},
 					{"WINDOWS", radial_tex_ids[8]},
@@ -3013,7 +3048,7 @@ static ToolbarIconCache s_toolbar_icons;
 			int hovered_slice = GetHoveredRadialSlice();
 			
 			// 1. Draw outer glowing ring (shadow)
-			draw_list->AddCircle(center, r_max + 1.0f, IM_COL32(0, 0, 0, 120), 64, 4.0f);
+			draw_list->AddCircle(center, r_max + 1.0f * ui_scale, IM_COL32(0, 0, 0, 120), 64, 4.0f * ui_scale);
 			
 			// 2. Draw slices
 			for (int i = 0; i < N; ++i) {
@@ -3035,13 +3070,13 @@ static ToolbarIconCache s_toolbar_icons;
 				draw_list->PathClear();
 				draw_list->PathArcTo(center, r_max, angle_start, angle_end, 16);
 				draw_list->PathArcTo(center, r_min, angle_end, angle_start, 16);
-				draw_list->PathStroke(border_color, ImDrawFlags_Closed, is_hovered ? 1.5f : 1.0f);
+				draw_list->PathStroke(border_color, ImDrawFlags_Closed, is_hovered ? (1.5f * ui_scale) : (1.0f * ui_scale));
 				
 				// Draw separator line
 				draw_list->AddLine(
 					ImVec2(center.x + r_min * std::cos(angle_start), center.y + r_min * std::sin(angle_start)),
 					ImVec2(center.x + r_max * std::cos(angle_start), center.y + r_max * std::sin(angle_start)),
-					IM_COL32(180, 140, 50, 60), 1.0f
+					IM_COL32(180, 140, 50, 60), 1.0f * ui_scale
 				);
 				
 				// 3. Render texture icon
@@ -3051,11 +3086,12 @@ static ToolbarIconCache s_toolbar_icons;
 				
 				ImU32 icon_color = is_hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(245, 215, 120, 255);
 				
+				const float icon_half = 14.0f * ui_scale;
 				if (tools[i].icon_id != 0) {
 					draw_list->AddImage(
 						(ImTextureID)(intptr_t)tools[i].icon_id,
-						ImVec2(icon_pos.x - 14.0f, icon_pos.y - 14.0f),
-						ImVec2(icon_pos.x + 14.0f, icon_pos.y + 14.0f),
+						ImVec2(icon_pos.x - icon_half, icon_pos.y - icon_half),
+						ImVec2(icon_pos.x + icon_half, icon_pos.y + icon_half),
 						ImVec2(0, 0), ImVec2(1, 1),
 						icon_color
 					);
@@ -3063,8 +3099,8 @@ static ToolbarIconCache s_toolbar_icons;
 			}
 			
 			// 4. Draw central circle outline (Hollow center hole so highlighted map tile field is visible)
-			draw_list->AddCircle(center, r_min - 1.0f, IM_COL32(255, 215, 80, 220), 64, 2.0f);
-			draw_list->AddCircle(center, r_min - 4.0f, IM_COL32(180, 140, 50, 120), 64, 1.0f);
+			draw_list->AddCircle(center, r_min - 1.0f * ui_scale, IM_COL32(255, 215, 80, 220), 64, 2.0f * ui_scale);
+			draw_list->AddCircle(center, r_min - 4.0f * ui_scale, IM_COL32(180, 140, 50, 120), 64, 1.0f * ui_scale);
 
 			// 5. Combined 2-Rectangle Description Box at Top-Center above the Wheel
 			std::string selected_label = "SELECT TOOL";
@@ -3078,24 +3114,24 @@ static ToolbarIconCache s_toolbar_icons;
 			}
 
 			ImVec2 text_sz = ImGui::CalcTextSize(selected_label.c_str());
-			float box_w = std::max(220.0f, text_sz.x + 48.0f);
-			float box_h = 38.0f;
+			float box_w = std::max(220.0f * ui_scale, text_sz.x + 48.0f * ui_scale);
+			float box_h = 38.0f * ui_scale;
 			float box_x = center.x - box_w * 0.5f;
-			float box_y = center.y - r_max - 48.0f;
+			float box_y = center.y - r_max - 48.0f * ui_scale;
 
 			// Rectangle 1: Outer Container Box
 			ImVec2 r1_min(box_x, box_y);
 			ImVec2 r1_max(box_x + box_w, box_y + box_h);
-			draw_list->AddRectFilled(r1_min, r1_max, IM_COL32(10, 14, 24, 245), 6.0f);
-			draw_list->AddRect(r1_min, r1_max, IM_COL32(180, 140, 50, 180), 6.0f, 0, 1.5f);
+			draw_list->AddRectFilled(r1_min, r1_max, IM_COL32(10, 14, 24, 245), 6.0f * ui_scale);
+			draw_list->AddRect(r1_min, r1_max, IM_COL32(180, 140, 50, 180), 6.0f * ui_scale, 0, 1.5f * ui_scale);
 
 			// Rectangle 2: Inner Combined Accent Pill Box
-			ImVec2 r2_min(box_x + 3.0f, box_y + 3.0f);
-			ImVec2 r2_max(box_x + box_w - 3.0f, box_y + box_h - 3.0f);
+			ImVec2 r2_min(box_x + 3.0f * ui_scale, box_y + 3.0f * ui_scale);
+			ImVec2 r2_max(box_x + box_w - 3.0f * ui_scale, box_y + box_h - 3.0f * ui_scale);
 			ImU32 r2_bg = (hovered_slice >= 0) ? IM_COL32(45, 35, 15, 230) : IM_COL32(18, 24, 38, 220);
 			ImU32 r2_border = (hovered_slice >= 0) ? IM_COL32(255, 215, 80, 240) : IM_COL32(140, 110, 40, 140);
-			draw_list->AddRectFilled(r2_min, r2_max, r2_bg, 4.0f);
-			draw_list->AddRect(r2_min, r2_max, r2_border, 4.0f, 0, 1.0f);
+			draw_list->AddRectFilled(r2_min, r2_max, r2_bg, 4.0f * ui_scale);
+			draw_list->AddRect(r2_min, r2_max, r2_border, 4.0f * ui_scale, 0, 1.0f * ui_scale);
 
 			// Description text centered inside the combined rectangle box
 			draw_list->AddText(
@@ -3612,6 +3648,40 @@ static ToolbarIconCache s_toolbar_icons;
 				}
 			}
 
+			// 5. Render House Editing Floating "Done" Action Pill
+			Brush* cur_brush = g_gui.GetCurrentBrush();
+			if (cur_brush && (cur_brush->isHouse() || cur_brush->isHouseExit())) {
+				House* active_h = nullptr;
+				if (cur_brush->isHouse() && g_gui.house_brush) active_h = g_gui.house_brush->getHouse();
+				else if (cur_brush->isHouseExit() && g_gui.house_exit_brush) active_h = g_gui.house_exit_brush->getHouse();
+
+				std::string h_name = active_h ? active_h->name : "House";
+				std::string prompt_text = "[House Editing: " + h_name + "]  Click tile = set Exit | Paint tiles | Finish (Enter / Click Here)";
+				ImVec2 psz = ImGui::CalcTextSize(prompt_text.c_str());
+				float pill_w = psz.x + 36.0f;
+				float pill_h = 32.0f;
+				float pill_x = (vp->Size.x - pill_w) * 0.5f;
+				float pill_y = vp->Size.y - 56.0f;
+
+				ImVec2 p_min(pill_x, pill_y);
+				ImVec2 p_max(pill_x + pill_w, pill_y + pill_h);
+
+				ImVec2 mpos = ImGui::GetMousePos();
+				bool hovered = (mpos.x >= p_min.x && mpos.x <= p_max.x && mpos.y >= p_min.y && mpos.y <= p_max.y);
+
+				ImU32 bg_col = hovered ? IM_COL32(16, 185, 129, 240) : IM_COL32(15, 23, 42, 230);
+				ImU32 brd_col = hovered ? IM_COL32(52, 211, 153, 255) : IM_COL32(16, 185, 129, 200);
+				ImU32 txt_col = hovered ? IM_COL32(255, 255, 255, 255) : IM_COL32(209, 250, 229, 255);
+
+				draw_list->AddRectFilled(p_min, p_max, bg_col, 16.0f);
+				draw_list->AddRect(p_min, p_max, brd_col, 16.0f, 0, 1.8f);
+				draw_list->AddText(ImVec2(pill_x + 18.0f, pill_y + (pill_h - psz.y) * 0.5f), txt_col, prompt_text.c_str());
+
+				if (hovered && ImGui::IsMouseClicked(0)) {
+					FinishHouseCreation();
+				}
+			}
+
 			ImGui::End();
 		}
 	}
@@ -3966,8 +4036,9 @@ int MapCanvas::GetHoveredRadialSlice() const {
 	float dy = cursor_y - tile_cy;
 	float dist = std::sqrt(dx * dx + dy * dy);
 	
-	const float r_min = 45.0f;
-	const float r_max = 145.0f;
+	const float ui_scale = std::clamp((float)g_settings.getInteger(Config::UI_SCALE) / 100.0f, 1.0f, 2.5f);
+	const float r_min = 45.0f * ui_scale;
+	const float r_max = 145.0f * ui_scale;
 	
 	if (dist < r_min || dist > r_max) {
 		return -1;
@@ -4188,6 +4259,16 @@ void MapCanvas::LoadRadialTextures() {
 	});
 	if (back_bmp.IsOk()) {
 		radial_tex_ids[12] = ConvertBitmapToTexture(back_bmp);
+	}
+	
+	// House Icon (13)
+	wxBitmap house_bmp = LoadBitmapFromCandidatesRadial(size, {
+		"icons/house.png", "../icons/house.png", "Map Editor/icons/house.png", "../Map Editor/icons/house.png",
+		wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "house.png",
+		wxGetCwd() + wxFILE_SEP_PATH + "icons" + wxFILE_SEP_PATH + "house.png"
+	});
+	if (house_bmp.IsOk()) {
+		radial_tex_ids[13] = ConvertBitmapToTexture(house_bmp);
 	}
 	
 	radial_textures_loaded = true;
