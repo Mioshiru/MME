@@ -14,6 +14,21 @@ rme
 rme.cfg
 data/user
 
+# Saves and Map Files (Outsourced to root directory 'In Arbeit')
+Saves/
+saves/
+*.otbm
+*.otmm
+*.markers.dat
+*-house.xml
+*-spawn.xml
+favorites.xml
+*.log
+error.log
+scratch/
+build_check.txt
+compiler_error*.md
+
 # exe, dll and pdb
 *.dll
 *.exe
@@ -21,6 +36,7 @@ data/user
 
 # build output folders
 build/
+build_vs/
 Mios_Map_Editor/
 
 # archives

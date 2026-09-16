@@ -96,6 +96,7 @@ MonsterEditorDialog::MonsterEditorDialog(wxWindow* parent) :
 	simple_loot_selected_id(2160),
 	is_stepping_loop(false)
 {
+	Freeze();
 	step_timer = new wxTimer(this, ID_MON_STEP_TIMER);
 
 	wxBoxSizer* rootSizer = new wxBoxSizer(wxVERTICAL);
@@ -690,6 +691,7 @@ MonsterEditorDialog::MonsterEditorDialog(wxWindow* parent) :
 	SetViewMode(VIEW_MODE_SIMPLE);
 	UpdateOutfitPreview();
 	UpdateLiveCode();
+	Thaw();
 }
 
 MonsterEditorDialog::~MonsterEditorDialog() {
@@ -771,32 +773,44 @@ void MonsterEditorDialog::SyncExtendedToSimple() {
 }
 
 void MonsterEditorDialog::PopulateMonsterPresets() {
+	if (outfit_preset_choice) outfit_preset_choice->Freeze();
+	if (simple_preset_choice) simple_preset_choice->Freeze();
+
 	if (outfit_preset_choice) outfit_preset_choice->Clear();
 	if (simple_preset_choice) simple_preset_choice->Clear();
+
+	wxArrayString names;
+	std::vector<void*> clientData;
+
 	int demonIdx = 0;
+	int idx = 0;
 
 	for (auto iter = g_creatures.begin(); iter != g_creatures.end(); ++iter) {
 		CreatureType* ct = iter->second;
 		if (!ct) continue;
 
-		int itemIdx = -1;
+		names.Add(ct->name);
+		clientData.push_back(static_cast<void*>(ct));
+
+		if (ct->name == "Demon") {
+			demonIdx = idx;
+		}
+		++idx;
+	}
+
+	if (!names.IsEmpty()) {
 		if (outfit_preset_choice) {
-			itemIdx = outfit_preset_choice->Append(ct->name, (void*)ct);
+			outfit_preset_choice->Append(names, clientData.data());
+			outfit_preset_choice->SetSelection(demonIdx);
 		}
 		if (simple_preset_choice) {
-			simple_preset_choice->Append(ct->name, (void*)ct);
-		}
-		if (ct->name == "Demon" && itemIdx != -1) {
-			demonIdx = itemIdx;
+			simple_preset_choice->Append(names, clientData.data());
+			simple_preset_choice->SetSelection(demonIdx);
 		}
 	}
 
-	if (outfit_preset_choice && outfit_preset_choice->GetCount() > 0) {
-		outfit_preset_choice->SetSelection(demonIdx);
-	}
-	if (simple_preset_choice && simple_preset_choice->GetCount() > 0) {
-		simple_preset_choice->SetSelection(demonIdx);
-	}
+	if (outfit_preset_choice) outfit_preset_choice->Thaw();
+	if (simple_preset_choice) simple_preset_choice->Thaw();
 }
 
 void MonsterEditorDialog::LoadCreatureType(CreatureType* ct) {
