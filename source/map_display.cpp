@@ -66,6 +66,7 @@
 #include "ground_brush.h"
 #include "house_brush.h"
 #include "house_exit_brush.h"
+#include "house_wizard_dialog.h"
 #include "lua/lua_script.h"
 #include "lua/lua_script_manager.h"
 #include "raw_brush.h"
@@ -900,6 +901,7 @@ void MapCanvas::OnMouseLeftClick(wxMouseEvent& event) {
 			} else {
 				editor.draw(tilestodraw, tilestoborder, false);
 			}
+			HouseWizardDialog::NotifyTileOrExitChanged();
 		}
 	} else {
 		Tile* tile = editor.map.getTile(mouse_map_x, mouse_map_y, floor);
@@ -1376,8 +1378,10 @@ void MapCanvas::OnMouseMove(wxMouseEvent& event) {
 				} else {
 					editor.draw(tilestodraw, tilestoborder, false);
 				}
+				HouseWizardDialog::NotifyTileOrExitChanged();
 			} else if (event.RightIsDown()) {
 				editor.undraw(tilestodraw, tilestoborder, event.ControlDown());
+				HouseWizardDialog::NotifyTileOrExitChanged();
 			}
 		}
 		Refresh();

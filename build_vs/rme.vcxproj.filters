@@ -1,0 +1,1111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\about_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\action.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\add_item_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\add_tileset_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\artprovider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\async_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\basemap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\browse_tile_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\brush_tables.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\carpet_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\checklist_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\client_version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\command_palette_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\common_windows.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\complexitem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\container_properties_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\copybuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creature_bestiary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creature_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creature_wiki_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creatures.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\dcbutton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\deferred_renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\doodad_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\editor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\editor_tabs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\eraser_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ext\pugixml.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\extension.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\extension_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\filehandle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\find_creature_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\find_item_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\graphics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ground_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_assets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_hotkeys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_layout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_perspective.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_preview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_tabs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\house.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\house_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\house_exit_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\house_wizard_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap_otbm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap_otbm_attributes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap_otbm_nodes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap_otmm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap_sec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\item.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\item_attributes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\item_editor_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\items.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\items_loading.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\items_registry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_reader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_value.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_writer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\light_drawer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lighting_system.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_action.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_approval_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_client.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_peer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_server.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_socket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_tab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\loading_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_algo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_app.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_color.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_creature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_geo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_http.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_item.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_json.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_noise.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_position.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_prefab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_selection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_tile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_script.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_script_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_scripts_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\main_menubar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\main_menubar_map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\main_menubar_search.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\main_toolbar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_diagnostic_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_diff_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_display.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_display_menu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_display_paint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_drawer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_region.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_tab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\materials.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\mkpch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\mme_updater.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\monster_editor_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\mt_rand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\nanovg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\net_connection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\numbertextctrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\old_properties_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\otc_export.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\overlay_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_brushlist.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_creature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_house.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_waypoints.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\playtest_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\pngfiles.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\positionctrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\prefab_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\preferences.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\procedural_generator_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\process_com.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\properties_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\radio_player.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\raw_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\realots_converter_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\replace_items_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\result_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\rpg_progress_bar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\selection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\shader_program.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\spawn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\spawn_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\table_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\templatemap76-74.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\templatemap81.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\templatemap854.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\templatemapclassic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_exporter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_key_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_npc_editor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_npc_wizard_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_quest_generator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_special_objects_wizard_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tileset.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tileset_manager_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tileset_window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\town.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\undo_history_panel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\wall_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\waypoint_brush.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\waypoints.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\welcome_dialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\about_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\action.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\add_item_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\add_tileset_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\artprovider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\async_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\basemap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\browse_tile_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\brush_enums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\carpet_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\checklist_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\client_version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\command_palette_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\common_windows.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\complexitem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\con_vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\container_properties_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\copybuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\core_forward.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creature.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creature_bestiary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creature_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creature_wiki_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\creatures.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\dat_debug_view.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\dcbutton.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\deferred_renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\definitions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\doodad_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ecs_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\editor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\editor_interfaces.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\editor_tabs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ext\pugiconfig.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ext\pugixml.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\extension.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\extension_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\fast_noise_lite.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\filehandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\find_creature_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\find_item_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\firewall_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\graphics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ground_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_ids.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_interfaces.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\gui_preview.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\house.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\house_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\house_exit_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\house_wizard_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\i18n.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap_otbm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap_otmm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\iomap_sec.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\item.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\item_attributes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\item_editor_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\items.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_error_position.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_reader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_reader_template.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_stream_reader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_value.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\json\json_spirit_writer_template.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\light_drawer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lighting_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_action.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_approval_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_client.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_packets.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_peer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_server.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_socket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\live_tab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\loading_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_algo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_app.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_color.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_creature.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_geo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_http.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_item.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_json.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_noise.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_position.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_selection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_api_tile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_script.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_script_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\lua\lua_scripts_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\main_menubar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\main_toolbar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_allocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_diagnostic_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_diff_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_display.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_drawer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_overlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_region.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_tab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\map_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\materials.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\mme_updater.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\monster_editor_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\mt_rand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\nanovg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\nanovg_gl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\net_connection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\numbertextctrl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\old_properties_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\otc_export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\otml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\outfit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\overlay_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_brushlist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_creature.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_house.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_waypoints.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\palette_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\playtest_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\pngfiles.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\position.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\positionctrl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\prefab_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\preferences.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\procedural_generator_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\process_com.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\properties_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\radio_player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\raw_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\realots_converter_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\replace_items_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\result_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\rme_forward_declarations.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\rme_net.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\rpg_progress_bar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\selection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\shader_program.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\similarity_finder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\snapshot_action.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\spawn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\spawn_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\sprites.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\style_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\svg_icons.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\table_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\templates.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_exporter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_key_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_npc_editor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_npc_wizard_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_quest_generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tfs_special_objects_wizard_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\threads.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tileset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tileset_manager_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\tileset_window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\town.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ui_button.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ui_element.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ui_theme.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\ui_toolbar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\undo_history_panel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\wall_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\waypoint_brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\waypoints.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\welcome_dialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\world_map_markers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\build_vs\vcpkg_installed\x64-windows\share\boost-1.91.0\assert\boost_assert.natvis" />
+    <Natvis Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\build_vs\vcpkg_installed\x64-windows\share\boost-1.91.0\unordered\boost_unordered.natvis" />
+    <Natvis Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\build_vs\vcpkg_installed\x64-windows\share\nlohmann_json\nlohmann_json.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\source\rme.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{FB71A5B4-D294-30FC-894A-3FF09A5CA0BB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{9C7541FE-1E87-37AE-9B2A-8073D7F5445B}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

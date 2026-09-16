@@ -437,7 +437,7 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	wxColour button_base_colour = wxColor(32, 48, 78);
 
 	// Compact Settings button
-	wxSize pref_size = FROM_DIP(this, wxSize(40, 34));
+	wxSize pref_size = FROM_DIP(this, wxSize(44, 38));
 	auto* preferences_button = newd WelcomeDialogButton(this, wxDefaultPosition, pref_size, button_base_colour, wxString::FromUTF8("⚙"));
 	preferences_button->SetAction(wxID_PREFERENCES);
 	preferences_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
@@ -446,7 +446,7 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	bottomSizer->AddSpacer(FROM_DIP(this, 12));
 
 	// Compact Load Custom button
-	wxSize load_button_size = FROM_DIP(this, wxSize(130, 34));
+	wxSize load_button_size = FROM_DIP(this, wxSize(140, 38));
 	auto* load_custom_button = newd WelcomeDialogButton(this, wxDefaultPosition, load_button_size, button_base_colour, "Load Custom...");
 	load_custom_button->SetAction(wxID_OPEN);
 	load_custom_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
@@ -455,7 +455,7 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	bottomSizer->AddSpacer(FROM_DIP(this, 12));
 
 	// Compact Join button
-	wxSize join_button_size = FROM_DIP(this, wxSize(95, 34));
+	wxSize join_button_size = FROM_DIP(this, wxSize(105, 38));
 	auto* join_button = newd WelcomeDialogButton(this, wxDefaultPosition, join_button_size, button_base_colour, "Join...");
 	join_button->SetAction(wxID_MORE);
 	join_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
@@ -464,7 +464,7 @@ WelcomeDialogPanel::WelcomeDialogPanel(WelcomeDialog* dialog, const wxSize& size
 	bottomSizer->AddSpacer(FROM_DIP(this, 12));
 
 	// Compact Update button
-	wxSize update_button_size = FROM_DIP(this, wxSize(105, 34));
+	wxSize update_button_size = FROM_DIP(this, wxSize(115, 38));
 	auto* update_button = newd WelcomeDialogButton(this, wxDefaultPosition, update_button_size, button_base_colour, wxString::FromUTF8("🔄 Update"));
 	update_button->SetAction(wxID_APPLY);
 	update_button->Bind(wxEVT_LEFT_UP, &WelcomeDialog::OnButtonClicked, dialog);
@@ -525,9 +525,9 @@ void WelcomeDialogButton::OnPaint(const wxPaintEvent& event) {
 
 	wxFont button_font = GetFont();
 	if (m_text == wxString::FromUTF8("⚙")) {
-		button_font.SetPointSize(13);
+		button_font.SetPointSize(14);
 	} else {
-		button_font.SetPointSize(10);
+		button_font.SetPointSize(11);
 		button_font.SetWeight(wxFONTWEIGHT_BOLD);
 	}
 	dc.SetFont(button_font);
@@ -556,7 +556,7 @@ RecentItem::RecentItem(wxWindow* parent, WelcomeDialog* dialog, const wxColour& 
 	m_is_hover(false) {
 	
 	SetBackgroundColour(wxColor(13, 17, 23));
-	SetMinSize(FROM_DIP(this, wxSize(460, 48)));
+	SetMinSize(FROM_DIP(this, wxSize(460, 54)));
 
 	Bind(wxEVT_PAINT, &RecentItem::OnPaint, this);
 	Bind(wxEVT_ENTER_WINDOW, &RecentItem::OnMouseEnter, this);
@@ -579,7 +579,7 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 	// Draw slot label/number index and title
 	dc.SetTextForeground(m_is_hover ? wxColour(229, 193, 88) : wxColour(212, 175, 55));
 	wxFont label_font = GetFont();
-	label_font.SetPointSize(10);
+	label_font.SetPointSize(11);
 	label_font.SetWeight(wxFONTWEIGHT_BOLD);
 	dc.SetFont(label_font);
 
@@ -593,7 +593,7 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 	}
 	
 	wxSize label_size = dc.GetTextExtent(slot_num);
-	dc.DrawText(slot_num, wxPoint(FROM_DIP(this, 12), GetSize().y / 2 - label_size.y / 2 - 6));
+	dc.DrawText(slot_num, wxPoint(FROM_DIP(this, 14), GetSize().y / 2 - label_size.y / 2 - 8));
 
 	// Make the text color stand out even more nicely on hollow slots
 	if (m_item_text.empty()) {
@@ -601,13 +601,13 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 	} else {
 		dc.SetTextForeground(m_is_hover ? wxColour(255, 255, 255) : wxColour(210, 215, 230));
 	}
-	dc.DrawText(title_text, wxPoint(FROM_DIP(this, 12) + label_size.x, GetSize().y / 2 - label_size.y / 2 - 6));
+	dc.DrawText(title_text, wxPoint(FROM_DIP(this, 14) + label_size.x, GetSize().y / 2 - label_size.y / 2 - 8));
 
 	// Draw file path or hint text
 	wxFont path_font = GetFont();
-	path_font.SetPointSize(8);
+	path_font.SetPointSize(9);
 	dc.SetFont(path_font);
-	dc.SetTextForeground(m_is_hover ? wxColour(220, 200, 150) : wxColour(130, 130, 140));
+	dc.SetTextForeground(m_is_hover ? wxColour(220, 200, 150) : wxColour(140, 145, 155));
 	wxString sub_text;
 	if (m_item_text.empty()) {
 		sub_text = "Click to create a new map in this slot";
@@ -615,7 +615,7 @@ void RecentItem::OnPaint(const wxPaintEvent& event) {
 		sub_text = wxFileName(m_item_text).GetPath(); // e.g. "Saves/Slot 1"
 	}
 	wxSize sub_size = dc.GetTextExtent(sub_text);
-	dc.DrawText(sub_text, wxPoint(FROM_DIP(this, 12), GetSize().y / 2 + 5));
+	dc.DrawText(sub_text, wxPoint(FROM_DIP(this, 14), GetSize().y / 2 + 6));
 
 	// Context menu tip for non-empty ones
 	if (!m_item_text.empty()) {

@@ -1,0 +1,10 @@
+^C:\USERS\WEBER\DOKUMENTE\PROJEKT\IN ARBEIT\MAP EDITOR\BUILD_VS\CMAKEFILES\CFF71AB7E25D9301A9E031566A97122C\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor" "-BC:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/build_vs" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "C:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/build_vs/rme.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

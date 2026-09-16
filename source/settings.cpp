@@ -408,6 +408,7 @@ void Settings::IO(IOMode mode) {
 	Int(USE_UPDATER, 1);
 	String(RECENT_EDITED_MAP_PATH, "");
 	String(RECENT_EDITED_MAP_POSITION, "");
+	String(GEMINI_API_KEY, "");
 
 	Int(RENDER_BACKEND, 0); // 0: OpenGL, 1: Vulkan
 	Int(UI_THEME, 0); // 0: Dark, 1: Light

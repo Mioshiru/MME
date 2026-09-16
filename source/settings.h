@@ -240,6 +240,7 @@ namespace Config {
 		MINIMAP_CORNER,
 		RADIO_DOCKED,       // Radio player docked beneath palette (1) or floating (0)
 		RADIO_OPACITY,      // Radio player window transparency (20 - 100)
+		GEMINI_API_KEY,     // Google Gemini Flash API Key
 		LAST,
 	};
 	static const int BACKEND_OPENGL = 0;

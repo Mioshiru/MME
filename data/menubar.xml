@@ -203,17 +203,17 @@
 	</menu>
 
 	<menu name="Tools">
-		<item name="Radio" action="TOOLS_RADIO_PLAYER" help="Fantasy web radio player with Rainwave &amp; RPG streams."/>
-		<separator/>
-		<item name="Monster Editor..." action="TOOLS_MONSTER_EDITOR" help="Create &amp; edit monsters with outfit designer, attacks, immunities, and loot tables."/>
+		<item name="Monster &amp; Creature Wizard..." action="TOOLS_MONSTER_EDITOR" help="Create and manage monsters &amp; bosses with outfit designer, stats, spells, and loot tables."/>
+		<item name="NPC &amp; Dialogue Wizard..." action="WIZARD_NPC" help="Create and manage NPCs with outfit designer, dialogues, trade shop, and quests."/>
 		<item name="Creature Bestiary &amp; Wiki..." action="TOOLS_CREATURE_WIKI" help="Browse Tibia creature stats, HP, EXP, EXP/HP ratios, and level recommendations."/>
-		<item name="NPC Editor..." action="WIZARD_NPC" help="Create NPCs, outfits, dialogues, and shop offers."/>
+		<separator/>
 		<item name="Item Editor..." action="TOOLS_ITEM_EDITOR" help="Inspect &amp; edit items, attributes, OTB flags, and import PNG sprites."/>
 		<item name="Tileset &amp; Brush Studio..." hotkey="F4" action="TOOLS_TILESET_MANAGER" help="Tag RAW items, organize tilesets, and create custom autoborder brushes."/>
 		<separator/>
 		<item name="Procedural Map Generator..." action="TOOLS_PROCEDURAL_GENERATOR" help="Generate organic terrain and caves with FastNoiseLite."/>
 		<item name="Map Diagnostic Scanner..." action="TOOLS_MAP_DIAGNOSTIC" help="Scan for duplicate UIDs, floating walls, and orphaned spawns."/>
 		<item name="Map Diff Comparison..." action="TOOLS_MAP_DIFF" help="Compare changes between two map versions visually."/>
+		<item name="Radio" action="TOOLS_RADIO_PLAYER" help="Fantasy web radio player with Rainwave &amp; RPG streams."/>
 		<separator/>
 		<menu name="Plugins">
 			<item name="Extensions..." hotkey="F2" action="EXTENSIONS" help="Manage extensions."/>

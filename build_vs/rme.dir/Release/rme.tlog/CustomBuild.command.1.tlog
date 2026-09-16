@@ -1,0 +1,10 @@
+^C:\USERS\WEBER\DOKUMENTE\PROJEKT\IN ARBEIT\MAP EDITOR\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor" "-BC:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/build_vs" --check-stamp-file "C:/Users/weber/Dokumente/Projekt/In Arbeit/Map Editor/build_vs/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

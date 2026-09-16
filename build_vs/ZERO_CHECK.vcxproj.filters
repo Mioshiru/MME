@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\weber\Dokumente\Projekt\In Arbeit\Map Editor\build_vs\CMakeFiles\cff71ab7e25d9301a9e031566a97122c\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{5D88FDC6-992B-3847-81B8-90C0867ED39F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

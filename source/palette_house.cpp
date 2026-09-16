@@ -33,6 +33,22 @@
 #include "house_exit_brush.h"
 #include "house_wizard_dialog.h"
 #include "spawn_brush.h"
+#include "common_windows.h"
+
+// Menu command IDs for house palette context menu
+enum {
+	PALETTE_HOUSE_CMD_ADD_QUICK = 10510,
+	PALETTE_HOUSE_CMD_ADD_WIZARD = 10511,
+	PALETTE_HOUSE_CMD_EDIT_PROPS = 10512,
+	PALETTE_HOUSE_CMD_EDIT_WIZARD = 10513,
+	PALETTE_HOUSE_CMD_DELETE = 10514,
+	PALETTE_HOUSE_CMD_CLEAR_TILES = 10515,
+	PALETTE_HOUSE_CMD_HOUSE_BRUSH = 10516,
+	PALETTE_HOUSE_CMD_SET_EXIT = 10517,
+	PALETTE_HOUSE_CMD_GOTO = 10518,
+	PALETTE_HOUSE_CMD_MANAGE_TOWNS = 10519,
+	PALETTE_HOUSE_CMD_CLEAR_INVALID_TILES = 10520,
+};
 
 // ============================================================================
 // House palette
@@ -51,6 +67,7 @@ EVT_BUTTON(PALETTE_HOUSE_REMOVE_HOUSE, HousePalettePanel::OnClickRemoveHouse)
 EVT_MENU(PALETTE_HOUSE_ADD_HOUSE, HousePalettePanel::OnClickAddHouse)
 EVT_MENU(PALETTE_HOUSE_EDIT_HOUSE, HousePalettePanel::OnClickEditHouse)
 EVT_MENU(PALETTE_HOUSE_REMOVE_HOUSE, HousePalettePanel::OnClickRemoveHouse)
+EVT_TOGGLEBUTTON(PALETTE_HOUSE_BRUSH_BUTTON, HousePalettePanel::OnClickHouseBrushButton)
 EVT_TOGGLEBUTTON(PALETTE_HOUSE_SET_EXIT_BUTTON, HousePalettePanel::OnClickSetExit)
 END_EVENT_TABLE()
 
@@ -64,10 +81,11 @@ HousePalettePanel::HousePalettePanel(wxWindow* parent, wxWindowID id) :
 
 	wxSizer* sidesizer = newd wxStaticBoxSizer(wxVERTICAL, this, "Houses");
 	town_choice = newd wxChoice(this, PALETTE_HOUSE_TOWN_CHOICE, wxDefaultPosition, wxDefaultSize, (int)0, (const wxString*)nullptr);
-	sidesizer->Add(town_choice, 0, wxEXPAND);
+	sidesizer->Add(town_choice, 0, wxEXPAND | wxBOTTOM, 4);
 
 	house_list = newd SortableListBox(this, PALETTE_HOUSE_LISTBOX);
 	house_list->Bind(wxEVT_CONTEXT_MENU, &HousePalettePanel::OnListBoxContextMenu, this);
+	this->Bind(wxEVT_CONTEXT_MENU, &HousePalettePanel::OnListBoxContextMenu, this);
 	house_list->Bind(wxEVT_KEY_DOWN, [this](wxKeyEvent& event) {
 		if (event.GetKeyCode() == WXK_DELETE || event.GetKeyCode() == WXK_NUMPAD_DELETE) {
 			wxCommandEvent ev;
@@ -82,19 +100,12 @@ HousePalettePanel::HousePalettePanel(wxWindow* parent, wxWindowID id) :
 #endif
 	sidesizer->Add(house_list, 1, wxEXPAND);
 
-	auto_mode_checkbox = new wxCheckBox(this, wxID_ANY, "Auto-Mode (Auto House-Tiles)");
-	auto_mode_checkbox->SetForegroundColour(wxColour(248, 250, 252));
-	auto_mode_checkbox->SetToolTip("When placing a House Exit, automatically detect the room boundaries and assign house tiles.");
-	auto_mode_checkbox->SetValue(g_settings.getInteger(Config::AUTO_HOUSE_MODE) != 0);
-	auto_mode_checkbox->Bind(wxEVT_CHECKBOX, [](wxCommandEvent& evt) {
-		g_settings.setInteger(Config::AUTO_HOUSE_MODE, evt.IsChecked() ? 1 : 0);
-	});
-	sidesizer->Add(auto_mode_checkbox, 0, wxEXPAND | wxTOP | wxBOTTOM, 4);
-
 	add_house_button = nullptr;
-	set_exit_button = nullptr;
 	edit_house_button = nullptr;
 	remove_house_button = nullptr;
+	house_brush_button = nullptr;
+	set_exit_button = nullptr;
+	auto_mode_checkbox = nullptr;
 
 	topsizer->Add(sidesizer, 1, wxEXPAND);
 
@@ -110,13 +121,16 @@ void HousePalettePanel::SetMap(Map* m) {
 	if (g_gui.house_brush) {
 		g_gui.house_brush->setHouse(nullptr);
 	}
+	if (g_gui.house_exit_brush) {
+		g_gui.house_exit_brush->setHouse(nullptr);
+	}
 	map = m;
 	OnUpdate();
 }
 
 void HousePalettePanel::OnSwitchIn() {
 	PalettePanel::OnSwitchIn();
-	// Extremely ugly hack to fix layout issue
+	// Layout fix hack
 	if (do_resize_on_display) {
 		fix_size_timer.Start(100, true);
 		do_resize_on_display = false;
@@ -253,6 +267,10 @@ void HousePalettePanel::SelectHouse(size_t index) {
 			set_exit_button->Enable(false);
 			set_exit_button->SetValue(false);
 		}
+		if (house_brush_button) {
+			house_brush_button->Enable(false);
+			house_brush_button->SetValue(false);
+		}
 		is_exit_mode = false;
 		g_gui.RefreshView();
 		return;
@@ -261,11 +279,17 @@ void HousePalettePanel::SelectHouse(size_t index) {
 	if (edit_house_button) edit_house_button->Enable(true);
 	if (remove_house_button) remove_house_button->Enable(true);
 	if (set_exit_button) set_exit_button->Enable(true);
+	if (house_brush_button) house_brush_button->Enable(true);
 
 	house_list->SetSelection(index);
 	House* house = GetCurrentlySelectedHouse();
-	if (house && g_gui.house_brush) {
-		g_gui.house_brush->setHouse(house);
+	if (house) {
+		if (g_gui.house_brush) {
+			g_gui.house_brush->setHouse(house);
+		}
+		if (g_gui.house_exit_brush) {
+			g_gui.house_exit_brush->setHouse(house);
+		}
 	}
 	g_gui.RefreshView();
 }
@@ -286,12 +310,18 @@ void HousePalettePanel::SelectHouseBrush() {
 	if (set_exit_button) {
 		set_exit_button->SetValue(false);
 	}
+	if (house_brush_button) {
+		house_brush_button->SetValue(true);
+	}
 }
 
 void HousePalettePanel::SelectExitBrush() {
 	is_exit_mode = true;
 	if (set_exit_button) {
 		set_exit_button->SetValue(true);
+	}
+	if (house_brush_button) {
+		house_brush_button->SetValue(false);
 	}
 }
 
@@ -325,11 +355,16 @@ void HousePalettePanel::OnUpdate() {
 		}
 
 		house_list->Enable(true);
+		if (add_house_button) add_house_button->Enable(true);
 	} else {
 		town_choice->Append("No Town", (void*)(nullptr));
 		if (set_exit_button) {
 			set_exit_button->Enable(false);
 			set_exit_button->SetValue(false);
+		}
+		if (house_brush_button) {
+			house_brush_button->Enable(false);
+			house_brush_button->SetValue(false);
 		}
 		is_exit_mode = false;
 		if (add_house_button) add_house_button->Enable(false);
@@ -382,15 +417,24 @@ void HousePalettePanel::OnListBoxContextMenu(wxContextMenuEvent& event) {
 		return;
 	}
 
-	wxPoint pos = event.GetPosition();
-	wxPoint clientPos = house_list->ScreenToClient(pos);
-	int itemIndex = house_list->HitTest(clientPos);
+	wxPoint mousePos = event.GetPosition();
+	wxPoint clientPos;
+	if (mousePos == wxDefaultPosition || (mousePos.x == -1 && mousePos.y == -1)) {
+		clientPos = wxPoint(10, 10);
+	} else {
+		clientPos = house_list->ScreenToClient(mousePos);
+	}
+
+	int itemIndex = wxNOT_FOUND;
+	if (clientPos.x >= 0 && clientPos.y >= 0 && clientPos.y < house_list->GetSize().y) {
+		itemIndex = house_list->HitTest(clientPos);
+	}
 	if (itemIndex == wxNOT_FOUND) {
 		itemIndex = house_list->GetSelection();
 	}
 
 	wxMenu menu;
-	menu.Append(PALETTE_HOUSE_ADD_HOUSE, "Add House...");
+	menu.Append(PALETTE_HOUSE_CMD_ADD_QUICK, "Add House...");
 
 	if (itemIndex != wxNOT_FOUND && (size_t)itemIndex < house_list->GetCount()) {
 		SelectHouse(itemIndex);
@@ -399,61 +443,172 @@ void HousePalettePanel::OnListBoxContextMenu(wxContextMenuEvent& event) {
 		House* house = reinterpret_cast<House*>(house_list->GetClientData(itemIndex));
 
 		menu.AppendSeparator();
-		menu.Append(PALETTE_HOUSE_EDIT_HOUSE, "Edit House Properties...");
-		menu.Append(10501, "Set House Exit");
+		menu.Append(PALETTE_HOUSE_CMD_EDIT_PROPS, "Edit House Properties...");
+		menu.Append(PALETTE_HOUSE_CMD_DELETE, "Delete House");
+
+		menu.AppendSeparator();
+		menu.Append(PALETTE_HOUSE_CMD_HOUSE_BRUSH, "Paint House Tiles");
+		menu.Append(PALETTE_HOUSE_CMD_SET_EXIT, "Set House Exit");
 		if (house) {
 			Position target_pos = house->getExit();
 			if (!target_pos.isValid() || target_pos == Position(0, 0, 0)) {
 				target_pos = house->getFirstTilePosition();
 			}
 			if (target_pos.isValid() && target_pos != Position(0, 0, 0)) {
-				menu.Append(10502, "Go to House");
+				menu.Append(PALETTE_HOUSE_CMD_GOTO, "Go to House");
 			}
 		}
-		menu.Append(PALETTE_HOUSE_REMOVE_HOUSE, "Delete House");
+		menu.Append(PALETTE_HOUSE_CMD_CLEAR_TILES, "Clear House Tiles");
 	}
 
 	menu.AppendSeparator();
-	menu.Append(10503, "Open House Wizard...");
+	menu.Append(PALETTE_HOUSE_CMD_MANAGE_TOWNS, "Manage Towns...");
+	menu.Append(PALETTE_HOUSE_CMD_CLEAR_INVALID_TILES, "Clear Invalid House Tiles");
 
-	menu.Bind(wxEVT_MENU, [this, itemIndex](wxCommandEvent& ev) {
-		int id = ev.GetId();
-		if (id == PALETTE_HOUSE_ADD_HOUSE) {
-			wxCommandEvent e; OnClickAddHouse(e);
-		} else if (id == PALETTE_HOUSE_EDIT_HOUSE) {
-			wxCommandEvent e; OnClickEditHouse(e);
-		} else if (id == PALETTE_HOUSE_REMOVE_HOUSE) {
-			wxCommandEvent e; OnClickRemoveHouse(e);
-		} else if (id == 10501) {
-			is_exit_mode = true;
-			if (set_exit_button) set_exit_button->SetValue(true);
+	int chosenId = house_list->GetPopupMenuSelectionFromUser(menu, clientPos);
+	if (chosenId == wxID_NONE) {
+		return;
+	}
+
+	switch (chosenId) {
+		case PALETTE_HOUSE_CMD_ADD_QUICK: {
+			wxCommandEvent e;
+			OnClickAddHouseQuick(e);
+			break;
+		}
+		case PALETTE_HOUSE_CMD_ADD_WIZARD: {
+			wxCommandEvent e;
+			OnClickAddHouseWizard(e);
+			break;
+		}
+		case PALETTE_HOUSE_CMD_EDIT_PROPS: {
+			wxCommandEvent e;
+			OnClickEditHouse(e);
+			break;
+		}
+		case PALETTE_HOUSE_CMD_EDIT_WIZARD: {
+			wxCommandEvent e;
+			OnClickEditHouseWizard(e);
+			break;
+		}
+		case PALETTE_HOUSE_CMD_DELETE: {
+			wxCommandEvent e;
+			OnClickRemoveHouse(e);
+			break;
+		}
+		case PALETTE_HOUSE_CMD_CLEAR_TILES: {
+			wxCommandEvent e;
+			OnClickClearHouseTiles(e);
+			break;
+		}
+		case PALETTE_HOUSE_CMD_HOUSE_BRUSH: {
+			SelectHouseBrush();
+			g_gui.SelectBrush();
+			g_gui.SetStatusText("Click and drag on the map to paint house tiles.");
+			break;
+		}
+		case PALETTE_HOUSE_CMD_SET_EXIT: {
 			SelectExitBrush();
 			g_gui.SelectBrush();
-			g_gui.SetStatusText("Click on the map to place the house exit.");
-		} else if (id == 10502 && itemIndex != wxNOT_FOUND && (size_t)itemIndex < house_list->GetCount()) {
-			House* h = reinterpret_cast<House*>(house_list->GetClientData(itemIndex));
-			if (h) {
-				Position p = h->getExit();
-				if (!p.isValid() || p == Position(0, 0, 0)) p = h->getFirstTilePosition();
-				if (p.isValid() && p != Position(0, 0, 0)) g_gui.SetScreenCenterPosition(p);
-			}
-		} else if (id == 10503) {
-			HouseWizardDialog dlg(this, map);
-			dlg.ShowModal();
+			g_gui.SetStatusText("Click on the map to place the house exit doorway.");
+			break;
 		}
-	});
+		case PALETTE_HOUSE_CMD_GOTO: {
+			if (itemIndex != wxNOT_FOUND && (size_t)itemIndex < house_list->GetCount()) {
+				House* h = reinterpret_cast<House*>(house_list->GetClientData(itemIndex));
+				if (h) {
+					Position p = h->getExit();
+					if (!p.isValid() || p == Position(0, 0, 0)) p = h->getFirstTilePosition();
+					if (p.isValid() && p != Position(0, 0, 0)) g_gui.SetScreenCenterPosition(p);
+				}
+			}
+			break;
+		}
+		case PALETTE_HOUSE_CMD_MANAGE_TOWNS: {
+			Editor* editor = g_gui.GetCurrentEditor();
+			if (editor) {
+				uint32_t sel_town_id = 0;
+				if (town_choice && town_choice->GetSelection() != wxNOT_FOUND) {
+					Town* t = reinterpret_cast<Town*>(town_choice->GetClientData(town_choice->GetSelection()));
+					if (t) sel_town_id = t->getID();
+				}
+				EditTownsDialog dlg(this, *editor, sel_town_id);
+				dlg.ShowModal();
+				OnUpdate();
+			}
+			break;
+		}
+		case PALETTE_HOUSE_CMD_CLEAR_INVALID_TILES: {
+			Editor* editor = g_gui.GetCurrentEditor();
+			if (editor) {
+				int ret = g_gui.PopupDialog("Clear Invalid House Tiles", "Are you sure you want to remove all house tiles that do not belong to a house (this action cannot be undone)?", wxYES | wxNO);
+				if (ret == wxID_YES) {
+					editor->clearInvalidHouseTiles(true);
+					g_gui.RefreshView();
+				}
+			}
+			break;
+		}
+		default:
+			break;
+	}
+}
 
-	house_list->PopupMenu(&menu, clientPos);
+void HousePalettePanel::OnClickHouseBrushButton(wxCommandEvent& event) {
+	SelectHouseBrush();
+	g_gui.SelectBrush();
 }
 
 void HousePalettePanel::OnClickSetExit(wxCommandEvent& event) {
-	if (set_exit_button) {
-		is_exit_mode = set_exit_button->GetValue();
+	if (set_exit_button && set_exit_button->GetValue()) {
+		SelectExitBrush();
+	} else {
+		SelectHouseBrush();
 	}
 	g_gui.SelectBrush();
 }
 
 void HousePalettePanel::OnClickAddHouse(wxCommandEvent& event) {
+	OnClickAddHouseQuick(event);
+}
+
+void HousePalettePanel::OnClickAddHouseQuick(wxCommandEvent& event) {
+	if (map == nullptr || !town_choice || !house_list) {
+		return;
+	}
+
+	Town* what_town = reinterpret_cast<Town*>(town_choice->GetClientData(town_choice->GetSelection()));
+	if (what_town == nullptr) {
+		g_gui.PopupDialog(this, "Error", "You need to select a town to add a house to.", wxOK);
+		return;
+	}
+
+	House* new_house = newd House(*map);
+	new_house->name = "Unnamed House";
+	new_house->townid = what_town->getID();
+	new_house->rent = 0;
+	new_house->guildhall = false;
+	new_house->setID(map->houses.getEmptyID());
+
+	EditHouseDialog dialog(this, map, new_house);
+	if (dialog.ShowModal() == 1) {
+		map->houses.addHouse(new_house);
+		map->doChange();
+
+		SelectTown(town_choice->GetSelection());
+		int idx = house_list->FindString(wxstr(new_house->getDescription()));
+		if (idx != wxNOT_FOUND) {
+			SelectHouse(idx);
+		}
+		SelectHouseBrush();
+		g_gui.SelectBrush();
+		refresh_timer.Start(300, true);
+	} else {
+		delete new_house;
+	}
+}
+
+void HousePalettePanel::OnClickAddHouseWizard(wxCommandEvent& event) {
 	if (map == nullptr || !town_choice || !house_list) {
 		return;
 	}
@@ -477,6 +632,7 @@ void HousePalettePanel::OnClickAddHouse(wxCommandEvent& event) {
 			if (idx != wxNOT_FOUND) {
 				SelectHouse(idx);
 			}
+			SelectHouseBrush();
 			g_gui.SelectBrush();
 			refresh_timer.Start(300, true);
 		}
@@ -499,16 +655,48 @@ void HousePalettePanel::OnClickEditHouse(wxCommandEvent& event) {
 	}
 	House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
 	if (house) {
-		HouseWizardDialog* d = newd HouseWizardDialog(g_gui.root, map, 0, house);
-		int ret = d->ShowModal();
-		if (ret == wxID_OK) {
-			// Something changed, change name of house
+		EditHouseDialog dialog(this, map, house);
+		if (dialog.ShowModal() == 1) {
 			house_list->SetString(selection, wxstr(house->getDescription()));
 			house_list->Sort();
 			map->doChange();
 
-			// refresh house list for town
 			SelectTown(town_choice->GetSelection());
+			int idx = house_list->FindString(wxstr(house->getDescription()));
+			if (idx != wxNOT_FOUND) {
+				SelectHouse(idx);
+			}
+			g_gui.SelectBrush();
+			refresh_timer.Start(300, true);
+		}
+	}
+}
+
+void HousePalettePanel::OnClickEditHouseWizard(wxCommandEvent& event) {
+	if (!house_list || house_list->GetCount() == 0 || !town_choice) {
+		return;
+	}
+	if (map == nullptr) {
+		return;
+	}
+	int selection = house_list->GetSelection();
+	if (selection == wxNOT_FOUND || (size_t)selection >= house_list->GetCount()) {
+		return;
+	}
+	House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
+	if (house) {
+		HouseWizardDialog* d = newd HouseWizardDialog(g_gui.root, map, 0, house);
+		int ret = d->ShowModal();
+		if (ret == wxID_OK) {
+			house_list->SetString(selection, wxstr(house->getDescription()));
+			house_list->Sort();
+			map->doChange();
+
+			SelectTown(town_choice->GetSelection());
+			int idx = house_list->FindString(wxstr(house->getDescription()));
+			if (idx != wxNOT_FOUND) {
+				SelectHouse(idx);
+			}
 			g_gui.SelectBrush();
 			refresh_timer.Start(300, true);
 		}
@@ -523,6 +711,13 @@ void HousePalettePanel::OnClickRemoveHouse(wxCommandEvent& event) {
 	int selection = house_list->GetSelection();
 	if (selection != wxNOT_FOUND && (size_t)selection < house_list->GetCount()) {
 		House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
+		if (!house) return;
+
+		int ret = g_gui.PopupDialog(this, "Delete House", wxString::Format("Are you sure you want to delete house \"%s\" (ID: %u)?\nAll assigned tiles will be cleared.", wxstr(house->name), house->getID()), wxYES | wxNO);
+		if (ret != wxID_YES) {
+			return;
+		}
+
 		map->houses.removeHouse(house);
 		map->doChange();
 		house_list->Delete(selection);
@@ -539,6 +734,10 @@ void HousePalettePanel::OnClickRemoveHouse(wxCommandEvent& event) {
 				set_exit_button->Enable(false);
 				set_exit_button->SetValue(false);
 			}
+			if (house_brush_button) {
+				house_brush_button->Enable(false);
+				house_brush_button->SetValue(false);
+			}
 			is_exit_mode = false;
 			if (edit_house_button) edit_house_button->Enable(false);
 			if (remove_house_button) remove_house_button->Enable(false);
@@ -548,12 +747,38 @@ void HousePalettePanel::OnClickRemoveHouse(wxCommandEvent& event) {
 	g_gui.RefreshView();
 }
 
+void HousePalettePanel::OnClickClearHouseTiles(wxCommandEvent& event) {
+	if (!house_list || map == nullptr) {
+		return;
+	}
+	int selection = house_list->GetSelection();
+	if (selection == wxNOT_FOUND || (size_t)selection >= house_list->GetCount()) {
+		return;
+	}
+	House* house = reinterpret_cast<House*>(house_list->GetClientData(selection));
+	if (!house) return;
+
+	int ret = g_gui.PopupDialog(this, "Clear House Tiles", wxString::Format("Are you sure you want to unassign all tiles and exit for house \"%s\" (ID: %u)?", wxstr(house->name), house->getID()), wxYES | wxNO);
+	if (ret != wxID_YES) {
+		return;
+	}
+
+	house->clean();
+	map->doChange();
+	g_gui.RefreshView();
+	refresh_timer.Start(300, true);
+}
+
 #ifdef __APPLE__
 void HousePalettePanel::OnListBoxClick(wxMouseEvent& event) {
 	if (house_list->GetSelection() == wxNOT_FOUND) {
 		if (set_exit_button) {
 			set_exit_button->Enable(false);
 			set_exit_button->SetValue(false);
+		}
+		if (house_brush_button) {
+			house_brush_button->Enable(false);
+			house_brush_button->SetValue(false);
 		}
 		is_exit_mode = false;
 		edit_house_button->Enable(false);
@@ -674,7 +899,12 @@ EditHouseDialog::EditHouseDialog(wxWindow* parent, Map* map, House* house) :
 }
 
 EditHouseDialog::~EditHouseDialog() {
-	////
+	if (town_id_field) {
+		for (size_t i = 0; i < town_id_field->GetCount(); ++i) {
+			int* data = reinterpret_cast<int*>(town_id_field->GetClientData(i));
+			delete data;
+		}
+	}
 }
 
 void EditHouseDialog::OnFocusChange(wxFocusEvent& event) {
@@ -689,7 +919,7 @@ void EditHouseDialog::OnFocusChange(wxFocusEvent& event) {
 void EditHouseDialog::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 	if (Validate() && TransferDataFromWindow()) {
 		// Verify the new rent information
-		long new_house_rent;
+		long new_house_rent = 0;
 		house_rent.ToLong(&new_house_rent);
 		if (new_house_rent < 0) {
 			g_gui.PopupDialog(this, "Error", "House rent cannot be less than 0.", wxOK);
@@ -699,7 +929,7 @@ void EditHouseDialog::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 		// Verify the new house id
 		uint32_t new_house_id = id_field->GetValue();
 		if (new_house_id < 1) {
-			g_gui.PopupDialog(this, "Error", "House id cannot be less than 1.", wxOK);
+			g_gui.PopupDialog(this, "Error", "House ID cannot be less than 1.", wxOK);
 			return;
 		}
 
@@ -709,19 +939,21 @@ void EditHouseDialog::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 			return;
 		}
 
+		bool is_existing_house = (map->houses.getHouse(what_house->getID()) == what_house);
+
 		if (g_settings.getInteger(Config::WARN_FOR_DUPLICATE_ID)) {
 			Houses& houses = map->houses;
 			for (HouseMap::const_iterator house_iter = houses.begin(); house_iter != houses.end(); ++house_iter) {
 				House* house = house_iter->second;
-				ASSERT(house);
+				if (!house) continue;
 
-				if (house->getID() == new_house_id && new_house_id != what_house->getID()) {
-					g_gui.PopupDialog(this, "Error", "This house id is already in use.", wxOK);
+				if (house->getID() == new_house_id && (is_existing_house ? (new_house_id != what_house->getID()) : true)) {
+					g_gui.PopupDialog(this, "Error", "This House ID is already in use by another house.", wxOK);
 					return;
 				}
 
-				if (wxstr(house->name) == house_name && house->getID() != what_house->getID()) {
-					int ret = g_gui.PopupDialog(this, "Warning", "This house name is already in use, are you sure you want to continue?", wxYES | wxNO);
+				if (wxstr(house->name) == house_name && (is_existing_house ? (house->getID() != what_house->getID()) : true)) {
+					int ret = g_gui.PopupDialog(this, "Warning", "This house name is already in use. Are you sure you want to continue?", wxYES | wxNO);
 					if (ret == wxID_NO) {
 						return;
 					}
@@ -730,28 +962,31 @@ void EditHouseDialog::OnClickOK(wxCommandEvent& WXUNUSED(event)) {
 		}
 
 		if (new_house_id != what_house->getID()) {
-			int ret = g_gui.PopupDialog(this, "Warning", "Changing existing house ids on a production server WILL HAVE DATABASE CONSEQUENCES such as potential item loss, house owner change or invalidating guest lists.\nYou are doing it at own risk!\n\nAre you ABSOLUTELY sure you want to continue?", wxYES | wxNO);
-			if (ret == wxID_NO) {
-				return;
+			if (is_existing_house) {
+				int ret = g_gui.PopupDialog(this, "Warning", "Changing existing house IDs on a production server WILL HAVE DATABASE CONSEQUENCES such as potential item loss, house owner change or invalidating guest lists.\n\nAre you sure you want to continue?", wxYES | wxNO);
+				if (ret == wxID_NO) {
+					return;
+				}
+
+				uint32_t old_house_id = what_house->getID();
+				map->convertHouseTiles(old_house_id, new_house_id);
+				map->houses.changeId(what_house, new_house_id);
+			} else {
+				what_house->setID(new_house_id);
 			}
-
-			uint32_t old_house_id = what_house->getID();
-
-			map->convertHouseTiles(old_house_id, new_house_id);
-			map->houses.changeId(what_house, new_house_id);
 		}
 
 		// Transfer to house
-		int* new_town_id = reinterpret_cast<int*>(town_id_field->GetClientData(town_id_field->GetSelection()));
-		if (!new_town_id) {
-			g_gui.PopupDialog(this, "Error", "Invalid town selected.", wxOK);
-			return;
+		uint32_t new_town_id = 0;
+		int sel = town_id_field->GetSelection();
+		if (sel != wxNOT_FOUND && town_id_field->GetClientData(sel) != nullptr) {
+			new_town_id = static_cast<uint32_t>(*reinterpret_cast<int*>(town_id_field->GetClientData(sel)));
 		}
 
 		what_house->name = nstr(house_name);
 		what_house->rent = new_house_rent;
 		what_house->guildhall = guildhall_field->GetValue();
-		what_house->townid = *new_town_id;
+		what_house->townid = new_town_id;
 
 		EndModal(1);
 	}

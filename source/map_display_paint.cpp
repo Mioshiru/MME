@@ -21,6 +21,11 @@
 #include "raw_brush.h"
 #include "spawn_brush.h"
 #include "creature_brush.h"
+#include "palette_house.h"
+#include "house_brush.h"
+#include "house_exit_brush.h"
+#include "house_wizard_dialog.h"
+#include "common_windows.h"
 #include "checklist_manager.h"
 #include "tileset.h"
 #include "materials.h"
@@ -221,64 +226,93 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 		ImGuiIO& io_init = ImGui::GetIO();
 		io_init.ConfigWindowsResizeFromEdges = true;
 		io_init.ConfigDebugHighlightIdConflicts = false;
-		// Note: Canvas overlays use free floating windows with magnetic edge snapping instead of intrusive dock nodes
+
+		// Configure high-resolution TrueType typography for razor-sharp text rendering (Arial 10pt)
+		ImFontConfig font_cfg;
+		font_cfg.OversampleH = 3;
+		font_cfg.OversampleV = 2;
+		font_cfg.PixelSnapH = true;
+
+		ImFont* loaded_font = nullptr;
+		const char* font_paths[] = {
+			"C:\\Windows\\Fonts\\arial.ttf",
+			"C:\\Windows\\Fonts\\ariblk.ttf",
+			"C:\\Windows\\Fonts\\segoeui.ttf",
+			"C:\\Windows\\Fonts\\tahoma.ttf"
+		};
+		for (const char* fpath : font_paths) {
+			if (wxFileExists(wxString::FromUTF8(fpath))) {
+				loaded_font = io_init.Fonts->AddFontFromFileTTF(fpath, 13.33f, &font_cfg);
+				if (loaded_font) break;
+			}
+		}
+		if (!loaded_font) {
+			io_init.Fonts->AddFontDefault(&font_cfg);
+		}
+
 		ImGui::StyleColorsDark();
 		
-		// Custom styling for a premium look
+		// Custom styling for a razor-sharp, premium look
 		ImGuiStyle& style = ImGui::GetStyle();
-		style.WindowRounding = 6.0f;
-		style.ChildRounding = 4.0f;
-		style.FrameRounding = 4.0f;
-		style.PopupRounding = 4.0f;
-		style.ScrollbarRounding = 9.0f;
-		style.GrabRounding = 4.0f;
-		style.TabRounding = 4.0f;
+		style.WindowRounding    = 6.0f;
+		style.ChildRounding     = 5.0f;
+		style.FrameRounding     = 4.0f;
+		style.PopupRounding     = 5.0f;
+		style.ScrollbarRounding = 6.0f;
+		style.GrabRounding      = 4.0f;
+		style.TabRounding       = 4.0f;
 
-		style.WindowBorderSize = 1.0f;
-		style.ChildBorderSize = 1.0f;
-		style.PopupBorderSize = 1.0f;
-		style.FrameBorderSize = 0.0f;
-		style.TabBorderSize = 0.0f;
+		style.WindowBorderSize  = 1.0f;
+		style.ChildBorderSize   = 1.0f;
+		style.PopupBorderSize   = 1.0f;
+		style.FrameBorderSize   = 1.0f;
+		style.TabBorderSize     = 0.0f;
 
-		// Colors
-		style.Colors[ImGuiCol_Text]                   = ImVec4(0.95f, 0.96f, 0.98f, 1.00f);
-		style.Colors[ImGuiCol_TextDisabled]           = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-		style.Colors[ImGuiCol_WindowBg]               = ImVec4(0.09f, 0.10f, 0.15f, 0.90f); // Sleek dark blue-gray with transparency
-		style.Colors[ImGuiCol_ChildBg]                = ImVec4(0.12f, 0.13f, 0.18f, 0.00f);
-		style.Colors[ImGuiCol_PopupBg]                = ImVec4(0.09f, 0.10f, 0.15f, 0.95f);
-		style.Colors[ImGuiCol_Border]                 = ImVec4(0.20f, 0.22f, 0.29f, 1.00f);
+		style.WindowPadding     = ImVec2(8.0f, 8.0f);
+		style.FramePadding      = ImVec2(6.0f, 4.0f);
+		style.ItemSpacing       = ImVec2(6.0f, 5.0f);
+		style.ItemInnerSpacing  = ImVec2(5.0f, 4.0f);
+		style.ScrollbarSize     = 12.0f;
+
+		// High-contrast, clean modern palette
+		style.Colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+		style.Colors[ImGuiCol_TextDisabled]           = ImVec4(0.55f, 0.60f, 0.68f, 1.00f);
+		style.Colors[ImGuiCol_WindowBg]               = ImVec4(0.07f, 0.09f, 0.13f, 0.96f);
+		style.Colors[ImGuiCol_ChildBg]                = ImVec4(0.09f, 0.12f, 0.17f, 0.70f);
+		style.Colors[ImGuiCol_PopupBg]                = ImVec4(0.08f, 0.10f, 0.15f, 0.98f);
+		style.Colors[ImGuiCol_Border]                 = ImVec4(0.24f, 0.32f, 0.44f, 0.85f);
 		style.Colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-		style.Colors[ImGuiCol_FrameBg]                = ImVec4(0.15f, 0.16f, 0.23f, 1.00f);
-		style.Colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.20f, 0.22f, 0.31f, 1.00f);
-		style.Colors[ImGuiCol_FrameBgActive]          = ImVec4(0.24f, 0.26f, 0.37f, 1.00f);
-		style.Colors[ImGuiCol_TitleBg]                = ImVec4(0.12f, 0.13f, 0.18f, 1.00f);
-		style.Colors[ImGuiCol_TitleBgActive]          = ImVec4(0.16f, 0.18f, 0.25f, 1.00f);
-		style.Colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.09f, 0.10f, 0.15f, 1.00f);
-		style.Colors[ImGuiCol_MenuBarBg]              = ImVec4(0.12f, 0.13f, 0.18f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.09f, 0.10f, 0.15f, 0.50f);
-		style.Colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.24f, 0.26f, 0.37f, 0.80f);
-		style.Colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.30f, 0.32f, 0.45f, 1.00f);
-		style.Colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.37f, 0.40f, 0.55f, 1.00f);
-		style.Colors[ImGuiCol_CheckMark]              = ImVec4(0.35f, 0.55f, 0.95f, 1.00f);
+		style.Colors[ImGuiCol_FrameBg]                = ImVec4(0.12f, 0.16f, 0.23f, 1.00f);
+		style.Colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.18f, 0.24f, 0.34f, 1.00f);
+		style.Colors[ImGuiCol_FrameBgActive]          = ImVec4(0.22f, 0.30f, 0.42f, 1.00f);
+		style.Colors[ImGuiCol_TitleBg]                = ImVec4(0.10f, 0.13f, 0.19f, 1.00f);
+		style.Colors[ImGuiCol_TitleBgActive]          = ImVec4(0.14f, 0.18f, 0.26f, 1.00f);
+		style.Colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.07f, 0.09f, 0.13f, 1.00f);
+		style.Colors[ImGuiCol_MenuBarBg]              = ImVec4(0.10f, 0.13f, 0.19f, 1.00f);
+		style.Colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.06f, 0.08f, 0.12f, 0.80f);
+		style.Colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.24f, 0.32f, 0.45f, 0.90f);
+		style.Colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.32f, 0.42f, 0.58f, 1.00f);
+		style.Colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.40f, 0.52f, 0.72f, 1.00f);
+		style.Colors[ImGuiCol_CheckMark]              = ImVec4(0.95f, 0.82f, 0.35f, 1.00f);
 		style.Colors[ImGuiCol_SliderGrab]             = ImVec4(0.35f, 0.55f, 0.95f, 1.00f);
 		style.Colors[ImGuiCol_SliderGrabActive]        = ImVec4(0.45f, 0.65f, 0.98f, 1.00f);
-		style.Colors[ImGuiCol_Button]                 = ImVec4(0.18f, 0.20f, 0.28f, 1.00f);
-		style.Colors[ImGuiCol_ButtonHovered]          = ImVec4(0.24f, 0.27f, 0.38f, 1.00f);
-		style.Colors[ImGuiCol_ButtonActive]           = ImVec4(0.30f, 0.34f, 0.47f, 1.00f);
-		style.Colors[ImGuiCol_Header]                 = ImVec4(0.18f, 0.20f, 0.28f, 1.00f);
-		style.Colors[ImGuiCol_HeaderHovered]          = ImVec4(0.24f, 0.27f, 0.38f, 1.00f);
-		style.Colors[ImGuiCol_HeaderActive]           = ImVec4(0.30f, 0.34f, 0.47f, 1.00f);
-		style.Colors[ImGuiCol_Separator]              = ImVec4(0.20f, 0.22f, 0.29f, 1.00f);
-		style.Colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.30f, 0.32f, 0.45f, 1.00f);
-		style.Colors[ImGuiCol_SeparatorActive]        = ImVec4(0.35f, 0.55f, 0.95f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGrip]             = ImVec4(0.20f, 0.22f, 0.29f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.30f, 0.32f, 0.45f, 1.00f);
-		style.Colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.35f, 0.55f, 0.95f, 1.00f);
-		style.Colors[ImGuiCol_Tab]                    = ImVec4(0.12f, 0.13f, 0.18f, 1.00f);
-		style.Colors[ImGuiCol_TabHovered]             = ImVec4(0.20f, 0.22f, 0.31f, 1.00f);
-		style.Colors[ImGuiCol_TabActive]              = ImVec4(0.18f, 0.20f, 0.28f, 1.00f);
-		style.Colors[ImGuiCol_TabUnfocused]           = ImVec4(0.12f, 0.13f, 0.18f, 1.00f);
-		style.Colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.16f, 0.18f, 0.25f, 1.00f);
+		style.Colors[ImGuiCol_Button]                 = ImVec4(0.15f, 0.20f, 0.28f, 1.00f);
+		style.Colors[ImGuiCol_ButtonHovered]          = ImVec4(0.22f, 0.30f, 0.42f, 1.00f);
+		style.Colors[ImGuiCol_ButtonActive]           = ImVec4(0.28f, 0.38f, 0.54f, 1.00f);
+		style.Colors[ImGuiCol_Header]                 = ImVec4(0.16f, 0.22f, 0.32f, 1.00f);
+		style.Colors[ImGuiCol_HeaderHovered]          = ImVec4(0.22f, 0.30f, 0.44f, 1.00f);
+		style.Colors[ImGuiCol_HeaderActive]           = ImVec4(0.28f, 0.38f, 0.55f, 1.00f);
+		style.Colors[ImGuiCol_Separator]              = ImVec4(0.24f, 0.32f, 0.44f, 0.75f);
+		style.Colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.95f, 0.82f, 0.35f, 0.80f);
+		style.Colors[ImGuiCol_SeparatorActive]        = ImVec4(0.95f, 0.82f, 0.35f, 1.00f);
+		style.Colors[ImGuiCol_ResizeGrip]             = ImVec4(0.24f, 0.32f, 0.44f, 0.60f);
+		style.Colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.95f, 0.82f, 0.35f, 0.90f);
+		style.Colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.95f, 0.82f, 0.35f, 1.00f);
+		style.Colors[ImGuiCol_Tab]                    = ImVec4(0.11f, 0.15f, 0.22f, 1.00f);
+		style.Colors[ImGuiCol_TabHovered]             = ImVec4(0.22f, 0.30f, 0.44f, 1.00f);
+		style.Colors[ImGuiCol_TabActive]              = ImVec4(0.18f, 0.25f, 0.36f, 1.00f);
+		style.Colors[ImGuiCol_TabUnfocused]           = ImVec4(0.09f, 0.12f, 0.18f, 1.00f);
+		style.Colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.14f, 0.19f, 0.28f, 1.00f);
 
 		ImGui_ImplOpenGL3_Init(nullptr);
 	} else {
@@ -348,8 +382,16 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 	float deltaTime = imgui_elapsed.count();
 	if (deltaTime <= 0.0f) deltaTime = 0.00001f;
 	io.DeltaTime = deltaTime;
-	io.ConfigWindowsResizeFromEdges = true;
-	imgui_last_time = imgui_current_time;
+	// Dynamically scale font & UI according to user UI_SCALE setting (100% = 1.0x -> Arial 10)
+	const float ui_scale_ratio = std::clamp((float)g_settings.getInteger(Config::UI_SCALE) / 100.0f, 1.0f, 2.5f);
+	io.FontGlobalScale = ui_scale_ratio;
+
+	ImGuiStyle& curr_style = ImGui::GetStyle();
+	curr_style.WindowPadding    = ImVec2(8.0f * ui_scale_ratio, 8.0f * ui_scale_ratio);
+	curr_style.FramePadding     = ImVec2(6.0f * ui_scale_ratio, 5.0f * ui_scale_ratio);
+	curr_style.ItemSpacing      = ImVec2(6.0f * ui_scale_ratio, 5.0f * ui_scale_ratio);
+	curr_style.ItemInnerSpacing = ImVec2(5.0f * ui_scale_ratio, 4.0f * ui_scale_ratio);
+	curr_style.ScrollbarSize    = 13.0f * ui_scale_ratio;
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui::NewFrame();
@@ -1243,40 +1285,120 @@ void MapCanvas::OnPaint(wxPaintEvent& event) {
 				}
 				ImGui::PopItemWidth();
 
-				// Controls Row: Play, Stop, Mute, Volume
-				if (rm.IsPlaying()) {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.18f, 0.45f, 0.18f, 0.95f));
-					if (ImGui::Button("[ > ]")) {
+				// Controls Row: Play/Pause, Stop, Mute/Speaker, Volume Slider
+				const float btn_h = 26.0f;
+				const float btn_w = 32.0f;
+				ImDrawList* dl = ImGui::GetWindowDrawList();
+
+				// 1. Play / Pause Button with Vector Icon
+				{
+					ImVec2 p_pos = ImGui::GetCursorScreenPos();
+					if (ImGui::InvisibleButton("##radio_play_btn", ImVec2(btn_w, btn_h))) {
 						rm.TogglePlay();
 					}
-					ImGui::PopStyleColor();
-				} else {
-					if (ImGui::Button("[ > ]")) {
-						rm.TogglePlay();
+					bool p_hov = ImGui::IsItemHovered();
+					bool p_act = ImGui::IsItemActive();
+					if (p_hov) ImGui::SetTooltip(rm.IsPlaying() ? "Pause Playback" : "Play Station");
+
+					ImU32 bg_col = rm.IsPlaying()
+						? (p_act ? IM_COL32(35, 120, 50, 255) : (p_hov ? IM_COL32(45, 150, 65, 255) : IM_COL32(25, 90, 40, 240)))
+						: (p_act ? IM_COL32(30, 40, 55, 255) : (p_hov ? IM_COL32(45, 58, 78, 255) : IM_COL32(28, 36, 48, 240)));
+					ImU32 border_col = rm.IsPlaying() ? IM_COL32(70, 220, 100, 220) : (p_hov ? IM_COL32(229, 193, 88, 220) : IM_COL32(80, 100, 130, 180));
+					
+					dl->AddRectFilled(p_pos, ImVec2(p_pos.x + btn_w, p_pos.y + btn_h), bg_col, 4.0f);
+					dl->AddRect(p_pos, ImVec2(p_pos.x + btn_w, p_pos.y + btn_h), border_col, 4.0f, 0, 1.2f);
+
+					ImVec2 center(p_pos.x + btn_w * 0.5f, p_pos.y + btn_h * 0.5f);
+					ImU32 icon_col = rm.IsPlaying() ? IM_COL32(140, 255, 160, 255) : (p_hov ? IM_COL32(255, 230, 140, 255) : IM_COL32(240, 244, 248, 240));
+
+					if (rm.IsPlaying()) {
+						// Draw Pause double bars
+						float bar_w = 2.5f, bar_h = 10.0f, gap = 2.5f;
+						dl->AddRectFilled(ImVec2(center.x - gap - bar_w, center.y - bar_h * 0.5f), ImVec2(center.x - gap, center.y + bar_h * 0.5f), icon_col, 1.0f);
+						dl->AddRectFilled(ImVec2(center.x + gap, center.y - bar_h * 0.5f), ImVec2(center.x + gap + bar_w, center.y + bar_h * 0.5f), icon_col, 1.0f);
+					} else {
+						// Draw Play Triangle
+						float tri_sz = 6.0f;
+						ImVec2 p1(center.x - tri_sz * 0.6f, center.y - tri_sz);
+						ImVec2 p2(center.x + tri_sz * 0.9f, center.y);
+						ImVec2 p3(center.x - tri_sz * 0.6f, center.y + tri_sz);
+						dl->AddTriangleFilled(p1, p2, p3, icon_col);
 					}
 				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip(rm.IsPlaying() ? "Pause/Play" : "Play Station");
 
-				ImGui::SameLine();
-				if (ImGui::Button("[ # ]")) {
-					rm.Stop();
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stop Playback");
+				ImGui::SameLine(0.0f, 6.0f);
 
-				ImGui::SameLine();
-				bool isMuted = rm.IsMuted();
-				if (isMuted) {
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.18f, 0.18f, 0.95f));
-				}
-				if (ImGui::Button(isMuted ? "[Mute]" : "[Vol]")) {
-					rm.SetMute(!isMuted);
-				}
-				if (isMuted) {
-					ImGui::PopStyleColor();
-				}
-				if (ImGui::IsItemHovered()) ImGui::SetTooltip(isMuted ? "Unmute" : "Mute audio");
+				// 2. Stop Button with Vector Square Icon
+				{
+					ImVec2 s_pos = ImGui::GetCursorScreenPos();
+					if (ImGui::InvisibleButton("##radio_stop_btn", ImVec2(btn_w, btn_h))) {
+						rm.Stop();
+					}
+					bool s_hov = ImGui::IsItemHovered();
+					bool s_act = ImGui::IsItemActive();
+					if (s_hov) ImGui::SetTooltip("Stop Playback");
 
-				ImGui::SameLine();
+					ImU32 bg_col = s_act ? IM_COL32(120, 30, 30, 255) : (s_hov ? IM_COL32(150, 40, 40, 255) : IM_COL32(28, 36, 48, 240));
+					ImU32 border_col = s_hov ? IM_COL32(255, 100, 100, 220) : IM_COL32(80, 100, 130, 180);
+					
+					dl->AddRectFilled(s_pos, ImVec2(s_pos.x + btn_w, s_pos.y + btn_h), bg_col, 4.0f);
+					dl->AddRect(s_pos, ImVec2(s_pos.x + btn_w, s_pos.y + btn_h), border_col, 4.0f, 0, 1.2f);
+
+					ImVec2 center(s_pos.x + btn_w * 0.5f, s_pos.y + btn_h * 0.5f);
+					ImU32 icon_col = s_hov ? IM_COL32(255, 120, 120, 255) : IM_COL32(240, 200, 200, 230);
+					float sq_sz = 4.5f;
+					dl->AddRectFilled(ImVec2(center.x - sq_sz, center.y - sq_sz), ImVec2(center.x + sq_sz, center.y + sq_sz), icon_col, 1.0f);
+				}
+
+				ImGui::SameLine(0.0f, 6.0f);
+
+				// 3. Mute / Speaker Button with Vector Speaker + Waves
+				{
+					bool isMuted = rm.IsMuted();
+					ImVec2 m_pos = ImGui::GetCursorScreenPos();
+					if (ImGui::InvisibleButton("##radio_mute_btn", ImVec2(btn_w, btn_h))) {
+						rm.SetMute(!isMuted);
+					}
+					bool m_hov = ImGui::IsItemHovered();
+					bool m_act = ImGui::IsItemActive();
+					if (m_hov) ImGui::SetTooltip(isMuted ? "Unmute Audio" : "Mute Audio");
+
+					ImU32 bg_col = isMuted
+						? (m_act ? IM_COL32(110, 30, 30, 255) : (m_hov ? IM_COL32(140, 40, 40, 255) : IM_COL32(90, 25, 25, 230)))
+						: (m_act ? IM_COL32(30, 40, 55, 255) : (m_hov ? IM_COL32(45, 58, 78, 255) : IM_COL32(28, 36, 48, 240)));
+					ImU32 border_col = isMuted ? IM_COL32(255, 90, 90, 220) : (m_hov ? IM_COL32(229, 193, 88, 220) : IM_COL32(80, 100, 130, 180));
+
+					dl->AddRectFilled(m_pos, ImVec2(m_pos.x + btn_w, m_pos.y + btn_h), bg_col, 4.0f);
+					dl->AddRect(m_pos, ImVec2(m_pos.x + btn_w, m_pos.y + btn_h), border_col, 4.0f, 0, 1.2f);
+
+					ImVec2 center(m_pos.x + btn_w * 0.5f, m_pos.y + btn_h * 0.5f);
+					ImU32 icon_col = isMuted ? IM_COL32(255, 140, 140, 255) : (m_hov ? IM_COL32(255, 230, 140, 255) : IM_COL32(240, 244, 248, 240));
+
+					// Speaker Base
+					float spk_x = center.x - (isMuted ? 2.0f : 4.0f);
+					dl->AddRectFilled(ImVec2(spk_x - 4.0f, center.y - 2.5f), ImVec2(spk_x - 1.0f, center.y + 2.5f), icon_col);
+					// Speaker Cone
+					ImVec2 c1(spk_x - 1.0f, center.y - 2.5f);
+					ImVec2 c2(spk_x + 3.0f, center.y - 5.5f);
+					ImVec2 c3(spk_x + 3.0f, center.y + 5.5f);
+					ImVec2 c4(spk_x - 1.0f, center.y + 2.5f);
+					dl->AddQuadFilled(c1, c2, c3, c4, icon_col);
+
+					if (isMuted) {
+						// Draw Red 'X' over sound wave area
+						ImU32 x_col = IM_COL32(255, 80, 80, 255);
+						dl->AddLine(ImVec2(spk_x + 5.0f, center.y - 4.0f), ImVec2(spk_x + 10.0f, center.y + 4.0f), x_col, 1.8f);
+						dl->AddLine(ImVec2(spk_x + 10.0f, center.y - 4.0f), ImVec2(spk_x + 5.0f, center.y + 4.0f), x_col, 1.8f);
+					} else {
+						// Draw Sound Arc Waves
+						dl->AddCircle(ImVec2(spk_x + 1.0f, center.y), 4.5f, icon_col, 12, 1.2f);
+						dl->AddCircle(ImVec2(spk_x + 1.0f, center.y), 7.5f, icon_col, 12, 1.2f);
+					}
+				}
+
+				ImGui::SameLine(0.0f, 8.0f);
+
+				// 4. Volume Slider
 				int curVol = rm.GetVolume();
 				ImGui::PushItemWidth(-1.0f);
 				if (ImGui::SliderInt("##VolumeSlider", &curVol, 0, 100, "%d%%")) {
@@ -1841,7 +1963,7 @@ static ToolbarIconCache s_toolbar_icons;
 
 	// macOS Canvas Floating / Docked Tileset Palette in filigree fantasy look
 	static int last_applied_dock_side = -1;
-	const float pal_width = 310.0f;
+	const float pal_width = 250.0f * ui_scale_ratio;
 
 	if (g_gui.canvas_palettes.empty()) {
 		GUI::CanvasPaletteState main_pal;
@@ -1871,13 +1993,13 @@ static ToolbarIconCache s_toolbar_icons;
 		const int pal_dock = std::clamp(g_settings.getInteger(Config::PALETTE_DOCK_SIDE), 0, 1);
 		const float pal_top = (tb_active && tb_dock == 0) ? 48.0f : 10.0f;
 		const float pal_bottom_margin = (tb_active && tb_dock == 1) ? 52.0f : 10.0f;
-		const float pal_h = std::clamp(io.DisplaySize.y - pal_top - pal_bottom_margin, 260.0f, 900.0f);
+		const float pal_h = std::clamp(io.DisplaySize.y - pal_top - pal_bottom_margin, 240.0f * ui_scale_ratio, 900.0f * ui_scale_ratio);
 
 		if (pal_state.minimized) {
-			ImGui::SetNextWindowSize(ImVec2(240.0f, 32.0f), ImGuiCond_Always);
+			ImGui::SetNextWindowSize(ImVec2(220.0f * ui_scale_ratio, 30.0f * ui_scale_ratio), ImGuiCond_Always);
 		} else {
 			ImGui::SetNextWindowSize(ImVec2(pal_width, pal_h), ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowSizeConstraints(ImVec2(240.0f, 200.0f), ImVec2(500.0f, std::max(200.0f, io.DisplaySize.y - 35.0f)));
+			ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f * ui_scale_ratio, 180.0f * ui_scale_ratio), ImVec2(500.0f * ui_scale_ratio, std::max(200.0f, io.DisplaySize.y - 35.0f)));
 		}
 
 		if (is_main_palette) {
@@ -1897,22 +2019,22 @@ static ToolbarIconCache s_toolbar_icons;
 			}
 		}
 
-		ImGui::SetNextWindowBgAlpha(0.88f);
+		ImGui::SetNextWindowBgAlpha(0.96f);
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 6.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, 4.0f));
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.07f, 0.11f, 0.90f));
-		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.55f, 0.45f, 0.25f, 0.65f));
-		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.18f, 0.23f, 0.35f, 0.85f));
-		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.25f, 0.35f, 0.55f, 0.95f));
-		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.30f, 0.45f, 0.70f, 1.00f));
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.10f, 0.13f, 0.20f, 0.85f));
-		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.16f, 0.20f, 0.30f, 0.95f));
-		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.22f, 0.28f, 0.40f, 1.00f));
-		ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.10f, 0.13f, 0.20f, 0.85f));
-		ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.25f, 0.35f, 0.55f, 0.95f));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f * ui_scale_ratio);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f * ui_scale_ratio);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f * ui_scale_ratio, 8.0f * ui_scale_ratio));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(5.0f * ui_scale_ratio, 5.0f * ui_scale_ratio));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.06f, 0.08f, 0.12f, 0.97f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.85f, 0.70f, 0.30f, 0.90f));
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.16f, 0.22f, 0.32f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.32f, 0.48f, 1.00f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.30f, 0.42f, 0.62f, 1.00f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.12f, 0.16f, 0.23f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.24f, 0.34f, 1.00f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.24f, 0.32f, 0.44f, 1.00f));
+		ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.12f, 0.16f, 0.23f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.24f, 0.32f, 0.48f, 1.00f));
 		ImGui::PushStyleColor(ImGuiCol_TabActive, ImVec4(0.20f, 0.30f, 0.48f, 1.00f));
 
 		ImGuiWindowFlags pal_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar;
@@ -2156,69 +2278,342 @@ static ToolbarIconCache s_toolbar_icons;
 					tileset_names.push_back(entry.first.c_str());
 				}
 
-				if (!tileset_names.empty()) {
+				if (active_cat_type == TILESET_HOUSE) {
+					Map* cur_map = &editor.map;
+					Editor* cur_editor = g_gui.GetCurrentEditor();
+
+					// Town selector combo: "All Towns", specific towns, "No Town"
+					std::vector<std::string> town_name_strs;
+					std::vector<Town*> town_ptrs;
+					town_name_strs.push_back("All Towns");
+					town_ptrs.push_back(reinterpret_cast<Town*>(-1));
+
+					if (cur_map) {
+						for (auto tit = cur_map->towns.begin(); tit != cur_map->towns.end(); ++tit) {
+							if (tit->second) {
+								town_name_strs.push_back(tit->second->getName());
+								town_ptrs.push_back(tit->second);
+							}
+						}
+					}
+					town_name_strs.push_back("No Town");
+					town_ptrs.push_back(nullptr);
+
+					std::vector<const char*> town_cstrs;
+					for (const auto& s : town_name_strs) {
+						town_cstrs.push_back(s.c_str());
+					}
+
+					static int s_selected_town_idx = 0;
+					if (s_selected_town_idx >= (int)town_cstrs.size()) {
+						s_selected_town_idx = 0;
+					}
+
 					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-					std::string ts_combo_id = "##PalTileset_" + std::to_string(pal_state.id);
-					if (ImGui::Combo(ts_combo_id.c_str(), &pal_state.selected_tileset_idx, tileset_names.data(), (int)tileset_names.size())) {
-						// Tileset selected by user
-					}
-					if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
-						pal_state.selected_tileset_idx = std::clamp(pal_state.selected_tileset_idx - (int)io.MouseWheel, 0, (int)tileset_names.size() - 1);
-					}
-				}
+					std::string town_combo_id = "##PalHouseTown_" + std::to_string(pal_state.id);
+					ImGui::Combo(town_combo_id.c_str(), &s_selected_town_idx, town_cstrs.data(), (int)town_cstrs.size());
 
-				// Search Box with complete keyboard input support
-				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-				std::string search_input_id = "##PalSearch_" + std::to_string(pal_state.id);
-				ImGui::InputTextWithHint(search_input_id.c_str(), "Search by name or ID...", pal_state.search_buf, sizeof(pal_state.search_buf));
+					// Search Box
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					std::string search_input_id = "##PalSearch_" + std::to_string(pal_state.id);
+					ImGui::InputTextWithHint(search_input_id.c_str(), "Search house...", pal_state.search_buf, sizeof(pal_state.search_buf));
 
-				std::string search_str = pal_state.search_buf;
-				for (auto& c : search_str) c = (char)tolower(c);
+					std::string search_str = pal_state.search_buf;
+					for (auto& c : search_str) c = (char)tolower(c);
 
-				// Scrollable Brush Grid / List with Collapsible Section Headers and Large Perspective Previews
-				std::string child_grid_id = "##PalBrushList_" + std::to_string(pal_state.id);
-				ImGui::BeginChild(child_grid_id.c_str(), ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+					Town* sel_town = town_ptrs[s_selected_town_idx];
+					uint32_t sel_town_id = (sel_town && sel_town != reinterpret_cast<Town*>(-1)) ? sel_town->getID() : 0;
 
-				if (!available_tilesets.empty() && (size_t)pal_state.selected_tileset_idx < available_tilesets.size()) {
-					const auto& brushlist = available_tilesets[pal_state.selected_tileset_idx].second->brushlist;
+					// Collect matching houses
+					std::vector<House*> matching_houses;
+					if (cur_map) {
+						for (auto hit = cur_map->houses.begin(); hit != cur_map->houses.end(); ++hit) {
+							House* h = hit->second;
+							if (!h) continue;
 
-					bool current_section_collapsed = false;
-					std::vector<Brush*> section_brushes;
-					SeparatorBrush* current_sep = nullptr;
+							bool town_matches = true;
+							if (sel_town == reinterpret_cast<Town*>(-1)) {
+								town_matches = true;
+							} else if (sel_town == nullptr) {
+								town_matches = (cur_map->towns.getTown(h->townid) == nullptr);
+							} else {
+								town_matches = (h->townid == sel_town->getID());
+							}
 
-					// Composite texture cache for mountain assets, large doodads, roofs, walls, and items
-					static std::unordered_map<uint32_t, GLuint> s_brush_composite_cache;
+							if (!town_matches) continue;
 
-					auto get_brush_preview_tex = [](Brush* b) -> GLuint {
-						if (!b) return 0;
-						if (b->isCreature()) {
-							CreatureBrush* cb = b->asCreature();
-							CreatureType* ct = cb ? cb->getType() : nullptr;
-							if (ct) {
-								GameSprite* spr = g_gui.gfx.getCreatureSprite(ct->outfit.lookType);
-								if (spr) {
-									return spr->getHardwareID(0, 0, 2, ct->outfit.lookAddon, 0, ct->outfit, 0);
+							if (!search_str.empty()) {
+								std::string hname = h->name;
+								for (auto& c : hname) c = (char)tolower(c);
+								std::string hid = std::to_string(h->getID());
+								if (hname.find(search_str) == std::string::npos && hid.find(search_str) == std::string::npos) {
+									continue;
 								}
 							}
-							return 0;
+
+							matching_houses.push_back(h);
+						}
+					}
+
+					static uint32_t s_selected_house_id = 0;
+					House* active_selected_house = nullptr;
+					if (cur_map && s_selected_house_id != 0) {
+						active_selected_house = cur_map->houses.getHouse(s_selected_house_id);
+					}
+					if (!active_selected_house && !matching_houses.empty()) {
+						active_selected_house = matching_houses[0];
+						s_selected_house_id = active_selected_house->getID();
+					}
+
+					// Streamlined House List Container (Driven cleanly by Right-Click Context Menu)
+					std::string child_house_grid_id = "##PalHouseList_" + std::to_string(pal_state.id);
+					ImGui::BeginChild(child_house_grid_id.c_str(), ImVec2(0, 0), true);
+
+					House* right_clicked_house = nullptr;
+					bool open_context_menu = false;
+
+					for (House* h : matching_houses) {
+						if (!h) continue;
+
+						bool is_selected = (active_selected_house && active_selected_house->getID() == h->getID());
+						std::string item_label = h->name + " (ID: " + std::to_string(h->getID()) + (h->guildhall ? ", GH" : "") + ")##HouseItem_" + std::to_string(h->getID());
+
+						if (ImGui::Selectable(item_label.c_str(), is_selected)) {
+							s_selected_house_id = h->getID();
+							active_selected_house = h;
+							if (g_gui.house_brush) {
+								g_gui.house_brush->setHouse(h);
+								g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
+							}
+							g_gui.SetStatusText(wxString::Format("House \"%s\" (ID: %u) selected. Paint tiles with left mouse button.", wxstr(h->name), h->getID()));
 						}
 
-						int look_id = b->getLookID();
-						if (look_id == 0 && b->isWall()) {
-							WallBrush* wb = b->asWall();
-							look_id = wb->getWallItem(WALL_HORIZONTAL);
-							if (look_id == 0) look_id = wb->getWallItem(WALL_VERTICAL);
+						if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+							s_selected_house_id = h->getID();
+							active_selected_house = h;
+							Position p = h->getExit();
+							if (!p.isValid() || p == Position(0, 0, 0)) p = h->getFirstTilePosition();
+							if (p.isValid() && p != Position(0, 0, 0)) {
+								g_gui.SetScreenCenterPosition(p);
+							}
 						}
 
-						if (look_id > 0) {
-							auto it = s_brush_composite_cache.find((uint32_t)look_id);
-							if (it != s_brush_composite_cache.end()) {
-								return it->second;
+						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(1)) {
+							s_selected_house_id = h->getID();
+							active_selected_house = h;
+							right_clicked_house = h;
+							open_context_menu = true;
+						}
+					}
+
+					if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && ImGui::IsMouseClicked(1) && !open_context_menu) {
+						open_context_menu = true;
+					}
+
+					std::string popup_id = "##HouseContextMenu_" + std::to_string(pal_state.id);
+					if (open_context_menu) {
+						ImGui::OpenPopup(popup_id.c_str());
+					}
+
+					if (ImGui::BeginPopup(popup_id.c_str())) {
+						House* ctx_house = right_clicked_house ? right_clicked_house : active_selected_house;
+
+						if (ImGui::MenuItem("Add House...")) {
+							canvas_context_menu_open = false;
+							ImGui::CloseCurrentPopup();
+							wxTheApp->CallAfter([cur_map, sel_town_id]() {
+								if (cur_map) {
+									HouseWizardDialog wizard(g_gui.root, cur_map, sel_town_id);
+									if (wizard.ShowModal() == wxID_OK) {
+										House* new_house = wizard.getCreatedHouse();
+										if (new_house) {
+											cur_map->doChange();
+											s_selected_house_id = new_house->getID();
+											if (g_gui.house_brush) {
+												g_gui.house_brush->setHouse(new_house);
+												g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
+											}
+											g_gui.SetStatusText(wxString::Format("Created house \"%s\" (ID: %u).", wxstr(new_house->name), new_house->getID()));
+											g_gui.RefreshView();
+										}
+									} else {
+										wizard.cancelWizard();
+										g_gui.RefreshView();
+									}
+								}
+							});
+						}
+
+						if (ctx_house) {
+							ImGui::Separator();
+							if (ImGui::MenuItem("Edit House Properties...")) {
+								canvas_context_menu_open = false;
+								ImGui::CloseCurrentPopup();
+								wxTheApp->CallAfter([cur_map, ctx_house]() {
+									if (cur_map && ctx_house) {
+										EditHouseDialog dlg(g_gui.root, cur_map, ctx_house);
+										if (dlg.ShowModal() == 1) {
+											cur_map->doChange();
+											g_gui.RefreshView();
+										}
+									}
+								});
+							}
+							if (ImGui::MenuItem("Delete House")) {
+								canvas_context_menu_open = false;
+								ImGui::CloseCurrentPopup();
+								wxTheApp->CallAfter([cur_map, ctx_house]() {
+									if (cur_map && ctx_house) {
+										int ret = g_gui.PopupDialog("Delete House", wxString::Format("Are you sure you want to delete house \"%s\" (ID: %u)?\nAll assigned tiles will be cleared.", wxstr(ctx_house->name), ctx_house->getID()), wxYES | wxNO);
+										if (ret == wxID_YES) {
+											if (g_gui.house_brush && g_gui.house_brush->getHouse() == ctx_house) {
+												g_gui.house_brush->setHouse(nullptr);
+											}
+											if (g_gui.house_exit_brush && g_gui.house_exit_brush->getHouse() == ctx_house) {
+												g_gui.house_exit_brush->setHouse(nullptr);
+											}
+											cur_map->houses.removeHouse(ctx_house);
+											cur_map->doChange();
+											s_selected_house_id = 0;
+											g_gui.RefreshView();
+										}
+									}
+								});
 							}
 
+							ImGui::Separator();
+							if (ImGui::MenuItem("Paint House Tiles")) {
+								s_selected_house_id = ctx_house->getID();
+								if (g_gui.house_brush) {
+									g_gui.house_brush->setHouse(ctx_house);
+									g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
+									g_gui.SetStatusText("Click and drag on the map to paint house tiles.");
+								}
+							}
+							if (ImGui::MenuItem("Set House Exit")) {
+								s_selected_house_id = ctx_house->getID();
+								if (g_gui.house_exit_brush) {
+									g_gui.house_exit_brush->setHouse(ctx_house);
+									g_gui.SelectBrush(g_gui.house_exit_brush, TILESET_HOUSE);
+									g_gui.SetStatusText("Click on the map to place the house exit doorway.");
+								}
+							}
+
+							Position p = ctx_house->getExit();
+							if (!p.isValid() || p == Position(0, 0, 0)) p = ctx_house->getFirstTilePosition();
+							if (p.isValid() && p != Position(0, 0, 0)) {
+								if (ImGui::MenuItem("Go to House")) {
+									g_gui.SetScreenCenterPosition(p);
+								}
+							}
+
+							if (ImGui::MenuItem("Clear House Tiles")) {
+								canvas_context_menu_open = false;
+								ImGui::CloseCurrentPopup();
+								wxTheApp->CallAfter([cur_map, ctx_house]() {
+									if (cur_map && ctx_house) {
+										int ret = g_gui.PopupDialog("Clear House Tiles", wxString::Format("Are you sure you want to remove all tiles from \"%s\" (ID: %u)?", wxstr(ctx_house->name), ctx_house->getID()), wxYES | wxNO);
+										if (ret == wxID_YES) {
+											ctx_house->clean();
+											cur_map->doChange();
+											g_gui.RefreshView();
+										}
+									}
+								});
+							}
+						}
+
+						ImGui::Separator();
+						if (ImGui::MenuItem("Manage Towns...")) {
+							canvas_context_menu_open = false;
+							ImGui::CloseCurrentPopup();
+							wxTheApp->CallAfter([cur_editor, sel_town_id]() {
+								if (cur_editor) {
+									EditTownsDialog dlg(g_gui.root, *cur_editor, sel_town_id);
+									dlg.ShowModal();
+								}
+							});
+						}
+						if (ImGui::MenuItem("Clear Invalid House Tiles")) {
+							canvas_context_menu_open = false;
+							ImGui::CloseCurrentPopup();
+							wxTheApp->CallAfter([cur_editor]() {
+								if (cur_editor) {
+									int ret = g_gui.PopupDialog("Clear Invalid House Tiles", "Are you sure you want to remove all house tiles that do not belong to a house (this action cannot be undone)?", wxYES | wxNO);
+									if (ret == wxID_YES) {
+										cur_editor->clearInvalidHouseTiles(true);
+										g_gui.RefreshView();
+									}
+								}
+							});
+						}
+
+						ImGui::EndPopup();
+					}
+
+					ImGui::EndChild();
+				} else {
+					if (!tileset_names.empty()) {
+						ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+						std::string ts_combo_id = "##PalTileset_" + std::to_string(pal_state.id);
+						if (ImGui::Combo(ts_combo_id.c_str(), &pal_state.selected_tileset_idx, tileset_names.data(), (int)tileset_names.size())) {
+							// Tileset selected by user
+						}
+						if (ImGui::IsItemHovered() && io.MouseWheel != 0.0f) {
+							pal_state.selected_tileset_idx = std::clamp(pal_state.selected_tileset_idx - (int)io.MouseWheel, 0, (int)tileset_names.size() - 1);
+						}
+					}
+
+					// Search Box with complete keyboard input support
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					std::string search_input_id = "##PalSearch_" + std::to_string(pal_state.id);
+					ImGui::InputTextWithHint(search_input_id.c_str(), "Search by name or ID...", pal_state.search_buf, sizeof(pal_state.search_buf));
+
+					std::string search_str = pal_state.search_buf;
+					for (auto& c : search_str) c = (char)tolower(c);
+
+					// Scrollable Brush Grid / List with Collapsible Section Headers and Large Perspective Previews
+					std::string child_grid_id = "##PalBrushList_" + std::to_string(pal_state.id);
+					ImGui::BeginChild(child_grid_id.c_str(), ImVec2(0, 0), true);
+
+					if (!available_tilesets.empty() && (size_t)pal_state.selected_tileset_idx < available_tilesets.size()) {
+						const auto& brushlist = available_tilesets[pal_state.selected_tileset_idx].second->brushlist;
+
+						bool current_section_collapsed = false;
+						std::vector<Brush*> section_brushes;
+						SeparatorBrush* current_sep = nullptr;
+
+						// Composite texture cache for mountain assets, large doodads, roofs, walls, and items
+						static std::unordered_map<uint32_t, GLuint> s_brush_composite_cache;
+
+						auto get_brush_preview_tex = [](Brush* b) -> GLuint {
+							if (!b) return 0;
+							if (b->isCreature()) {
+								CreatureBrush* cb = b->asCreature();
+								CreatureType* ct = cb ? cb->getType() : nullptr;
+								if (ct) {
+									GameSprite* spr = g_gui.gfx.getCreatureSprite(ct->outfit.lookType);
+									if (spr) {
+										return spr->getHardwareID(0, 0, 2, ct->outfit.lookAddon, 0, ct->outfit, 0);
+									}
+								}
+								return 0;
+							}
+							int look_id = b->getLookID();
+							if (look_id == 0 && b->isWall()) {
+								WallBrush* wb = b->asWall();
+								look_id = wb->getWallItem(WALL_HORIZONTAL);
+								if (look_id == 0) look_id = wb->getWallItem(WALL_VERTICAL);
+							}
+							if (look_id <= 0) return 0;
+
+							auto it = s_brush_composite_cache.find((uint32_t)look_id);
+							if (it != s_brush_composite_cache.end()) return it->second;
+
+							const ItemType& itype = g_items[look_id];
 							GameSprite* gspr = nullptr;
 							if (g_items.typeExists(look_id)) {
-								gspr = g_items[look_id].sprite ? g_items[look_id].sprite : dynamic_cast<GameSprite*>(g_gui.gfx.getSprite(g_items[look_id].clientID));
+								gspr = itype.sprite ? itype.sprite : dynamic_cast<GameSprite*>(g_gui.gfx.getSprite(itype.clientID));
 							} else {
 								gspr = dynamic_cast<GameSprite*>(g_gui.gfx.getSprite(look_id));
 							}
@@ -2238,126 +2633,141 @@ static ToolbarIconCache s_toolbar_icons;
 									return tex;
 								}
 							}
-						}
-						return 0;
-					};
+							return 0;
+						};
 
-					auto flush_section_tiles = [&](const std::vector<Brush*>& brushes) {
-						if (brushes.empty()) return;
-						float avail_w = ImGui::GetContentRegionAvail().x;
-						float btn_dim = 48.0f;
-						float btn_spacing = 4.0f;
-						int cols = std::max(1, (int)((avail_w + btn_spacing) / (btn_dim + btn_spacing)));
+						auto flush_section_tiles = [&](const std::vector<Brush*>& brushes) {
+							if (brushes.empty()) return;
+							float avail_w = ImGui::GetContentRegionAvail().x;
+							float btn_dim = 32.0f * ui_scale_ratio;
+							float btn_spacing = 3.0f * ui_scale_ratio;
+							int cols = std::max(1, (int)((avail_w + btn_spacing) / (btn_dim + btn_spacing)));
 
-						// Use per-palette selected_brush_name for visual highlight, NOT the global brush.
-						// This keeps each palette's selection independent from other palettes.
-						Brush* cur_active_brush = nullptr;
-						{
-							Brush* global_brush = g_gui.GetCurrentBrush();
-							if (global_brush && !pal_state.selected_brush_name.empty() &&
-								global_brush->getName() == pal_state.selected_brush_name) {
-								cur_active_brush = global_brush; // Only highlight if this palette selected it
-							}
-						}
-
-						for (size_t i = 0; i < brushes.size(); ++i) {
-							Brush* b = brushes[i];
-							if (!b || b->isSeparator()) continue;
-
-							ImGui::PushID((int)i);
-							ImGui::PushID(b);
-
-							bool is_sel = (cur_active_brush == b);
-							if (is_sel) {
-								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.45f, 0.85f, 0.95f));
-								ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.95f, 0.80f, 0.30f, 1.0f));
-								ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f);
-							} else {
-								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.13f, 0.20f, 0.80f));
-								ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.35f, 0.38f, 0.48f, 0.50f));
-								ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+							// Recalculate exact spacing so tiles distribute cleanly without overflowing or leaving awkward half-tiles
+							if (cols > 1) {
+								float rem_w = avail_w - (cols * btn_dim);
+								btn_spacing = std::max(2.0f, rem_w / (cols - 1));
 							}
 
-							GLuint spr_tex = get_brush_preview_tex(b);
+							// Use per-palette selected_brush_name for visual highlight, NOT the global brush.
+							// This keeps each palette's selection independent from other palettes.
+							Brush* cur_active_brush = nullptr;
+							{
+								Brush* global_brush = g_gui.GetCurrentBrush();
+								if (global_brush && !pal_state.selected_brush_name.empty() &&
+									global_brush->getName() == pal_state.selected_brush_name) {
+									cur_active_brush = global_brush; // Only highlight if this palette selected it
+								}
+							}
 
-							if (spr_tex != 0) {
-								if (ImGui::ImageButton("##tile_btn", (ImTextureID)(intptr_t)spr_tex, ImVec2(btn_dim - 6.0f, btn_dim - 6.0f))) {
-									pal_state.selected_brush_name = b->getName();
-									g_gui.SelectBrush(b, active_cat_type);
-									g_gui.SelectBrushInternal(b);
+							ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.0f, 1.0f));
+
+							int col_idx = 0;
+							for (size_t i = 0; i < brushes.size(); ++i) {
+								Brush* b = brushes[i];
+								if (!b || b->isSeparator()) continue;
+
+								ImGui::PushID((int)i);
+								ImGui::PushID(b);
+
+								bool is_sel = (cur_active_brush == b);
+								if (is_sel) {
+									ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.38f, 0.65f, 0.95f));
+									ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.26f, 0.46f, 0.78f, 1.0f));
+									ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.98f, 0.85f, 0.35f, 1.0f));
+									ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f);
+								} else {
+									ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.13f, 0.19f, 0.90f));
+									ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.18f, 0.24f, 0.35f, 1.0f));
+									ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.22f, 0.29f, 0.40f, 0.85f));
+									ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 								}
-							} else {
-								std::string short_label = b->getName().substr(0, std::min<size_t>(4, b->getName().size()));
-								if (ImGui::Button(short_label.c_str(), ImVec2(btn_dim, btn_dim))) {
-									pal_state.selected_brush_name = b->getName();
-									g_gui.SelectBrush(b, active_cat_type);
-									g_gui.SelectBrushInternal(b);
+
+								GLuint spr_tex = get_brush_preview_tex(b);
+
+								if (spr_tex != 0) {
+									if (ImGui::ImageButton("##tile_btn", (ImTextureID)(intptr_t)spr_tex, ImVec2(btn_dim - 2.0f, btn_dim - 2.0f))) {
+										pal_state.selected_brush_name = b->getName();
+										g_gui.SelectBrush(b, active_cat_type);
+										g_gui.SelectBrushInternal(b);
+									}
+								} else {
+									std::string short_label = b->getName().substr(0, std::min<size_t>(4, b->getName().size()));
+									if (ImGui::Button(short_label.c_str(), ImVec2(btn_dim, btn_dim))) {
+										pal_state.selected_brush_name = b->getName();
+										g_gui.SelectBrush(b, active_cat_type);
+										g_gui.SelectBrushInternal(b);
+									}
 								}
+
+								ImGui::PopStyleVar();
+								ImGui::PopStyleColor(3);
+
+								if (ImGui::BeginPopupContextItem()) {
+									Tileset* favs = g_materials.tilesets["Favorites"];
+									bool is_favorited = false;
+									if (favs) {
+										const TilesetCategory* cat = favs->getCategory(TILESET_FAVORITE);
+										if (cat && cat->containsBrush(b)) {
+											is_favorited = true;
+										}
+									}
+
+									if (is_favorited) {
+										if (ImGui::MenuItem("Remove from Favorites")) {
+											if (favs) {
+												for (TilesetCategory* cat : favs->categories) {
+													auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), b);
+													if (it != cat->brushlist.end()) {
+														cat->brushlist.erase(it);
+													}
+												}
+												g_materials.rebuildFavorites();
+												g_materials.saveFavorites();
+												g_gui.RefreshFavoritesBox();
+											}
+										}
+									} else {
+										if (ImGui::MenuItem("Add to Favorites")) {
+											if (favs) {
+												TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
+												if (catFav && !catFav->containsBrush(b)) {
+													catFav->brushlist.push_back(b);
+												}
+												g_materials.rebuildFavorites();
+												g_materials.saveFavorites();
+												g_gui.RefreshFavoritesBox();
+											}
+										}
+									}
+
+									ImGui::Separator();
+									if (ImGui::MenuItem("Select Brush")) {
+										pal_state.selected_brush_name = b->getName();
+										g_gui.SelectBrush(b, active_cat_type);
+										g_gui.SelectBrushInternal(b);
+									}
+
+									ImGui::EndPopup();
+								}
+
+								if (ImGui::IsItemHovered()) {
+									ImGui::SetTooltip("%s (ID: %d)", b->getName().c_str(), b->getLookID());
+								}
+
+								col_idx++;
+								if (col_idx < cols && (i + 1) < brushes.size()) {
+									ImGui::SameLine(0.0f, btn_spacing);
+								} else {
+									col_idx = 0;
+								}
+
+								ImGui::PopID();
+								ImGui::PopID();
 							}
 
 							ImGui::PopStyleVar();
-							ImGui::PopStyleColor(2);
-
-							if (ImGui::BeginPopupContextItem()) {
-								Tileset* favs = g_materials.tilesets["Favorites"];
-								bool is_favorited = false;
-								if (favs) {
-									const TilesetCategory* cat = favs->getCategory(TILESET_FAVORITE);
-									if (cat && cat->containsBrush(b)) {
-										is_favorited = true;
-									}
-								}
-
-								if (is_favorited) {
-									if (ImGui::MenuItem("Remove from Favorites")) {
-										if (favs) {
-											for (TilesetCategory* cat : favs->categories) {
-												auto it = std::find(cat->brushlist.begin(), cat->brushlist.end(), b);
-												if (it != cat->brushlist.end()) {
-													cat->brushlist.erase(it);
-												}
-											}
-											g_materials.rebuildFavorites();
-											g_materials.saveFavorites();
-											g_gui.RefreshFavoritesBox();
-										}
-									}
-								} else {
-									if (ImGui::MenuItem("Add to Favorites")) {
-										if (favs) {
-											TilesetCategory* catFav = favs->getCategory(TILESET_FAVORITE);
-											if (catFav && !catFav->containsBrush(b)) {
-												catFav->brushlist.push_back(b);
-											}
-											g_materials.rebuildFavorites();
-											g_materials.saveFavorites();
-											g_gui.RefreshFavoritesBox();
-										}
-									}
-								}
-
-								ImGui::Separator();
-								if (ImGui::MenuItem("Select Brush")) {
-									pal_state.selected_brush_name = b->getName();
-									g_gui.SelectBrush(b, active_cat_type);
-									g_gui.SelectBrushInternal(b);
-								}
-
-								ImGui::EndPopup();
-							}
-
-							if (ImGui::IsItemHovered()) {
-								ImGui::SetTooltip("%s (ID: %d)", b->getName().c_str(), b->getLookID());
-							}
-
-							if ((i + 1) % cols != 0 && (i + 1) < brushes.size()) {
-								ImGui::SameLine();
-							}
-
-							ImGui::PopID();
-							ImGui::PopID();
-						}
-					};
+						};
 
 					if (!search_str.empty()) {
 						bool any_found = false;
@@ -2416,7 +2826,7 @@ static ToolbarIconCache s_toolbar_icons;
 								ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.82f, 0.35f, 1.0f));
 								ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.0f, 0.5f));
 
-								if (ImGui::Button(full_title.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 22.0f))) {
+								if (ImGui::Button(full_title.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 24.0f * ui_scale_ratio))) {
 									if (current_sep) {
 										current_sep->toggleCollapsed();
 										current_section_collapsed = current_sep->isCollapsed();
@@ -2447,6 +2857,7 @@ static ToolbarIconCache s_toolbar_icons;
 		ImGui::PopStyleColor(11);
 		ImGui::PopStyleVar(4);
 	}
+}
 
 	if (ui_toolbar && ui_toolbar->isVisible() && drawer->GetNanoVGContext()) {
 		nvgBeginFrame(drawer->GetNanoVGContext(), (float)w, (float)h, (float)GetContentScaleFactor());
@@ -2823,9 +3234,9 @@ static ToolbarIconCache s_toolbar_icons;
 						if (item && !item->isContainer()) {
 							uint16_t aid = item->getActionID();
 							uint16_t uid = item->getUniqueID();
-							// For doors locked via Action ID 100 show a simple "Locked" popup
+							// For doors locked via Action ID 100 show a clean "Locked" badge (no redundant body text)
 							if (item->isDoor() && aid == 100) {
-								bubbles.push_back({ "Locked", std::string("Locked"), ImVec4(0.9f, 0.45f, 0.45f, 1.0f), ImVec4(0.75f, 0.35f, 0.35f, 1.0f) });
+								bubbles.push_back({ "Locked", std::string(""), ImVec4(0.95f, 0.45f, 0.45f, 1.0f), ImVec4(0.85f, 0.35f, 0.35f, 1.0f) });
 							} else if (aid > 0 || uid > 0) {
 								std::string aid_str = aid > 0 ? "Action ID: " + std::to_string(aid) : "";
 								std::string uid_str = uid > 0 ? "Unique ID: " + std::to_string(uid) : "";
@@ -2946,9 +3357,13 @@ static ToolbarIconCache s_toolbar_icons;
 							ImU32 header_col = IM_COL32((int)(bubble.header_color.x * 255), (int)(bubble.header_color.y * 255), (int)(bubble.header_color.z * 255), 255);
 							draw_list->AddText(ImVec2(box_x1 + 8.0f, current_y), header_col, bubble.header.c_str());
 
-							// Draw separator line under header
-							draw_list->AddLine(ImVec2(box_x1 + 6.0f, current_y + header_size.y + 2.0f), ImVec2(box_x2 - 6.0f, current_y + header_size.y + 2.0f), IM_COL32(80, 85, 100, 140), 1.0f);
-							current_y += header_height;
+							// Draw separator line under header only if there is body content or container items below
+							if (!text_to_draw.empty() || !bubble.container_items.empty()) {
+								draw_list->AddLine(ImVec2(box_x1 + 6.0f, current_y + header_size.y + 2.0f), ImVec2(box_x2 - 6.0f, current_y + header_size.y + 2.0f), IM_COL32(80, 85, 100, 140), 1.0f);
+								current_y += header_height;
+							} else {
+								current_y += header_size.y;
+							}
 						}
 
 						// Draw body text if present
@@ -3492,6 +3907,30 @@ void MapCanvas::RenderCanvasContextMenu() {
 			if (MenuItemStyled("Create Town Here", "")) {
 				canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
 				wxTheApp->CallAfter([this]() { wxCommandEvent ev; OnCreateTown(ev); });
+			}
+		}
+
+		if (sel_tile && sel_tile->getHouseID() > 0) {
+			House* h = editor.map.houses.getHouse(sel_tile->getHouseID());
+			if (h) {
+				ImGui::Separator();
+				if (MenuItemStyled("Select House Brush", "")) {
+					if (g_gui.house_brush) {
+						g_gui.house_brush->setHouse(h);
+						g_gui.SelectBrush(g_gui.house_brush, TILESET_HOUSE);
+					}
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+				}
+				if (MenuItemStyled("Edit House Properties...", "")) {
+					canvas_context_menu_open = false; ImGui::CloseCurrentPopup();
+					wxTheApp->CallAfter([this, h]() {
+						EditHouseDialog dlg(g_gui.root, &editor.map, h);
+						if (dlg.ShowModal() == 1) {
+							editor.map.doChange();
+							g_gui.RefreshView();
+						}
+					});
+				}
 			}
 		}
 

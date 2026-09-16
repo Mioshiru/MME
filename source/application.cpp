@@ -458,6 +458,10 @@ bool Application::OnInit() {
   SetTopWindow(g_gui.root);
   g_gui.SetTitle("");
 
+  // Set global Arial 10pt default application font
+  wxFont appFont(10, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, "Arial");
+  g_gui.root->SetFont(appFont);
+
   g_gui.root->LoadRecentFiles();
 
   // Load palette

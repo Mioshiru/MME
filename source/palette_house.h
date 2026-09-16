@@ -65,8 +65,13 @@ public:
 	void OnListBoxDoubleClick(wxCommandEvent& event);
 	void OnListBoxContextMenu(wxContextMenuEvent& event);
 	void OnClickAddHouse(wxCommandEvent& event);
+	void OnClickAddHouseQuick(wxCommandEvent& event);
+	void OnClickAddHouseWizard(wxCommandEvent& event);
 	void OnClickEditHouse(wxCommandEvent& event);
+	void OnClickEditHouseWizard(wxCommandEvent& event);
 	void OnClickRemoveHouse(wxCommandEvent& event);
+	void OnClickClearHouseTiles(wxCommandEvent& event);
+	void OnClickHouseBrushButton(wxCommandEvent& event);
 	void OnClickSetExit(wxCommandEvent& event);
 
 #ifdef __APPLE__
@@ -81,6 +86,7 @@ protected:
 	wxButton* add_house_button;
 	wxButton* edit_house_button;
 	wxButton* remove_house_button;
+	wxToggleButton* house_brush_button;
 	wxToggleButton* set_exit_button;
 	wxCheckBox* auto_mode_checkbox;
 	bool is_exit_mode;

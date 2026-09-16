@@ -30,28 +30,34 @@ Houses::Houses(Map& map) :
 
 Houses::~Houses() {
 	for (HouseMap::iterator it = houses.begin(); it != houses.end(); ++it) {
-		delete it->second;
+		if (it->second) {
+			delete it->second;
+		}
 	}
+	houses.clear();
 }
 
 uint32_t Houses::getEmptyID() {
-	// ids were edited or planned id is taken, search forwards
-	if (max_house_id == 0 || houses[max_house_id + 1]) {
-		while (houses[++max_house_id]) {
-			// do nothing, we search for an empty slot
-		}
-
-		// houses[n] was nullptr, we return n
-		return max_house_id;
+	uint32_t next_id = 1;
+	while (houses.find(next_id) != houses.end()) {
+		++next_id;
 	}
-
-	return ++max_house_id;
+	if (next_id > max_house_id) {
+		max_house_id = next_id;
+	}
+	return next_id;
 }
 
 void Houses::addHouse(House* new_house) {
 	ASSERT(new_house);
+	if (!new_house) return;
+
 	HouseMap::iterator it = houses.find(new_house->id);
-	ASSERT(it == houses.end());
+	if (it != houses.end()) {
+		if (it->second != new_house) {
+			delete it->second;
+		}
+	}
 	new_house->map = &map;
 	if (new_house->id > max_house_id) {
 		max_house_id = new_house->id;
@@ -60,6 +66,8 @@ void Houses::addHouse(House* new_house) {
 }
 
 void Houses::removeHouse(House* house_to_remove) {
+	if (!house_to_remove) return;
+
 	HouseMap::iterator it = houses.find(house_to_remove->id);
 	if (it != houses.end()) {
 		houses.erase(it);
@@ -70,7 +78,8 @@ void Houses::removeHouse(House* house_to_remove) {
 }
 
 void Houses::changeId(House* house, uint32_t newID) {
-	ASSERT(house);
+	if (!house) return;
+
 	HouseMap::iterator it = houses.find(house->id);
 	if (it != houses.end()) {
 		houses.erase(it);
@@ -79,8 +88,9 @@ void Houses::changeId(House* house, uint32_t newID) {
 	house->setID(newID);
 	houses[newID] = house;
 
-	// id list structure changed, prepare search for new free slot
-	max_house_id = 0;
+	if (newID > max_house_id) {
+		max_house_id = newID;
+	}
 }
 
 House* Houses::getHouse(uint32_t houseid) {

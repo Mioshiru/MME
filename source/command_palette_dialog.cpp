@@ -134,11 +134,11 @@ void CommandPaletteDialog::PopulateCommands() {
 	all_commands.push_back({ "Procedural Terrain Generator (Noise)", "Tools", PALETTE_ITEM_ACTION, TOOLS_PROCEDURAL_GENERATOR });
 	all_commands.push_back({ "Map Diff Tool (Visual Comparison)", "Tools", PALETTE_ITEM_ACTION, TOOLS_MAP_DIFF });
 	all_commands.push_back({ "Prefab & Stamp Library", "Tools", PALETTE_ITEM_ACTION, TOOLS_PREFAB_LIBRARY });
-	all_commands.push_back({ "Tileset & Custom Brush Studio", "Tools", PALETTE_ITEM_ACTION, MenuBar::TOOLS_TILESET_MANAGER });
-	all_commands.push_back({ "Monster Editor & Outfit Designer", "Tools", PALETTE_ITEM_ACTION, MenuBar::TOOLS_MONSTER_EDITOR });
+	all_commands.push_back({ "Monster & Creature Wizard...", "Tools", PALETTE_ITEM_ACTION, MenuBar::TOOLS_MONSTER_EDITOR });
+	all_commands.push_back({ "NPC & Dialogue Wizard...", "Tools", PALETTE_ITEM_ACTION, MenuBar::WIZARD_NPC });
 	all_commands.push_back({ "Creature Wiki & Bestiary", "Tools", PALETTE_ITEM_ACTION, MenuBar::TOOLS_CREATURE_WIKI });
 	all_commands.push_back({ "Item Editor & Sprite Inspector", "Tools", PALETTE_ITEM_ACTION, MenuBar::TOOLS_ITEM_EDITOR });
-	all_commands.push_back({ "NPC Dialogue & Shop Wizard", "Tools", PALETTE_ITEM_ACTION, MenuBar::WIZARD_NPC });
+	all_commands.push_back({ "Tileset & Custom Brush Studio", "Tools", PALETTE_ITEM_ACTION, MenuBar::TOOLS_TILESET_MANAGER });
 	all_commands.push_back({ "Special Objects & Quest Chest Wizard", "Tools", PALETTE_ITEM_ACTION, MenuBar::WIZARD_SPECIAL_OBJECTS });
 	all_commands.push_back({ "TFS Quest Generator", "Tools", PALETTE_ITEM_ACTION, MenuBar::TFS_QUEST_GENERATOR });
 	all_commands.push_back({ "TFS Key & Locked Door Manager", "Tools", PALETTE_ITEM_ACTION, MenuBar::TFS_KEY_MANAGER });

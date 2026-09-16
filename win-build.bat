@@ -108,7 +108,7 @@ echo %BOLD%[%STEP%/%TOTAL_STEPS%] Resolving Dependencies ^& Tools (vcpkg, Vulkan
 set "VCPKG_DIR="
 if defined VCPKG_ROOT ( if exist "!VCPKG_ROOT!\.vcpkg-root" set "VCPKG_DIR=!VCPKG_ROOT!" )
 if not defined VCPKG_DIR (
-    for %%p in ("c:\vcpkg" "c:\src\vcpkg" "%USERPROFILE%\vcpkg" "D:\vcpkg") do ( if exist "%%~p\.vcpkg-root" set "VCPKG_DIR=%%~p" )
+    for %%p in ("c:\dev\vcpkg" "c:\vcpkg" "c:\src\vcpkg" "%USERPROFILE%\vcpkg" "D:\vcpkg") do ( if exist "%%~p\.vcpkg-root" set "VCPKG_DIR=%%~p" )
 )
 if not defined VCPKG_DIR ( 
     echo   Cloning vcpkg...

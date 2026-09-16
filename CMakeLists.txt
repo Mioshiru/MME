@@ -31,9 +31,6 @@ add_definitions(-D_DONT_USE_UPDATER_)
 if(MSVC)
     string(APPEND CMAKE_CXX_FLAGS " /W3 /EHsc /bigobj /FS /D_CRT_SECURE_NO_WARNINGS")
     string(APPEND CMAKE_CXX_FLAGS_DEBUG " /D__DEBUG__")
-    if(NOT DEFINED CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES)
-        set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES "$ENV{INCLUDE}")
-    endif()
 else()
     string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-declarations -Wno-overloaded-virtual -Wno-strict-aliasing -Wno-sign-compare -Wno-unused-function -Wunused-result")
     string(APPEND CMAKE_CXX_FLAGS_DEBUG " -D__DEBUG__")
@@ -73,6 +70,12 @@ endif()
 set(BOOST_LINK_TARGETS ${Boost_LIBRARIES})
 if(TARGET Boost::thread AND TARGET Boost::system)
     set(BOOST_LINK_TARGETS Boost::thread Boost::system)
+    if(TARGET Boost::headers)
+        list(APPEND BOOST_LINK_TARGETS Boost::headers)
+    endif()
+    if(TARGET Boost::boost)
+        list(APPEND BOOST_LINK_TARGETS Boost::boost)
+    endif()
 endif()
 
 # Moderne wxWidgets Einbindung für vcpkg/MSVC
@@ -164,9 +167,6 @@ else()
     set(LIBS_TO_LINK ${LUA_LIBRARIES} cpr::cpr nlohmann_json::nlohmann_json sol2::sol2)
 endif()
 
-
-
-
 include(source/CMakeLists.txt)
 if(WIN32)
     add_executable(rme WIN32 ${rme_H} ${rme_SRC})
@@ -181,7 +181,7 @@ if(MSVC)
         CXX_STANDARD_REQUIRED ON
         LINKER_LANGUAGE CXX
     )
-    target_compile_options(rme PRIVATE /permissive- /Zc:__cplusplus /Zc:inline /Zi)
+    target_compile_options(rme PRIVATE /permissive- /Zc:__cplusplus /Zc:inline /Zi /FS)
     target_link_options(rme PRIVATE /DEBUG:FULL /OPT:REF /OPT:ICF /MAP:MME.map)
 else()
     set_target_properties(rme PROPERTIES 
@@ -205,4 +205,3 @@ if(Boost_FOUND)
     endif()
 endif()
 target_link_libraries(rme PRIVATE ${WX_LIBS} ${BOOST_LINK_TARGETS} ${LibArchive_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${ZLIB_LIBRARIES} ${LIBS_TO_LINK})
-

@@ -21,6 +21,8 @@
 #include <wx/listctrl.h>
 #include <wx/treectrl.h>
 
+#include "settings.h"
+
 namespace RME::UI {
 
     struct ThemeData {
@@ -74,7 +76,32 @@ namespace RME::UI {
                            static_cast<unsigned char>(theme.text.b * 255));
             wxColor goldAccent(229, 193, 88);
 
+            bool isDialogOrTool = false;
+            wxWindow* topParent = win;
+            while (topParent) {
+                if (topParent->IsKindOf(wxCLASSINFO(wxDialog))) {
+                    isDialogOrTool = true;
+                    break;
+                }
+                if (topParent->GetClassInfo()) {
+                    wxString cName = topParent->GetClassInfo()->GetClassName();
+                    if (cName.Contains("Preferences") || cName.Contains("Settings") || cName.Contains("Dialog") || cName.Contains("Wizard") || cName.Contains("Window")) {
+                        isDialogOrTool = true;
+                        break;
+                    }
+                }
+                topParent = topParent->GetParent();
+            }
+
+            // In Tools & Dialogs, font is fixed at crisp Arial 11. Main workspace follows UI scale.
+            int font_pt = isDialogOrTool ? 11 : std::max(9, (int)std::round(10.0f * ((float)g_settings.getInteger(Config::UI_SCALE) / 100.0f)));
+            wxFont s_app_font(font_pt, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, "Arial");
+
             try {
+                if (!win->IsKindOf(wxCLASSINFO(wxFrame))) {
+                    win->SetFont(s_app_font);
+                }
+
                 if (win->IsKindOf(wxCLASSINFO(wxDialog))) {
                     win->SetBackgroundColour(bgDark);
                     win->SetForegroundColour(fgText);
@@ -86,10 +113,18 @@ namespace RME::UI {
                         win->SetBackgroundColour(wxColour(28, 36, 48));
                         win->SetForegroundColour(goldAccent);
                     }
+                    wxSize best = win->GetBestSize();
+                    int minW = std::max(best.x + 12, 72);
+                    int minH = std::max(best.y + 4, 26);
+                    win->SetMinSize(wxSize(minW, minH));
                 }
                 else if (win->IsKindOf(wxCLASSINFO(wxTextCtrl)) || win->IsKindOf(wxCLASSINFO(wxSpinCtrl))) {
                     win->SetBackgroundColour(bgInput);
                     win->SetForegroundColour(fgText);
+                    wxSize best = win->GetBestSize();
+                    if (best.y > 0) {
+                        win->SetMinSize(wxSize(-1, std::max(best.y + 2, 24)));
+                    }
                 }
                 else if (win->IsKindOf(wxCLASSINFO(wxListBox)) || win->IsKindOf(wxCLASSINFO(wxListCtrl)) || win->IsKindOf(wxCLASSINFO(wxTreeCtrl))) {
                     win->SetBackgroundColour(bgInput);
@@ -102,7 +137,7 @@ namespace RME::UI {
                     if (ctrl) {
                         wxSize best = ctrl->GetBestSize();
                         if (best.x > 0) {
-                            ctrl->SetMinSize(wxSize(best.x + 8, -1));
+                            ctrl->SetMinSize(wxSize(best.x + 12, std::max(best.y + 2, 24)));
                         }
                     }
                 }

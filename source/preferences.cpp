@@ -156,17 +156,14 @@ EVT_COLLAPSIBLEPANE_CHANGED(wxID_ANY, PreferencesWindow::OnCollapsiblePane)
 END_EVENT_TABLE()
 
 PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelected) :
-	wxDialog(parent, wxID_ANY, "Settings", wxDefaultPosition, wxDefaultSize, wxCAPTION | wxCLOSE_BOX),
+	wxDialog(parent, wxID_ANY, "Settings", wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
 	screenshot_directory_picker(nullptr),
 	screenshot_format_choice(nullptr),
 	default_version_choice(nullptr),
 	scan_status_txt(nullptr),
 	open_folder_btn(nullptr),
 	help_link(nullptr),
-	position_choice(nullptr),
-	autosave_enabled_chkbox(nullptr),
-	autosave_interval_slider(nullptr),
-	autosave_interval_label(nullptr),
+	check_sigs_chkbox(nullptr),
 	multiplayer_port_spin(nullptr),
 	ui_scale_slider(nullptr) {
     
@@ -209,8 +206,8 @@ PreferencesWindow::PreferencesWindow(wxWindow* parent, bool clientVersionSelecte
 	subsizer->Add(newd wxButton(this, wxID_APPLY, "Apply"), wxSizerFlags(1).Center());
 	sizer->Add(subsizer, 0, wxCENTER | wxLEFT | wxBOTTOM | wxRIGHT, 6);
 
-	SetMinSize(wxSize(740, 520));
-	SetSize(wxSize(750, 550));
+	SetMinSize(wxSize(800, 600));
+	SetSize(wxSize(840, 650));
 	SetSizer(sizer);
 
 	try {
@@ -261,6 +258,14 @@ wxNotebookPage* PreferencesWindow::CreateGeneralPage() {
 	mapper_name_txt->SetToolTip("Your nickname used for Team Chat, Multiplayer Live Sessions, and Quest Notepad inscriptions.");
 	name_row->Add(mapper_name_txt, 1, wxEXPAND);
 	profile_box->Add(name_row, 0, wxEXPAND | wxALL, 6);
+
+	wxBoxSizer* ai_row = newd wxBoxSizer(wxHORIZONTAL);
+	ai_row->Add(newd wxStaticText(startup_panel, wxID_ANY, "Gemini Flash API Key:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	std::string current_api_key = g_settings.getString(Config::GEMINI_API_KEY);
+	gemini_api_key_txt = newd wxTextCtrl(startup_panel, wxID_ANY, wxstr(current_api_key), wxDefaultPosition, wxDefaultSize, wxTE_PASSWORD);
+	gemini_api_key_txt->SetToolTip("Google Gemini 1.5/2.0 Flash API Key for AI Entity & Monster/NPC Wizard (Get one for free at aistudio.google.com)");
+	ai_row->Add(gemini_api_key_txt, 1, wxEXPAND);
+	profile_box->Add(ai_row, 0, wxEXPAND | wxALL, 6);
 	startup_sizer->Add(profile_box, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
 
 	always_make_backup_chkbox = newd wxCheckBox(startup_panel, wxID_ANY, "Always make map backup");
@@ -553,7 +558,7 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	wxBoxSizer* visual_sizer = newd wxBoxSizer(wxVERTICAL);
 	wxStaticBoxSizer* visual_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "Editor Visuals & Rendering");
 	
-	// Row 1: BG Color & WIP Effects side by side
+	// 1. Row: BG Color & Enhancements side by side in clean proportions
 	wxBoxSizer* top_row = newd wxBoxSizer(wxHORIZONTAL);
 	
 	wxBoxSizer* bg_color_sizer = newd wxBoxSizer(wxHORIZONTAL);
@@ -574,13 +579,10 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	bg_color_choice->SetSelection(cur_bg);
 	bg_color_choice->SetToolTip("Select the canvas background clear color (no restart required).");
 	bg_color_sizer->Add(bg_color_choice, 0, wxALIGN_CENTER_VERTICAL);
-	top_row->Add(bg_color_sizer, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 15);
+	top_row->Add(bg_color_sizer, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 20);
 
-	wxStaticBoxSizer* wip_group = newd wxStaticBoxSizer(wxHORIZONTAL, visual_panel, "Enhancements");
-	fake_hd_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Sharp Pixel-Art Enhancement");
-	fake_hd_chkbox->SetValue(g_settings.getBoolean(Config::FAKE_HD_ASSETS));
-	fake_hd_chkbox->SetToolTip("Uses crisp nearest-neighbor sprites, controlled contrast, and stepped pixel-art lighting.");
-	wip_group->Add(fake_hd_chkbox, 0, wxALL | wxALIGN_CENTER_VERTICAL, 4);
+	wxBoxSizer* enhance_sizer = newd wxBoxSizer(wxHORIZONTAL);
+	enhance_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Rendering:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
 	wxArrayString upscale_choices;
 	upscale_choices.Add("Sharp Nearest (Pixel-Perfect)");
 	upscale_choices.Add("xBRZ Modern Pixel-Art (Soft & Vibrant)");
@@ -590,13 +592,12 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	pixel_upscale_choice->SetToolTip("xBRZ smooths pixel-art edges and intensifies colors for a modern look.");
 	pixel_upscale_choice->SetBackgroundColour(wxColour(35, 47, 62));
 	pixel_upscale_choice->SetForegroundColour(wxColour(210, 225, 240));
-	wip_group->Add(pixel_upscale_choice, 0, wxALL | wxALIGN_CENTER_VERTICAL, 4);
-	wip_group->Detach(fake_hd_chkbox);
-	fake_hd_chkbox->Hide();
-	top_row->Add(wip_group, 1, wxEXPAND);
-	visual_group->Add(top_row, 0, wxEXPAND | wxALL, 4);
+	enhance_sizer->Add(pixel_upscale_choice, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+	top_row->Add(enhance_sizer, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
 
-	// 1. Cinematic Color Grading Moods
+	visual_group->Add(top_row, 0, wxEXPAND | wxALL, 6);
+
+	// 2. Cinematic Color Grading Moods
 	wxBoxSizer* mood_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	wxStaticText* mood_label = newd wxStaticText(visual_panel, wxID_ANY, "Biome Color Mood:");
 	mood_label->SetForegroundColour(wxColour(255, 205, 50));
@@ -613,49 +614,48 @@ wxNotebookPage* PreferencesWindow::CreatePerformancePage() {
 	exp_color_grading_choice->SetBackgroundColour(wxColour(61, 47, 18));
 	exp_color_grading_choice->SetForegroundColour(wxColour(255, 224, 130));
 	exp_color_grading_choice->SetFont(wxFont(9, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-	exp_color_grading_choice->SetMinSize(wxSize(340, -1));
 	int cur_mood = g_settings.getInteger(Config::EXP_COLOR_GRADING);
 	if (cur_mood < 0 || cur_mood >= static_cast<int>(mood_choices.size())) cur_mood = 0;
 	exp_color_grading_choice->SetSelection(cur_mood);
 	exp_color_grading_choice->SetToolTip("Choose the atmospheric color mood for different biomes, dungeons, and areas.");
-	mood_sizer->Add(exp_color_grading_choice, 0, wxALIGN_CENTER_VERTICAL);
-	visual_group->Add(mood_sizer, 0, wxALL, 4);
-	wxBoxSizer* info_corner_sizer = newd wxBoxSizer(wxHORIZONTAL);
-	info_corner_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Canvas Info Corner:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	mood_sizer->Add(exp_color_grading_choice, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+	visual_group->Add(mood_sizer, 0, wxEXPAND | wxALL, 6);
+
+	// 3. Canvas Info Corner & Cinematic Vignette Row
+	wxBoxSizer* corner_vig_row = newd wxBoxSizer(wxHORIZONTAL);
+	corner_vig_row->Add(newd wxStaticText(visual_panel, wxID_ANY, "Canvas Info Corner:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 	canvas_info_corner_choice = newd wxChoice(visual_panel, wxID_ANY);
 	canvas_info_corner_choice->Append("Top Right");
 	canvas_info_corner_choice->Append("Top Left");
 	canvas_info_corner_choice->Append("Bottom Right");
 	canvas_info_corner_choice->Append("Bottom Left");
 	canvas_info_corner_choice->SetSelection(std::clamp(g_settings.getInteger(Config::CANVAS_INFO_CORNER), 0, 3));
-	info_corner_sizer->Add(canvas_info_corner_choice, 0, wxALIGN_CENTER_VERTICAL);
-	visual_group->Add(info_corner_sizer, 0, wxALL, 4);
+	corner_vig_row->Add(canvas_info_corner_choice, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 20);
 
-	// 2. Cinematic Vignette
-	wxBoxSizer* vig_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	exp_vignette_chkbox = newd wxCheckBox(visual_panel, wxID_ANY, "Cinematic Vignette:");
 	exp_vignette_chkbox->SetValue(g_settings.getBoolean(Config::EXP_VIGNETTE));
 	exp_vignette_chkbox->SetToolTip("Sanfte, kreisfoermige Ecken-Abdunklung fuer mehr Tiefe.");
-	vig_sizer->Add(exp_vignette_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 15);
+	corner_vig_row->Add(exp_vignette_chkbox, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
 
 	int cur_vig_lvl = std::clamp(int(std::round(g_settings.getFloat(Config::EXP_VIGNETTE_STRENGTH) * 10.0f)), 1, 10);
 	if (cur_vig_lvl == 0) cur_vig_lvl = 4;
-	exp_vignette_slider = newd wxSlider(visual_panel, wxID_ANY, cur_vig_lvl, 1, 10, wxDefaultPosition, wxSize(160, -1), wxSL_HORIZONTAL | wxSL_AUTOTICKS);
-	vig_sizer->Add(exp_vignette_slider, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 8);
+	exp_vignette_slider = newd wxSlider(visual_panel, wxID_ANY, cur_vig_lvl, 1, 10, wxDefaultPosition, wxSize(120, -1), wxSL_HORIZONTAL | wxSL_AUTOTICKS);
+	corner_vig_row->Add(exp_vignette_slider, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 6);
 	wxStaticText* vig_pct_label = newd wxStaticText(visual_panel, wxID_ANY, wxString::Format("Level %d (%d%%)", cur_vig_lvl, cur_vig_lvl * 10));
 	vig_pct_label->SetForegroundColour(wxColor(255, 205, 50));
-	vig_sizer->Add(vig_pct_label, 0, wxALIGN_CENTER_VERTICAL);
+	corner_vig_row->Add(vig_pct_label, 0, wxALIGN_CENTER_VERTICAL);
 	exp_vignette_slider->Bind(wxEVT_SLIDER, [vig_pct_label, this](wxCommandEvent&) {
 		int lvl = exp_vignette_slider->GetValue();
 		vig_pct_label->SetLabel(wxString::Format("Level %d (%d%%)", lvl, lvl * 10));
 	});
-	visual_group->Add(vig_sizer, 0, wxALL, 4);
+	visual_group->Add(corner_vig_row, 0, wxEXPAND | wxALL, 6);
 
+	// 4. Grid Opacity
 	wxBoxSizer* opacity_sizer = newd wxBoxSizer(wxHORIZONTAL);
 	opacity_sizer->Add(newd wxStaticText(visual_panel, wxID_ANY, "Grid Opacity:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
 	grid_opacity_slider = newd wxSlider(visual_panel, wxID_ANY, g_settings.getInteger(Config::GRID_OPACITY), 0, 255, wxDefaultPosition, wxSize(240, -1));
-	opacity_sizer->Add(grid_opacity_slider, 0, wxALIGN_CENTER_VERTICAL);
-	visual_group->Add(opacity_sizer, 0, wxALL, 4);
+	opacity_sizer->Add(grid_opacity_slider, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
+	visual_group->Add(opacity_sizer, 0, wxEXPAND | wxALL, 6);
 
 	wxStaticBoxSizer* scale_group = newd wxStaticBoxSizer(wxVERTICAL, visual_panel, "UI & Icon Scaling (100% to 200%)");
 
@@ -1237,6 +1237,9 @@ void PreferencesWindow::Apply() {
 		if (!val.empty()) {
 			g_settings.setString(Config::MULTIPLAYER_NAME, nstr(val));
 		}
+	}
+	if (gemini_api_key_txt) {
+		g_settings.setString(Config::GEMINI_API_KEY, nstr(gemini_api_key_txt->GetValue().Trim(true).Trim(false)));
 	}
 	g_settings.setInteger(Config::ALWAYS_MAKE_BACKUP, always_make_backup_chkbox->GetValue());
 	g_settings.setInteger(Config::AUTO_SAVE_ENABLED, autosave_enabled_chkbox ? autosave_enabled_chkbox->GetValue() : 0);

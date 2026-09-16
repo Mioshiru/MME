@@ -19,6 +19,11 @@ struct MonsterAttackEntry {
 
 #include "tfs_npc_wizard_window.h"
 
+enum EditorViewMode {
+	VIEW_MODE_SIMPLE = 0,
+	VIEW_MODE_EXTENDED = 1
+};
+
 class CreatureType;
 
 struct MonsterLootEntry {
@@ -33,10 +38,36 @@ public:
 	MonsterEditorDialog(wxWindow* parent);
 	virtual ~MonsterEditorDialog();
 
+	void SetViewMode(EditorViewMode mode);
+	EditorViewMode GetViewMode() const { return current_view_mode; }
+
 private:
+	EditorViewMode current_view_mode;
+
+	// View Mode Switcher
+	wxChoice* view_mode_choice;
+
+	// Main containers
+	wxPanel* simple_container;
 	wxNotebook* notebook;
 
-	// 1. General Tab Controls
+	// Simple View Controls
+	wxTextCtrl* simple_name_ctrl;
+	wxSpinCtrl* simple_health_ctrl;
+	wxSpinCtrl* simple_exp_ctrl;
+	wxSpinCtrl* simple_speed_ctrl;
+	wxChoice* simple_preset_choice;
+	wxSpinCtrl* simple_min_dmg;
+	wxSpinCtrl* simple_max_dmg;
+	class CreaturePreviewPanel* simple_preview_panel;
+	wxListView* simple_loot_list;
+	wxStaticText* simple_loot_item_text;
+	int simple_loot_selected_id;
+	wxSpinCtrl* simple_loot_count;
+	wxSpinCtrl* simple_loot_chance;
+	std::vector<MonsterLootEntry> simple_loot_items;
+
+	// 1. General Tab Controls (Extended)
 	wxTextCtrl* mon_name_ctrl;
 	wxTextCtrl* mon_description_ctrl;
 	wxSpinCtrl* mon_health_ctrl;
@@ -77,7 +108,7 @@ private:
 	int current_direction;
 	int current_frame;
 
-	// 3. Attacks & Spells Controls
+	// 3. Attacks & Spells Controls (Extended)
 	wxListView* attacks_list;
 	wxChoice* attack_type_choice;
 	wxTextCtrl* attack_custom_name;
@@ -87,7 +118,7 @@ private:
 	wxSpinCtrl* attack_chance;
 	std::vector<MonsterAttackEntry> attacks;
 
-	// 4. Defenses & Immunities Controls
+	// 4. Defenses & Immunities Controls (Extended)
 	wxSpinCtrl* def_heal_min;
 	wxSpinCtrl* def_heal_max;
 	wxSpinCtrl* def_heal_interval;
@@ -102,13 +133,17 @@ private:
 	wxSpinCtrl* imm_death;
 	wxSpinCtrl* imm_physical;
 
-	// 5. Loot Table Controls (Palette Integrated)
+	// 5. Loot Table Controls (Extended)
 	wxListView* loot_list;
 	wxStaticText* loot_selected_item_text;
 	int loot_selected_item_id;
 	wxSpinCtrl* loot_countmax;
 	wxSpinCtrl* loot_chance_percent;
 	std::vector<MonsterLootEntry> loot_items;
+
+	void SyncSimpleToExtended();
+	void SyncExtendedToSimple();
+	void OnViewModeChanged(wxCommandEvent& event);
 
 	void PopulateMonsterPresets();
 	void LoadCreatureType(CreatureType* ct);

@@ -1530,7 +1530,7 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 			TileLocation* location = map.createTileL(pos);
 			Tile* tile = location->get();
 
-			if (doodad_brush->placeOnBlocking() || alt || (tile && tile->hasTable())) {
+			if (doodad_brush->placeOnBlocking() || alt || true) {
 				if (tile) {
 					bool place = true;
 					if (!doodad_brush->placeOnDuplicate() && !alt) {
@@ -1561,44 +1561,6 @@ void MapEditor::drawInternal(Position offset, bool alt, bool dodraw) {
 						action->addChange(newd Change(new_tile));
 					}
 				} else {
-					Tile* new_tile = map.allocator(location);
-					removeDuplicateWalls(buffer_tile, new_tile);
-					doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
-					new_tile->merge(buffer_tile);
-					assignNearestTownToDepots(map, new_tile);
-					action->addChange(newd Change(new_tile));
-				}
-			} else {
-				if (tile && (!tile->isBlocking() || tile->hasTable())) {
-					bool place = true;
-					if (tile && !doodad_brush->placeOnDuplicate() && !alt) {
-						for (ItemVector::const_iterator iter = tile->items.begin(); iter != tile->items.end(); ++iter) {
-							if (doodad_brush->ownsItem(*iter)) {
-								place = false;
-								break;
-							}
-						}
-					}
-					if (place) {
-						Tile* new_tile = tile->deepCopy(map);
-						if (!doodad_brush->placeOnDuplicate() && !alt) {
-							for (ItemVector::iterator item_iter = new_tile->items.begin(); item_iter != new_tile->items.end();) {
-								Item* item = *item_iter;
-								if (doodad_brush->ownsItem(item)) {
-									delete item;
-									item_iter = new_tile->items.erase(item_iter);
-								} else {
-									++item_iter;
-								}
-							}
-						}
-						removeDuplicateWalls(buffer_tile, new_tile);
-						doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);
-						new_tile->merge(buffer_tile);
-						assignNearestTownToDepots(map, new_tile);
-						action->addChange(newd Change(new_tile));
-					}
-				} else if (!tile) {
 					Tile* new_tile = map.allocator(location);
 					removeDuplicateWalls(buffer_tile, new_tile);
 					doSurroundingBorders(doodad_brush, tilestoborder, buffer_tile, new_tile);

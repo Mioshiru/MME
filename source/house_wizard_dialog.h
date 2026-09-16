@@ -23,9 +23,16 @@ public:
 	House* getCreatedHouse() const { return draft_house; }
 	void cancelWizard();
 
-protected:
-	void showStep(int step);
+	static HouseWizardDialog* GetActiveDialog() { return s_active_dialog; }
+	static void NotifyTileOrExitChanged();
+
+	void updateTileCountText();
 	void updateExitText();
+
+protected:
+	static HouseWizardDialog* s_active_dialog;
+
+	void showStep(int step);
 
 	void OnClickNext(wxCommandEvent& evt);
 	void OnClickBack(wxCommandEvent& evt);
@@ -52,23 +59,23 @@ private:
 	int current_step;
 
 	// UI panels for 3 steps
-	wxPanel* step1_panel;
-	wxPanel* step2_panel;
-	wxPanel* step3_panel;
+	wxPanel* step1_panel; // Step 1: Tiles
+	wxPanel* step2_panel; // Step 2: Exit
+	wxPanel* step3_panel; // Step 3: Properties
 
-	// Step 1 controls
+	// Step 1 controls (Paint Tiles)
+	wxToggleButton* paint_tiles_btn;
+	wxStaticText* tile_count_label;
+
+	// Step 2 controls (Set Exit)
+	wxToggleButton* set_exit_btn;
+	wxStaticText* exit_pos_label;
+
+	// Step 3 controls (Properties: Name, Town, Rent, Guildhall)
 	wxTextCtrl* name_field;
 	wxChoice* town_choice;
 	wxTextCtrl* rent_field;
 	wxCheckBox* guildhall_checkbox;
-
-	// Step 2 controls
-	wxToggleButton* paint_tiles_btn;
-	wxStaticText* tile_count_label;
-
-	// Step 3 controls
-	wxToggleButton* set_exit_btn;
-	wxStaticText* exit_pos_label;
 
 	// Nav buttons
 	wxButton* back_btn;
